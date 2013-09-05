@@ -1,0 +1,361 @@
+#
+#
+# Copyright (C) 2013 Patricio Rojo
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of version 2 of the GNU General 
+# Public License as published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Boston, MA  02110-1301, USA.
+#
+#
+
+from functools import wraps as _wraps
+
+
+class combine():
+    """"Many ways to combine data"""
+
+    def __init__(self,astrodata,
+                 header=None, flagfield='ORIGHEAD', 
+                 **kwargs):
+        """astrodata can be a list of AstroFile or a list of array. Uses header of first AstroFile element if not supplied. Bias to be substracted can be specified with 'bias' keyword.  This bias can be optionally skiped if its has different sizes and 'biasskip' is set to True, otherwise raise exception"""
+
+        import scipy as sp
+        from dataproc import AstroFile
+        import sys
+        self.flagfield = flagfield
+        arrays=[]
+        heads = []
+        shape1 = None
+
+        sys.stdout.write (" reading %i frame%s" % (len(astrodata),len(astrodata)>1 and "s" or ""))
+        for d in astrodata:
+            #Check supported type of element
+            if isinstance(d, AstroFile.__class__):
+                dt,hd = d.reader()
+                #use the first read header to fill all the data without headers
+                if header is None:
+                    header = hd.copy()
+                    header.update(flagfield, False, 'Is this header original?')
+                    #chck back if any data was without header
+                    for h in heads:
+                        if h is None:
+                            h = header
+            elif isinstance(d, ndarray):
+                dt = d
+                hd = header
+            else:
+                raise TypeError("combine()  initialization with a list of AstroFile or  ndarray is currently supported")
+
+            #check equal size
+            if shape1 is None:
+                shape1=dt.shape
+            elif shape1 != dt.shape:
+                raise ValueError("All arrays passed to combine should have the same dimension")
+
+            arrays.append(dt)
+            heads.append(hd)
+            sys.stdout.write('.')
+            sys.stdout.flush()
+
+        sys.stdout.write('\n')
+
+        print(" converting to scipy")
+        self.arrays = sp.array(arrays)
+        ##TD: Get real sigmas given poisson!
+        self.sigmas = self.arrays*0
+        self.headers = heads
+        self.okframes = sp.zeros(len(arrays))==0
+        self.auto(**kwargs)
+
+
+    def _normalize(f):
+        """Decorator to noramlize the return"""
+        import scipy as sp
+        @_wraps(f)
+        def donorm(instance, *args, **kwargs):
+            ret = f(instance, *args, **kwargs)
+            if 'normalize' in kwargs and  kwargs['normalize']:
+                if kwargs['normalize']=='mean':
+                    ret /= ret.mean()
+                else: #use median as default
+                    ret /= sp.median(ret)
+            return ret
+        return donorm
+
+    def _debias(f):
+        """Decorator to noramlize the return"""
+        import warnings
+        import numpy as np
+        @_wraps(f)
+        def dobias(instance, *args, **kwargs):
+            ret = f(instance, *args, **kwargs)
+            if 'bias' in kwargs and isinstance(kwargs['bias'],np.ndarray):
+                bias = kwargs['bias']
+                if ret.shape != bias.shape:
+                    if 'biasskip' in kwargs and kwargs['biasskip']:
+                        warnings.warn(" bias is not the same size as data, ignoring it as requested")
+                        return ret
+                    else:
+                        raise ValueError("Bias (%s) must have same size and dimensions as data (%s)" %
+                                     ('x'.join(["%i"%(s,) for s in bias.shape]),
+                                      'x'.join(["%i"%(s,) for s in ret.shape]))
+                                     )
+                ret -= bias
+            return ret
+        return dobias
+
+    def _checksig(f):
+        """Decorator to check standard appropriate standard deviation without zeros"""
+        @_wraps(f)
+        def sigmaok(instance, *args, **kwargs):
+            import warnings
+            var=instance.sigmas[instance.okframes]**2
+            if 0 in var:
+                if (var!=0).any():
+                    warnings.warn("Confusing as some sigmas were 0 and some not. Ignoring them.")
+            var=instance.arrays*0+1
+            return f(instance, *args, var=var, **kwargs)
+
+        return sigmaok
+
+    @_checksig
+    @_normalize
+    @_debias
+    def lininterp(self, target=0, 
+                  field='EXPTIME', sigma=False, doerr=True,
+                  var=None, multi=1):
+        """Linear interpolate to given target value of the field 'field'. Returns optionally array with 1-sigma values. Optionally the variance info can be given (same size as data array)"""
+
+        import scipy as sp
+        def pvns(pfret,target):
+            """Reconstructs polyfit to target value and sigma"""
+            p,cov=pfret
+            val = p[0]*target + p[1]
+            var = cov[0,0]*target**2 + cov[1,1] + 2*target*cov[1,0]
+            return val,var
+
+
+        def getlinterp(params, pool=None):
+            """Evaluate line interpolation """
+            ##TD: being called for wgt and nwgt
+            dowgt = lambda fv,target,dat,wgt: sp.array([pvns(sp.polyfit(fv, dt, 1,
+                                                                        w=w, cov=True),
+                                                             target)
+                                                        for dt,w in zip(dat,wgt)]
+                         )
+            donwgt = lambda fv,target,dat: sp.array([pvns(sp.polyfit(fv, dt, 1), target)
+                          for dt in dat])
+            dofcn = (len(params)==4) and dowgt or donwgt
+            if pool is None:  #Can't use ...and...or... or it will execute twice!
+                return dofcn(*params)
+            else:
+                return pool.apply_async(dofcn,params)
+
+        if not target:
+            raise ValueError("keyword target=value must be specified for lineinterp(), where value cannot be zero.")
+
+        arr=self.arrays[self.okframes]
+        if var is None:
+            var=self.sigmas[self.okframes]**2
+        hd = [h for h,o in zip(self.headers,self.okframes) if o]
+        fv = sp.array([h[field] for h in hd])
+
+        import warnings
+        from numpy import __version__ as vrs
+        if float(vrs[0:3])<1.7:
+            raise ValueError("numpy version must be at least 1.7.  Otherwise polyfit() cannot handle weights")
+        if (fv==fv[0]).all():
+            raise ValueError("Cannot linear-interpolate since all values of field '%s' are identical in the data" % field)
+        if len([h for h in hd if (self.flagfield in h)]):
+            warnings.warn("Interpolating in a list of frames who did not all had header with the target field")
+        if target<min(fv) or target>max(fv):
+            warnings.warn("Requested interpolation target (%f) is beyond the range of the '%s' field in the frames (%f - %f)" %(target,field,min(fv),max(fv)))
+
+        print ("  sorting data%s" 
+               % (doerr and  " and weights" or "",))
+        sh = arr.shape
+        fldata = arr.reshape(sh[0],sp.array(sh[1:]).prod())
+        flwgt = 1.0/var.reshape(sh[0],sp.array(sh[1:]).prod())
+        fv,fldata,flwgt = sortmanynsp(fv,fldata,flwgt)
+
+            
+        from multiprocessing.pool import ThreadPool
+        print("  evaluating linear fit to %i pixels" 
+              % (fldata.shape[1],))
+        if doerr:
+            pool=multi>1 and ThreadPool(processes=multi) or None
+            print ("   using %i processors" % (multi,) )
+            delta = int(fldata.shape[1]/multi+0.999)
+            multistart = [[delta*i,delta*(i+1)] for i in range(multi)]
+            multistart[-1][1] = fldata.shape[1]
+
+            mpool = [getlinterp((fv, target, 
+                                 fldata.T[i0:i1,:],
+                                 flwgt.T[i0:i1,:]),
+                                pool=pool)
+                     for i0,i1 in multistart]
+            if(len(mpool)>1):
+                tmp=[]
+                for mp in mpool:
+                    tmp.extend(mp.get())
+                tmp=sp.array(tmp)
+            else:
+                tmp=mpool[0]
+                    
+            # else:
+            #     tmp = getlinterp((fv,target,fldata.T,flwgt.T))
+        else:
+            print(" - Requested to avoid error estimation")
+            tmp = sp.array([sp.polyval(sp.polyfit(fv, dt, 1), target)
+                            for dt in zip(fldata.T)])
+        comb = tmp[:,0].reshape(sh[1:])
+        sig = tmp[:,1].reshape(sh[1:])
+        self.data=comb
+        self.sigma=sig
+        self.lastmet=('lininterp',target,field,sigma, doerr)
+        self.updatehdr(exptime=target)
+        return sigma and comb or (comb,sig)
+
+    def updatehdr(self, **kwargs):
+        """Returns a header with info about the combination and any other indicated header. It choses the type of the first file."""
+
+        import dataproc as dp
+        from copy import copy
+        if not hasattr(self,'lastmet'):
+            raise ValueError("updatehdr must be run after a combination method")
+        #TD: it assumes fits header. Not always true
+        if not hasattr(self,'outhdr'):
+            self.outhdr = copy(self.headers[0])
+            self.outhdr.update("COMBINE",True,"Is this a combination of files?")
+            self.outhdr.update("COMBMETH",self.lastmet[0],"Method used to combine")
+        for k in kwargs.keys():
+            self.outhdr.update(k,kwargs[k])
+
+    def write(self, filename, **kwargs):
+        """Write combined array to file. Add specified headers"""
+
+        from dataproc import AstroFile
+        if not hasattr(self,'lastmet'):
+            raise ValueError("write must be run after a combination method")
+        self.updatehdr(**kwargs)
+        return AstroFile(filename).writer(self.data, self.outhdr)
+        
+
+
+    def plotpix(self, coords, x=None):
+        """coords: Array that has to have the same size as dimensions in the data. Plot one pixel at specified coordinates. Optionally vs an ordered x-axis, which can be a string (for a header value) or list"""
+
+        import scipy as sp
+        import pylab as pl
+        arr=self.arrays[self.okframes]
+        hd = [h for h,o in zip(self.headers,self.okframes) if o]
+
+        if isinstance(x,basestring):
+            x = sp.array([h[x] for h in hd])
+        elif x is None:
+            if self.lastmet[0] == 'lininterp':
+                x = sp.array([h[self.lastmet[2]] for h in hd])
+            else:
+                x = sp.arange(len(hd))
+        elif not isinstance(x,(list,tuple)):
+            raise TypeError("X-axis can only be a string (for header field) or a list/tuple")
+
+        if (not isinstance(coords,list)) or (len(coords) != len(arr.shape)-1):
+            raise ValueError("coords must have the same size (%i) as dimensions in data (%i). %i, %i" % (len(coords),len(arr.shape)-1, not hasattr(coords,'__iter__'),
+                                                                                                 (len(coords) != len(arr.shape)-1)))
+
+        a=arr.T
+        for c in coords[::-1]:
+            a=a[c]
+
+        pl.plot(x,a,'bx')
+
+        if self.data is not None:
+            cb=self.data.T
+            for c in coords[::-1]:
+                cb=cb[c]
+            pl.plot(pl.xlim(),[cb]*2,'r')
+
+            if self.lastmet[0] == 'lininterp':
+                pl.plot([self.lastmet[1]]*2,pl.ylim(),'r')
+
+        pl.show()
+
+    def best(self, field='EXPTIME'):
+        """Finds the best function to use, return a tuple (fcnname, fcn, required_arguments)"""
+        import scipy as sp
+        hd = [h for h,o in zip(self.headers,self.okframes) if o]
+        fv = sp.array([(field in h and h[field]) for h in hd])
+
+        if (fv.all()) and (fv[0] != fv).any():
+            return ("linear interpolation vs '%s' (%.1f - %.1f)" %
+                    (field,  min(fv), max(fv))
+                    , self.lininterp, ('target=%.1f',))
+        if len(hd)>2:
+            return ("median", self.median, ())
+        else:
+            return ("mean", self.mean, ())
+
+    def auto(self, **kwargs):
+        """Executes the best normalization found by best()"""
+
+        name,fcn,reqarg=self.best()
+        for k in reqarg:
+            if k.split('=')[0] not in kwargs:
+                raise ValueError("Auto selected function <%s> needs mandatory argument (%s), but it was not specified" % (name, k))
+
+        print(" Auto-combining with %s. %s" %(name,
+                                              ', '.join([k%kwargs[k.split('=')[0]] for k in reqarg if k.split('=')[0] in kwargs])))
+        return fcn( **kwargs)
+
+
+
+    @_normalize
+    @_checksig
+    @_debias
+    def mean(self, sigclip=False, var=None, **kwargs):
+        """Combines the data using mean. Optionally sigma-clipping beyond the specified sigclip"""
+        if var is None:
+            var=self.sigmas[self.okframes]**2
+        arr=self.arrays[self.okframes]
+        sig=self.sigmas[self.okframes]
+        if sigclip:
+            mask = sigmask(arr,sigclip,0)
+            comb= (arr*mask).sum(0)/mask.sum(0, dtype=float)
+        else:
+            comb= arr.mean(0)
+        self.data=comb
+        self.lastmet=('mean',sigclip)
+        ##TD: Sigma for mean
+        self.sigma=None
+        self.updatehdr()
+        return comb
+
+
+    @_normalize
+    @_checksig
+    @_debias
+    def median(self, var=None, **kwargs):
+        """Combines the data using median"""
+        import scipy as sp
+        arr=self.arrays[self.okframes]
+        comb= sp.median(arr, 0)
+        self.data=comb
+        ##TD: Sigma for median
+        self.sigma=None
+        self.lastmet=('median',)
+        self.updatehdr()
+        return comb
+
+
+
