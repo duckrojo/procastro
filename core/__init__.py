@@ -38,3 +38,9 @@ __all__.extend(setall('misc_arr'))
 from misc_lists import *
 __all__.extend(setall('misc_lists'))
 
+from misc_examine import *
+__all__.extend(setall('misc_examine'))
+
+from misc_process import *
+__all__.extend(setall('misc_process'))
+

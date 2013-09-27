@@ -26,6 +26,14 @@ from functools import wraps as _wraps
 class _astrofile():
     """Valid astronomy data file format. Only filename is checked so far"""
 
+    def _checksortkey(f):
+        @_wraps(f)
+        def ret(self, *args, **kwargs):
+            if not hasattr(self, 'sortkey'):
+                raise ValueError("sortkey must be defined before trying to sort AstroFile")
+            return f(self,*args,**kwargs)
+        return ret
+
     def _checkfilename(f):
         @_wraps(f)
         def isfiledef(inst, *args, **kwargs):
@@ -96,8 +104,13 @@ class _astrofile():
         """Get header value for each of the fields specified in args. It can also accept a list as a single argument: getheaderval(field1,field2,...) or getheaderval([field1,field2,...])"""
         tp = self.type
         mapout = 'mapout' in kwargs and kwargs['mapout'] or None
-        if len(args)==1 and isinstance(args[0],(list,tuple)):
-            args = args[0]
+        if len(args)==1:
+            if isinstance(args[0],(list,tuple)): #if first argument is tuple use those values as searches
+                args = args[0]
+#if only 1 already-read header is requested, use a shortcut
+            elif args[0] in self.reqheads.keys():
+                return [self.reqheads[args[0]]]
+                    
         nkeys = [k for k in args if k not in self.reqheads.keys()]
         nhds = nkeys and self._geth[tp](self.filename, *nkeys, **kwargs) or []
         for k,v in zip(nkeys,nhds):
@@ -123,6 +136,30 @@ class _astrofile():
         import os.path as path
         return path.basename(self.filename)
 
+    @_checksortkey
+    def __lt__(self, other):
+        return self.getheaderval(self.sortkey)[0] < \
+            other.getheaderval(self.sortkey)[0]
+
+    @_checksortkey
+    def __le__(self, other):
+        return self.getheaderval(self.sortkey)[0] <= \
+            other.getheaderval(self.sortkey)[0]
+
+    @_checksortkey
+    def __gt__(self, other):
+        return self.getheaderval(self.sortkey)[0] > \
+            other.getheaderval(self.sortkey)[0]
+
+    @_checksortkey
+    def __eq__(self, other):
+        return self.getheaderval(self.sortkey)[0] == \
+            other.getheaderval(self.sortkey)[0]
+
+    @_checksortkey
+    def __ne__(self, other):
+        return self.getheaderval(self.sortkey)[0] != \
+            other.getheaderval(self.sortkey)[0]
 
 AstroFile = _astrofile()
 

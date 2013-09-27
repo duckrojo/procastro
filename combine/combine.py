@@ -19,13 +19,14 @@
 #
 
 from functools import wraps as _wraps
+from dataproc import gr_examine as _gr_examine
 
-
-class combine():
+class combine(_gr_examine):
     """"Many ways to combine data"""
 
     def __init__(self,astrodata,
                  header=None, flagfield='ORIGHEAD', 
+                 interact=False,
                  **kwargs):
         """astrodata can be a list of AstroFile or a list of array. Uses header of first AstroFile element if not supplied. Bias to be substracted can be specified with 'bias' keyword.  This bias can be optionally skiped if its has different sizes and 'biasskip' is set to True, otherwise raise exception"""
 
@@ -72,9 +73,14 @@ class combine():
         print(" converting to scipy")
         self.arrays = sp.array(arrays)
         ##TD: Get real sigmas given poisson!
-        self.sigmas = self.arrays*0
+        self.sigmas = sp.zeros(self.arrays.shape)
+        if self.sigmas.any():
+            raise ValueError("NaN are found self.sigmas!")
         self.headers = heads
         self.okframes = sp.zeros(len(arrays))==0
+        if interact:
+            print(" selecting good frames")
+            self.showeach('Select valid frames', interact=True)
         self.auto(**kwargs)
 
 
@@ -86,10 +92,13 @@ class combine():
             ret = f(instance, *args, **kwargs)
             if 'normalize' in kwargs and  kwargs['normalize']:
                 if kwargs['normalize']=='mean':
-                    ret /= ret.mean()
+                    norm= ret.mean()
                 else: #use median as default
-                    ret /= sp.median(ret)
-            return ret
+                    norm= sp.median(ret)
+            else:
+                norm=1
+            instance.norm_fct=norm
+            return ret/norm
         return donorm
 
     def _debias(f):
@@ -252,45 +261,6 @@ class combine():
         
 
 
-    def plotpix(self, coords, x=None):
-        """coords: Array that has to have the same size as dimensions in the data. Plot one pixel at specified coordinates. Optionally vs an ordered x-axis, which can be a string (for a header value) or list"""
-
-        import scipy as sp
-        import pylab as pl
-        arr=self.arrays[self.okframes]
-        hd = [h for h,o in zip(self.headers,self.okframes) if o]
-
-        if isinstance(x,basestring):
-            x = sp.array([h[x] for h in hd])
-        elif x is None:
-            if self.lastmet[0] == 'lininterp':
-                x = sp.array([h[self.lastmet[2]] for h in hd])
-            else:
-                x = sp.arange(len(hd))
-        elif not isinstance(x,(list,tuple)):
-            raise TypeError("X-axis can only be a string (for header field) or a list/tuple")
-
-        if (not isinstance(coords,list)) or (len(coords) != len(arr.shape)-1):
-            raise ValueError("coords must have the same size (%i) as dimensions in data (%i). %i, %i" % (len(coords),len(arr.shape)-1, not hasattr(coords,'__iter__'),
-                                                                                                 (len(coords) != len(arr.shape)-1)))
-
-        a=arr.T
-        for c in coords[::-1]:
-            a=a[c]
-
-        pl.plot(x,a,'bx')
-
-        if self.data is not None:
-            cb=self.data.T
-            for c in coords[::-1]:
-                cb=cb[c]
-            pl.plot(pl.xlim(),[cb]*2,'r')
-
-            if self.lastmet[0] == 'lininterp':
-                pl.plot([self.lastmet[1]]*2,pl.ylim(),'r')
-
-        pl.show()
-
     def best(self, field='EXPTIME'):
         """Finds the best function to use, return a tuple (fcnname, fcn, required_arguments)"""
         import scipy as sp
@@ -349,8 +319,10 @@ class combine():
         """Combines the data using median"""
         import scipy as sp
         arr=self.arrays[self.okframes]
+        print arr[:,200,200]
         comb= sp.median(arr, 0)
         self.data=comb
+        print self.data[200,200]
         ##TD: Sigma for median
         self.sigma=None
         self.lastmet=('median',)
@@ -359,3 +331,22 @@ class combine():
 
 
 
+    def plotpix(self, coords, *args, **kwargs):
+        """plot one pixel against header value if lininterp or frame number otherwise. Plot resultant combination if it was done"""
+
+        if hasattr(self,'lastmet') and self.lastmet[0] == 'lininterp':
+            x = sp.array([h[self.lastmet[2]] for h in hd])
+        else:
+            x = None
+
+        ax=_gr_examine.plotpix(self, coords, x, **kwargs)
+
+        if hasattr(self,'data') and coords is not None and self.data is not None:
+            cb=self.data.T
+            for c in coords[::-1]:
+                cb=cb[c]
+            print cb*self.norm_fct
+            ax.plot(ax.get_xlim(),[cb]*2,'r')
+
+            if self.lastmet[0] == 'lininterp':
+                ax.plot([self.lastmet[1]]*2,ax.get_ylim(),'r')
