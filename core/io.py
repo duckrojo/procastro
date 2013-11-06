@@ -1,4 +1,5 @@
 #
+# dataproc - general data processing routines
 #
 # Copyright (C) 2013 Patricio Rojo
 #
@@ -18,33 +19,25 @@
 #
 #
 
-def setall(var):
-    exec('tmp=%s' % var)
-    _all=[m for m in dir(tmp) if m[0]!='_']
-    #_all.remove(var)
-    return _all
+from __future__ import print_function
+
+class _printdebug():
+    def __init__(self, verblevel=0):
+        self.setv(verblevel)
+        pass
+
+    def setv(self, verblevel):
+        self.verblevel=verblevel
 
 
-__all__ = []
+    def __call__(self, string, val=1):
+        if (val<=self.verblevel):
+            print ("DEBUG(", end="")
+            print (string, end="")
+            print (")")
 
-from io import *
-__all__.extend(setall('io'))
 
-from io_file import *
-__all__.extend(setall('io_file'))
 
-from io_dir import *
-__all__.extend(setall('io_dir'))
 
-from misc_arr import *
-__all__.extend(setall('misc_arr'))
 
-from misc_lists import *
-__all__.extend(setall('misc_lists'))
-
-from misc_examine import *
-__all__.extend(setall('misc_examine'))
-
-from misc_process import *
-__all__.extend(setall('misc_process'))
-
+PrintDebug = _printdebug()

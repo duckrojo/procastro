@@ -19,6 +19,18 @@
 #
 
 
+from io import PrintDebug
+
+def _actionlog(f):
+    from functools import wraps
+    @wraps(f)
+    def tolog(self, *args, **kwargs):
+        ret= f(self, *args, **kwargs)
+        self.actionlog.append((f.__name__,args))
+        return ret
+    return tolog
+
+
 class process2d():
     """Provides some manipulation to an NDData array, including the capacity to reset to original condition"""
     
@@ -50,12 +62,24 @@ class process2d():
     def reset(self, forcedata=None):
         """Resets data array to its original condition"""
         from copy import deepcopy
+        self.actionlog = []
         if forcedata:
             self.data=forcedata
         else:
             self.data = deepcopy(self.orig)
 
 
+    @_actionlog
+    def meanfilter(self, radius):
+        import scipy.signal as sg
+        import scipy as sp
+
+        a = sg.medfilt2d(sp.array(self.data.data,dtype=float), int(2*radius+1))
+        self.data.data = a
+        return self
+
+
+    @_actionlog
     def medianfilter(self, radius):
         import scipy.signal as sg
         import scipy as sp
@@ -65,14 +89,16 @@ class process2d():
         return self
 
 
-    def difference(self,radius):
+    @_actionlog
+    def difference(self):
 
         self.data.data=self.orig.data-self.data.data
 
         return self
 
 
-    def ratio(self,radius):
+    @_actionlog
+    def ratio(self):
 
         self.data.data=self.orig.data/self.data.data
 
@@ -84,3 +110,6 @@ class process2d():
         print (self)
         print (args)
         print (kwargs)
+
+
+

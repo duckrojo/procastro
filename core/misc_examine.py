@@ -22,7 +22,9 @@
 from __future__ import print_function
 import misc_process as mp
 
-
+from io import PrintDebug
+#set verbose output
+PrintDebug.setv(2)
 
 
 def _refreshgraph(f):
@@ -30,7 +32,14 @@ def _refreshgraph(f):
     @wraps(f)
     def ret(*args, **kwargs):
         toreturn=f(*args, **kwargs)
-        f.im_self.draw(**kwargs)
+
+        # Following is to circumvent an identified Python-language issue: when using pythonized decorator  (@_refreshgraph) then the function is received as having its first element as 'self'. However, when using brute-force decoration (object.function = _refreshgraph(object.function), in function __init__), the function is received as a method and self is thus in f.im_self
+        if hasattr(f,'im_self'):
+            self=f.im_self
+        else:
+            self=args[0]
+
+        self.draw(**kwargs)
         return toreturn
     return ret
 
@@ -44,6 +53,7 @@ class axexamine2d(mp.process2d):
 
     def __init__(self, data, axes,
                  datapointers=None, linked=None,
+                 showtitle=True,
                  mode='cmap', **kwargs):
         """
 Initializes examine2d by creating figure and then calling the initialization of process2d
@@ -62,21 +72,37 @@ Initializes examine2d by creating figure and then calling the initialization of 
         if axes is None:
             raise ValueError("Axes need to be specified for axexamine!. Use examine if you just want to plot one frame")
         self.fig = axes.figure
+        self.prop = {}
         self.axes = axes
         #TODO: test what happens with axis ratio
         #ax.set_aspect('equal')
         self._defmode=mode
+        if mode=='cmap':
+            self.prop['xlabel'] = 'column'
+            self.prop['ylabel'] = 'row'
+        elif mode=='rows':
+            self.prop['xlabel'] = 'row'
+            self.prop['ylabel'] = ''
+        elif mode=='cols':
+            self.prop['xlabel'] = 'column'
+            self.prop['ylabel'] = ''
 
-        #All the plots that need to get updated together
+
+        #All the plots that need to get updated together (after this)
         if isinstance(linked,(list,tuple)):
             self.linked=linked
         else:
             self.linked=[]
 
+        #which labels to show
+        self.showlabels=['xlabel','ylabel']
+        if showtitle:
+            self.showlabels.append('title')
+
         #to plot reference Y,X
         self.refyx=[data.shape[0]/2,data.shape[1]/2]
 
-        #decorate inherited algorithms
+        #brute-force decorate inherited algorithms
         for name, object in inspect.getmembers(self, inspect.ismethod):
             if name[0] !='_' and name in mp.process2d.__dict__ and name not in ["reset"]:
                 setattr(self,name, _refreshgraph(object))
@@ -92,6 +118,7 @@ Initializes examine2d by creating figure and then calling the initialization of 
         """
 
         mp.process2d.reset(self, forcedata=forcedata)
+        self.toshow=self.data
         self.draw()
 
 
@@ -128,7 +155,7 @@ Draw a new plot using the standard mode or as specified by the user, which then 
         if not hasattr(self, "draw_"+mode):
             raise("Mode '%s' is not available. Choose from: %s" % (mode,', '.join([m[5:] for m in dir(self) if m[:5]=="draw_"])))
         getattr(self,"draw_"+mode)(**kwargs)
-        #defmode hast to be set after draw_*, so that it can be used to check whether the type has changed (except for the default type cmpap
+        #defmode hast to be set after draw_*, so that it can be used to check whether the type has changed (except for the default type cmap
         #todo: allow cmap to profit from checking _defmode to see if it was run.
         self._defmode=mode
 
@@ -147,33 +174,55 @@ Draw a new plot using the standard mode or as specified by the user, which then 
         """
 
         self.cla()
-        self.imdata = self.axes.imshow(self.data, origin='lower')
+        self.imdata = self.axes.imshow(self.toshow, origin='lower')
+
+        #print labels
+        if 'title' in self.showlabels:
+            if self.toshow is self.orig:
+                self.axes.set_title('Original image')
+            else:
+                self.axes.set_title("Processed (%s)" % ';'.join(["%s%s" % (ac[:3],','.join(map(str,prm))) for ac,prm in self.actionlog]))
+        else:
+            self.axes.set_title('')
+        if 'xlabel' in self.showlabels:
+            self.axes.set_xlabel(self.prop['xlabel'])
+        if 'ylabel' in self.showlabels:
+            self.axes.set_ylabel(self.prop['ylabel'])
 
         self.changeprops(**kwargs)
 
 
     def draw_rows(self, add=False):
-        """Draw at a fixed column"""
+        """Draw at a fixed column
+        :param add:  If True, then add new plot. Otherwise, just update the data of the last cut
+"""
         import scipy as sp
 
-        rows = self.data[self.refy,:]
-        xaxis = sp.arange(self.data.shape[1])
+        rows = self.toshow[self.refy,:]
+        xaxis = sp.arange(self.toshow.shape[1])
 
         return self._draw1d(xaxis, rows, add,'rows')
 
 
     def draw_cols(self, add=False):
-        """Draw at a fixed row"""
+        """Draw at a fixed row
+        :param add:  If True, then add new plot. Otherwise, just update the data of the last cut
+"""
         import scipy as sp
 
-        cols = self.data[:,self.refy]
-        xaxis = sp.arange(self.data.shape[0])
+        cols = self.toshow[:,self.refy]
+        xaxis = sp.arange(self.toshow.shape[0])
 
         return self._draw1d(xaxis, cols, add,'cols')
 
 
     def _draw1d(self,x,y,add,name):
-        """Only to be called by draw_rows() or draw_cols()"""
+        """Only to be called by draw_rows() or draw_cols()
+        :param add:  If True, then add new plot. Otherwise, just update the data of the last cut
+        :param name: type of plot, either 'cols' or 'rows'
+        :param x: X-axis
+        :param y: Y-axis
+"""
         if self._defmode!=name:  #new instance
             add=True
             self.cla()
@@ -185,8 +234,22 @@ Draw a new plot using the standard mode or as specified by the user, which then 
 
 
     @_refreshgraph
+    def showorig(self):
+        """Select original image to plot"""
+
+        self.toshow=self.orig
+
+    @_refreshgraph
+    def showproc(self):
+        """Select processed image to plot"""
+
+        self.toshow=self.data
+
+
+    @_refreshgraph
     def updaterefx(self, x):
         """change x-reference"""
+        PrintDebug("Setting X-ref: %i" %x)
         self.refyx[1]=x
         return self
 
@@ -194,7 +257,8 @@ Draw a new plot using the standard mode or as specified by the user, which then 
     @_refreshgraph
     def updaterefy(self, y):
         """change y-reference"""
-        self.refyx[0]=y
+        PrintDebug("Setting Y-ref: %i" % y)
+        self.refyx[0]=yq
         return self
 
 
@@ -264,7 +328,7 @@ Draw a new plot using the standard mode or as specified by the user, which then 
         if len(scprms) < avail_contrast[scmeth][1]:
             raise ValueError("Not enough arguments supplied to scmeth (%i needed): %s" %
                              (avail_contrast[scmeth][1], ', '.join([str(p) for p in scprms])))
-        mn, mx = avail_contrast[scmeth][0](self.data, *scprms)
+        mn, mx = avail_contrast[scmeth][0](self.toshow, *scprms)
         #todo change contrast in 3d image
         self.imdata.set_clim(vmin=mn, vmax=mx)
 
@@ -308,19 +372,27 @@ in the self.action dictionary
         for mode,encod in [["keystrokes", "k"],["mouse buttons","m"]]:
             if self.ev_cid[encod]:
                 print("Available %s:" % (mode,))
-                for k in self.action.keys():
+                for k,v in sorted(self.action.items()):
                     if k[0]==encod:
-                        print(" %s: %s%s" % (k[1:], self.action[k][1],
-                                             (len(self.action[k][2])>0 and "\n   accepts (%s)" % (', '.join(self.action[k][2],)) or "")))
+                        stroke = k[1:]
+                        fname = v[1]
+                        opcs = v[2]
+                        oplist = len(opcs)>0 and "\n   accepts (%s)" % (', '.join(map(lambda x:x[0],opcs))) or ""
+                        print(" %s: %s%s" % (stroke, fname, oplist))
         return None
 
 
-    def interactive(self, iface):
+    def interactive(self, iface, updatelists=None):
         """
 Starts interactive capture on specified interface
         :param iface: it can be 'both', 'mouse', or 'keyboard' (or just its first initial)
+        :param updatelists: is a 3-element tuple, that should indicate (as a list of strings (function names) the functions that require updatex, updatey, and updatexy, respectively.  
+
         """
         import matplotlib.pyplot as plt
+
+        if updatelists is None:
+            updatelists=[]
 
         if not hasattr(self, 'fig'):
             raise ValueError("Keyboard events capture must be called after initializing .fig attribute with a matplotlib.pyplot.figure")
@@ -387,27 +459,29 @@ Runs a mouse or keyboard event, it must be called from capturing functions: _key
             else:
                 raise ValueError("Each of the list elements of the arguments (field 2 of the action dictionary) can be either a 'description' or a ('description', type) tuple")
             if a.lower() == 'x':
-                val=t(event.x)
-                xl=event.inaxes.xlim(val)
+                val=t(event.xdata)
+                xl=event.inaxes.get_xlim()
                 if not (xl[0]<val<xl[1]):
                     return None
                 args.append(val)
             elif a.lower() == 'y':
-                val=t(event.y)
-                yl=event.inaxes.xlim(val)
+                val=t(event.ydata)
+                yl=event.inaxes.get_xlim()
                 if not (yl[0]<val<yl[1]):
                     return None
                 args.append(val)
             else:
                 args.append(t(input(' %s? '%(a,))))
 
+        #Executes the function requested by the hotkey, either on the axes object (priority) or the figure object
         if not hasattr(runax,fcn):
             if not hasattr(self,fcn):
                 raise ValueError("Hotkey '%s' provides '%s', which was not enabled on the figure nor axes" %(key, fcn))
             dummy=getattr(self,fcn)(*args)
         else:
-            print ("Running '%s'" % (fcn,))
+            print ("Running '%s'... " % (fcn,), end='')
             dummy=getattr(runax,fcn)(*args)
+            print ("done")
 
         return self
 
@@ -460,13 +534,13 @@ Adds action for either keyboard or mouse, it must be called from addkeyaction or
         :param doc: Function description
         :param argsd: Description of each argument to 'fcn'
         """
-        return self._addaction('k'+key, fcn, doc, argsd,onlymodes)
+        return self._addaction('k'+key, fcn, doc, argsd, onlymodes)
 
 
     def addbuttonaction(self, button, fcn, doc="No info", argsd=None, onlymodes=None):
         """Adds a function capture to a mouse event"""
 
-        return self._addaction('m'+button, fcn, doc, argsd), onlymodes
+        return self._addaction('m'+button, fcn, doc, argsd, onlymodes)
 
 
 
@@ -481,10 +555,16 @@ class examine2d(kmevents):
         _useraction={'m':('medianfilter','Perform a median filter of the image',[['filter radius',int]]),
                      'd':('difference','Subtract processed from original image',[]),
                      'f':('ratio','Divide processed from original image',[]),
-                     'r':('reset','reset image to its original look',[]),
+                     'r':('reset','Reset image to its original look',[]),
+                     'o':('showorig','Show original image',[]),
+                     'p':('showproc','Show processed image',[]),
+                     'q':('quit','Close figure', []),
                      'x':('updaterefx','Update X reference',['x'],['cmap']),
                      'y':('updaterefy','Update Y reference',['y'],['cmap']),
+                     #'keystroke':{'function (can be in axes (priority) or figure)',"description",[['var',var_type], ...], ['only in modes', ...]}
                      }
+        update = {'x': ,
+                  }
 
         import matplotlib.pyplot as plt
         if multi:
@@ -509,6 +589,11 @@ class examine2d(kmevents):
     def show(self):
         import matplotlib.pyplot as plt
         plt.show()
+
+    def quit(self):
+        """Closes the window"""
+        import matplotlib.pyplot as plt
+        plt.close(self.fig)
 
 
     def __getattr__(self, item):
@@ -828,3 +913,5 @@ def _drawax(axes, data, ok):
 
     for l in axes.lines:
         plt.setp(l, visible=not ok)
+
+
