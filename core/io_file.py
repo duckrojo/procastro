@@ -170,13 +170,13 @@ AstroFile = _astrofile()
 #
 ##################################
 
-def _fits_reader(filename, hdu=0, datahead=True):
+def _fits_reader(filename, hdu=0, datahead=False):
     import pyfits as pf
     fl = pf.open(filename)[hdu]
     if datahead:
         return fl.data, fl.header
     else:
-        return fl
+        return fl.data
 def _fits_writer(filename, data, header=None):
     import pyfits as pf
     return pf.writeto(filename, data, header, clobber=True)

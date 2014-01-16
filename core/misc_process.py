@@ -32,41 +32,53 @@ def _actionlog(f):
 
 
 class process2d():
-    """Provides some manipulation to an NDData array, including the capacity to reset to original condition"""
+    """Provides some manipulation to an NDData array, including the capacity to reset to original condition
+"""
     
-    def __init__(self, data, datapointers=None, header=None, **kwargs):
-        """Initialize array and backup.  """
+    def __init__(self, data, attrtoclone=None, header=None, **kwargs):
+        """Initialize array and backup. 
+        :param data: it can be an array, a filename, or an object to clone. If the latter, attrtoclone is madatory
+        :param attrtoclone: list of attributes to clone. If specified, data must be object to clone from.
+    """
         import astropy.nddata as nd
         from dataproc import AstroFile
 
+        if not hasattr(self, 'props'):
+            self.props={}
+
+        #If clone make sure both attrtoclone is specified and data is the appropriate object class
         if isinstance(data, basestring): #filename is given
             data, header2=AstroFile(data).reader(datahead=True)
             if header is None:
                 header=header2
-        if (datapointers is not None):
-            if (isinstance(datapointers,(list,tuple)) and
-                len(datapointers)==2 and
-                map(lambda x: isinstance(x, nd.NDData), datapointers).all()):
-                self.orig=datapointers[0]
-                self.reset(forcedata=datapointers[1])
-            else:
-                raise ValueError("datapointers need to be a 2-element list or tuple")
 
+        #do the clonning
+        if attrtoclone is not None and not isinstance(data, process2d):
+            raise ValueError("data must be a process2d instance whenever attrtoclone is specified and viceversa")
+        if isinstance(data, process2d):
+            if 'orig' not in attrtoclone:
+                attrtoclone.append('orig')
+            self.props['clonedattr']=[]
+            self.props['clonedfrom']=data
+            for a in attrtoclone:
+                setattr(self, a, getattr(data,a))
+                self.props['clonedattr'].append(a)
+            if 'data' not in self.attrtoclone:
+                self.reset()
+        #initiailize regularly
         else:
             self.orig = nd.NDData(data)
-            if header is not None:
-                self.orig.meta=dict(header)
             self.reset()
 
+        if header is not None:
+            self.orig.meta=dict(header)
 
-    def reset(self, forcedata=None):
+
+    def reset(self):
         """Resets data array to its original condition"""
         from copy import deepcopy
         self.actionlog = []
-        if forcedata:
-            self.data=forcedata
-        else:
-            self.data = deepcopy(self.orig)
+        self.data = deepcopy(self.orig)
 
 
     @_actionlog

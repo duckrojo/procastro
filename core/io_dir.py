@@ -22,6 +22,7 @@ from functools import wraps as _wraps
 from io_file import AstroFile
 
 class astrodir():
+    """Collection of AstroFile"""
     def __init__(self, path):
         import os
         import glob
@@ -83,7 +84,7 @@ class astrodir():
         return self.files.__len__()
 
     def filter(self, *args, **kwargs):
-        """Filter files according to those whose filter return True to the given arguments. What the filter does is type-dependent, check docstring of a single element."""
+        """Filter files according to those whose filter return True to the given arguments. What the filter does is type-dependent in each file. Check docstring of a single element."""
         from copy import copy
         new = copy(self)
         new.files = [f for f in self if f.filter(*args,**kwargs)]

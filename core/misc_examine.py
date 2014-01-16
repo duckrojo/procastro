@@ -38,7 +38,6 @@ def _refreshgraph(f):
             self=f.im_self
         else:
             self=args[0]
-
         self.draw(**kwargs)
         return toreturn
     return ret
@@ -52,7 +51,7 @@ class axexamine2d(mp.process2d):
 
 
     def __init__(self, data, axes,
-                 datapointers=None, linked=None,
+                 attrtoclone=None, linked=None,
                  showtitle=True,
                  mode='cmap', **kwargs):
         """
@@ -72,23 +71,13 @@ Initializes examine2d by creating figure and then calling the initialization of 
         if axes is None:
             raise ValueError("Axes need to be specified for axexamine!. Use examine if you just want to plot one frame")
         self.fig = axes.figure
-        self.prop = {}
+        self.props = {}
         self.axes = axes
         #TODO: test what happens with axis ratio
         #ax.set_aspect('equal')
         self._defmode=mode
-        if mode=='cmap':
-            self.prop['xlabel'] = 'column'
-            self.prop['ylabel'] = 'row'
-        elif mode=='rows':
-            self.prop['xlabel'] = 'row'
-            self.prop['ylabel'] = ''
-        elif mode=='cols':
-            self.prop['xlabel'] = 'column'
-            self.prop['ylabel'] = ''
+        self.initprops()
 
-
-        #All the plots that need to get updated together (after this)
         if isinstance(linked,(list,tuple)):
             self.linked=linked
         else:
@@ -108,7 +97,7 @@ Initializes examine2d by creating figure and then calling the initialization of 
                 setattr(self,name, _refreshgraph(object))
 
         #following includes a call to reset
-        mp.process2d.__init__(self,data, datapointers=datapointers)
+        mp.process2d.__init__(self, data, attrtoclone=attrtoclone)
 
 
 
@@ -117,7 +106,7 @@ Initializes examine2d by creating figure and then calling the initialization of 
         :param forcedata:  Force data pointer to specified value rather than copy from .orig
         """
 
-        mp.process2d.reset(self, forcedata=forcedata)
+        mp.process2d.reset(self)
         self.toshow=self.data
         self.draw()
 
@@ -132,13 +121,14 @@ Initializes examine2d by creating figure and then calling the initialization of 
         if not isinstance(axes,ax.Axes):
             raise ValueError("A valid axes need to be specified to create a linked examine2d instance")
 
-        new = examine2d(None,datapointers=[self.orig,self.data], linked=self.linked+[self], axes=axes, **kwargs)
-        for l in self.linked:
-            l.linked+=[new]
-        self.linked+=[new]
+        new = axexamine2d(self, attrtoclone=['orig', 'data'], 
+                          axes=axes, **kwargs)
+        props = {'changeon': ['x', 'y', 'data'],
+                 }
+        for l,p in self.linked:
+            l.linked.append([new, props])
+        self.linked.append([new, props])
 
-        if linkrefxy:
-            new.refyx=self.refyx
 
         return new
 
@@ -185,9 +175,9 @@ Draw a new plot using the standard mode or as specified by the user, which then 
         else:
             self.axes.set_title('')
         if 'xlabel' in self.showlabels:
-            self.axes.set_xlabel(self.prop['xlabel'])
+            self.axes.set_xlabel(self.props['xlabel'])
         if 'ylabel' in self.showlabels:
-            self.axes.set_ylabel(self.prop['ylabel'])
+            self.axes.set_ylabel(self.props['ylabel'])
 
         self.changeprops(**kwargs)
 
@@ -258,7 +248,7 @@ Draw a new plot using the standard mode or as specified by the user, which then 
     def updaterefy(self, y):
         """change y-reference"""
         PrintDebug("Setting Y-ref: %i" % y)
-        self.refyx[0]=yq
+        self.refyx[0]=y
         return self
 
 
@@ -287,6 +277,24 @@ Draw a new plot using the standard mode or as specified by the user, which then 
         for l in self._xlines:
             plt.setp(l, visible=xout)
 
+    def initprops(self):
+        self.props={'xl':None,  #auto xlim
+                    'yl':None,  #auto ylim
+                    'contrast': ('zscale',), #Zscale contrast
+                    'cmap': None, #default cmap
+                    'xout':False, #Cross-out
+                    }
+        if self._defmode=='cmap':
+            self.props['xlabel'] = 'column'
+            self.props['ylabel'] = 'row'
+        elif self._defmode=='rows':
+            self.props['xlabel'] = 'row'
+            self.props['ylabel'] = ''
+        elif self._defmode=='cols':
+            self.props['xlabel'] = 'column'
+            self.props['ylabel'] = ''
+
+
 
     def changeprops(self, pl_resetprops=False, **kwargs):
         """
@@ -301,13 +309,8 @@ Draw a new plot using the standard mode or as specified by the user, which then 
         import misc_arr as ma
         import matplotlib.pyplot as plt
 
-        if (not hasattr(self,'props')) or pl_resetprops:
-            self.props={'xl':None,  #auto xlim
-                        'yl':None,  #auto ylim
-                        'contrast': ('zscale',), #Zscale contrast
-                        'cmap': None, #default cmap
-                        'xout': False, #not X-out
-                        }
+        if pl_resetprops:
+            self.initprops()
 
         for k in kwargs.keys():
             if k[:3]=='pl_' and k[3:] in self.props:
@@ -346,7 +349,9 @@ Draw a new plot using the standard mode or as specified by the user, which then 
         if self.props['cmap'] is not None:
             self.imdata.set_cmap(self.props['cmap'])
 
+        PrintDebug("Before drawing canvas")
         self.fig.canvas.draw()
+        PrintDebug("After drawing canvas")
 
 
 
@@ -534,6 +539,7 @@ Adds action for either keyboard or mouse, it must be called from addkeyaction or
         :param doc: Function description
         :param argsd: Description of each argument to 'fcn'
         """
+        
         return self._addaction('k'+key, fcn, doc, argsd, onlymodes)
 
 
@@ -555,16 +561,17 @@ class examine2d(kmevents):
         _useraction={'m':('medianfilter','Perform a median filter of the image',[['filter radius',int]]),
                      'd':('difference','Subtract processed from original image',[]),
                      'f':('ratio','Divide processed from original image',[]),
-                     'r':('reset','Reset image to its original look',[]),
+                     'i':('reset','Reset image to its original look',[]),
                      'o':('showorig','Show original image',[]),
                      'p':('showproc','Show processed image',[]),
                      'q':('quit','Close figure', []),
-                     'x':('updaterefx','Update X reference',['x'],['cmap']),
-                     'y':('updaterefy','Update Y reference',['y'],['cmap']),
+                     'x':('xcut','Make an vertical cut at specified x-location of the image',['x'],['cmap']),
+                     'y':('ycut','Make an horizontal cut at specified y-location  of the image',['y'],['cmap']),
+                     'r':('rprofile','Show the radial profile at specified x-y location',['x','y'],['cmap','rows','cols']),
                      #'keystroke':{'function (can be in axes (priority) or figure)',"description",[['var',var_type], ...], ['only in modes', ...]}
                      }
-        update = {'x': ,
-                  }
+#        update = {'x': ,
+#                  }
 
         import matplotlib.pyplot as plt
         if multi:
@@ -581,10 +588,38 @@ class examine2d(kmevents):
             for k,v in _useraction.items():
                 self.addkeyaction(k,*v)
 
-        ax = fig.add_subplot(111)
-        self.axex = [axexamine2d(data, ax, mode=mode)]
-
+        #setup layout
+        self.setlayout(data)
         self.show()
+
+    def setlayout(self, data,
+                  vertcut=False, horzcut=False,
+                  zoom=False, 
+                  info=False,
+                  aux=False,
+                  mode='cmap'):
+
+
+        #extent and location of main plot
+        nh=3
+        nv=3
+        sv=0
+        sh=0
+
+        if vertcut:
+            nh+=1
+        if horzcut:
+            nv+=1
+        if info:
+            nv+=1
+            sv=1
+
+        mainax=self.fig.add_axes([0.1+0.87*sh/float(nh),
+                             0.1+0.87*sv/float(nv),
+                             3*0.87/float(nh),
+                             3*0.87/float(nv)])
+        self.axex = [axexamine2d(data, mainax, mode=mode)]
+
 
     def show(self):
         import matplotlib.pyplot as plt
