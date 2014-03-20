@@ -23,14 +23,56 @@ import scipy as sp
 
 class AstroCalc(object):
 
+    # TO DO: REVIEW AND CORRECT !!
+    def imagereduction(self, image, bias, flat, dark=None):
+        """Returns a reduced image.
+
+        :param image: image to be reduced
+        :type image: array
+        :param bias: bias image for reduction
+        :type bias: array
+        :param flat: flat image for reduction
+        :type flat: array
+        :param dark: dark image for reduction
+        :type dark: array
+        :rtype: array
+        """
+
+        if dark is None:
+            return (image - bias) / flat
+        else:
+            return (image - dark) / (flat - bias)
+
+    def masterimage(self, image_list, mode='median'):
+        """Returns a calibration master image.
+
+        :param image_list: list of calibration images
+        :type image_list: list of arrays
+        :param mode: obtention mode for the master image (the possible values are 'median' (default) and 'mean').
+        :type mode: str
+        :rtype: array
+        """
+
+        if len(image_list) == 0:
+            return None
+        if mode == 'median':
+            return sp.median(image_list, axis=0)  # MEDIAN
+        elif mode == 'mean':
+            return sp.mean(image_list, axis=0)  # MEAN
+        else:
+            raise ValueError(
+                "Unknown mode '%s' for master image obtention" %
+                mode)
+
     @staticmethod
     def centraldistances(data, c):
-        """
-        Computes distances for every matrix position from a central point c
+        """Computes distances for every matrix position from a central point c.
+
         :param data: array
         :type data: array
         :param c: center coordinates
-        :type c: [float,floar]
+        :type c: [float,float]
+        :rtype: array
         """
 
         dy, dx = data.shape
@@ -39,14 +81,15 @@ class AstroCalc(object):
 
     @staticmethod
     def bipol(coef, x, y):
-        """
-        Polynomial fit for sky sustraction
+        """Polynomial fit for sky sustraction
+
         :param coef: sky fit polynomial coefficientes
         :type coef: array
         :param x: horizontal coordinates
         :type x: array
         :param y: vertical coordinates
         :type y: array
+        :rtype: array
         """
 
         plane = sp.zeros(x.shape)
@@ -63,8 +106,8 @@ class AstroCalc(object):
 
     @staticmethod
     def phot_error(phot, sky, n_pix_ap, n_pix_sky, gain, ron=None):
-        """
-        Calculates the photometry error
+        """Calculates the photometry error
+
         :param phot: star flux
         :type phot: float
         :param sky: sky flux
@@ -77,6 +120,7 @@ class AstroCalc(object):
         :type gain: float
         :param ron: read-out-noise
         :type ron: float (default value: None)
+        :rtype: float
         """
 
         if ron is None:
@@ -91,8 +135,8 @@ class AstroCalc(object):
         return phot / SNR
 
     def subarray(self, arr, y, x, rad):
-        """
-        Returns a subarray of arr (with size 2*rad+1 and centered in (y,x))
+        """Returns a subarray of arr (with size 2*rad+1 and centered in (y,x))
+
         :param arr: original array
         :type arr: array
         :param y: vertical center
@@ -101,13 +145,14 @@ class AstroCalc(object):
         :type x: int
         :param rad: radius
         :type rad: int
+        :rtype: array
         """
 
         return arr[(y - rad):(y + rad + 1), (x - rad):(x + rad + 1)]
 
     def apphot(self, data, cs, sap, skydata, deg=3, gain=None, ron=None):
-        """
-        Do aperture photometry on data array
+        """Do aperture photometry on data array
+
         :param data: image
         :type data: array
         :param cs: coordinates
@@ -122,6 +167,7 @@ class AstroCalc(object):
         :type gain: float
         :param ron: read-out-noise
         :type ron: float (default value: None)
+        :rtype: [float,float,[coeff_list,int]]
         """
 
         d = self.centraldistances(data, cs)
@@ -164,10 +210,11 @@ class AstroCalc(object):
         return phot, error, [fit, n_pix_sky]
 
     def centroid(self, arr):
-        """
-        Find centroid of small array
+        """Find centroid of small array
+
         :param arr: array
         :type arr: array
+        :rtype: [float,float]
         """
 
         med = sp.median(arr)

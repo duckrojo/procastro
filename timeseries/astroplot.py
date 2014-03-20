@@ -24,8 +24,8 @@ import scipy as sp
 class AstroPlot(object):
 
     def __init__(self, mjd, flx, err, targets):
-        """
-        AstroPlot object constructor.
+        """AstroPlot object constructor.
+
         :param mjd: date array
         :type mjd: array
         :param flx: flux array dictionary
@@ -34,6 +34,7 @@ class AstroPlot(object):
         :type err: dict
         :param targets: coordinates array dictionary
         :type targets: dict
+        :rtype: AstroPlot
         """
 
         self.mjd = mjd
@@ -42,15 +43,16 @@ class AstroPlot(object):
         self.cooxy = targets
         self.ratio = None
 
-    def doratio(self, trg='0', ref=None, normframes=None):
-        """
-        Computes ratio of science and reference
+    def doratio(self, trg, ref=None, normframes=None):
+        """Computes ratio of science and reference
+
         :param trg: label name of target star
         :type trg: string (key of flx and coo)
         :param ref: list of stars to be used as reference
         :type ref: None or list of strings. If None, then all stars except target
         :param normframes: list of frames to normalize (for example, in case only out of transit want to be considered)
         :type normframes: None or boolean array. If None, then normalize by all frames
+        :rtype: None
         """
 
         from scipy import asarray
@@ -60,6 +62,8 @@ class AstroPlot(object):
             return None
         if ref is None:
             ref = [k for k in self.flx.keys() if k != trg]
+        if len(ref) is 0:
+            return None
 
         science = asarray(self.flx[trg])
         reference = science * 0.0

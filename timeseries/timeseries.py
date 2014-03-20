@@ -18,6 +18,12 @@
 #
 #
 
+# *******************************************************************
+# AGREGAR PYTHON-PATH CON DIRECCION DEFINITIVA
+import sys
+sys.path.append('/home/fcaro/Dropbox/Pato')
+# sys.path.append('/home/fcaro/SVN')
+# *******************************************************************
 
 from astrocalc import AstroCalc
 from astroplot import AstroPlot
@@ -31,9 +37,8 @@ import dataproc as dp
 
 class Timeseries(AstroCalc):
 
-    """
-    Timeseries class inherited from AstroCalc class.
-    The purpose of this class is to organize all the calculation tasks related to the timeseries analysis.
+    """Timeseries class inherited from AstroCalc class.The purpose of this class is to organize all the calculation tasks related to the timeseries analysis.
+
     """
 
     def __init__(
@@ -44,12 +49,13 @@ class Timeseries(AstroCalc):
             stamprad=20,
             maxskip=6,
             keydate='DATE-OBS',
-            keytype='IMAGETYP'):
-        """
-        Timeseries object constructor.
+            keytype='IMAGETYP',
+            mastermode='median'):
+        """Timeseries object constructor.
+
         :param data: image data for the timeseries
         :type data: str (path to a folder), astrodir, ndarray list (list of images)
-        :param coordsxy: list of x,y coordinates of stars in the first image of the timeseries
+        :param coordsxy: list of x,y coordinates of stars in the first image of the timeseries (if the value is None an interface for coordinates selection will be displayed)
         :type coordsxy: list of 2-tuples or 2-list
         :param labels: labels for the stars
         :type labels: list of strings
@@ -59,6 +65,11 @@ class Timeseries(AstroCalc):
         :type maxskip: int (default value: 6)
         :param keydate: header key of observation date in the images (allows image sorting in terms of time)
         :type keydate: str
+        :param keytype: header key of image type ('OBJECT','BIAS','DOME FLAT',etc)
+        :type keytype: str
+        :param mastermode: mode for master (BIAS, DARK, FLAT, etc) image obtention. Options: 'mean' and 'median' (default).
+        :type mastermode: str
+        :rtype: Timeseries
         """
 
         # data type check
@@ -83,14 +94,76 @@ class Timeseries(AstroCalc):
         else:
             raise TypeError('data should be str, astrodir or ndarray list')
 
+        # mjd list and science image filtering
+        if self.isAstrodir:
+
+            time_file_list = []
+            bias_files = []
+            dark_files = []
+            flat_files = []
+
+            for astrofile in self.files:
+                type_str = astrofile.getheaderval(keytype)[0]
+                if 'OBJECT' in type_str:
+                    date_str = astrofile.getheaderval(keydate)[0]
+                    date_format = "iso"
+                    if "T" in date_str or "t" in date_str:
+                        date_format += "t"
+                    mjd_val = Time(
+                        date_str,
+                        format=date_format,
+                        scale='utc').mjd
+                    time_file_list.append((mjd_val, astrofile))
+                elif 'BIAS' in type_str:
+                    data, head = astrofile.reader(datahead=True)
+                    bias_files.append(data)
+                    print "%s is used for MASTERBIAS" % astrofile
+                elif 'DARK' in type_str:
+                    data, head = astrofile.reader(datahead=True)
+                    dark_files.append(data)
+                    print "%s is used for MASTERDARK" % astrofile
+                elif 'FLAT' in type_str:
+                    data, head = astrofile.reader(datahead=True)
+                    flat_files.append(data)
+                    print "%s is used for MASTERFLAT" % astrofile
+                else:
+                    print "%s is not used" % astrofile
+
+            time_file_list.sort()  # Bug correction of dataproc
+            print "\n%s is the FIRST file of the timeseries (initial star coordinates should consider this file)\n" % time_file_list[0][1]
+            self.mjd = [mjd for mjd, astrofile in time_file_list]
+            self.files = [astrofile for mjd, astrofile in time_file_list]
+            self.masterbias = self.masterimage(bias_files, mode=mastermode)
+            self.masterdark = self.masterimage(dark_files, mode=mastermode)
+            self.masterflat = self.masterimage(flat_files, mode=mastermode)
+
+        else:
+            self.mjd = sp.arange(len(data))
+
+        # coordsxy check
+        if coordsxy is None:
+            from astrointerface import AstroInterface
+            print "No coordinates provided: beginning interface mode"
+            if self.isAstrodir:
+                astrofile = self.files[0]
+                data, head = astrofile.reader(datahead=True)
+            else:
+                data = self.files[0]
+            coordsxy = AstroInterface(data, maxsize=650).execute()
+            print "Selected coordinates: %s" % str(coordsxy)
+            print "Interface mode finished\n"
+
         # label list
         try:
             if labels is None:
                 labels = []
             nstars = len(coordsxy)
-            labels = list(
-                labels) + sp.arange(len(labels),
-                                    nstars).astype(str).tolist()
+            if len(labels) > nstars:
+                labels = labels[:nstars]
+            elif len(labels) < nstars:
+                labels = list(
+                    labels) + sp.arange(len(labels),
+                                        nstars).astype(str).tolist()
             targets = {lab: [[coo[0], coo[1]], ]
                        for coo, lab in zip(coordsxy, labels)}
         except:
@@ -98,29 +171,8 @@ class Timeseries(AstroCalc):
                 "Coordinates of target stars need to be specified as a list of 2 elements, not: %s" %
                 (str(coordsxy)))
 
-        # mjd list and science image filtering
-        if self.isAstrodir:
-            self.mjd = []
-            science_files = []
-            for astrofile in self.files:
-                date_str, type_str = astrofile.getheaderval(keydate, keytype)
-                if type_str == 'OBJECT':
-                    date_format = "iso"
-                    if "T" in date_str or "t" in date_str:
-                        date_format += "t"
-                    self.mjd.append(
-                        Time(date_str,
-                             format=date_format,
-                             scale='utc').mjd)
-                    science_files.append(astrofile)
-                else:
-                    print "%s is not a science image" % astrofile
-            self.files = science_files
-        else:
-            self.mjd = sp.arange(len(data))
-
         # instance variables (in addition to self.files, self.isAstrodir and
-        # self.mjd)
+        # self.mjd,self.masterbias, self.masterbias, self.masterflat)
         self.labels = labels
         self.targets = targets
         self.stamprad = stamprad
@@ -133,8 +185,8 @@ class Timeseries(AstroCalc):
             sky=None,
             keygain='GTGAIN11',
             keyron='GTRON11'):
-        """
-        Perform apperture photometry with the images of the Timeseries object.
+        """Perform apperture photometry with the images of the Timeseries object.
+
         :param aperture: aperture photometry radius
         :type aperture: int
         :param sky: inner and outer radius for sky annulus
@@ -143,7 +195,12 @@ class Timeseries(AstroCalc):
         :type keygain: str
         :param keyron: header key of read-out-noise (RON)
         :type keyron: str
+        :rtype: TimeseriesResults
         """
+
+        if sky is None and self.skydata is None:
+            raise ValueError(
+                'No sky information available: sky and self.skydata are None')
 
         flx = {lab: [] for lab in self.labels}
         err = {lab: [] for lab in self.labels}
@@ -157,8 +214,13 @@ class Timeseries(AstroCalc):
                 if sky is not None:
                     sky_img_dict = {lab: [] for lab in self.labels}
 
-                data, head = filename.reader(datahead=True)
                 gain, ron = filename.getheaderval(keygain, keyron)
+                data, head = filename.reader(datahead=True)
+                data = self.imagereduction(
+                    data,
+                    self.masterbias,
+                    self.masterflat,
+                    self.masterdark)
 
                 for lab, cooxy in targets.items():
 
@@ -211,7 +273,7 @@ class Timeseries(AstroCalc):
                     if skip > self.maxskip:
                         print(
                             "Jump of %f pixels has occurred on frame %s for star %s" %
-                            (skip, filename, lab))
+                            (skip, str(i), lab))  # str(i) INSTEAD filename (NO FILENAME, LIST OF IMAGES)
 
                     if sky is not None:
                         phot, phot_err, sky_out = self.apphot(
@@ -241,14 +303,13 @@ import matplotlib.pyplot as plt
 
 class TimeseriesResults(AstroPlot):
 
-    """
-    TimeseriesResults class inherited from AstroPlot class.
-    The purpose of this class is to centralize the data output (mainly the plotting routines).
+    """TimeseriesResults class inherited from AstroPlot class.The purpose of this class is to centralize the data output (mainly the plotting routines).
+
     """
 
     def __init__(self, mjd, flx, err, targets):
-        """
-        TimeseriesResult object constructor (inherited from AstroPlot).
+        """TimeseriesResult object constructor (inherited from AstroPlot).
+
         :param mjd: date array
         :type mjd: array
         :param flx: flux array dictionary
@@ -257,19 +318,21 @@ class TimeseriesResults(AstroPlot):
         :type err: dict
         :param targets: coordinates array dictionary
         :type targets: dict
+        :rtype: TimeseriesResults
         """
 
         super(TimeseriesResults, self).__init__(mjd, flx, err, targets)
 
     def plot_ratio(self, trg=None, ref=None, normframes=None):
-        """
-        Display the ratio of science and reference
+        """Display the ratio of science and reference
+
         :param trg: label name of target star
         :type trg: string (key of flx and coo)
         :param ref: list of stars to be used as reference
         :type ref: None or list of strings. If None, then all stars except target
         :param normframes: list of frames to normalize (for example, in case only out of transit want to be considered)
         :type normframes: None or boolean array. If None, then normalize by all frames
+        :rtype: None (and plot display)
         """
 
         if self.ratio is None:
@@ -277,14 +340,19 @@ class TimeseriesResults(AstroPlot):
                 trg = self.flx.keys()[0]
             self.doratio(trg=trg, ref=ref, normframes=normframes)
 
+        if self.ratio is None:
+            print "No ratio computed computed"
+            return
+
         plt.plot(self.ratio)
         plt.title("Ratio for target = " + str(trg))
         plt.show()
         return
 
     def plot_timeseries(self):
-        """
-        Display the timeseries data: flux (with errors) as function of mjd
+        """Display the timeseries data: flux (with errors) as function of mjd
+
+        :rtype: None (and plot display)
         """
 
         fig = plt.figure(figsize=(4, 5), dpi=100)
@@ -315,8 +383,9 @@ class TimeseriesResults(AstroPlot):
         return
 
     def plot_drift(self):
-        """
-        Show the drift of the stars using the coordinates obtained for every image in the timeseries.
+        """Show the drift of the stars using the coordinates obtained for every image in the timeseries.
+
+        :rtype: None (and plot display)
         """
 
         lines = []
