@@ -18,13 +18,6 @@
 #
 #
 
-# *******************************************************************
-# AGREGAR PYTHON-PATH CON DIRECCION DEFINITIVA
-import sys
-sys.path.append('/home/fcaro/Dropbox/Pato')
-# sys.path.append('/home/fcaro/SVN')
-# *******************************************************************
-
 from astrocalc import AstroCalc
 from astroplot import AstroPlot
 
