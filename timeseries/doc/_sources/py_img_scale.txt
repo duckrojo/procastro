@@ -1,0 +1,9 @@
+Documentation: timeseries/img_scale.py
+======================================
+
+This code was downloaded from: http://www.physics.ox.ac.uk/Users/msshin/science/code/Python_fits_image/
+
+Source Code
+-----------
+
+.. literalinclude:: ../img_scale.py

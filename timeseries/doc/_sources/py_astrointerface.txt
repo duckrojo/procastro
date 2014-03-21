@@ -1,0 +1,10 @@
+Documentation: timeseries/astrointerface.py
+===========================================
+
+Class: AstroInterface
+---------------------
+
+.. autoclass:: astrointerface.AstroInterface
+   :members:
+   :private-members:
+   :special-members:

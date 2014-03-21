@@ -1,0 +1,317 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Documentation: timeseries/astrointerface.py &mdash; timeseries 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="timeseries 1.0.0 documentation" href="index.html" />
+    <link rel="next" title="Documentation: timeseries/astrocalc.py" href="py_astrocalc.html" />
+    <link rel="prev" title="Documentation: timeseries/astroplot.py" href="py_astroplot.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py_astrocalc.html" title="Documentation: timeseries/astrocalc.py"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="py_astroplot.html" title="Documentation: timeseries/astroplot.py"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">timeseries 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="documentation-timeseries-astrointerface-py">
+<h1>Documentation: timeseries/astrointerface.py<a class="headerlink" href="#documentation-timeseries-astrointerface-py" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="class-astrointerface">
+<h2>Class: AstroInterface<a class="headerlink" href="#class-astrointerface" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="astrointerface.AstroInterface">
+<em class="property">class </em><tt class="descclassname">astrointerface.</tt><tt class="descname">AstroInterface</tt><big>(</big><em>data</em>, <em>maxsize=500</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class implements a GUI for pixel coordinates selection in an astronomical image.</p>
+<dl class="method">
+<dt id="astrointerface.AstroInterface.__init__">
+<tt class="descname">__init__</tt><big>(</big><em>data</em>, <em>maxsize=500</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>AstroInterface object constructor.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>data</strong> (<em>array</em>) &#8211; image</li>
+<li><strong>maxsize</strong> (<em>int</em>) &#8211; pixel size in the GUI of the maximum dimension of the image (default value 500)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">AstroInterface</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="astrointerface.AstroInterface.__weakref__">
+<tt class="descname">__weakref__</tt><a class="headerlink" href="#astrointerface.AstroInterface.__weakref__" title="Permalink to this definition">¶</a></dt>
+<dd><p>list of weak references to the object (if defined)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._button_remove_point">
+<tt class="descname">_button_remove_point</tt><big>(</big><em>index</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._button_remove_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._button_remove_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a point from the the list of selected points.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>index</strong> (<em>int</em>) &#8211; index of the point to be removed in the list of selected points.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._canvas_draw_circle">
+<tt class="descname">_canvas_draw_circle</tt><big>(</big><em>x</em>, <em>y</em>, <em>rad=4</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._canvas_draw_circle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._canvas_draw_circle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draws a red circle at (x,y) coordinates in the canvas.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>int</em>) &#8211; horizontal center coordinate of the circle</li>
+<li><strong>y</strong> (<em>int</em>) &#8211; vertical center coordinate of the circle</li>
+<li><strong>rad</strong> (<em>int</em>) &#8211; radius of the circle (default 4)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._canvas_on_click_add_point">
+<tt class="descname">_canvas_on_click_add_point</tt><big>(</big><em>event</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._canvas_on_click_add_point"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._canvas_on_click_add_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a new point to the list of selected points in the right side of the GUI.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>event</strong> (<em>event</em>) &#8211; event</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._canvas_on_motion">
+<tt class="descname">_canvas_on_motion</tt><big>(</big><em>event</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._canvas_on_motion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._canvas_on_motion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the pixel coordinates while the cursor is over the image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>event</strong> (<em>event</em>) &#8211; event</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._exit_button">
+<tt class="descname">_exit_button</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._exit_button"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._exit_button" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exit button function. A warning is triggered when the exit button is pressed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._get_photo_image">
+<tt class="descname">_get_photo_image</tt><big>(</big><em>mode='zscale'</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._get_photo_image"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._get_photo_image" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the scaled version of the image given in the constructor as a PhotoImage instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mode</strong> (<em>str</em>) &#8211; image scale mode (options: &#8216;zscale&#8217; (default), &#8216;linear&#8217;, &#8216;sqrt&#8217;, &#8216;log&#8217;, &#8216;power&#8217;, &#8216;asinh&#8217;, &#8216;histogram&#8217;)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">PhotoImage</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._scale_button_action">
+<tt class="descname">_scale_button_action</tt><big>(</big><em>event</em>, <em>pressed_button</em>, <em>prev_pressed_button</em><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._scale_button_action"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._scale_button_action" title="Permalink to this definition">¶</a></dt>
+<dd><p>Scale buttons function. Updates the scale in the displayed image.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>event</strong> (<em>event</em>) &#8211; event</li>
+<li><strong>pressed_button</strong> (<em>button</em>) &#8211; scale pressed button</li>
+<li><strong>prev_pressed_button</strong> (<em>button</em>) &#8211; scale button pressed previously</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._update_canvas">
+<tt class="descname">_update_canvas</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._update_canvas"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._update_canvas" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the canvas content. Displays the image and currently selected points on it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface._update_point_list">
+<tt class="descname">_update_point_list</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface._update_point_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface._update_point_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update the list of selected points in the right side of the GUI.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="astrointerface.AstroInterface.execute">
+<tt class="descname">execute</tt><big>(</big><big>)</big><a class="reference internal" href="_modules/astrointerface.html#AstroInterface.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#astrointerface.AstroInterface.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes the mainloop in the AstroInterface object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Documentation: timeseries/astrointerface.py</a><ul>
+<li><a class="reference internal" href="#class-astrointerface">Class: AstroInterface</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="py_astroplot.html"
+                        title="previous chapter">Documentation: timeseries/astroplot.py</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="py_astrocalc.html"
+                        title="next chapter">Documentation: timeseries/astrocalc.py</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/py_astrointerface.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py_astrocalc.html" title="Documentation: timeseries/astrocalc.py"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="py_astroplot.html" title="Documentation: timeseries/astroplot.py"
+             >previous</a> |</li>
+        <li><a href="index.html">timeseries 1.0.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Fernando Caro.
+    </div>
+  </body>
+</html>

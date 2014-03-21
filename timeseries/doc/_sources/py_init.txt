@@ -1,0 +1,9 @@
+Documentation: timeseries/__init__.py
+=====================================
+
+The data needed to run this code can be downloaded from: https://wasabi.das.uchile.cl/wasp/
+
+Source Code
+-----------
+
+.. literalinclude:: ../__init__.py

@@ -1,0 +1,10 @@
+Documentation: timeseries/astrocalc.py
+======================================
+
+Class: AstroCalc
+----------------
+
+.. autoclass:: astrocalc.AstroCalc
+   :members:
+   :private-members:
+   :special-members:

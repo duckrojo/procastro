@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astrocalc &mdash; timeseries 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="timeseries 1.0.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../index.html">timeseries 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for astrocalc</h1><div class="highlight"><pre>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Copyright (C) 2013 Patricio Rojo</span>
+<span class="c">#</span>
+<span class="c"># This program is free software; you can redistribute it and/or</span>
+<span class="c"># modify it under the terms of version 2 of the GNU General</span>
+<span class="c"># Public License as published by the Free Software Foundation.</span>
+<span class="c">#</span>
+<span class="c"># This program is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with this program; if not, write to the Free Software</span>
+<span class="c"># Foundation, Inc., 51 Franklin Street, Fifth Floor,</span>
+<span class="c"># Boston, MA  02110-1301, USA.</span>
+<span class="c">#</span>
+<span class="c">#</span>
+
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sp</span>
+
+
+<div class="viewcode-block" id="AstroCalc"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc">[docs]</a><span class="k">class</span> <span class="nc">AstroCalc</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="c"># TO DO: REVIEW AND CORRECT !!</span>
+<div class="viewcode-block" id="AstroCalc.imagereduction"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.imagereduction">[docs]</a>    <span class="k">def</span> <span class="nf">imagereduction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">bias</span><span class="p">,</span> <span class="n">flat</span><span class="p">,</span> <span class="n">dark</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a reduced image.</span>
+
+<span class="sd">        :param image: image to be reduced</span>
+<span class="sd">        :type image: array</span>
+<span class="sd">        :param bias: bias image for reduction</span>
+<span class="sd">        :type bias: array</span>
+<span class="sd">        :param flat: flat image for reduction</span>
+<span class="sd">        :type flat: array</span>
+<span class="sd">        :param dark: dark image for reduction</span>
+<span class="sd">        :type dark: array</span>
+<span class="sd">        :rtype: array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">dark</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">image</span> <span class="o">-</span> <span class="n">bias</span><span class="p">)</span> <span class="o">/</span> <span class="n">flat</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">image</span> <span class="o">-</span> <span class="n">dark</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">flat</span> <span class="o">-</span> <span class="n">bias</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="AstroCalc.masterimage"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.masterimage">[docs]</a>    <span class="k">def</span> <span class="nf">masterimage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_list</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;median&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a calibration master image.</span>
+
+<span class="sd">        :param image_list: list of calibration images</span>
+<span class="sd">        :type image_list: list of arrays</span>
+<span class="sd">        :param mode: obtention mode for the master image (the possible values are &#39;median&#39; (default) and &#39;mean&#39;).</span>
+<span class="sd">        :type mode: str</span>
+<span class="sd">        :rtype: array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">image_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;median&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sp</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">image_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c"># MEDIAN</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;mean&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">sp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">image_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c"># MEAN</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s">&quot;Unknown mode &#39;</span><span class="si">%s</span><span class="s">&#39; for master image obtention&quot;</span> <span class="o">%</span>
+                <span class="n">mode</span><span class="p">)</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="AstroCalc.centraldistances"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.centraldistances">[docs]</a>    <span class="k">def</span> <span class="nf">centraldistances</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Computes distances for every matrix position from a central point c.</span>
+
+<span class="sd">        :param data: array</span>
+<span class="sd">        :type data: array</span>
+<span class="sd">        :param c: center coordinates</span>
+<span class="sd">        :type c: [float,float]</span>
+<span class="sd">        :rtype: array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dy</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">dy</span><span class="p">,</span> <span class="mi">0</span><span class="p">:</span><span class="n">dx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">sp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">y</span> <span class="o">-</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="AstroCalc.bipol"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.bipol">[docs]</a>    <span class="k">def</span> <span class="nf">bipol</span><span class="p">(</span><span class="n">coef</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Polynomial fit for sky sustraction</span>
+
+<span class="sd">        :param coef: sky fit polynomial coefficientes</span>
+<span class="sd">        :type coef: array</span>
+<span class="sd">        :param x: horizontal coordinates</span>
+<span class="sd">        :type x: array</span>
+<span class="sd">        :param y: vertical coordinates</span>
+<span class="sd">        :type y: array</span>
+<span class="sd">        :rtype: array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">plane</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">deg</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">coef</span><span class="o">.</span><span class="n">size</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">coef</span> <span class="o">=</span> <span class="n">coef</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">deg</span><span class="p">,</span> <span class="n">deg</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">deg</span> <span class="o">*</span> <span class="n">deg</span> <span class="o">!=</span> <span class="n">coef</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+            <span class="k">print</span> <span class="s">&quot;Malformed coefficient: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">coef</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">+</span> \
+                <span class="s">&quot;(size) != &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">deg</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;(dim)^2&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">sp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">coef</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">sp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="n">plane</span> <span class="o">+=</span> <span class="n">coef</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="n">j</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">y</span> <span class="o">**</span> <span class="p">(</span><span class="n">i</span> <span class="o">-</span> <span class="n">j</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">plane</span>
+</div>
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="AstroCalc.phot_error"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.phot_error">[docs]</a>    <span class="k">def</span> <span class="nf">phot_error</span><span class="p">(</span><span class="n">phot</span><span class="p">,</span> <span class="n">sky</span><span class="p">,</span> <span class="n">n_pix_ap</span><span class="p">,</span> <span class="n">n_pix_sky</span><span class="p">,</span> <span class="n">gain</span><span class="p">,</span> <span class="n">ron</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculates the photometry error</span>
+
+<span class="sd">        :param phot: star flux</span>
+<span class="sd">        :type phot: float</span>
+<span class="sd">        :param sky: sky flux</span>
+<span class="sd">        :type sky: float</span>
+<span class="sd">        :param n_pix_ap: number of pixels in the aperture</span>
+<span class="sd">        :type n_pix_ap: int</span>
+<span class="sd">        :param n_pix_sky: number of pixels in the sky annulus</span>
+<span class="sd">        :type n_pix_sky: int</span>
+<span class="sd">        :param gain: gain</span>
+<span class="sd">        :type gain: float</span>
+<span class="sd">        :param ron: read-out-noise</span>
+<span class="sd">        :type ron: float (default value: None)</span>
+<span class="sd">        :rtype: float</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">ron</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Photometric error calculated without RON&quot;</span>
+            <span class="n">ron</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="n">N_e_star</span> <span class="o">=</span> <span class="n">gain</span> <span class="o">*</span> <span class="n">phot</span>
+        <span class="n">N_e_sky</span> <span class="o">=</span> <span class="n">gain</span> <span class="o">*</span> <span class="n">sky</span>
+        <span class="n">SNR</span> <span class="o">=</span> <span class="n">N_e_star</span> <span class="o">/</span> \
+            <span class="n">sp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">N_e_star</span> <span class="o">+</span> <span class="n">n_pix_ap</span> <span class="o">*</span>
+                    <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">n_pix_ap</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_pix_sky</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">N_e_sky</span> <span class="o">+</span> <span class="n">ron</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">phot</span> <span class="o">/</span> <span class="n">SNR</span>
+</div>
+<div class="viewcode-block" id="AstroCalc.subarray"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.subarray">[docs]</a>    <span class="k">def</span> <span class="nf">subarray</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">rad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns a subarray of arr (with size 2*rad+1 and centered in (y,x))</span>
+
+<span class="sd">        :param arr: original array</span>
+<span class="sd">        :type arr: array</span>
+<span class="sd">        :param y: vertical center</span>
+<span class="sd">        :type y: int</span>
+<span class="sd">        :param x: horizontal center</span>
+<span class="sd">        :type x: int</span>
+<span class="sd">        :param rad: radius</span>
+<span class="sd">        :type rad: int</span>
+<span class="sd">        :rtype: array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">arr</span><span class="p">[(</span><span class="n">y</span> <span class="o">-</span> <span class="n">rad</span><span class="p">):(</span><span class="n">y</span> <span class="o">+</span> <span class="n">rad</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">rad</span><span class="p">):(</span><span class="n">x</span> <span class="o">+</span> <span class="n">rad</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+</div>
+<div class="viewcode-block" id="AstroCalc.apphot"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.apphot">[docs]</a>    <span class="k">def</span> <span class="nf">apphot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">sap</span><span class="p">,</span> <span class="n">skydata</span><span class="p">,</span> <span class="n">deg</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ron</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Do aperture photometry on data array</span>
+
+<span class="sd">        :param data: image</span>
+<span class="sd">        :type data: array</span>
+<span class="sd">        :param cs: coordinates</span>
+<span class="sd">        :type cs: [float,float]</span>
+<span class="sd">        :param sap: apperture</span>
+<span class="sd">        :type sap: float</span>
+<span class="sd">        :param skydata: inner and outer radius for sky annulus or sky fit (coefficientes) and number of sky pixels</span>
+<span class="sd">        :type skydata: [float,float] or [array,int]</span>
+<span class="sd">        :param deg: degree of the polynomial for the sky fit</span>
+<span class="sd">        :type deg: int</span>
+<span class="sd">        :param gain: gain</span>
+<span class="sd">        :type gain: float</span>
+<span class="sd">        :param ron: read-out-noise</span>
+<span class="sd">        :type ron: float (default value: None)</span>
+<span class="sd">        :rtype: [float,float,[coeff_list,int]]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">centraldistances</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cs</span><span class="p">)</span>
+        <span class="n">dy</span><span class="p">,</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="o">-</span><span class="n">cs</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span><span class="n">dy</span> <span class="o">-</span> <span class="n">cs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="n">cs</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span><span class="n">dx</span> <span class="o">-</span> <span class="n">cs</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+        <span class="c"># Case 1: skydata = [fit,number_of_sky_pixels]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">skydata</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">fit</span> <span class="o">=</span> <span class="n">skydata</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">n_pix_sky</span> <span class="o">=</span> <span class="n">skydata</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>  <span class="c"># Case 2: skydata = [inner_radius,outer_radius]</span>
+            <span class="kn">import</span> <span class="nn">scipy.optimize</span> <span class="kn">as</span> <span class="nn">op</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span> <span class="o">&gt;</span> <span class="n">skydata</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">&lt;</span> <span class="n">skydata</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">errfunc</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">coef</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">bipol</span><span class="p">(</span><span class="n">coef</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="n">z</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+            <span class="n">coef0</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">deg</span><span class="p">,</span> <span class="n">deg</span><span class="p">))</span>
+            <span class="n">coef0</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">fit</span><span class="p">,</span> <span class="n">cov</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mesg</span><span class="p">,</span> <span class="n">success</span> <span class="o">=</span> <span class="n">op</span><span class="o">.</span><span class="n">leastsq</span><span class="p">(</span>
+                <span class="n">errfunc</span><span class="p">,</span> <span class="n">coef0</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]),</span> <span class="n">full_output</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">n_pix_sky</span> <span class="o">=</span> <span class="n">idx</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="n">sky</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bipol</span><span class="p">(</span><span class="n">fit</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">data</span> <span class="o">-</span> <span class="n">sky</span>  <span class="c"># minus sky</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">res</span> <span class="o">*</span> <span class="p">(</span><span class="n">res</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">phot</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="n">d</span> <span class="o">&lt;</span> <span class="n">sap</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">gain</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">print</span> <span class="s">&quot;Not GAIN provided for error calculation&quot;</span>
+            <span class="k">return</span> <span class="n">phot</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">[</span><span class="n">fit</span><span class="p">,</span> <span class="n">n_pix_sky</span><span class="p">]</span>
+
+        <span class="n">n_pix_ap</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span> <span class="o">&lt;</span> <span class="n">sap</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">phot_error</span><span class="p">(</span>
+            <span class="n">phot</span><span class="p">,</span>
+            <span class="n">sky</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span>
+            <span class="n">n_pix_ap</span><span class="p">,</span>
+            <span class="n">n_pix_sky</span><span class="p">,</span>
+            <span class="n">gain</span><span class="p">,</span>
+            <span class="n">ron</span><span class="o">=</span><span class="n">ron</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">phot</span><span class="p">,</span> <span class="n">error</span><span class="p">,</span> <span class="p">[</span><span class="n">fit</span><span class="p">,</span> <span class="n">n_pix_sky</span><span class="p">]</span>
+</div>
+<div class="viewcode-block" id="AstroCalc.centroid"><a class="viewcode-back" href="../py_astrocalc.html#astrocalc.AstroCalc.centroid">[docs]</a>    <span class="k">def</span> <span class="nf">centroid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Find centroid of small array</span>
+
+<span class="sd">        :param arr: array</span>
+<span class="sd">        :type arr: array</span>
+<span class="sd">        :rtype: [float,float]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">med</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span> <span class="o">-</span> <span class="n">med</span>
+        <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span> <span class="o">*</span> <span class="p">(</span><span class="n">arr</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">iy</span><span class="p">,</span> <span class="n">ix</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">mgrid</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="mi">0</span><span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">arr</span><span class="p">)]</span>
+
+        <span class="n">cy</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">iy</span> <span class="o">*</span> <span class="n">arr</span><span class="p">)</span> <span class="o">/</span> <span class="n">sp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+        <span class="n">cx</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">ix</span> <span class="o">*</span> <span class="n">arr</span><span class="p">)</span> <span class="o">/</span> <span class="n">sp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cy</span><span class="p">,</span> <span class="n">cx</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../index.html">timeseries 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Fernando Caro.
+    </div>
+  </body>
+</html>

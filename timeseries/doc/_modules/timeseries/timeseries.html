@@ -1,0 +1,480 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>timeseries.timeseries &mdash; timeseries 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="timeseries 1.0.0 documentation" href="../../index.html" />
+    <link rel="up" title="timeseries" href="../timeseries.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../../index.html">timeseries 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../timeseries.html" accesskey="U">timeseries</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for timeseries.timeseries</h1><div class="highlight"><pre>
+<span class="c">#</span>
+<span class="c">#</span>
+<span class="c"># Copyright (C) 2013 Patricio Rojo</span>
+<span class="c">#</span>
+<span class="c"># This program is free software; you can redistribute it and/or</span>
+<span class="c"># modify it under the terms of version 2 of the GNU General</span>
+<span class="c"># Public License as published by the Free Software Foundation.</span>
+<span class="c">#</span>
+<span class="c"># This program is distributed in the hope that it will be useful,</span>
+<span class="c"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c"># GNU General Public License for more details.</span>
+<span class="c">#</span>
+<span class="c"># You should have received a copy of the GNU General Public License</span>
+<span class="c"># along with this program; if not, write to the Free Software</span>
+<span class="c"># Foundation, Inc., 51 Franklin Street, Fifth Floor,</span>
+<span class="c"># Boston, MA  02110-1301, USA.</span>
+<span class="c">#</span>
+<span class="c">#</span>
+
+<span class="c"># *******************************************************************</span>
+<span class="c"># AGREGAR PYTHON-PATH CON DIRECCION DEFINITIVA</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s">&#39;/home/fcaro/Dropbox/Pato&#39;</span><span class="p">)</span>
+<span class="c">#sys.path.append(&#39;/home/fcaro/SVN&#39;)</span>
+<span class="c"># *******************************************************************</span>
+
+<span class="kn">from</span> <span class="nn">astrocalc</span> <span class="kn">import</span> <span class="n">AstroCalc</span>
+<span class="kn">from</span> <span class="nn">astroplot</span> <span class="kn">import</span> <span class="n">AstroPlot</span>
+
+<span class="kn">from</span> <span class="nn">astropy.time</span> <span class="kn">import</span> <span class="n">Time</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">scipy</span> <span class="kn">as</span> <span class="nn">sp</span>
+<span class="kn">import</span> <span class="nn">dataproc</span> <span class="kn">as</span> <span class="nn">dp</span>
+
+
+<div class="viewcode-block" id="Timeseries"><a class="viewcode-back" href="../../py_timeseries.html#timeseries.timeseries.Timeseries">[docs]</a><span class="k">class</span> <span class="nc">Timeseries</span><span class="p">(</span><span class="n">AstroCalc</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Timeseries class inherited from AstroCalc class.The purpose of this class is to organize all the calculation tasks related to the timeseries analysis.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Timeseries.__init__"><a class="viewcode-back" href="../../py_timeseries.html#timeseries.timeseries.Timeseries.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">coordsxy</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">labels</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">stamprad</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+            <span class="n">maxskip</span><span class="o">=</span><span class="mi">6</span><span class="p">,</span>
+            <span class="n">keydate</span><span class="o">=</span><span class="s">&#39;DATE-OBS&#39;</span><span class="p">,</span>
+            <span class="n">keytype</span><span class="o">=</span><span class="s">&#39;IMAGETYP&#39;</span><span class="p">,</span>
+            <span class="n">mastermode</span><span class="o">=</span><span class="s">&#39;median&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Timeseries object constructor.</span>
+
+<span class="sd">        :param data: image data for the timeseries</span>
+<span class="sd">        :type data: str (path to a folder), astrodir, ndarray list (list of images)</span>
+<span class="sd">        :param coordsxy: list of x,y coordinates of stars in the first image of the timeseries (if the value is None an interface for coordinates selection will be displayed)</span>
+<span class="sd">        :type coordsxy: list of 2-tuples or 2-list</span>
+<span class="sd">        :param labels: labels for the stars</span>
+<span class="sd">        :type labels: list of strings</span>
+<span class="sd">        :param stamprad: radius of the (square) stamp that contains a star</span>
+<span class="sd">        :type stamprad: int (default value: 20)</span>
+<span class="sd">        :param maxskip: maximum skip considered (without warning) between the positions of a star in two sucesive images</span>
+<span class="sd">        :type maxskip: int (default value: 6)</span>
+<span class="sd">        :param keydate: header key of observation date in the images (allows image sorting in terms of time)</span>
+<span class="sd">        :type keydate: str</span>
+<span class="sd">        :param keytype: header key of image type (&#39;OBJECT&#39;,&#39;BIAS&#39;,&#39;DOME FLAT&#39;,etc)</span>
+<span class="sd">        :type keytype: str</span>
+<span class="sd">        :param mastermode: mode for master (BIAS, DARK, FLAT, etc) image obtention. Options: &#39;mean&#39; and &#39;median&#39; (default).</span>
+<span class="sd">        :type mastermode: str</span>
+<span class="sd">        :rtype: Timeseries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># data type check</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>  <span class="c"># data is a string (path to a directory)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="n">dp</span><span class="o">.</span><span class="n">astrodir</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">keydate</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isAstrodir</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dp</span><span class="o">.</span><span class="n">astrodir</span><span class="p">):</span>  <span class="c"># data is an astrodir object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">keydate</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isAstrodir</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>  <span class="c"># data is a list of images (ndarray)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;data is an empty list&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">img</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">sp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                        <span class="s">&#39;data is a list but not all the elements are ndarray&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">isAstrodir</span> <span class="o">=</span> <span class="bp">False</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s">&#39;data should be str, astrodir or ndarray list&#39;</span><span class="p">)</span>
+
+        <span class="c"># mjd list and science image filtering</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isAstrodir</span><span class="p">:</span>
+
+            <span class="n">time_file_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">bias_files</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">dark_files</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">flat_files</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">astrofile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">:</span>
+                <span class="n">type_str</span> <span class="o">=</span> <span class="n">astrofile</span><span class="o">.</span><span class="n">getheaderval</span><span class="p">(</span><span class="n">keytype</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s">&#39;OBJECT&#39;</span> <span class="ow">in</span> <span class="n">type_str</span><span class="p">:</span>
+                    <span class="n">date_str</span> <span class="o">=</span> <span class="n">astrofile</span><span class="o">.</span><span class="n">getheaderval</span><span class="p">(</span><span class="n">keydate</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">date_format</span> <span class="o">=</span> <span class="s">&quot;iso&quot;</span>
+                    <span class="k">if</span> <span class="s">&quot;T&quot;</span> <span class="ow">in</span> <span class="n">date_str</span> <span class="ow">or</span> <span class="s">&quot;t&quot;</span> <span class="ow">in</span> <span class="n">date_str</span><span class="p">:</span>
+                        <span class="n">date_format</span> <span class="o">+=</span> <span class="s">&quot;t&quot;</span>
+                    <span class="n">mjd_val</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span><span class="n">date_str</span><span class="p">,</span> <span class="n">format</span><span class="o">=</span><span class="n">date_format</span><span class="p">,</span><span class="n">scale</span><span class="o">=</span><span class="s">&#39;utc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">mjd</span>
+                    <span class="n">time_file_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">mjd_val</span><span class="p">,</span><span class="n">astrofile</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="s">&#39;BIAS&#39;</span> <span class="ow">in</span> <span class="n">type_str</span><span class="p">:</span>
+                    <span class="n">data</span><span class="p">,</span> <span class="n">head</span> <span class="o">=</span> <span class="n">astrofile</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">datahead</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">bias_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> is used for MASTERBIAS&quot;</span> <span class="o">%</span> <span class="n">astrofile</span>
+                <span class="k">elif</span> <span class="s">&#39;DARK&#39;</span> <span class="ow">in</span> <span class="n">type_str</span><span class="p">:</span>
+                    <span class="n">data</span><span class="p">,</span> <span class="n">head</span> <span class="o">=</span> <span class="n">astrofile</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">datahead</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">dark_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> is used for MASTERDARK&quot;</span> <span class="o">%</span> <span class="n">astrofile</span>
+                <span class="k">elif</span> <span class="s">&#39;FLAT&#39;</span> <span class="ow">in</span> <span class="n">type_str</span><span class="p">:</span>
+                    <span class="n">data</span><span class="p">,</span> <span class="n">head</span> <span class="o">=</span> <span class="n">astrofile</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">datahead</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                    <span class="n">flat_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> is used for MASTERFLAT&quot;</span> <span class="o">%</span> <span class="n">astrofile</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">print</span> <span class="s">&quot;</span><span class="si">%s</span><span class="s"> is not used&quot;</span> <span class="o">%</span> <span class="n">astrofile</span>
+
+            <span class="n">time_file_list</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span> <span class="c"># Bug correction of dataproc</span>
+            <span class="k">print</span> <span class="s">&quot;</span><span class="se">\n</span><span class="si">%s</span><span class="s"> is the FIRST file of the timeseries (initial star coordinates should consider this file)</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">time_file_list</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="p">[</span><span class="n">mjd</span> <span class="k">for</span> <span class="n">mjd</span><span class="p">,</span><span class="n">astrofile</span> <span class="ow">in</span> <span class="n">time_file_list</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="n">astrofile</span> <span class="k">for</span> <span class="n">mjd</span><span class="p">,</span><span class="n">astrofile</span> <span class="ow">in</span> <span class="n">time_file_list</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">masterbias</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">masterimage</span><span class="p">(</span><span class="n">bias_files</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="n">mastermode</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">masterdark</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">masterimage</span><span class="p">(</span><span class="n">dark_files</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="n">mastermode</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">masterflat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">masterimage</span><span class="p">(</span><span class="n">flat_files</span><span class="p">,</span><span class="n">mode</span><span class="o">=</span><span class="n">mastermode</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+
+        <span class="c"># coordsxy check</span>
+        <span class="k">if</span> <span class="n">coordsxy</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">astrointerface</span> <span class="kn">import</span> <span class="n">AstroInterface</span>
+            <span class="k">print</span> <span class="s">&quot;No coordinates provided: beginning interface mode&quot;</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isAstrodir</span><span class="p">:</span>
+               <span class="n">astrofile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+               <span class="n">data</span><span class="p">,</span> <span class="n">head</span> <span class="o">=</span> <span class="n">astrofile</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">datahead</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+               <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">coordsxy</span> <span class="o">=</span> <span class="n">AstroInterface</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">650</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+            <span class="k">print</span> <span class="s">&quot;Selected coordinates: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">coordsxy</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;Interface mode finished</span><span class="se">\n</span><span class="s">&quot;</span>
+
+        <span class="c"># label list</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">nstars</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">coordsxy</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">nstars</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">[:</span><span class="n">nstars</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">nstars</span><span class="p">:</span>
+                <span class="n">labels</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">+</span> <span class="n">sp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">),</span><span class="n">nstars</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">targets</span> <span class="o">=</span> <span class="p">{</span><span class="n">lab</span><span class="p">:</span> <span class="p">[[</span><span class="n">coo</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="p">]</span>
+                       <span class="k">for</span> <span class="n">coo</span><span class="p">,</span> <span class="n">lab</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">coordsxy</span><span class="p">,</span> <span class="n">labels</span><span class="p">)}</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s">&quot;Coordinates of target stars need to be specified as a list of 2 elements, not: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span>
+                <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">coordsxy</span><span class="p">)))</span>
+
+
+        <span class="c"># instance variables (in addition to self.files, self.isAstrodir and</span>
+        <span class="c"># self.mjd,self.masterbias, self.masterbias, self.masterflat)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span> <span class="o">=</span> <span class="n">stamprad</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maxskip</span> <span class="o">=</span> <span class="n">maxskip</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">skydata</span> <span class="o">=</span> <span class="bp">None</span>
+</div>
+<div class="viewcode-block" id="Timeseries.perform_phot"><a class="viewcode-back" href="../../py_timeseries.html#timeseries.timeseries.Timeseries.perform_phot">[docs]</a>    <span class="k">def</span> <span class="nf">perform_phot</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">aperture</span><span class="p">,</span>
+            <span class="n">sky</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+            <span class="n">keygain</span><span class="o">=</span><span class="s">&#39;GTGAIN11&#39;</span><span class="p">,</span>
+            <span class="n">keyron</span><span class="o">=</span><span class="s">&#39;GTRON11&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Perform apperture photometry with the images of the Timeseries object.</span>
+
+<span class="sd">        :param aperture: aperture photometry radius</span>
+<span class="sd">        :type aperture: int</span>
+<span class="sd">        :param sky: inner and outer radius for sky annulus</span>
+<span class="sd">        :type sky: [int,int]</span>
+<span class="sd">        :param keygain: header key of gain</span>
+<span class="sd">        :type keygain: str</span>
+<span class="sd">        :param keyron: header key of read-out-noise (RON)</span>
+<span class="sd">        :type keyron: str</span>
+<span class="sd">        :rtype: TimeseriesResults</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">skydata</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;No sky information available: sky and self.skydata are None&#39;</span><span class="p">)</span>
+
+        <span class="n">flx</span> <span class="o">=</span> <span class="p">{</span><span class="n">lab</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="p">{</span><span class="n">lab</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
+
+        <span class="n">skydata</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">isAstrodir</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">filename</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">))):</span>
+
+                <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">sky_img_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">lab</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
+
+                <span class="n">gain</span><span class="p">,</span> <span class="n">ron</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">getheaderval</span><span class="p">(</span><span class="n">keygain</span><span class="p">,</span> <span class="n">keyron</span><span class="p">)</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">head</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">datahead</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">imagereduction</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">masterbias</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">masterflat</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">masterdark</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">lab</span><span class="p">,</span> <span class="n">cooxy</span> <span class="ow">in</span> <span class="n">targets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+                    <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">cooxy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">sarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span><span class="p">)</span>
+                    <span class="n">scy</span><span class="p">,</span> <span class="n">scx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">centroid</span><span class="p">(</span><span class="n">sarr</span><span class="p">)</span>
+
+                    <span class="n">skip</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span> <span class="o">-</span> <span class="n">scy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span> <span class="o">-</span> <span class="n">scx</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">skip</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxskip</span><span class="p">:</span>
+                        <span class="k">print</span><span class="p">(</span>
+                            <span class="s">&quot;Jump of </span><span class="si">%f</span><span class="s"> pixels has occurred on frame </span><span class="si">%s</span><span class="s"> for star </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span>
+                            <span class="p">(</span><span class="n">skip</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">lab</span><span class="p">))</span>
+
+                    <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">phot</span><span class="p">,</span> <span class="n">phot_err</span><span class="p">,</span> <span class="n">sky_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apphot</span><span class="p">(</span>
+                            <span class="n">sarr</span><span class="p">,</span> <span class="p">[</span><span class="n">scy</span><span class="p">,</span> <span class="n">scx</span><span class="p">],</span> <span class="n">aperture</span><span class="p">,</span> <span class="n">sky</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="n">gain</span><span class="p">,</span> <span class="n">ron</span><span class="o">=</span><span class="n">ron</span><span class="p">)</span>
+                        <span class="n">sky_img_dict</span><span class="p">[</span><span class="n">lab</span><span class="p">]</span> <span class="o">=</span> <span class="n">sky_out</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sky_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skydata</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">lab</span><span class="p">]</span>
+                        <span class="n">phot</span><span class="p">,</span> <span class="n">phot_err</span><span class="p">,</span> <span class="n">sky_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apphot</span><span class="p">(</span>
+                            <span class="n">sarr</span><span class="p">,</span> <span class="p">[</span><span class="n">scy</span><span class="p">,</span> <span class="n">scx</span><span class="p">],</span> <span class="n">aperture</span><span class="p">,</span> <span class="n">sky_info</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="n">gain</span><span class="p">,</span> <span class="n">ron</span><span class="o">=</span><span class="n">ron</span><span class="p">)</span>
+
+                    <span class="n">flx</span><span class="p">[</span><span class="n">lab</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phot</span><span class="p">)</span>
+                    <span class="n">err</span><span class="p">[</span><span class="n">lab</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phot_err</span><span class="p">)</span>
+                    <span class="n">cooxy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">cx</span> <span class="o">+</span> <span class="n">scx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span><span class="p">,</span> <span class="n">cy</span> <span class="o">+</span> <span class="n">scy</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">skydata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sky_img_dict</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">skydata</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">skydata</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">TimeseriesResults</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">flx</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">data</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">))):</span>
+
+                <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">sky_img_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">lab</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">labels</span><span class="p">}</span>
+
+                <span class="k">for</span> <span class="n">lab</span><span class="p">,</span> <span class="n">cooxy</span> <span class="ow">in</span> <span class="n">targets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+                    <span class="n">cx</span><span class="p">,</span> <span class="n">cy</span> <span class="o">=</span> <span class="n">cooxy</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="n">sarr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subarray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cy</span><span class="p">,</span> <span class="n">cx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span><span class="p">)</span>
+                    <span class="n">scy</span><span class="p">,</span> <span class="n">scx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">centroid</span><span class="p">(</span><span class="n">sarr</span><span class="p">)</span>
+
+                    <span class="n">skip</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span> <span class="o">-</span> <span class="n">scy</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span> <span class="o">-</span> <span class="n">scx</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">skip</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maxskip</span><span class="p">:</span>
+                        <span class="k">print</span><span class="p">(</span>
+                            <span class="s">&quot;Jump of </span><span class="si">%f</span><span class="s"> pixels has occurred on frame </span><span class="si">%s</span><span class="s"> for star </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span>
+                            <span class="p">(</span><span class="n">skip</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">lab</span><span class="p">))</span> <span class="c"># str(i) INSTEAD filename (NO FILENAME, LIST OF IMAGES)</span>
+
+                    <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                        <span class="n">phot</span><span class="p">,</span> <span class="n">phot_err</span><span class="p">,</span> <span class="n">sky_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apphot</span><span class="p">(</span>
+                            <span class="n">sarr</span><span class="p">,</span> <span class="p">[</span><span class="n">scy</span><span class="p">,</span> <span class="n">scx</span><span class="p">],</span> <span class="n">aperture</span><span class="p">,</span> <span class="n">sky</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ron</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+                        <span class="n">sky_img_dict</span><span class="p">[</span><span class="n">lab</span><span class="p">]</span> <span class="o">=</span> <span class="n">sky_out</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">sky_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">skydata</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">lab</span><span class="p">]</span>
+                        <span class="n">phot</span><span class="p">,</span> <span class="n">phot_err</span><span class="p">,</span> <span class="n">sky_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apphot</span><span class="p">(</span>
+                            <span class="n">sarr</span><span class="p">,</span> <span class="p">[</span><span class="n">scy</span><span class="p">,</span> <span class="n">scx</span><span class="p">],</span> <span class="n">aperture</span><span class="p">,</span> <span class="n">sky_info</span><span class="p">,</span> <span class="n">gain</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ron</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+
+                    <span class="n">flx</span><span class="p">[</span><span class="n">lab</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phot</span><span class="p">)</span>
+                    <span class="c"># err[lab].append(phot_err) No info for error calculation</span>
+                    <span class="n">cooxy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">[</span><span class="n">cx</span> <span class="o">+</span> <span class="n">scx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span><span class="p">,</span> <span class="n">cy</span> <span class="o">+</span> <span class="n">scy</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamprad</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">skydata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sky_img_dict</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">sky</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">skydata</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">skydata</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">TimeseriesResults</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">flx</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>  <span class="c"># err = None</span>
+            <span class="p">)</span>
+</div></div>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+
+<div class="viewcode-block" id="TimeseriesResults"><a class="viewcode-back" href="../../py_astrointerface.html#timeseries.timeseries.TimeseriesResults">[docs]</a><span class="k">class</span> <span class="nc">TimeseriesResults</span><span class="p">(</span><span class="n">AstroPlot</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;TimeseriesResults class inherited from AstroPlot class.The purpose of this class is to centralize the data output (mainly the plotting routines).</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TimeseriesResults.__init__"><a class="viewcode-back" href="../../py_astrointerface.html#timeseries.timeseries.TimeseriesResults.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mjd</span><span class="p">,</span> <span class="n">flx</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">targets</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;TimeseriesResult object constructor (inherited from AstroPlot).</span>
+
+<span class="sd">        :param mjd: date array</span>
+<span class="sd">        :type mjd: array</span>
+<span class="sd">        :param flx: flux array dictionary</span>
+<span class="sd">        :type flx: dict</span>
+<span class="sd">        :param err: flux error array dictionary</span>
+<span class="sd">        :type err: dict</span>
+<span class="sd">        :param targets: coordinates array dictionary</span>
+<span class="sd">        :type targets: dict</span>
+<span class="sd">        :rtype: TimeseriesResults</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">TimeseriesResults</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">mjd</span><span class="p">,</span> <span class="n">flx</span><span class="p">,</span> <span class="n">err</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="TimeseriesResults.plot_ratio"><a class="viewcode-back" href="../../py_astrointerface.html#timeseries.timeseries.TimeseriesResults.plot_ratio">[docs]</a>    <span class="k">def</span> <span class="nf">plot_ratio</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">normframes</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Display the ratio of science and reference</span>
+
+<span class="sd">        :param trg: label name of target star</span>
+<span class="sd">        :type trg: string (key of flx and coo)</span>
+<span class="sd">        :param ref: list of stars to be used as reference</span>
+<span class="sd">        :type ref: None or list of strings. If None, then all stars except target</span>
+<span class="sd">        :param normframes: list of frames to normalize (for example, in case only out of transit want to be considered)</span>
+<span class="sd">        :type normframes: None or boolean array. If None, then normalize by all frames</span>
+<span class="sd">        :rtype: None (and plot display)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">trg</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">trg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flx</span><span class="o">.</span><span class="n">keys</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">doratio</span><span class="p">(</span><span class="n">trg</span><span class="o">=</span><span class="n">trg</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="p">,</span> <span class="n">normframes</span><span class="o">=</span><span class="n">normframes</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+           <span class="k">print</span> <span class="s">&quot;No ratio computed computed&quot;</span>
+           <span class="k">return</span>
+
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ratio</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">&quot;Ratio for target = &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">trg</span><span class="p">))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="TimeseriesResults.plot_timeseries"><a class="viewcode-back" href="../../py_astrointerface.html#timeseries.timeseries.TimeseriesResults.plot_timeseries">[docs]</a>    <span class="k">def</span> <span class="nf">plot_timeseries</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Display the timeseries data: flux (with errors) as function of mjd</span>
+
+<span class="sd">        :rtype: None (and plot display)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">lab</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flx</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">err</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">flx</span><span class="p">[</span><span class="n">lab</span><span class="p">],</span>
+                    <span class="n">yerr</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+                    <span class="n">marker</span><span class="o">=</span><span class="s">&quot;o&quot;</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="n">lab</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">flx</span><span class="p">[</span><span class="n">lab</span><span class="p">],</span>
+                    <span class="n">yerr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">err</span><span class="p">[</span><span class="n">lab</span><span class="p">],</span>
+                    <span class="n">marker</span><span class="o">=</span><span class="s">&quot;o&quot;</span><span class="p">,</span>
+                    <span class="n">label</span><span class="o">=</span><span class="n">lab</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s">&quot;Timeseries Data&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&quot;MJD&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&quot;Flux&quot;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">return</span>
+</div>
+<div class="viewcode-block" id="TimeseriesResults.plot_drift"><a class="viewcode-back" href="../../py_astrointerface.html#timeseries.timeseries.TimeseriesResults.plot_drift">[docs]</a>    <span class="k">def</span> <span class="nf">plot_drift</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Show the drift of the stars using the coordinates obtained for every image in the timeseries.</span>
+
+<span class="sd">        :rtype: None (and plot display)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">leg</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">flx</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">cooxy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cooxy</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">xd</span><span class="p">,</span> <span class="n">yd</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cooxy</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+            <span class="n">l</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xd</span> <span class="o">-</span> <span class="n">xd</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yd</span> <span class="o">-</span> <span class="n">yd</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                         <span class="n">label</span><span class="o">=</span><span class="s">&#39;</span><span class="si">%8s</span><span class="s">. X,Y: </span><span class="si">%-7.1f</span><span class="s">,</span><span class="si">%-7.1f</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">xd</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yd</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.02</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="o">.</span><span class="mi">302</span><span class="p">),</span> <span class="n">loc</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                   <span class="n">ncol</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&quot;expand&quot;</span><span class="p">,</span> <span class="n">borderaxespad</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span>
+                   <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s">&#39;size&#39;</span><span class="p">:</span> <span class="mi">6</span><span class="p">})</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+        <span class="k">return</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../../index.html">timeseries 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="../index.html" >Module code</a> &raquo;</li>
+          <li><a href="../timeseries.html" >timeseries</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Fernando Caro.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+Documentation: timeseries/astroplot.py
+======================================
+
+Class: AstroPlot
+----------------
+
+.. autoclass:: astroplot.AstroPlot
+   :members:
+   :private-members:
+   :special-members:

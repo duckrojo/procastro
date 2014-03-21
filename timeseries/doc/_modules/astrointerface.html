@@ -1,0 +1,446 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>astrointerface &mdash; timeseries 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="timeseries 1.0.0 documentation" href="../index.html" />
+    <link rel="up" title="Module code" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="../index.html">timeseries 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <h1>Source code for astrointerface</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">PIL.Image</span> <span class="kn">as</span> <span class="nn">PILimg</span>
+<span class="kn">import</span> <span class="nn">ImageTk</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">tkMessageBox</span> <span class="kn">as</span> <span class="nn">box</span>
+
+<span class="kn">from</span> <span class="nn">Tkinter</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">scipy.ndimage.interpolation</span> <span class="kn">import</span> <span class="n">zoom</span>
+<span class="kn">from</span> <span class="nn">img_scale</span> <span class="kn">import</span> <span class="n">linear</span><span class="p">,</span> <span class="n">sqrt</span><span class="p">,</span> <span class="n">log</span><span class="p">,</span> <span class="n">power</span><span class="p">,</span> <span class="n">asinh</span><span class="p">,</span> <span class="n">histeq</span><span class="p">,</span> <span class="n">range_from_zscale</span>
+
+
+<div class="viewcode-block" id="AstroInterface"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface">[docs]</a><span class="k">class</span> <span class="nc">AstroInterface</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;This class implements a GUI for pixel coordinates selection in an astronomical image.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="AstroInterface.__init__"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">maxsize</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;AstroInterface object constructor.</span>
+
+<span class="sd">        :param data: image</span>
+<span class="sd">        :type data: array</span>
+<span class="sd">        :param maxsize: pixel size in the GUI of the maximum dimension of the image (default value 500)</span>
+<span class="sd">        :type maxsize: int</span>
+<span class="sd">        :rtype: AstroInterface</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c"># MAIN WINDOW AND EXIT BUTTON</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">Tk</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span> <span class="o">=</span> <span class="n">root</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">protocol</span><span class="p">(</span><span class="s">&#39;WM_DELETE_WINDOW&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exit_button</span><span class="p">)</span>
+
+        <span class="c"># INSTANCE VARIABLES</span>
+        <span class="n">maxdim</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">maxsize</span><span class="p">)</span> <span class="o">/</span> <span class="n">maxdim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">zoom</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c"># CHANGE OF ORIGIN FOR IMAGE DISPLAY</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ver</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zscale</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">photo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_photo_image</span><span class="p">()</span>
+
+        <span class="c"># DYNAMIC PIXEL COORDINATES FROM POINTS IN THE IMAGE (INT VALUES)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_pixcoo</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># DYNAMIC POINTS COORDINATES CONVERTED FROM DYNAMIC PIXEL COORDINATES</span>
+        <span class="c"># (FLOAT VALUES)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_points</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c"># DINAMIC FRAME THAT CONTAINS THE LIST OF SELECTED BUTTONS IN THE RIGHT</span>
+        <span class="c"># SIDE OF THE GUI</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_frame</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">()</span>
+
+        <span class="c"># MAIN FRAMES: F1 (LEFT SIDE OF THE GUI) AND F2 (RIGHT SIDE)</span>
+        <span class="n">F1</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+        <span class="n">F1</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">LEFT</span><span class="p">)</span>
+        <span class="n">F2</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">root</span><span class="p">)</span>
+        <span class="n">F2</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">LEFT</span><span class="p">)</span>
+
+        <span class="c"># SCALE BUTTONS</span>
+        <span class="n">Fbuttons</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">F1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B1</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">Fbuttons</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s">&#39;zscale&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B1</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B2</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span><span class="n">Fbuttons</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s">&#39;linear&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B2</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B3</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
+            <span class="n">Fbuttons</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s">&#39;sqrt&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B3</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span>
+            <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">column</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B4</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
+            <span class="n">Fbuttons</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s">&#39;log&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B4</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span>
+            <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">column</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B5</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
+            <span class="n">Fbuttons</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s">&#39;power&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B5</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span>
+            <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">column</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B6</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
+            <span class="n">Fbuttons</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s">&#39;asinh&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B6</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span>
+            <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">column</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B7</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
+            <span class="n">Fbuttons</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s">&#39;histogram&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B7</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span>
+            <span class="n">row</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">column</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">B1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">bg</span><span class="o">=</span><span class="s">&#39;#a2a2a2&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">B1</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span>
+            <span class="s">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_button_action</span><span class="p">(</span>
+                <span class="n">event</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">B1</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B2</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span>
+            <span class="s">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_button_action</span><span class="p">(</span>
+                <span class="n">event</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">B2</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B3</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span>
+            <span class="s">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_button_action</span><span class="p">(</span>
+                <span class="n">event</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">B3</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B4</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span>
+            <span class="s">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_button_action</span><span class="p">(</span>
+                <span class="n">event</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">B4</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B5</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span>
+            <span class="s">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_button_action</span><span class="p">(</span>
+                <span class="n">event</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">B5</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B6</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span>
+            <span class="s">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_button_action</span><span class="p">(</span>
+                <span class="n">event</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">B6</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">B7</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span>
+            <span class="s">&quot;&lt;Button-1&gt;&quot;</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scale_button_action</span><span class="p">(</span>
+                <span class="n">event</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">B7</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span><span class="p">))</span>
+        <span class="n">Fbuttons</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+        <span class="c"># LABELS FOR PIXEL COORDINATES DISPLAY</span>
+        <span class="n">Fcoord</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">F1</span><span class="p">)</span>
+        <span class="n">Fcoord</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posx</span> <span class="o">=</span> <span class="n">StringVar</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posy</span> <span class="o">=</span> <span class="n">StringVar</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">Label</span><span class="p">(</span><span class="n">Fcoord</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s">&#39;X     = &#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">LEFT</span><span class="p">)</span>
+        <span class="n">L1</span> <span class="o">=</span> <span class="n">Label</span><span class="p">(</span><span class="n">Fcoord</span><span class="p">,</span> <span class="n">textvariable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">posx</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">L1</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">LEFT</span><span class="p">)</span>
+        <span class="n">Label</span><span class="p">(</span><span class="n">Fcoord</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s">&#39;</span><span class="se">\t\t</span><span class="s">&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">LEFT</span><span class="p">)</span>
+        <span class="n">Label</span><span class="p">(</span><span class="n">Fcoord</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s">&#39;Y     = &#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">LEFT</span><span class="p">)</span>
+        <span class="n">L2</span> <span class="o">=</span> <span class="n">Label</span><span class="p">(</span><span class="n">Fcoord</span><span class="p">,</span> <span class="n">textvariable</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">posy</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="n">L2</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">side</span><span class="o">=</span><span class="n">LEFT</span><span class="p">)</span>
+
+        <span class="c"># CANVAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span> <span class="o">=</span> <span class="n">Canvas</span><span class="p">(</span>
+            <span class="n">F1</span><span class="p">,</span>
+            <span class="n">background</span><span class="o">=</span><span class="s">&#39;white&#39;</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hor</span><span class="p">,</span>
+            <span class="n">height</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ver</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">create_image</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">anchor</span><span class="o">=</span><span class="n">NW</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">photo</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="s">&#39;img&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s">&#39;&lt;Button-1&gt;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas_on_click_add_point</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="s">&#39;&lt;Motion&gt;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_canvas_on_motion</span><span class="p">)</span>
+
+        <span class="c"># SELECTED POINTS LIST</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cont</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
+            <span class="n">F2</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s">&#39;CONTINUE&#39;</span><span class="p">,</span>
+            <span class="n">state</span><span class="o">=</span><span class="n">DISABLED</span><span class="p">,</span>
+            <span class="n">command</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">destroy</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cont</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span> <span class="o">=</span> <span class="n">Label</span><span class="p">(</span>
+            <span class="n">F2</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">            No points selected            </span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Fpoints</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="n">F2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Fpoints</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="AstroInterface.execute"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Executes the mainloop in the AstroInterface object.</span>
+
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">mainloop</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_points</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._exit_button"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._exit_button">[docs]</a>    <span class="k">def</span> <span class="nf">_exit_button</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Exit button function. A warning is triggered when the exit button is pressed.</span>
+
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">askyesno</span><span class="p">(</span><span class="s">&quot;Warning&quot;</span><span class="p">,</span> <span class="s">&quot;Are you sure you want to exit?&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">answer</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+            <span class="nb">exit</span><span class="p">(</span><span class="s">&#39;Program finished from interface</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._get_photo_image"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._get_photo_image">[docs]</a>    <span class="k">def</span> <span class="nf">_get_photo_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s">&#39;zscale&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the scaled version of the image given in the constructor as a PhotoImage instance.</span>
+
+<span class="sd">        :param mode: image scale mode (options: &#39;zscale&#39; (default), &#39;linear&#39;, &#39;sqrt&#39;, &#39;log&#39;, &#39;power&#39;, &#39;asinh&#39;, &#39;histogram&#39;)</span>
+<span class="sd">        :type mode: str</span>
+<span class="sd">        :rtype: PhotoImage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;zscale&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">zscale</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">zscale</span> <span class="o">=</span> <span class="n">range_from_zscale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">z1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zscale</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">z2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zscale</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">scaled_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">scaled_data</span><span class="p">[</span><span class="n">scaled_data</span> <span class="o">&lt;</span> <span class="n">z1</span><span class="p">]</span> <span class="o">=</span> <span class="n">z1</span>
+            <span class="n">scaled_data</span><span class="p">[</span><span class="n">scaled_data</span> <span class="o">&gt;</span> <span class="n">z2</span><span class="p">]</span> <span class="o">=</span> <span class="n">z2</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;linear&#39;</span><span class="p">:</span>
+            <span class="n">scaled_data</span> <span class="o">=</span> <span class="n">linear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;sqrt&#39;</span><span class="p">:</span>
+            <span class="n">scaled_data</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;log&#39;</span><span class="p">:</span>
+            <span class="n">min_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">if</span> <span class="n">min_val</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+                <span class="n">delta</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">min_val</span>
+            <span class="n">scaled_data</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">+</span> <span class="n">delta</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;power&#39;</span><span class="p">:</span>
+            <span class="n">scaled_data</span> <span class="o">=</span> <span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;asinh&#39;</span><span class="p">:</span>
+            <span class="n">scaled_data</span> <span class="o">=</span> <span class="n">asinh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="s">&#39;histogram&#39;</span><span class="p">:</span>
+            <span class="n">ver</span><span class="p">,</span> <span class="n">hor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">num_bins</span> <span class="o">=</span> <span class="p">(</span><span class="n">ver</span> <span class="o">*</span> <span class="n">hor</span><span class="p">)</span> <span class="o">/</span> <span class="mi">10</span>
+            <span class="n">scaled_data</span> <span class="o">=</span> <span class="n">histeq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">num_bins</span><span class="o">=</span><span class="n">num_bins</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Unknown mode &#39;</span><span class="si">%s</span><span class="s">&#39; for image scaling&quot;</span> <span class="o">%</span> <span class="n">mode</span><span class="p">)</span>
+
+        <span class="k">print</span> <span class="s">&quot;img_scale: </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="n">mode</span>
+        <span class="n">scaled_data</span> <span class="o">=</span> <span class="p">(</span><span class="mf">255.0</span> <span class="o">/</span> <span class="n">scaled_data</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">*</span>
+                       <span class="p">(</span><span class="n">scaled_data</span> <span class="o">-</span> <span class="n">scaled_data</span><span class="o">.</span><span class="n">min</span><span class="p">()))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ImageTk</span><span class="o">.</span><span class="n">PhotoImage</span><span class="p">(</span><span class="n">PILimg</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">scaled_data</span><span class="p">))</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._scale_button_action"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._scale_button_action">[docs]</a>    <span class="k">def</span> <span class="nf">_scale_button_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">pressed_button</span><span class="p">,</span> <span class="n">prev_pressed_button</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Scale buttons function. Updates the scale in the displayed image.</span>
+
+<span class="sd">        :param event: event</span>
+<span class="sd">        :type event: event</span>
+<span class="sd">        :param pressed_button: scale pressed button</span>
+<span class="sd">        :type pressed_button: button</span>
+<span class="sd">        :param prev_pressed_button: scale button pressed previously</span>
+<span class="sd">        :type prev_pressed_button: button</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">prev_pressed_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">bg</span><span class="o">=</span><span class="s">&#39;#d9d9d9&#39;</span><span class="p">)</span>
+        <span class="n">pressed_button</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">bg</span><span class="o">=</span><span class="s">&#39;#a2a2a2&#39;</span><span class="p">)</span>
+        <span class="n">mode</span> <span class="o">=</span> <span class="n">pressed_button</span><span class="p">[</span><span class="s">&#39;text&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">photo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_photo_image</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">itemconfigure</span><span class="p">(</span><span class="s">&#39;img&#39;</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">photo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_pressed_button</span> <span class="o">=</span> <span class="n">pressed_button</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._update_point_list"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._update_point_list">[docs]</a>    <span class="k">def</span> <span class="nf">_update_point_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Update the list of selected points in the right side of the GUI.</span>
+
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_frame</span><span class="o">.</span><span class="n">pack_forget</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_frame</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_frame</span> <span class="o">=</span> <span class="n">Frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Fpoints</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_frame</span><span class="o">.</span><span class="n">pack</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">coo</span><span class="p">,</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_points</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_points</span><span class="p">))):</span>
+            <span class="n">L</span> <span class="o">=</span> <span class="n">Label</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_frame</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="nb">str</span><span class="p">([</span><span class="n">coo</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coo</span><span class="p">[</span><span class="mi">1</span><span class="p">]]))</span>
+            <span class="n">B</span> <span class="o">=</span> <span class="n">Button</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_frame</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="s">&#39;</span><span class="se">\xe2\x98\x92</span><span class="s">&#39;</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf8&#39;</span><span class="p">),</span>
+                <span class="n">command</span><span class="o">=</span><span class="k">lambda</span> <span class="n">i</span><span class="o">=</span><span class="n">i</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_button_remove_point</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+            <span class="n">L</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">B</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dynamic_points</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cont</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">ACTIVE</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+                <span class="n">text</span><span class="o">=</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">              Selected points              </span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cont</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">DISABLED</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">label</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span>
+                <span class="n">text</span><span class="o">=</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">            No points selected            </span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._canvas_draw_circle"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._canvas_draw_circle">[docs]</a>    <span class="k">def</span> <span class="nf">_canvas_draw_circle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Draws a red circle at (x,y) coordinates in the canvas.</span>
+
+<span class="sd">        :param x: horizontal center coordinate of the circle</span>
+<span class="sd">        :type x: int</span>
+<span class="sd">        :param y: vertical center coordinate of the circle</span>
+<span class="sd">        :type y: int</span>
+<span class="sd">        :param rad: radius of the circle (default 4)</span>
+<span class="sd">        :type rad: int</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">create_oval</span><span class="p">(</span>
+            <span class="n">x</span> <span class="o">-</span> <span class="n">rad</span><span class="p">,</span>
+            <span class="n">y</span> <span class="o">-</span> <span class="n">rad</span><span class="p">,</span>
+            <span class="n">x</span> <span class="o">+</span> <span class="n">rad</span><span class="p">,</span>
+            <span class="n">y</span> <span class="o">+</span> <span class="n">rad</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="n">fill</span><span class="o">=</span><span class="s">&#39;red&#39;</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._update_canvas"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._update_canvas">[docs]</a>    <span class="k">def</span> <span class="nf">_update_canvas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the canvas content. Displays the image and currently selected points on it.</span>
+
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s">&#39;all&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">create_image</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">anchor</span><span class="o">=</span><span class="n">NW</span><span class="p">,</span> <span class="n">image</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">photo</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="s">&#39;img&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_pixcoo</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_canvas_draw_circle</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">canvas</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._button_remove_point"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._button_remove_point">[docs]</a>    <span class="k">def</span> <span class="nf">_button_remove_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Removes a point from the the list of selected points.</span>
+
+<span class="sd">        :param index: index of the point to be removed in the list of selected points.</span>
+<span class="sd">        :type index: int</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_points</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_pixcoo</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_point_list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_canvas</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._canvas_on_click_add_point"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._canvas_on_click_add_point">[docs]</a>    <span class="k">def</span> <span class="nf">_canvas_on_click_add_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Adds a new point to the list of selected points in the right side of the GUI.</span>
+
+<span class="sd">        :param event: event</span>
+<span class="sd">        :type event: event</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_pixcoo</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">event</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">y</span><span class="p">))</span>
+        <span class="n">posx</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">x</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">posy</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ver</span> <span class="o">-</span> <span class="n">event</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posx</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">posx</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posy</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">posy</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_points</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">posx</span><span class="p">,</span> <span class="n">posy</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_point_list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_canvas</span><span class="p">()</span>
+</div>
+<div class="viewcode-block" id="AstroInterface._canvas_on_motion"><a class="viewcode-back" href="../py_astrointerface.html#astrointerface.AstroInterface._canvas_on_motion">[docs]</a>    <span class="k">def</span> <span class="nf">_canvas_on_motion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Updates the pixel coordinates while the cursor is over the image.</span>
+
+<span class="sd">        :param event: event</span>
+<span class="sd">        :type event: event</span>
+<span class="sd">        :rtype: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">posx</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">x</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">posy</span> <span class="o">=</span> <span class="nb">round</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">ver</span> <span class="o">-</span> <span class="n">event</span><span class="o">.</span><span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_factor</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posx</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">posx</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">posy</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">posy</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="../index.html">timeseries 1.0.0 documentation</a> &raquo;</li>
+          <li><a href="index.html" >Module code</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, Fernando Caro.
+    </div>
+  </body>
+</html>
