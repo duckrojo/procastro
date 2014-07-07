@@ -41,14 +41,14 @@ class process2d():
         :param attrtoclone: list of attributes to clone. If specified, data must be object to clone from.
     """
         import astropy.nddata as nd
-        from dataproc import AstroFile
+        from dataproc import astrofile
 
         if not hasattr(self, 'props'):
             self.props={}
 
         #If clone make sure both attrtoclone is specified and data is the appropriate object class
         if isinstance(data, basestring): #filename is given
-            data, header2=AstroFile(data).reader(datahead=True)
+            data, header2=astrofile(data).reader(datahead=True)
             if header is None:
                 header=header2
 

@@ -23,25 +23,9 @@ import scipy as sp
 
 class AstroPlot(object):
 
-    def __init__(self, mjd, flx, err, targets):
-        """AstroPlot object constructor.
+    def __init__(self):
+        pass
 
-        :param mjd: date array
-        :type mjd: array
-        :param flx: flux array dictionary
-        :type flx: dict
-        :param err: flux error array dictionary
-        :type err: dict
-        :param targets: coordinates array dictionary
-        :type targets: dict
-        :rtype: AstroPlot
-        """
-
-        self.mjd = mjd
-        self.flx = flx
-        self.err = err
-        self.cooxy = targets
-        self.ratio = None
 
     def doratio(self, trg, ref=None, normframes=None):
         """Computes ratio of science and reference
@@ -67,13 +51,23 @@ class AstroPlot(object):
 
         science = asarray(self.flx[trg])
         reference = science * 0.0
+        variance_ref = science * 0.0
         for k in ref:
-            reference += asarray(self.flx[k]) / asarray(self.flx[k]).mean()
+            reference += asarray(self.flx[k],dtype=float) / asarray(self.flx[k]).mean()
+            variance_ref += (asarray(self.err[k],dtype=float) /
+                             asarray(self.flx[k]).mean() ) **2
         reference /= len(ref)
+        variance_ref /= len(ref)
+        self.var=variance_ref
+        self.rr = reference
 
         self.ratio = science / reference
+        self.ratio_error = self.ratio * sp.sqrt(variance_ref/(reference**2) +
+                                                (self.err[trg]/science)**2)
         if normframes is None:
             normframes = sp.ones(len(science)) == 1
-
-        self.ratio /= self.ratio[normframes].mean()
+        
+        norm = self.ratio[normframes].mean()
+        self.ratio /= norm
+        self.ratio_error /= norm
         return

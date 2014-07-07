@@ -22,6 +22,21 @@
 Data proc docstring
 """
 
-from core import *
+import core, types
+
+core = reload(core)
+
+for v in dir(core):
+    if v[0] == '_' or isinstance(getattr(core,v), types.ModuleType):
+        continue
+    globals()[v] = getattr(core, v)
+
+del core
+del types
+del v
+
+
+
+#from core import *
 
 

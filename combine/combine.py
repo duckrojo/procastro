@@ -19,30 +19,64 @@
 #
 
 from functools import wraps as _wraps
-from dataproc import gr_examine as _gr_examine
+import scipy as sp
+import dataproc as dp
+import os.path as path
+import pyfits as pf
+#from dataproc import gr_examine as _gr_examine
 
-class combine(_gr_examine):
+class Combine():#_gr_examine):
     """"Many ways to combine data"""
 
     def __init__(self,astrodata,
                  header=None, flagfield='ORIGHEAD', 
                  interact=False,
+                 doauto=False,
+                 saveto=None,
+                 load_saved=False,
+                 bias=None,
+                 descriptor='frame',
                  **kwargs):
-        """astrodata can be a list of AstroFile or a list of array. Uses header of first AstroFile element if not supplied. Bias to be substracted can be specified with 'bias' keyword.  This bias can be optionally skiped if its has different sizes and 'biasskip' is set to True, otherwise raise exception"""
+        """astrodata can be a list of astrofile or a list of array. Uses header of first astrofile element if not supplied. Bias to be substracted can be specified with 'bias' keyword.  This bias can be optionally skiped if its has different sizes and 'biasskip' is set to True, otherwise raise exception
+
+:param saveto: Store filename to be later used with .write(). TODO: decide whether it is better to load from this file if it exists.
+"""
 
         import scipy as sp
-        from dataproc import AstroFile
         import sys
         self.flagfield = flagfield
         arrays=[]
         heads = []
         shape1 = None
 
-        sys.stdout.write (" reading %i frame%s" % (len(astrodata),len(astrodata)>1 and "s" or ""))
+        if saveto is not None:
+            self.saveto = saveto
+            if load_saved and path.isfile(saveto):
+                #TODO: use dataproc instead of pyfits to open
+                loaded_file = pf.open(saveto)[0]
+                self.headers = [loaded_file.header]
+                if not self.headers[0]["COMBINE"]:
+                    raise ValueError("File '%s' does not contain a valid 'combine' output" % (saveto))
+                self.data = loaded_file.data
+
+                self.loaded = True
+                #TODO: read sigma
+                self.sigma = None
+                self.lastmet = [self.headers[0]["COMBMETH"]]
+                for prm in self.headers[0]["COMBPRM*"]:
+                    self.lastmet.append(self.headers[0][prm])
+                self.ncombine = self.headers[0]["NCOMBINE"]
+
+                return
+
+        sys.stdout.write (" reading %i %s%s" % (len(astrodata),descriptor,len(astrodata)>1 and "s" or ""))
         for d in astrodata:
             #Check supported type of element
-            if isinstance(d, AstroFile.__class__):
-                dt,hd = d.reader()
+#            print ("\n%s: %s/%s\n%s" %(d, d.__class__, dp.astrofile.__class__, dir(d)))
+            #todo: find out why isinstance does not work!!!
+            #if isinstance(d, dp.AstroFile):
+            if hasattr(d, 'astrofile'):
+                dt,hd = d.reader(datahead=True)
                 #use the first read header to fill all the data without headers
                 if header is None:
                     header = hd.copy()
@@ -51,11 +85,11 @@ class combine(_gr_examine):
                     for h in heads:
                         if h is None:
                             h = header
-            elif isinstance(d, ndarray):
+            elif isinstance(d, sp.ndarray):
                 dt = d
                 hd = header
             else:
-                raise TypeError("combine()  initialization with a list of AstroFile or  ndarray is currently supported")
+                raise TypeError("combine()  initialization only with a list of astrofile or  ndarray is currently supported")
 
             #check equal size
             if shape1 is None:
@@ -63,6 +97,12 @@ class combine(_gr_examine):
             elif shape1 != dt.shape:
                 raise ValueError("All arrays passed to combine should have the same dimension")
 
+            if bias is not None:
+                if isinstance(bias, Combine):
+                    bias = bias.data
+                if bias.shape != shape1:
+                    raise ValueError("Bias shape (%s) does not match data's (%s)" % (bias.shape, shape1))
+                dt -= bias
             arrays.append(dt)
             heads.append(hd)
             sys.stdout.write('.')
@@ -70,18 +110,24 @@ class combine(_gr_examine):
 
         sys.stdout.write('\n')
 
-        print(" converting to scipy")
         self.arrays = sp.array(arrays)
+
         ##TD: Get real sigmas given poisson!
         self.sigmas = sp.zeros(self.arrays.shape)
         if self.sigmas.any():
             raise ValueError("NaN are found self.sigmas!")
-        self.headers = heads
+
         self.okframes = sp.zeros(len(arrays))==0
         if interact:
             print(" selecting good frames")
             self.showeach('Select valid frames', interact=True)
-        self.auto(**kwargs)
+
+        if doauto:
+            self.auto(**kwargs)
+
+        self.headers = heads
+
+
 
 
     def _normalize(f):
@@ -92,36 +138,39 @@ class combine(_gr_examine):
             ret = f(instance, *args, **kwargs)
             if 'normalize' in kwargs and  kwargs['normalize']:
                 if kwargs['normalize']=='mean':
-                    norm= ret.mean()
+                    norm = ret.data.mean()
                 else: #use median as default
-                    norm= sp.median(ret)
+                    norm = sp.median(ret.data)
             else:
                 norm=1
             instance.norm_fct=norm
-            return ret/norm
+#            print ret.data
+            instance.data = instance.data/norm
+            return instance
         return donorm
 
-    def _debias(f):
-        """Decorator to noramlize the return"""
-        import warnings
-        import numpy as np
-        @_wraps(f)
-        def dobias(instance, *args, **kwargs):
-            ret = f(instance, *args, **kwargs)
-            if 'bias' in kwargs and isinstance(kwargs['bias'],np.ndarray):
-                bias = kwargs['bias']
-                if ret.shape != bias.shape:
-                    if 'biasskip' in kwargs and kwargs['biasskip']:
-                        warnings.warn(" bias is not the same size as data, ignoring it as requested")
-                        return ret
-                    else:
-                        raise ValueError("Bias (%s) must have same size and dimensions as data (%s)" %
-                                     ('x'.join(["%i"%(s,) for s in bias.shape]),
-                                      'x'.join(["%i"%(s,) for s in ret.shape]))
-                                     )
-                ret -= bias
-            return ret
-        return dobias
+    ###FOllowing was replaced by a bias= keyword to __init__!
+    # def _debias(f):
+    #     """Decorator to noramlize the return"""
+    #     import warnings
+    #     import numpy as np
+    #     @_wraps(f)
+    #     def dobias(instance, *args, **kwargs):
+    #         ret = f(instance, *args, **kwargs)
+    #         if 'bias' in kwargs and isinstance(kwargs['bias'],np.ndarray):
+    #             bias = kwargs['bias']
+    #             if instance.data.shape != bias.shape:
+    #                 if 'biasskip' in kwargs and kwargs['biasskip']:
+    #                     warnings.warn(" bias is not the same size as data, ignoring it as requested")
+    #                     return ret
+    #                 else:
+    #                     raise ValueError("Bias (%s) must have same size and dimensions as data (%s)" %
+    #                                  ('x'.join(["%i"%(s,) for s in bias.shape]),
+    #                                   'x'.join(["%i"%(s,) for s in instance.data.shape]))
+    #                                  )
+    #             instance.data = instance.data - bias
+    #         return instance
+    #     return dobias
 
     def _checksig(f):
         """Decorator to check standard appropriate standard deviation without zeros"""
@@ -137,9 +186,22 @@ class combine(_gr_examine):
 
         return sigmaok
 
+    def _ignore_if_load(f):
+        """Decorator to make ignore function if loaded from file instead of being given as arrays"""
+        @_wraps(f)
+        def ignoring(instance, *args, **kwargs):
+            import warnings
+            if hasattr(instance,'loaded') and instance.loaded:
+                return instance
+            return f(instance, *args, **kwargs)
+
+        return ignoring
+
+
+    @_ignore_if_load
     @_checksig
     @_normalize
-    @_debias
+#    @_debias
     def lininterp(self, target=0, 
                   field='EXPTIME', sigma=False, doerr=True,
                   var=None, multi=1):
@@ -232,8 +294,10 @@ class combine(_gr_examine):
         self.data=comb
         self.sigma=sig
         self.lastmet=('lininterp',target,field,sigma, doerr)
+        self.ncombine = len(arr)
         self.updatehdr(exptime=target)
-        return sigma and comb or (comb,sig)
+        return self
+
 
     def updatehdr(self, **kwargs):
         """Returns a header with info about the combination and any other indicated header. It choses the type of the first file."""
@@ -245,22 +309,37 @@ class combine(_gr_examine):
         #TD: it assumes fits header. Not always true
         if not hasattr(self,'outhdr'):
             self.outhdr = copy(self.headers[0])
-            self.outhdr.update("COMBINE",True,"Is this a combination of files?")
-            self.outhdr.update("COMBMETH",self.lastmet[0],"Method used to combine")
+            self.outhdr["COMBINE"] = (True,"Is this a combination of files?")
+            self.outhdr["NCOMBINE"] = (self.ncombine,"Number of frames combined")
+            self.outhdr["COMBMETH"] = (self.lastmet[0],"Method used to combine")
+            for i, prm in zip(range(len(self.lastmet)-1), self.lastmet[1:]):
+                self.outhdr["COMBPRM%i" %i] = (prm, "Parameter %i to method" % i)
         for k in kwargs.keys():
-            self.outhdr.update(k,kwargs[k])
+            self.outhdr[k] = kwargs[k]
 
-    def write(self, filename, **kwargs):
+    def save(self, *args, **kwargs):
+        """Alias to write()"""
+        return self.write(*args, **kwargs)
+
+    def write(self, filename=None, verbose=True, **kwargs):
         """Write combined array to file. Add specified headers"""
 
-        from dataproc import AstroFile
+        from dataproc import astrofile
+        if (filename is None):
+            if (not self.saveto):
+                raise ValueError("Filename to store combined file was not specified with .write, nor in the object initialization")
+            filename = self.saveto
         if not hasattr(self,'lastmet'):
             raise ValueError("write must be run after a combination method")
         self.updatehdr(**kwargs)
-        return AstroFile(filename).writer(self.data, self.outhdr)
-        
+        #TODO: include sigma
+        if verbose:
+            print("Saving combined array to '%s'" % filename)
+        astrofile(filename).writer(self.data, self.outhdr)
+        return self
 
 
+    @_ignore_if_load
     def best(self, field='EXPTIME'):
         """Finds the best function to use, return a tuple (fcnname, fcn, required_arguments)"""
         import scipy as sp
@@ -276,6 +355,9 @@ class combine(_gr_examine):
         else:
             return ("mean", self.mean, ())
 
+
+
+    @_ignore_if_load
     def auto(self, **kwargs):
         """Executes the best normalization found by best()"""
 
@@ -290,63 +372,73 @@ class combine(_gr_examine):
 
 
 
+    @_ignore_if_load
     @_normalize
     @_checksig
-    @_debias
+#    @_debias
     def mean(self, sigclip=False, var=None, **kwargs):
         """Combines the data using mean. Optionally sigma-clipping beyond the specified sigclip"""
         if var is None:
-            var=self.sigmas[self.okframes]**2
-        arr=self.arrays[self.okframes]
-        sig=self.sigmas[self.okframes]
+            var = self.sigmas[self.okframes]**2
+        arr = self.arrays[self.okframes]
+        sig = self.sigmas[self.okframes]
         if sigclip:
             mask = sigmask(arr,sigclip,0)
-            comb= (arr*mask).sum(0)/mask.sum(0, dtype=float)
+            comb = (arr*mask).sum(0)/mask.sum(0, dtype=float)
         else:
-            comb= arr.mean(0)
-        self.data=comb
-        self.lastmet=('mean',sigclip)
-        ##TD: Sigma for mean
+            comb = arr.mean(0)
+        self.data = comb
+        self.lastmet = ('mean',sigclip)
+        ##TODO: Sigma for mean
         self.sigma=None
+        self.ncombine=len(arr)
         self.updatehdr()
-        return comb
+        return self
 
 
+    @_ignore_if_load
     @_normalize
     @_checksig
-    @_debias
+#    @_debias
     def median(self, var=None, **kwargs):
         """Combines the data using median"""
         import scipy as sp
         arr=self.arrays[self.okframes]
-        print arr[:,200,200]
         comb= sp.median(arr, 0)
         self.data=comb
-        print self.data[200,200]
         ##TD: Sigma for median
+        self.ncombine=len(arr)
         self.sigma=None
         self.lastmet=('median',)
         self.updatehdr()
-        return comb
+        return self
+
+    def __len__(self):
+        if hasattr(self,'ncombine'):
+            return self.ncombine
+        return 0
+
+
+    # def plotpix(self, coords, *args, **kwargs):
+    #     """plot one pixel against header value if lininterp or frame number otherwise. Plot resultant combination if it was done"""
+
+    #     if hasattr(self,'lastmet') and self.lastmet[0] == 'lininterp':
+    #         x = sp.array([h[self.lastmet[2]] for h in hd])
+    #     else:
+    #         x = None
+
+    #     ax=_gr_examine.plotpix(self, coords, x, **kwargs)
+
+    #     if hasattr(self,'data') and coords is not None and self.data is not None:
+    #         cb=self.data.T
+    #         for c in coords[::-1]:
+    #             cb=cb[c]
+    #         print cb*self.norm_fct
+    #         ax.plot(ax.get_xlim(),[cb]*2,'r')
+
+    #         if self.lastmet[0] == 'lininterp':
+    #             ax.plot([self.lastmet[1]]*2,ax.get_ylim(),'r')
 
 
 
-    def plotpix(self, coords, *args, **kwargs):
-        """plot one pixel against header value if lininterp or frame number otherwise. Plot resultant combination if it was done"""
 
-        if hasattr(self,'lastmet') and self.lastmet[0] == 'lininterp':
-            x = sp.array([h[self.lastmet[2]] for h in hd])
-        else:
-            x = None
-
-        ax=_gr_examine.plotpix(self, coords, x, **kwargs)
-
-        if hasattr(self,'data') and coords is not None and self.data is not None:
-            cb=self.data.T
-            for c in coords[::-1]:
-                cb=cb[c]
-            print cb*self.norm_fct
-            ax.plot(ax.get_xlim(),[cb]*2,'r')
-
-            if self.lastmet[0] == 'lininterp':
-                ax.plot([self.lastmet[1]]*2,ax.get_ylim(),'r')

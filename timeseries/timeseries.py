@@ -18,17 +18,23 @@
 #
 #
 
-from astrocalc import AstroCalc
-from astroplot import AstroPlot
+from __future__ import print_function,division
+
+import astrocalc
+import astroplot
+import matplotlib.pyplot as plt
+astrocalc=reload(astrocalc)
+astroplot=reload(astroplot)
 
 from astropy.time import Time
 
 import copy
 import scipy as sp
 import dataproc as dp
+import warnings
 
 
-class Timeseries(AstroCalc):
+class Timeseries(astrocalc.AstroCalc):
 
     """Timeseries class inherited from AstroCalc class.The purpose of this class is to organize all the calculation tasks related to the timeseries analysis.
 
@@ -41,8 +47,11 @@ class Timeseries(AstroCalc):
             labels=None,
             stamprad=20,
             maxskip=6,
-            keydate='DATE-OBS',
+            epoch='JD',
+            exptime='EXPTIME',
             keytype='IMAGETYP',
+            ingain='GTGAIN11',
+            inron='GTRON11',
             mastermode='median'):
         """Timeseries object constructor.
 
@@ -56,8 +65,8 @@ class Timeseries(AstroCalc):
         :type stamprad: int (default value: 20)
         :param maxskip: maximum skip considered (without warning) between the positions of a star in two sucesive images
         :type maxskip: int (default value: 6)
-        :param keydate: header key of observation date in the images (allows image sorting in terms of time)
-        :type keydate: str
+        :param epoch: header key of observation date in the images (allows image sorting in terms of time) or list
+        :type epoch: str or list
         :param keytype: header key of image type ('OBJECT','BIAS','DOME FLAT',etc)
         :type keytype: str
         :param mastermode: mode for master (BIAS, DARK, FLAT, etc) image obtention. Options: 'mean' and 'median' (default).
@@ -67,11 +76,15 @@ class Timeseries(AstroCalc):
 
         # data type check
         if isinstance(data, str):  # data is a string (path to a directory)
-            self.files = dp.astrodir(data).sort(keydate)
+            self.files = dp.astrodir(data)
+            if isinstance(epoch,basestring):
+                self.files = self.files.sort(epoch)
             self.isAstrodir = True
 
         elif isinstance(data, dp.astrodir):  # data is an astrodir object
-            self.files = data.sort(keydate)
+            self.files = data
+            if isinstance(epoch,basestring):
+                self.files = self.files.sort(epoch)
             self.isAstrodir = True
 
         elif isinstance(data, list):  # data is a list of images (ndarray)
@@ -81,6 +94,14 @@ class Timeseries(AstroCalc):
                 if not isinstance(img, sp.ndarray):
                     raise TypeError(
                         'data is a list but not all the elements are ndarray')
+            if isinstance(epoch,(list,tuple,sp.ndarray)):
+                self.epoch = epoch
+            else:
+                warnings.warn("Epochs were not specified and list of data was given")
+            if isinstance(exptime,(list,tuple)):
+                self.exptime = exptime
+            else:
+                warnings.warn("Exposure time was not specified and list of data was given")
             self.files = data
             self.isAstrodir = False
 
@@ -90,61 +111,69 @@ class Timeseries(AstroCalc):
         # mjd list and science image filtering
         if self.isAstrodir:
 
-            time_file_list = []
-            bias_files = []
-            dark_files = []
-            flat_files = []
+            # time_file_list = []
+            # bias_files = []
+            # dark_files = []
+            # flat_files = []
 
-            for astrofile in self.files:
-                type_str = astrofile.getheaderval(keytype)[0]
-                if 'OBJECT' in type_str:
-                    date_str = astrofile.getheaderval(keydate)[0]
-                    date_format = "iso"
-                    if "T" in date_str or "t" in date_str:
-                        date_format += "t"
-                    mjd_val = Time(
-                        date_str,
-                        format=date_format,
-                        scale='utc').mjd
-                    time_file_list.append((mjd_val, astrofile))
-                elif 'BIAS' in type_str:
-                    data, head = astrofile.reader(datahead=True)
-                    bias_files.append(data)
-                    print "%s is used for MASTERBIAS" % astrofile
-                elif 'DARK' in type_str:
-                    data, head = astrofile.reader(datahead=True)
-                    dark_files.append(data)
-                    print "%s is used for MASTERDARK" % astrofile
-                elif 'FLAT' in type_str:
-                    data, head = astrofile.reader(datahead=True)
-                    flat_files.append(data)
-                    print "%s is used for MASTERFLAT" % astrofile
-                else:
-                    print "%s is not used" % astrofile
+            self.epoch = self.files.getheaderval(epoch)
+            self.exptime = self.files.getheaderval(exptime)
 
-            time_file_list.sort()  # Bug correction of dataproc
-            print "\n%s is the FIRST file of the timeseries (initial star coordinates should consider this file)\n" % time_file_list[0][1]
-            self.mjd = [mjd for mjd, astrofile in time_file_list]
-            self.files = [astrofile for mjd, astrofile in time_file_list]
-            self.masterbias = self.masterimage(bias_files, mode=mastermode)
-            self.masterdark = self.masterimage(dark_files, mode=mastermode)
-            self.masterflat = self.masterimage(flat_files, mode=mastermode)
+#             for astrofile in self.files:
+# #                type_str = astrofile.getheaderval(keytype)[0]
+# #                if 'OBJECT' in type_str:
+#                 date_str = astrofile.getheaderval(keydate)[0]
+#                 date_format = "iso"
+#                 if "T" in date_str or "t" in date_str:
+#                     date_format += "t"
+#                 mjd_val = Time(
+#                     date_str,
+#                     format=date_format,
+#                     scale='utc').mjd
+#                 time_file_list.append((mjd_val, astrofile))
+#                 # elif 'BIAS' in type_str:
+#                 #     data, head = astrofile.reader(datahead=True)
+#                 #     bias_files.append(data)
+#                 #     print("%s is used for MASTERBIAS" % astrofile)
+#                 # elif 'DARK' in type_str:
+#                 #     data, head = astrofile.reader(datahead=True)
+#                 #     dark_files.append(data)
+#                 #     print("%s is used for MASTERDARK" % astrofile)
+#                 # elif 'FLAT' in type_str:
+#                 #     data, head = astrofile.reader(datahead=True)
+#                 #     flat_files.append(data)
+#                 #     print("%s is used for MASTERFLAT" % astrofile)
+#                 # else:
+#                 #     print("%s is not used" % astrofile)
 
-        else:
-            self.mjd = sp.arange(len(data))
+# #            time_file_list.sort()  # Bug correction of dataproc (BUG????? TODO)
+#             print("\n%s is the FIRST file of the timeseries (initial star coordinates should consider this file)\n" % time_file_list[0][1])
+#             self.mjd = [mjd for mjd, astrofile in time_file_list]
+#             self.exptime = [expt for expt, astrofile in expt_file_list]
+#             self.files = [astrofile for mjd, astrofile in time_file_list]
+#             self.masterbias = self.masterimage(bias_files, mode=mastermode)
+#             self.masterdark = self.masterimage(dark_files, mode=mastermode)
+#             self.masterflat = self.masterimage(flat_files, mode=mastermode)
 
-        # coordsxy check
-        if coordsxy is None:
-            from astrointerface import AstroInterface
-            print "No coordinates provided: beginning interface mode"
-            if self.isAstrodir:
-                astrofile = self.files[0]
-                data, head = astrofile.reader(datahead=True)
-            else:
-                data = self.files[0]
-            coordsxy = AstroInterface(data, maxsize=650).execute()
-            print "Selected coordinates: %s" % str(coordsxy)
-            print "Interface mode finished\n"
+        if not hasattr(self,'epoch'):
+            self.epoch = sp.arange(len(data))
+        if not hasattr(self, 'exptime'):
+            self.exptime = sp.ones(len(data))
+
+        print (" Data list ready for %i elements" % (len(self.files),))
+
+        # # coordsxy check
+        # if coordsxy is None:
+        #     from astrointerface import AstroInterface
+        #     print("No coordinates provided: beginning interface mode")
+        #     if self.isAstrodir:
+        #         astrofile = self.files[0]
+        #         data, head = astrofile.reader(datahead=True)
+        #     else:
+        #         data = self.files[0]
+        #     coordsxy = AstroInterface(data, maxsize=650).execute()
+        #     print("Selected coordinates: %s" % str(coordsxy))
+        #     print("Interface mode finished\n")
 
         # label list
         try:
@@ -157,37 +186,43 @@ class Timeseries(AstroCalc):
                 labels = list(
                     labels) + sp.arange(len(labels),
                                         nstars).astype(str).tolist()
-            targets = {lab: [[coo[0], coo[1]], ]
-                       for coo, lab in zip(coordsxy, labels)}
+            targetsxy = {lab: coo
+                         for coo, lab in zip(coordsxy, labels)}
         except:
-            raise ValueError(
-                "Coordinates of target stars need to be specified as a list of 2 elements, not: %s" %
-                (str(coordsxy)))
+            raise ValueError("Coordinates of target stars need to be "+
+                             "specified as a list of 2 elements, not: %s" %
+                             (str(coordsxy),))
+        print (" Initial guess received for %i targets: %s" %
+               (len(coordsxy),
+                ", ". join(["%s %s" % (lab,coo) 
+                            for lab,coo in zip(labels,coordsxy)])
+                ))
 
         # instance variables (in addition to self.files, self.isAstrodir and
         # self.mjd,self.masterbias, self.masterbias, self.masterflat)
         self.labels = labels
-        self.targets = targets
+        self.targetsxy = targetsxy
         self.stamprad = stamprad
         self.maxskip = maxskip
         self.skydata = None
+        self.gain = ingain
+        self.ron = inron
+
+
 
     def perform_phot(
             self,
             aperture,
             sky=None,
-            keygain='GTGAIN11',
-            keyron='GTRON11'):
+            deg=1):
         """Perform apperture photometry with the images of the Timeseries object.
 
         :param aperture: aperture photometry radius
         :type aperture: int
         :param sky: inner and outer radius for sky annulus
         :type sky: [int,int]
-        :param keygain: header key of gain
-        :type keygain: str
-        :param keyron: header key of read-out-noise (RON)
-        :type keyron: str
+        :param deg: Degre to sky polynomial
+        :type deg: int
         :rtype: TimeseriesResults
         """
 
@@ -197,112 +232,176 @@ class Timeseries(AstroCalc):
 
         flx = {lab: [] for lab in self.labels}
         err = {lab: [] for lab in self.labels}
+        fwhms = {lab: [] for lab in self.labels}
 
         skydata = []
-        targets = copy.deepcopy(self.targets)
+        self.skip = []
+        targetsxy = {lab:[coo] for lab, coo in self.targetsxy.items()}
 
-        if self.isAstrodir:
-            for filename, i in zip(self.files, range(len(self.files))):
+        for rdata, i in zip(self.files, range(len(self.files))):
+            if sky is not None:
+                sky_img_dict = {lab: [] for lab in self.labels}
 
-                if sky is not None:
-                    sky_img_dict = {lab: [] for lab in self.labels}
+            gain = self.gain
+            ron = self.ron
+            if isinstance(rdata, dp.astrodir):
+                if isinstance(gain,basestring):
+                    gain = rdata.getheaderval(self.gain)
+                if isinstance(ron, basestring):
+                    ron  = rdata.getheaderval(self.ron)
+                data, head = rdata.reader(datahead=True)
+                ##todo: offer datareduction?
+                # data = self.imagereduction(
+                #     data,
+                #     self.masterbias,
+                #     self.masterflat,
+                #     self.masterdark)
+            else:
+                data = rdata
 
-                gain, ron = filename.getheaderval(keygain, keyron)
-                data, head = filename.reader(datahead=True)
-                data = self.imagereduction(
-                    data,
-                    self.masterbias,
-                    self.masterflat,
-                    self.masterdark)
+            if isinstance(gain, basestring) or isinstance(ron, basestring):
+                raise ValueError("Gain or RON specified as header (%s/%s), but not found: %s/%s" % (ingain,inron,str(gain),str(ron)))
 
-                for lab, cooxy in targets.items():
+            for lab, cooxy in targetsxy.items():
+                cx, cy = cooxy[-1]
+                sarr = self.subarray(data, cy, cx, self.stamprad)
+                scy, scx = self.centroid(sarr)
 
-                    cx, cy = cooxy[-1]
-                    sarr = self.subarray(data, cy, cx, self.stamprad)
-                    scy, scx = self.centroid(sarr)
-
-                    skip = sp.sqrt(
-                        (self.stamprad - scy) ** 2 + (self.stamprad - scx) ** 2)
-                    if skip > self.maxskip:
-                        print(
-                            "Jump of %f pixels has occurred on frame %s for star %s" %
-                            (skip, filename, lab))
-
-                    if sky is not None:
-                        phot, phot_err, sky_out = self.apphot(
-                            sarr, [scy, scx], aperture, sky, gain=gain, ron=ron)
-                        sky_img_dict[lab] = sky_out
-                    else:
-                        sky_info = self.skydata[i][lab]
-                        phot, phot_err, sky_out = self.apphot(
-                            sarr, [scy, scx], aperture, sky_info, gain=gain, ron=ron)
-
-                    flx[lab].append(phot)
-                    err[lab].append(phot_err)
-                    cooxy.append(
-                        [cx + scx - self.stamprad, cy + scy - self.stamprad])
+                skip = sp.sqrt((self.stamprad - scy) ** 2 +
+                               (self.stamprad - scx) ** 2)
+                self.skip.append(skip)
+                if skip > self.maxskip:
+                    print(("Jump of %f pixels has occurred on"+
+                           " frame %i for star %s") %
+                          (skip, i, lab))
 
                 if sky is not None:
-                    skydata.append(sky_img_dict)
+                    phot, phot_err, fwhm, sky_out = self.apphot(
+                        sarr, [scy, scx], aperture, sky, gain=gain, ron=ron, deg=deg)
+                    sky_img_dict[lab] = sky_out
+                else:
+                    sky_info = self.skydata[i][lab]
+                    phot, phot_err, fwhm, sky_out = self.apphot(
+                        sarr, [scy, scx], aperture, sky_info, gain=gain, ron=ron, deg=deg)
+
+                flx[lab].append(phot)
+                err[lab].append(phot_err)
+                fwhms[lab].append(fwhm)
+                cooxy.append([cx + scx - self.stamprad,
+                              cy + scy - self.stamprad])
 
             if sky is not None:
-                self.skydata = copy.deepcopy(skydata)
-            return TimeseriesResults(self.mjd, flx, err, targets)
+                skydata.append(sky_img_dict)
 
+        if sky is not None:
+            self.skydata = skydata
+
+        return TimeseriesResults(self.epoch, flx, err, targetsxy, self.exptime, fwhms)
+
+
+class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
+
+    def __init__(self, timeseries):
+        """GRaphical utilities for timeseries
+        :param timeseries: timeserie object to examine
+        :type timeseries: Timeserie object
+        """
+        self.ts = timeseries
+
+        
+    def plot_radialprofile(self, targets=None, xlim=None, axes=1,
+                           legend_size=None,
+                           **kwargs):
+        """Plot Radial Profile from data using radialprofile() function
+        :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
+        :type target: integer/string or 2-element list
+        """
+
+
+        colors = ['rx', 'b^', 'go', 'r^', 'bx', 'g+']
+        fig, ax = dp.axesfig(axes)
+
+        ax.cla()
+        ax.set_xlabel('distance')
+        ax.set_ylabel('ADU')
+        if targets is None:
+            targets = self.ts.targetsxy.keys()
+        elif isinstance(targets, basestring):
+            targets = [targets]
+        elif isinstance(targets, (list,tuple)) and \
+                not isinstance(targets[0], (basestring, list, tuple)):
+                #Assume that it is a coordinate
+            targets = [targets]
+
+        trgcolor = {str(trg): color for trg, color in zip(targets, colors)}
+        for trg in targets:
+            distance, value, center = self.radialprofile(trg, **kwargs)
+            ax.plot(distance, value, trgcolor[str(trg)],
+                    label = "%s: (%.1f, %.1f)" % (trg, 
+                                                  center[0],
+                                                  center[1]),
+                    )
+        prop={}
+        if legend_size is not None:
+            prop['size'] = legend_size
+        ax.legend(loc=1, prop=prop)
+
+        if xlim is not None:
+            if isinstance(xlim, (int,float)):
+                ax.set_xlim([0,xlim])
+            else:
+                ax.set_xlim(xlim)
+
+
+        
+    def radialprofile(self, target, frame=0, recenter=True, stamprad=20):
+        """Returns the x&y arrays for radial profile
+
+        :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
+        :type target: integer/string or 2-element list
+        :param frame: which frame to show
+        :type frame: integer
+        :param recenter: whether to recenter
+        :type recenter: bool
+        :rtype: (x-array,y-array, [x,y] center) 
+"""
+        if isinstance(target, (int, str)):
+            try:
+                cx, cy = self.ts.targetsxy[target]
+            except KeyError:
+                raise KeyError("Invalid target specification. Choose from '%s'" % ', '.join(self.ts.targetsxy.keys()))
+        elif isinstance(target, (list,tuple)):
+            cx, cy = target
         else:
-            for data, i in zip(self.files, range(len(self.files))):
+            print("Invalid coordinate specification '%s'" % (target,))
 
-                if sky is not None:
-                    sky_img_dict = {lab: [] for lab in self.labels}
+        stamp = self.ts.files[frame][cy-stamprad: cy+stamprad, 
+                                     cx-stamprad: cx+stamprad]
 
-                for lab, cooxy in targets.items():
+        if recenter:
+            cy, cx = self.ts.centroid(stamp) + sp.array([cy,cx]) - stamprad
+            stamp = self.ts.files[frame][int(cy-stamprad): int(cy+stamprad), 
+                                         int(cx-stamprad): int(cx+stamprad)]
 
-                    cx, cy = cooxy[-1]
-                    sarr = self.subarray(data, cy, cx, self.stamprad)
-                    scy, scx = self.centroid(sarr)
+        d = self.centraldistances(stamp, 
+                                  sp.array(stamp.shape)//2 
+                                  + sp.array(cy%1, cx%1)).flatten()
+        x,y =  dp.sortmanynsp(d, stamp.flatten())
 
-                    skip = sp.sqrt(
-                        (self.stamprad - scy) ** 2 + (self.stamprad - scx) ** 2)
-                    if skip > self.maxskip:
-                        print(
-                            "Jump of %f pixels has occurred on frame %s for star %s" %
-                            (skip, str(i), lab))  # str(i) INSTEAD filename (NO FILENAME, LIST OF IMAGES)
-
-                    if sky is not None:
-                        phot, phot_err, sky_out = self.apphot(
-                            sarr, [scy, scx], aperture, sky, gain=None, ron=None)
-                        sky_img_dict[lab] = sky_out
-                    else:
-                        sky_info = self.skydata[i][lab]
-                        phot, phot_err, sky_out = self.apphot(
-                            sarr, [scy, scx], aperture, sky_info, gain=None, ron=None)
-
-                    flx[lab].append(phot)
-                    # err[lab].append(phot_err) No info for error calculation
-                    cooxy.append(
-                        [cx + scx - self.stamprad, cy + scy - self.stamprad])
-
-                if sky is not None:
-                    skydata.append(sky_img_dict)
-
-            if sky is not None:
-                self.skydata = copy.deepcopy(skydata)
-            return (
-                TimeseriesResults(self.mjd, flx, None, targets)  # err = None
-            )
-
-import matplotlib.pyplot as plt
+        return x,y,(cx,cy)
 
 
-class TimeseriesResults(AstroPlot):
+
+
+class TimeseriesResults(astroplot.AstroPlot):
 
     """TimeseriesResults class inherited from AstroPlot class.The purpose of this class is to centralize the data output (mainly the plotting routines).
 
     """
 
-    def __init__(self, mjd, flx, err, targets):
-        """TimeseriesResult object constructor (inherited from AstroPlot).
-
+    def __init__(self, epoch, flx, err, targets, exptime, fwhms):
+        """AstroPlot object constructor.
+        
         :param mjd: date array
         :type mjd: array
         :param flx: flux array dictionary
@@ -311,12 +410,25 @@ class TimeseriesResults(AstroPlot):
         :type err: dict
         :param targets: coordinates array dictionary
         :type targets: dict
-        :rtype: TimeseriesResults
+        :param fwhms: FWHMs of each photometry
+        :type fwhms: dict
+        :rtype: AstroPlot
         """
 
-        super(TimeseriesResults, self).__init__(mjd, flx, err, targets)
+        self.epoch = sp.array(epoch)
+        self.flx = flx
+        self.err = err
+        self.cooxy = targets
+        self.fwhms = fwhms
+        self.exptime = sp.array(exptime)
+        self.ratio = None
 
-    def plot_ratio(self, trg=None, ref=None, normframes=None):
+
+
+    def plot_ratio(self, trg=None, ref=None, normframes=None, 
+                   color='g', axes=None, 
+                   legend_size=None,
+                   **kwargs):
         """Display the ratio of science and reference
 
         :param trg: label name of target star
@@ -334,13 +446,20 @@ class TimeseriesResults(AstroPlot):
             self.doratio(trg=trg, ref=ref, normframes=normframes)
 
         if self.ratio is None:
-            print "No ratio computed computed"
+            print("No ratio computed computed")
             return
 
-        plt.plot(self.ratio)
-        plt.title("Ratio for target = " + str(trg))
-        plt.show()
+        if axes is None:
+            axes = plt
+
+        axes.errorbar(self.epoch, self.ratio,
+                      color=color, ls='none',
+                      yerr=self.ratio_error,
+                      capsize=0, **kwargs)
+#        plt.plot(self.epoch, self.ratio, 'r')
+#        axes.title("Ratio for target = " + str(trg))
         return
+
 
     def plot_timeseries(self):
         """Display the timeseries data: flux (with errors) as function of mjd
@@ -348,24 +467,20 @@ class TimeseriesResults(AstroPlot):
         :rtype: None (and plot display)
         """
 
-        fig = plt.figure(figsize=(4, 5), dpi=100)
+        fig = plt.figure(figsize=(5, 5), num=5)
         ax = fig.add_subplot(1, 1, 1)
 
         for lab in self.flx.keys():
             if self.err is None:
-                ax.errorbar(
-                    self.mjd,
-                    self.flx[lab],
-                    yerr=None,
-                    marker="o",
-                    label=lab)
+                yerr = None
             else:
-                ax.errorbar(
-                    self.mjd,
-                    self.flx[lab],
-                    yerr=self.err[lab],
-                    marker="o",
-                    label=lab)
+                yerr = self.err[lab]
+
+            ax.errorbar(self.epoch,
+                        self.flx[lab],
+                        yerr=yerr,
+                        marker="o",
+                        label=lab)
 
         ax.set_title("Timeseries Data")
         ax.set_xlabel("MJD")
@@ -375,21 +490,89 @@ class TimeseriesResults(AstroPlot):
         plt.show()
         return
 
-    def plot_drift(self):
+
+    def plot_fwhm(self, axes=None, label=None, 
+                  colors=None, omit_legend=False,
+                  title=None, xtitle="MJD", ytitle="FWHMs",
+                  legend_size=None):
+        """Plot the calculated fwhm
+        :param axes: multi-choice for axes
+        :type axes: see dp.axesfig()
+        :param method: Method to compute the fwhm, currently supported: stdev
+        :type method: string
+        :param label: Target's label or None if plotting both
+        :type label: string or None
+"""
+
+        f, ax = dp.axesfig(axes)
+
+        if label is None:
+            label = self.flx.keys()
+        else:
+            label = [label]
+
+        if colors is None:
+            colors = ['r','b','g','k','y']
+
+        for lab, col in zip(label,colors):                            
+            ax.plot(self.epoch, self.fwhms[lab], color=col,
+                    label=lab)
+
+        if title is not None:
+            ax.set_title(title)
+        if xtitle is not None:
+            ax.set_xlabel(xtitle)
+        if ytitle is not None:
+            ax.set_ylabel(ytitle)
+
+        prop={}
+        if legend_size is not None:
+            prop['size'] = legend_size
+        if len(lab)>1 and not omit_legend:
+            ax.legend(prop=prop)
+        f.show()
+        return
+
+
+
+    def plot_drift(self, axes=None):
         """Show the drift of the stars using the coordinates obtained for every image in the timeseries.
 
         :rtype: None (and plot display)
         """
+
+        f, ax = dp.axesfig(axes)
 
         lines = []
         leg = []
         for k in self.flx.keys():
             cooxy = self.cooxy[k]
             xd, yd = sp.array(cooxy).transpose()
-            l = plt.plot(xd - xd[0], yd - yd[0],
-                         label='%8s. X,Y: %-7.1f,%-7.1f' % (k, xd[0], yd[0]))
-        plt.legend(bbox_to_anchor=(0., 1.02, 1., .302), loc=3,
+            l = ax.plot(xd - xd[0], yd - yd[0],
+                        label='%8s. X,Y: %-7.1f,%-7.1f' % (k, xd[0], yd[0]))
+        ax.legend(bbox_to_anchor=(0., 1.02, 1., .302), loc=3,
                    ncol=1, mode="expand", borderaxespad=0.,
                    prop={'size': 6})
-        plt.show()
+        #f.show()
         return
+
+    def tofile(self, filename, all=False, comments=None):
+        out = []
+        for k in self.flx.keys():
+            out.append(['flux_%s' % (k,),      self.flx[k]])
+            out.append(['error_%s' % (k,), self.err[k]])
+            if all:
+                out.append(['fwhm_%s' % (k,),  self.fwhms[k]])
+                out.append(['Cx_%s' % (k,),    map(lambda x:x[0],
+                                                   self.cooxy[k][1:])])
+                out.append(['Cy_%s' % (k,),    map(lambda x:x[1],
+                                                   self.cooxy[k][1:])])
+
+        f = open(filename, 'w')
+        if comments is not None:
+            f.write(comments+'\n')
+        f.write('#%s\n' % ('   '.join(map(lambda x:x[0], out)),))
+        lines = ['  '.join(map(str,line)) 
+                 for line 
+                 in zip(*map(lambda x:x[1], out))]
+        f.write('%s' % ('\n'.join(lines)))

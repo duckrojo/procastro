@@ -18,31 +18,42 @@
 #
 #
 
+from __future__ import print_function, division
 from functools import wraps as _wraps
-from io_file import AstroFile
+from io_file import astrofile
+import scipy as sp
+import warnings
+from astropy.utils.exceptions import AstropyUserWarning
 
 class astrodir():
-    """Collection of AstroFile"""
+    """Collection of astrofile"""
     def __init__(self, path):
+        """Create astrofile container from either a directory path (if given string), or directly from list of string"""
         import os
         import glob
         import os.path as pth
         files=[]
 
-        filndir = glob.glob(path)
+        if isinstance(path, basestring):
+            filndir = glob.glob(path)
+        else:
+            filndir = path
 
         if len(filndir)==0:
-            raise ValueError("invalid path to files")
+            raise ValueError("invalid path to files or zero-len list given")
         for f in filndir:
-            if pth.isdir(f):
+            if hasattr(f,'astrofile') and f.astrofile:
+                nf = f
+            elif pth.isdir(f):
                 for sf in os.listdir(f):
-                    nf = AstroFile(f+'/'+sf)
+                    nf = astrofile(f+'/'+sf)
                     if nf:
                         files.append(nf)
+                nf = False
             else:
-                nf = AstroFile(f)
-                if nf:
-                    files.append(nf)
+                nf = astrofile(f)
+            if nf:
+                files.append(nf)
         self.files = files
 
     def readdata(self):
@@ -78,7 +89,14 @@ class astrodir():
         return "<astrofile container: %s>" % (self.files.__repr__(),)
 
     def __getitem__(self, item):
-        return self.files.__getitem__(item)
+        if isinstance(item, sp.ndarray):
+            if item.dtype=='bool':
+                return astrodir([f for b,f in zip(item,self.files) if b])
+        elif isinstance(item, slice):
+            return astrodir(self.files.__getitem__(item))
+
+        return self.files[item]#.__getitem__(item)
+
 
     def __len__(self):
         return self.files.__len__()
@@ -99,31 +117,24 @@ class astrodir():
         if 'mapout' in kwargs:
             mapout = kwargs['mapout']
         else:
-            mapout= len(args)==1 and (lambda x:x[0]) or None
-        return [f.getheaderval(*args, mapout=mapout) for f in self.files]
+            mapout = len(args)==1 and (lambda x:x[0]) or (lambda x:x)
+
+        warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
+        ret = [f.getheaderval(*args, mapout=mapout) for f in self.files]
+        warnings.resetwarnings()
+        return ret
+
+        
+
+    def setheader(self, write=False, **kwargs):
+        """Sets the header values specified in 'args' from each of the files. Returns a simple list if only one value is specified, or a list of tuples otherwise
+
+        The special kwarg 'write' can be used to force the update of the fits with the keyword or just leave it in memory"""
+
+        if False in [f.setheaderval(**kwargs) for f in self.files]:
+            raise ValueError("Setting the header of a file returned error... panicking!")
+
+        return self
         
 
 
-# def astrodir(path, ffilter=None):
-#     """Load a directory or individual astro0qualifying files. Optionally, a FITS header filter can be applied.  Wildcards are ok """
-#     import os
-#     import glob
-#     files=[]
-
-#     filndir = glob.glob(path)
-
-#     if len(filndir)==0:
-#         raise ValueError("invalid path to files")
-#     for f in filndir:
-#         if _path.isdir(f):
-#             for sf in os.listdir(f):
-#                 nf = AstroFile(f+'/'+sf, ffilter=ffilter)
-#                 if nf:
-#                     files.append(nf)
-#         else:
-#             nf = AstroFile(f, ffilter=ffilter)
-#             if nf:
-#                 files.append(nf)
-
-#     return files
-        

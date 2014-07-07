@@ -18,33 +18,32 @@
 #
 #
 
-def setall(var):
-    exec('tmp=%s' % var)
-    _all=[m for m in dir(tmp) if m[0]!='_']
-    #_all.remove(var)
-    return _all
+import types
+
+modules = ['astro',
+           'io', 'io_dir', 'io_file',
+           'misc_arr', 'misc_lists',
+           'misc_graph', 'misc_math']
+           
 
 
-__all__ = []
+for modulename in modules:
+    module = __import__(modulename, globals(), locals(), [], -1)
+    module = reload(module)
+    for v in dir(module):
+        if v[0] == '_' or isinstance(getattr(module,v), types.ModuleType):
+            continue
+        globals()[v] = getattr(module, v)
+    del module
 
-from io import *
-__all__.extend(setall('io'))
+del modules, modulename, types
 
-from io_file import *
-__all__.extend(setall('io_file'))
 
-from io_dir import *
-__all__.extend(setall('io_dir'))
 
-from misc_arr import *
-__all__.extend(setall('misc_arr'))
 
-from misc_lists import *
-__all__.extend(setall('misc_lists'))
+# from misc_examine import *
+# __all__.extend(setall('misc_examine'))
 
-from misc_examine import *
-__all__.extend(setall('misc_examine'))
-
-from misc_process import *
-__all__.extend(setall('misc_process'))
+# from misc_process import *
+# __all__.extend(setall('misc_process'))
 

@@ -21,6 +21,24 @@
 """
 Data proc docstring: combine
 """
-from combine import combine 
 
-__all__ = ['combine']
+
+import types
+
+modules = ['combine']
+           
+__all__ = []
+for modulename in modules:
+    module = __import__(modulename, globals(), locals(), [], -1)
+    module = reload(module)
+    for v in dir(module):
+        if v[0] == '_' or isinstance(getattr(module,v), types.ModuleType):
+            continue
+        __all__.append(v)
+        globals()[v] = getattr(module, v)
+    del module
+
+del modules, modulename, types
+
+
+
