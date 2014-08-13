@@ -26,6 +26,7 @@ import scipy as sp
 import glob
 import os.path as path
 import scipy.interpolate as it
+import dataproc as dp
 
 
 def blackbody(T, x, unit=None):
@@ -66,16 +67,25 @@ def blackbody(T, x, unit=None):
 
 
 def getfilter(name, 
+              nameonly=False,
               filter_unit=None,
-              filterdir=None,):
+              fct = 1,
+              filterdir=None,
+              force_positive=True,
+              force_increasing=True,
+              ):
     """Apply filter to spectra. It can be given or blackbody
  
     :param name: filter name
-    :param filter_unit: default filter unit that should be in files.  It should be an astropy quantity. Default is nanometers
+    :param filter_unit: default filter unit that should be in files.  It should be an astropy quantity. Default is nanometers. Can be specified in file as first line with comment 'unit:'
+    :param nameonly: Return only the filename for the filter
+    :param fct: Factor by which the transmission is multiplied in the archive (i.e. 100 if it is written in percentage). Can be specified in file as first line with comment 'fct:'
+    :param force_positive: Force positive values for transmission
+    :param force_increasing: sort so that wavelegngth is always increasing
     """
 
     if filterdir is None:
-        filterdir = '/home/inv/common/standards/filters/oth/svo/'
+        filterdir = '/home/inv/common/standards/filters/oth/*/'
     filters = glob.glob(filterdir+'/*.dat')
     found = []
     for f in filters:
@@ -87,11 +97,32 @@ def getfilter(name,
                           " Be more specific between:\n %s")
               % (name, '\n '.join(found)))
 
+    if nameonly:
+        return path.basename(found[0])
+
+    line1 = open(found[0]).readline()
+    if line1[0].lower() == '#':
+        items = line1[1:-1].split(',')
+        for item in items:
+            fld,val = item.split(':')
+            if fld.lstrip()=='units':
+                filter_unit = getattr(apu, val.lstrip())
+            if fld.lstrip()=='fct':
+                fct = float(val.lstrip())
     if filter_unit is None:
         filter_unit = apu.AA
 
     fwav, fflx = sp.loadtxt(found[0], unpack=True)
     fwav *= filter_unit
+    fflx /= fct
+    if force_positive:
+        fflx[fflx<0] = 0.0
+
+    if force_increasing:
+        fwav,fflx = dp.sortmany(fwav, fflx)
+        fwav = apu.Quantity(fwav)
+        fflx = sp.array(fflx)
+
 
     return fwav,fflx
 
@@ -120,6 +151,7 @@ def applyfilter(name, spectra,
         output_unit = apu.micron
     wmin,wmax = fwav[0], fwav[-1]
     us = it.UnivariateSpline(fwav, fflx, s=0.0)
+
 
     try:
         itr = iter(spectra)
@@ -169,7 +201,7 @@ def applyfilter(name, spectra,
 
 
 def filterconversion(target_filter, temp,
-                     temp_ref=9700, **kwargs):
+                     temp_ref=9700, quiet=False, **kwargs):
     """Convert from one given filter (in kwargs) to a target_filter
 
     :param temp_ref: Temperature of zero_point in magnitudes
@@ -179,7 +211,12 @@ def filterconversion(target_filter, temp,
         raise ValueError("One, and only one reference filter needs to be specified as kwargs (%s)" % (kwargs,))
 
     orig_filter, orig_value = kwargs.items()[0]
-    orig_filter = orig_filter.replace('_', '.')
+    orig_filter = getfilter(orig_filter.replace('_', '.'), True)
+    target_filter = getfilter(target_filter.replace('_', '.'), True)
+
+    if not quiet:
+        print("Converting from '%s'=%f to '%s'\n(T=%s object)" %
+              (orig_filter, orig_value, target_filter, temp))
 
     ref0 = orig_value + 2.5*sp.log(applyfilter(orig_filter, temp) /
                                    applyfilter(orig_filter, temp_ref)) / sp.log(10)

@@ -18,12 +18,17 @@
 #
 #
 
+import scipy as sp
 
 def sortmanynsp(*arr):
     """Sort many lists following the order of the first. Returns a tuple of sorted np.ndarray"""
-    import scipy as sp
+    return [sp.array(r) for r in sortmany(*arr)]
+
+
+def sortmany(*arr):
+    """Sort many lists following the order of the first."""
     tups = zip(*arr)
     tups.sort()
     pret = zip(*tups)
-    return [sp.array(r) for r in pret]
+    return pret
 

@@ -160,7 +160,16 @@ def fluxacross(diameter, seeing,
                shape='slit', psf='gauss', 
                nseeing=10, nsamp=300,
                show=False):
-    """Return the fraction of flux that passes considering a particular block"""
+    """Return the fraction of flux that passes considering a particular block
+
+    :param diameter: Diameter of the block
+    :param seeing: seeing
+    :param shape: shape of the block. Currently slit, square, circle 
+    :param psf: PSF shape. Currently gauss, cube
+    :param nseeing: how many times the seeing is the considered stamp size
+    :param nsamp: divide the stamp in this many samples
+    :param show: show a plot
+"""
     import scipy as sp
 
     hseeing=seeing/2.0

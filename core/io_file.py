@@ -24,7 +24,7 @@ from functools import wraps as _wraps
 
 
 
-class AstroFile():
+class AstroFile(object):
     """Valid astronomy data file format. Only filename is checked so far"""
 
     def _checksortkey(f):
@@ -67,7 +67,7 @@ class AstroFile():
         self._geth={}
         self._seth={}
         #todo: following is only necessary because isinstance is not working on combine module!!
-        self.astrofile=True
+#        self.astrofile=True
 
     def register(self,name,identify, reader, writer, 
                  getheader=None, setheader=None):
@@ -229,6 +229,11 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
         """Returns file basename"""
         import os.path as path
         return path.basename(self.filename)
+
+    @_checkfilename
+    def __getitem__(self, key):
+        """Read data and return key"""
+        return self.reader()[key]
 
     @_checksortkey
     def __lt__(self, other):

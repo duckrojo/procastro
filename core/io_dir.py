@@ -20,12 +20,12 @@
 
 from __future__ import print_function, division
 from functools import wraps as _wraps
-from io_file import astrofile
+from io_file import astrofile, AstroFile
 import scipy as sp
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
 
-class astrodir():
+class astrodir(object):
     """Collection of astrofile"""
     def __init__(self, path):
         """Create astrofile container from either a directory path (if given string), or directly from list of string"""
@@ -42,7 +42,7 @@ class astrodir():
         if len(filndir)==0:
             raise ValueError("invalid path to files or zero-len list given")
         for f in filndir:
-            if hasattr(f,'astrofile') and f.astrofile:
+            if isinstance(f,AstroFile):
                 nf = f
             elif pth.isdir(f):
                 for sf in os.listdir(f):

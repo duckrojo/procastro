@@ -26,12 +26,30 @@ import matplotlib.pyplot as plt
 astrocalc=reload(astrocalc)
 astroplot=reload(astroplot)
 
-from astropy.time import Time
+#from astropy.time import Time
 
 import copy
 import scipy as sp
 import dataproc as dp
 import warnings
+
+
+# def plot_apnsky(cxy, apnsky, 
+#                 apcolor='w', skycolor='r', alpha=0.6):
+#     """Plot aperture and sky at specified coordinates"""
+
+#     x,y = sp.mgrid[-apnsky[2]:apnsky[2],
+#                     -apnsky[2]:apnsky[2]]
+#     d = sp.sqrt(x*x + y*y)
+#     plt.imshow
+
+    
+#     xap,yap = dp.polygon(cxy, apert)
+#     xsk1,ysk1 = dp.polygon(cxy, apnsky)
+#     xsk2,ysk2 = dp.polygon(cxy, apnsky)
+#     plt.fill(xap, yap, apcolor, alpha=alpha)
+#     plt.fill_between(xsk1, ysk1, apcolor, alpha=alpha)
+#     plt.fill_between(xsk1, ysk1, apcolor, alpha=alpha)
 
 
 class Timeseries(astrocalc.AstroCalc):
@@ -41,24 +59,25 @@ class Timeseries(astrocalc.AstroCalc):
     """
 
     def __init__(
-            self,
-            data,
-            coordsxy=None,
-            labels=None,
-            stamprad=20,
-            maxskip=6,
-            epoch='JD',
-            exptime='EXPTIME',
-            keytype='IMAGETYP',
-            ingain='GTGAIN11',
-            inron='GTRON11',
-            mastermode='median'):
+        self,
+        data,
+        coordsxy=None,
+        labels=None,
+        stamprad=20,
+        maxskip=6,
+        epoch='JD',
+        exptime='EXPTIME',
+        ingain='GTGAIN11',
+        inron='GTRON11',
+        #            keytype='IMAGETYP',
+        #            mastermode='median',
+        ):
         """Timeseries object constructor.
 
         :param data: image data for the timeseries
         :type data: str (path to a folder), astrodir, ndarray list (list of images)
-        :param coordsxy: list of x,y coordinates of stars in the first image of the timeseries (if the value is None an interface for coordinates selection will be displayed)
-        :type coordsxy: list of 2-tuples or 2-list
+        :param coordsxy: list of x,y coordinates of stars in the first image of the timeseries. If dictionary is given with the right 2-tuple as values, the keys will be used as labels
+        :type coordsxy: dictionary or list of 2-tuples or 2-list
         :param labels: labels for the stars
         :type labels: list of strings
         :param stamprad: radius of the (square) stamp that contains a star
@@ -67,12 +86,14 @@ class Timeseries(astrocalc.AstroCalc):
         :type maxskip: int (default value: 6)
         :param epoch: header key of observation date in the images (allows image sorting in terms of time) or list
         :type epoch: str or list
-        :param keytype: header key of image type ('OBJECT','BIAS','DOME FLAT',etc)
-        :type keytype: str
-        :param mastermode: mode for master (BIAS, DARK, FLAT, etc) image obtention. Options: 'mean' and 'median' (default).
-        :type mastermode: str
+        :param ingain: header or value for the gain (e/ADU)
+        :param inron: header or value for the readout noise (e)
         :rtype: Timeseries
         """
+        # :param keytype: header key of image type ('OBJECT','BIAS','DOME FLAT',etc)
+        # :type keytype: str
+        # :param mastermode: mode for master (BIAS, DARK, FLAT, etc) image obtention. Options: 'mean' and 'median' (default).
+        # :type mastermode: str
 
         # data type check
         if isinstance(data, str):  # data is a string (path to a directory)
@@ -176,6 +197,9 @@ class Timeseries(astrocalc.AstroCalc):
         #     print("Interface mode finished\n")
 
         # label list
+        if isinstance(coordsxy, dict):
+            labels = coordsxy.keys()
+            coordsxy = coordsxy.values()
         try:
             if labels is None:
                 labels = []
@@ -296,7 +320,12 @@ class Timeseries(astrocalc.AstroCalc):
         if sky is not None:
             self.skydata = skydata
 
-        return TimeseriesResults(self.epoch, flx, err, targetsxy, self.exptime, fwhms)
+        tsr = TimeseriesResults(self.epoch, flx, err, targetsxy, 
+                                self.exptime, fwhms, [aperture]+ list(sky))
+
+        self.lastphotometry = tsr
+
+        return tsr
 
 
 class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
@@ -307,6 +336,44 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
         :type timeseries: Timeserie object
         """
         self.ts = timeseries
+
+    def imshowz(self, frame=0,
+                apcolor='w', skcolor='r',
+                alpha=0.6,
+                npoints=30):
+        """Plot image"""
+
+        dp.imshowz(self.ts.files[frame])
+        if (hasattr(self.ts, 'lastphotometry') and 
+            isinstance(self.ts.lastphotometry, TimeseriesResults)):
+            print(" Using coordinates from photometry for frame %i" 
+                  % (frame,))
+            tsr = self.ts.lastphotometry
+            apnsky = tsr.apnsky
+            for lab in tsr.cooxy.keys():
+                cxy = tsr.cooxy[lab][frame+1]
+                # circle = plt.Circle((xx,yy), radius=tsr.apnsky[0],
+                #                     fc=apcolor, alpha=alpha)
+                theta = sp.linspace(0, 2*sp.pi, npoints, endpoint=True)
+                xs = cxy[0] + apnsky[0]*sp.cos(theta)
+                ys = cxy[1] + apnsky[0]*sp.sin(theta)
+                plt.fill(xs, ys,
+                         edgecolor=apcolor, alpha=alpha)
+
+                xs = cxy[0] + sp.outer(apnsky[1:3], sp.cos(theta))
+                ys = cxy[1] + sp.outer(apnsky[1:3], sp.sin(theta))
+                xs[1,:] = xs[1,::-1]
+                ys[1,:] = ys[1,::-1]
+                plt.fill(sp.ravel(xs), sp.ravel(ys),
+                         edgecolor=skcolor, alpha=alpha)
+
+                
+            # xx, yy = zip(*cooxy)
+
+
+            # plt.plot(xx, yy, 'w+', 
+            #          markersize=10, 
+            #          markeredgewidth=2)
 
         
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
@@ -354,7 +421,7 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
 
 
         
-    def radialprofile(self, target, frame=0, recenter=True, stamprad=20):
+    def radialprofile(self, target, frame=0, recenter=False, stamprad=20):
         """Returns the x&y arrays for radial profile
 
         :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
@@ -375,17 +442,28 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
         else:
             print("Invalid coordinate specification '%s'" % (target,))
 
-        stamp = self.ts.files[frame][cy-stamprad: cy+stamprad, 
-                                     cx-stamprad: cx+stamprad]
+        if (frame > len(self.ts.files)):
+            raise ValueError("Specified frame (%i) is too large (there are %i frames)" % (frame,len(self.ts.files)))
 
         if recenter:
+            stamp = self.ts.files[frame][cy-stamprad: cy+stamprad, 
+                                         cx-stamprad: cx+stamprad]
             cy, cx = self.ts.centroid(stamp) + sp.array([cy,cx]) - stamprad
-            stamp = self.ts.files[frame][int(cy-stamprad): int(cy+stamprad), 
-                                         int(cx-stamprad): int(cx+stamprad)]
+        else:
+            if (hasattr(self.ts, 'lastphotometry') and 
+                isinstance(self.ts.lastphotometry, TimeseriesResults)):
+                cx, cy = self.ts.lastphotometry.cooxy[target][frame+1]
+                print(" Using coordinates from photometry (%.1f, %.1f) for frame %i" 
+                      % (cx, cy, frame))
+            print("a%s,%s"%(cx,cy))
+                
+        stamp = self.ts.files[frame][int(cy-stamprad): int(cy+stamprad), 
+                                     int(cx-stamprad): int(cx+stamprad)]
+        print("b%s,%s"%(cx,cy))
 
         d = self.centraldistances(stamp, 
                                   sp.array(stamp.shape)//2 
-                                  + sp.array(cy%1, cx%1)).flatten()
+                                  + sp.array([cy%1, cx%1])).flatten()
         x,y =  dp.sortmanynsp(d, stamp.flatten())
 
         return x,y,(cx,cy)
@@ -399,7 +477,7 @@ class TimeseriesResults(astroplot.AstroPlot):
 
     """
 
-    def __init__(self, epoch, flx, err, targets, exptime, fwhms):
+    def __init__(self, epoch, flx, err, targets, exptime, fwhms, apnsky):
         """AstroPlot object constructor.
         
         :param mjd: date array
@@ -422,6 +500,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         self.fwhms = fwhms
         self.exptime = sp.array(exptime)
         self.ratio = None
+        self.apnsky = apnsky
 
 
 
@@ -461,8 +540,11 @@ class TimeseriesResults(astroplot.AstroPlot):
         return
 
 
-    def plot_timeseries(self):
+    def plot_flux(self, label=None):
         """Display the timeseries data: flux (with errors) as function of mjd
+
+        :param label: Specify a single star to plot
+        :rtype label: basestring
 
         :rtype: None (and plot display)
         """
@@ -470,7 +552,12 @@ class TimeseriesResults(astroplot.AstroPlot):
         fig = plt.figure(figsize=(5, 5), num=5)
         ax = fig.add_subplot(1, 1, 1)
 
-        for lab in self.flx.keys():
+        if label is None:
+            disp = self.flx.keys()
+        else:
+            disp = [label]
+
+        for lab in disp:
             if self.err is None:
                 yerr = None
             else:
@@ -545,13 +632,15 @@ class TimeseriesResults(astroplot.AstroPlot):
 
         lines = []
         leg = []
+        nlab = len(self.flx)
+        print ("nc: %s" % (int(nlab//2.5),))
         for k in self.flx.keys():
             cooxy = self.cooxy[k]
             xd, yd = sp.array(cooxy).transpose()
             l = ax.plot(xd - xd[0], yd - yd[0],
                         label='%8s. X,Y: %-7.1f,%-7.1f' % (k, xd[0], yd[0]))
         ax.legend(bbox_to_anchor=(0., 1.02, 1., .302), loc=3,
-                   ncol=1, mode="expand", borderaxespad=0.,
+                   ncol=nlab//2.5, mode="expand", borderaxespad=0.,
                    prop={'size': 6})
         #f.show()
         return

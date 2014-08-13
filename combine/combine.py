@@ -75,7 +75,7 @@ class Combine():#_gr_examine):
 #            print ("\n%s: %s/%s\n%s" %(d, d.__class__, dp.astrofile.__class__, dir(d)))
             #todo: find out why isinstance does not work!!!
             #if isinstance(d, dp.AstroFile):
-            if hasattr(d, 'astrofile'):
+            if isinstance(d, dp.AstroFile):
                 dt,hd = d.reader(datahead=True)
                 #use the first read header to fill all the data without headers
                 if header is None:

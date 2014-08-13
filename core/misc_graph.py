@@ -23,6 +23,7 @@ from __future__ import division, print_function
 import dataproc as dp
 import matplotlib.pyplot as plt
 import pyfits as pf
+import scipy as sp
 
 def imshowz(data, 
             axes=None, title=None,
@@ -64,6 +65,22 @@ def imshowz(data,
 :param kwargs: passed to matplotlib.pyplot.imshow()
 """
 
+    #set the data to plot
+    if isinstance(data, pf.hdu.base._BaseHDU):
+        data = data.data
+        avail = ""
+    elif isinstance(data, dp.AstroFile):
+        data = data.reader(hdu)
+    elif isinstance(data, pf.HDUList):
+        avail = "available: %s" % (data,)
+        data = data[hdu].data
+    elif isinstance(data, basestring):
+        open_file  = pf.open(data)
+        data = open_file[hdu].data
+        avail = "available: %s" % (open_file,)
+    if data is None:
+        raise ValueError("Nothing to print. HDU %i empty?\n %s" % (hdu, avail))
+
     if xlim is  None:
         xlim = [0,data.shape[1]]
     if ylim is None:
@@ -79,20 +96,6 @@ def imshowz(data,
         xlim[1] = (xlim[1]>data.shape[1]) and data.shape[1] or xlim[1]
         ylim[0] = ylim[0]*(ylim[0]>0)
         ylim[1] = (ylim[1]>data.shape[0]) and data.shape[0] or ylim[1]
-
-    #set the data to plot
-    if isinstance(data, pf.hdu.base._BaseHDU):
-        data = data.data
-        avail = ""
-    elif isinstance(data, pf.HDUList):
-        avail = "available: %s" % (data,)
-        data = data[hdu].data
-    elif isinstance(data, basestring):
-        open_file  = pf.open(data)
-        data = open_file[hdu].data
-        avail = "available: %s" % (open_file,)
-    if data is None:
-        raise ValueError("Nothing to print. HDU %i empty?\n %s" % (hdu, avail))
 
 
     #Find the contrast
@@ -155,3 +158,12 @@ def axesfig(axes=None, forcenew=True):
     ax.cla()
 
     return fig, ax
+
+
+
+def polygonxy(cxy, rad, npoints=20):
+    angles = sp.arange(npoints+1)*2*3.14159/npoints
+    xx = cxy[0] + rad*sp.cos(angles)
+    yy = cxy[1] + rad*sp.sin(angles)
+
+    return xx,yy
