@@ -53,9 +53,10 @@ class AstroPlot(object):
         reference = science * 0.0
         variance_ref = science * 0.0
         for k in ref:
-            reference += asarray(self.flx[k],dtype=float) / asarray(self.flx[k]).mean()
+            ref_flx = asarray(self.flx[k], dtype=float)
+            reference += ref_flx / ref_flx.mean()
             variance_ref += (asarray(self.err[k],dtype=float) /
-                             asarray(self.flx[k]).mean() ) **2
+                             ref_flx.mean() ) **2
         reference /= len(ref)
         variance_ref /= len(ref)
         self.var=variance_ref

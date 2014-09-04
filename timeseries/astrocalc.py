@@ -19,8 +19,9 @@
 
 from __future__ import division, print_function
 import scipy as sp
-from scipy import optimize as op
+import scipy.optimize as op
 import dataproc as dp
+import copy
 
 
 class AstroCalc(object):
@@ -232,6 +233,7 @@ class AstroCalc(object):
         res2 = res[d<sap*4].ravel()
         d2   = d[d<sap*4].ravel()
         tofit = lambda d, h,sig:h*dp.gauss(d, sig, ndim=1)
+        import scipy.optimize as op
         sig,cov = op.curve_fit(tofit, d2, res2,
                                sigma = 1/sp.sqrt(sp.absolute(res2)),
                                p0=[max(res2),sap/3])
@@ -253,7 +255,7 @@ class AstroCalc(object):
 
 
 
-    def centroid(self, arr, medsub=True):
+    def centroid(self, orig_arr, medsub=True):
         """Find centroid of small array
 
         :param arr: array
@@ -261,6 +263,7 @@ class AstroCalc(object):
         :rtype: [float,float]
         """
 
+        arr = copy.copy(orig_arr)
         if medsub:
             med = sp.median(arr)
             arr = arr - med

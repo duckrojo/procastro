@@ -23,6 +23,7 @@ from __future__ import print_function,division
 import astrocalc
 import astroplot
 import matplotlib.pyplot as plt
+import astropy.time as apt
 astrocalc=reload(astrocalc)
 astroplot=reload(astroplot)
 
@@ -63,25 +64,23 @@ class Timeseries(astrocalc.AstroCalc):
         data,
         coordsxy=None,
         labels=None,
-        stamprad=20,
         maxskip=6,
         epoch='JD',
         exptime='EXPTIME',
         ingain='GTGAIN11',
         inron='GTRON11',
+        offsetxy=None,
         #            keytype='IMAGETYP',
         #            mastermode='median',
         ):
         """Timeseries object constructor.
 
         :param data: image data for the timeseries
-        :type data: str (path to a folder), astrodir, ndarray list (list of images)
+        :type data: str (path to a folder), AstroDir, ndarray list (list of images)
         :param coordsxy: list of x,y coordinates of stars in the first image of the timeseries. If dictionary is given with the right 2-tuple as values, the keys will be used as labels
         :type coordsxy: dictionary or list of 2-tuples or 2-list
         :param labels: labels for the stars
         :type labels: list of strings
-        :param stamprad: radius of the (square) stamp that contains a star
-        :type stamprad: int (default value: 20)
         :param maxskip: maximum skip considered (without warning) between the positions of a star in two sucesive images
         :type maxskip: int (default value: 6)
         :param epoch: header key of observation date in the images (allows image sorting in terms of time) or list
@@ -97,12 +96,12 @@ class Timeseries(astrocalc.AstroCalc):
 
         # data type check
         if isinstance(data, str):  # data is a string (path to a directory)
-            self.files = dp.astrodir(data)
+            self.files = dp.AstroDir(data)
             if isinstance(epoch,basestring):
                 self.files = self.files.sort(epoch)
             self.isAstrodir = True
 
-        elif isinstance(data, dp.astrodir):  # data is an astrodir object
+        elif isinstance(data, dp.AstroDir):  # data is an astrodir object
             self.files = data
             if isinstance(epoch,basestring):
                 self.files = self.files.sort(epoch)
@@ -116,7 +115,7 @@ class Timeseries(astrocalc.AstroCalc):
                     raise TypeError(
                         'data is a list but not all the elements are ndarray')
             if isinstance(epoch,(list,tuple,sp.ndarray)):
-                self.epoch = epoch
+                self.epoch, self.files = dp.sortmany(epoch, self.files)
             else:
                 warnings.warn("Epochs were not specified and list of data was given")
             if isinstance(exptime,(list,tuple)):
@@ -127,18 +126,21 @@ class Timeseries(astrocalc.AstroCalc):
             self.isAstrodir = False
 
         else:
-            raise TypeError('data should be str, astrodir or ndarray list')
+            raise TypeError('data should be str, AstroDir or ndarray list')
+
+        if offsetxy is None:
+            offsetxy = {}
 
         # mjd list and science image filtering
         if self.isAstrodir:
+
+            self.epoch = self.files.getheaderval(epoch)
+            self.exptime = self.files.getheaderval(exptime)
 
             # time_file_list = []
             # bias_files = []
             # dark_files = []
             # flat_files = []
-
-            self.epoch = self.files.getheaderval(epoch)
-            self.exptime = self.files.getheaderval(exptime)
 
 #             for astrofile in self.files:
 # #                type_str = astrofile.getheaderval(keytype)[0]
@@ -177,9 +179,11 @@ class Timeseries(astrocalc.AstroCalc):
 #             self.masterflat = self.masterimage(flat_files, mode=mastermode)
 
         if not hasattr(self,'epoch'):
-            self.epoch = sp.arange(len(data))
+            epoch = sp.arange(len(data))
         if not hasattr(self, 'exptime'):
             self.exptime = sp.ones(len(data))
+
+        self.epoch = apt.Time(self.epoch, format='jd', scale='utc')
 
         print (" Data list ready for %i elements" % (len(self.files),))
 
@@ -226,7 +230,7 @@ class Timeseries(astrocalc.AstroCalc):
         # self.mjd,self.masterbias, self.masterbias, self.masterflat)
         self.labels = labels
         self.targetsxy = targetsxy
-        self.stamprad = stamprad
+        self.offsetxy = offsetxy
         self.maxskip = maxskip
         self.skydata = None
         self.gain = ingain
@@ -238,6 +242,7 @@ class Timeseries(astrocalc.AstroCalc):
             self,
             aperture,
             sky=None,
+            stamprad=25,
             deg=1):
         """Perform apperture photometry with the images of the Timeseries object.
 
@@ -247,6 +252,8 @@ class Timeseries(astrocalc.AstroCalc):
         :type sky: [int,int]
         :param deg: Degre to sky polynomial
         :type deg: int
+        :param stamprad: radius of the (square) stamp that contains a star
+        :type stamprad: int (default value: 20)
         :rtype: TimeseriesResults
         """
 
@@ -268,7 +275,7 @@ class Timeseries(astrocalc.AstroCalc):
 
             gain = self.gain
             ron = self.ron
-            if isinstance(rdata, dp.astrodir):
+            if isinstance(rdata, dp.AstroDir):
                 if isinstance(gain,basestring):
                     gain = rdata.getheaderval(self.gain)
                 if isinstance(ron, basestring):
@@ -288,18 +295,27 @@ class Timeseries(astrocalc.AstroCalc):
 
             for lab, cooxy in targetsxy.items():
                 cx, cy = cooxy[-1]
-                sarr = self.subarray(data, cy, cx, self.stamprad)
+                offx=offy=0
+                frame_number = len(cooxy)-1
+                if frame_number in self.offsetxy.keys():
+                    offx = self.offsetxy[frame_number][0]
+                    offy = self.offsetxy[frame_number][1]
+                cx += offx
+                cy += offy
+                sarr = self.subarray(data, cy, cx, stamprad)
                 scy, scx = self.centroid(sarr)
 
-                skip = sp.sqrt((self.stamprad - scy) ** 2 +
-                               (self.stamprad - scx) ** 2)
+                skip = sp.sqrt((stamprad - scy) ** 2 +
+                               (stamprad - scx) ** 2)
                 self.skip.append(skip)
                 if skip > self.maxskip:
-                    print(("Jump of %f pixels has occurred on"+
+                    print(("Unexpected jump of %f pixels has occurred on"+
                            " frame %i for star %s") %
                           (skip, i, lab))
 
                 if sky is not None:
+                    if (sky[1] > 0.8*stamprad):
+                        warnings.warn("Stamp radius (%i) might be too small given outer sky radius (%.1f)" %(stamprad,sky[1]))
                     phot, phot_err, fwhm, sky_out = self.apphot(
                         sarr, [scy, scx], aperture, sky, gain=gain, ron=ron, deg=deg)
                     sky_img_dict[lab] = sky_out
@@ -311,8 +327,8 @@ class Timeseries(astrocalc.AstroCalc):
                 flx[lab].append(phot)
                 err[lab].append(phot_err)
                 fwhms[lab].append(fwhm)
-                cooxy.append([cx + scx - self.stamprad,
-                              cy + scy - self.stamprad])
+                cooxy.append([cx + scx - stamprad,
+                              cy + scy - stamprad])
 
             if sky is not None:
                 skydata.append(sky_img_dict)
@@ -324,6 +340,7 @@ class Timeseries(astrocalc.AstroCalc):
                                 self.exptime, fwhms, [aperture]+ list(sky))
 
         self.lastphotometry = tsr
+        self.stamprad = stamprad
 
         return tsr
 
@@ -338,12 +355,14 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
         self.ts = timeseries
 
     def imshowz(self, frame=0,
-                apcolor='w', skcolor='r',
-                alpha=0.6,
-                npoints=30):
+                apcolor='w', skcolor='LightCyan',
+                alpha=0.6, axes=None,
+                annotate=False,
+                npoints=30, **kwargs):
         """Plot image"""
 
-        dp.imshowz(self.ts.files[frame])
+        dp.imshowz(self.ts.files[frame],
+                   axes=axes, **kwargs)
         if (hasattr(self.ts, 'lastphotometry') and 
             isinstance(self.ts.lastphotometry, TimeseriesResults)):
             print(" Using coordinates from photometry for frame %i" 
@@ -358,16 +377,23 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
                 xs = cxy[0] + apnsky[0]*sp.cos(theta)
                 ys = cxy[1] + apnsky[0]*sp.sin(theta)
                 plt.fill(xs, ys,
-                         edgecolor=apcolor, alpha=alpha)
+                         edgecolor=apcolor, color=apcolor,
+                         alpha=alpha)
 
                 xs = cxy[0] + sp.outer(apnsky[1:3], sp.cos(theta))
                 ys = cxy[1] + sp.outer(apnsky[1:3], sp.sin(theta))
                 xs[1,:] = xs[1,::-1]
                 ys[1,:] = ys[1,::-1]
                 plt.fill(sp.ravel(xs), sp.ravel(ys),
-                         edgecolor=skcolor, alpha=alpha)
-
-                
+                         edgecolor=skcolor, color=skcolor,
+                         alpha=alpha)
+                if annotate:
+                    outer_sky = self.ts.lastphotometry.apnsky[2]
+                    plt.gca().annotate(lab, 
+                                       xy=(cxy[0],cxy[1]+outer_sky),
+                                       xytext=(cxy[0]+1*outer_sky,
+                                               cxy[1]+1.5*outer_sky),
+                                       fontsize=20)
             # xx, yy = zip(*cooxy)
 
 
@@ -375,7 +401,52 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
             #          markersize=10, 
             #          markeredgewidth=2)
 
-        
+    def showstamp(self, target=None, stamprad=30, 
+                  first=0, last=-1, figure=None, ncol=None):
+        """Show the star at the same position for the different frames
+
+        :param target: None for the first key()
+        :param stamprad: Plotting radius
+        :param first: First frame to show
+        :param last: Last frame to show. It can be onPython negative format
+        :param figure: Specify figure number
+        :param ncol: Number of columns
+"""
+        if last<0:
+            nimages = len(self.ts.files)+1+last-first
+        else:
+            nimages = last-first
+
+        if target is None:
+            target = self.ts.targetsxy.keys()[0]
+
+        if ncol is None:
+            ncol = int(sp.sqrt(nimages))
+        nrow = int(sp.ceil(nimages/ncol))
+
+        f, ax = plt.subplots(nrow, ncol, num=figure, 
+                             sharex=True, sharey=True)
+        f.subplots_adjust(hspace=0, wspace=0)
+        ax1 = list(sp.array(ax).reshape(-1))
+
+        cx,cy = self.ts.targetsxy[target]
+
+        for n, a in zip(range(nimages), ax1):
+            frame_number = n+first
+            if frame_number in self.ts.offsetxy.keys():
+                cx += self.ts.offsetxy[frame_number][0]
+                cy += self.ts.offsetxy[frame_number][1]
+            dp.imshowz(self.ts.files[n],
+                       axes=a, 
+                       cxy = [cx, cy],
+                       plot_rad = stamprad,
+                       ticks=False,
+                       trim_data=True,
+                       )
+
+
+
+
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None,
                            **kwargs):
@@ -455,11 +526,9 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
                 cx, cy = self.ts.lastphotometry.cooxy[target][frame+1]
                 print(" Using coordinates from photometry (%.1f, %.1f) for frame %i" 
                       % (cx, cy, frame))
-            print("a%s,%s"%(cx,cy))
                 
         stamp = self.ts.files[frame][int(cy-stamprad): int(cy+stamprad), 
                                      int(cx-stamprad): int(cx+stamprad)]
-        print("b%s,%s"%(cx,cy))
 
         d = self.centraldistances(stamp, 
                                   sp.array(stamp.shape)//2 
@@ -493,7 +562,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         :rtype: AstroPlot
         """
 
-        self.epoch = sp.array(epoch)
+        self.epoch = epoch
         self.flx = flx
         self.err = err
         self.cooxy = targets
@@ -507,6 +576,8 @@ class TimeseriesResults(astroplot.AstroPlot):
     def plot_ratio(self, trg=None, ref=None, normframes=None, 
                    color='g', axes=None, 
                    legend_size=None,
+                   recompute=True, overwrite=True,
+                   label=None,
                    **kwargs):
         """Display the ratio of science and reference
 
@@ -519,7 +590,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         :rtype: None (and plot display)
         """
 
-        if self.ratio is None:
+        if self.ratio is None or recompute:
             if trg is None:
                 trg = self.flx.keys()[0]
             self.doratio(trg=trg, ref=ref, normframes=normframes)
@@ -528,19 +599,23 @@ class TimeseriesResults(astroplot.AstroPlot):
             print("No ratio computed computed")
             return
 
-        if axes is None:
-            axes = plt
 
-        axes.errorbar(self.epoch, self.ratio,
-                      color=color, ls='none',
-                      yerr=self.ratio_error,
-                      capsize=0, **kwargs)
+        f, ax, epoch = dp.axesfig_xdate(axes, self.epoch,
+                                        overwrite=overwrite)
+
+        ax.plot(epoch, self.ratio, '+',
+                color=color, label=label)
+        ax.errorbar(epoch, self.ratio,
+                    color=color, ls='none',
+                    yerr=self.ratio_error,
+                    capsize=0, **kwargs)
+        f.show()
 #        plt.plot(self.epoch, self.ratio, 'r')
 #        axes.title("Ratio for target = " + str(trg))
         return
 
 
-    def plot_flux(self, label=None):
+    def plot_flux(self, label=None, axes=None):
         """Display the timeseries data: flux (with errors) as function of mjd
 
         :param label: Specify a single star to plot
@@ -549,8 +624,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         :rtype: None (and plot display)
         """
 
-        fig = plt.figure(figsize=(5, 5), num=5)
-        ax = fig.add_subplot(1, 1, 1)
+        fig, ax, epoch = dp.axesfig_xdate(axes, self.epoch)
 
         if label is None:
             disp = self.flx.keys()
@@ -563,7 +637,7 @@ class TimeseriesResults(astroplot.AstroPlot):
             else:
                 yerr = self.err[lab]
 
-            ax.errorbar(self.epoch,
+            ax.errorbar(epoch,
                         self.flx[lab],
                         yerr=yerr,
                         marker="o",
@@ -574,7 +648,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         ax.set_ylabel("Flux")
 
         ax.legend()
-        plt.show()
+        fig.show()
         return
 
 
@@ -591,7 +665,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         :type label: string or None
 """
 
-        f, ax = dp.axesfig(axes)
+        f, ax, epoch = dp.axesfig(axes, self.epoch)
 
         if label is None:
             label = self.flx.keys()
@@ -602,7 +676,7 @@ class TimeseriesResults(astroplot.AstroPlot):
             colors = ['r','b','g','k','y']
 
         for lab, col in zip(label,colors):                            
-            ax.plot(self.epoch, self.fwhms[lab], color=col,
+            ax.plot(epoch, self.fwhms[lab], color=col,
                     label=lab)
 
         if title is not None:

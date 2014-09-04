@@ -21,11 +21,94 @@
 
 from __future__ import print_function, division
 from functools import wraps as _wraps
+import warnings
 
+
+#######################
+#
+# FITS handling of AstroFile
+#
+##################################
+
+def _fits_reader(filename, hdu=0, datahead=False):
+    import pyfits as pf
+    fl = pf.open(filename)[hdu]
+    if datahead:
+        return fl.data, fl.header
+    else:
+        return fl.data
+def _fits_writer(filename, data, header=None):
+    import pyfits as pf
+    return pf.writeto(filename, data, header, clobber=True)
+def _fits_verify(filename, ffilter=None, hdu=0):
+    import pyfits as pf
+    nc = filename.lower().split('.')[-1] in ['fits', 'fit'] 
+    cmpr = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz'] 
+    if nc or cmpr:
+        if ffilter is None:
+            return True
+        h = pf.getheader(filename, hdu)
+        if isinstance (ffilter,dict):
+            return False not in [(f in h and h[f] == ffilter[f]) for f in ffilter.keys()]
+        if isinstance (ffilter, (list,tuple)):
+            return False not in [f in h for f in ffilter]
+    return False
+# def _fits_filter(_filename, hdu=0, **kwargs):
+#     import pyfits as pf
+#     h=pf.getheader(_filename, hdu)
+#     return True in [k in h and (isinstance(kwargs[k], (tuple, list)) 
+#                                 and [kwargs[k][0](h[k]) in map(kwargs[k][0],kwargs[k][1:])]
+#                                 or [h[k] == kwargs[k]])[0]
+#                     for k in kwargs.keys()]
+def _fits_getheader(_filename, *args, **kwargs):
+    import pyfits as pf
+    hdu=('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
+    h=pf.getheader(_filename, hdu)
+    return tuple([(a in h and [h[a]] or [None])[0] for a in args])
+
+def _fits_setheader(_filename, *args, **kwargs):
+    import pyfits as pf
+    hdu=('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
+    if 'write' in kwargs and kwargs['write']:
+        save = True
+        try:
+            fits = pf.open(_filename, 'update')[hdu]
+        except IOError:
+            warnings.warn("Read only filesystem. Header update of '%s' will remain only in memory but not on disk." % ', '.join(kwargs.keys()))
+            fits = pf.open(_filename)[hdu]
+            save = False
+    else:
+        fits = pf.open(_filename)[hdu]
+        save = False
+    if 'write' in kwargs:
+        del kwargs['write']
+
+    h = fits.header
+    for k,v in kwargs.items():
+        if v is None:
+            del k[v]
+        else:
+            h[k] = v
+    if save:
+        fits.flush()
+    return True
+
+#############################
+#
+# End FITS
+#
+####################################
 
 
 class AstroFile(object):
     """Valid astronomy data file format. Only filename is checked so far"""
+
+    _reads={'fits': _fits_reader}
+    _ids={'fits': _fits_verify}
+    _writes={'fits': _fits_writer}
+    _geth={'fits': _fits_getheader}
+    _seth={'fits':_fits_setheader}
+
 
     def _checksortkey(f):
         @_wraps(f)
@@ -46,37 +129,36 @@ class AstroFile(object):
                 raise ValueError("Filename not defined. Must give valid filename to AstroFile")
         return isfiledef
 
-    def __call__(self,filename, exists=False, *args, **kwargs):
-        import copy
-        import os.path as path
-        new = copy.copy(self)
-        new.filename = filename
-        new.type = new.checktype(exists,*args, **kwargs)
-        new.reqheads={'basename':path.basename(filename)}
-#        new.filter.__func__.__doc__=new._flts[new.type].__doc__
-        return new
+#     def __call__(self):
+#         import copy
+#         import os.path as path
+#         new = copy.copy(self)
+#         new.filename = filename
+#         new.type = new.checktype(exists,*args, **kwargs)
+#         new.reqheads={'basename':path.basename(filename)}
+# #        new.filter.__func__.__doc__=new._flts[new.type].__doc__
+#         return new
 
     def __repr__(self):
         return '<astrofile: %s>' % (self.filename,)
 
-    def __init__(self):
-        self._reads={}
-        self._ids={}
-        self._writes={}
-        self._flts={}
-        self._geth={}
-        self._seth={}
+    def __init__(self, filename, exists=False, *args, **kwargs):
+        import os.path as path
+        self.filename = filename
+        self.type     = self.checktype(exists, *args, **kwargs)
+        self.reqheads = {'basename':path.basename(filename)}
+
         #todo: following is only necessary because isinstance is not working on combine module!!
 #        self.astrofile=True
 
-    def register(self,name,identify, reader, writer, 
-                 getheader=None, setheader=None):
-        """register(name, id_fcn, read_fcn, write_fcn): Register the read-, write-, and identify-able functions for a new type of astro filename (name)"""
-        self._ids[name]=identify
-        self._reads[name]=reader
-        self._writes[name]=writer
-        self._seth[name]=setheader
-        self._geth[name]=getheader
+    # def register(self,name,identify, reader, writer, 
+    #              getheader=None, setheader=None):
+    #     """register(name, id_fcn, read_fcn, write_fcn): Register the read-, write-, and identify-able functions for a new type of astro filename (name)"""
+    #     self._ids[name]=identify
+    #     self._reads[name]=reader
+    #     self._writes[name]=writer
+    #     self._seth[name]=setheader
+    #     self._geth[name]=getheader
 
     def checktype(self, exists, *args, **kwargs):
         import os.path as path
@@ -90,6 +172,9 @@ class AstroFile(object):
             if self._ids[k](self.filename, *args, **kwargs):
                 return k
         return None
+
+    def imshowz(self, *args, **kwargs):
+        return dp.imshowz(self.reader(), *args, **kwargs)
 
     def __nonzero__(self):
         return hasattr(self,'filename') and (self.type is not None)
@@ -110,6 +195,7 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
             functions = ['equal']
             exists = True
             cast = lambda x: x
+            filter_keyword= filter_keyword.replace('__','-')
             if '_' in filter_keyword:
                 tmp = filter_keyword.split('_')
                 filter_keyword = tmp[0]
@@ -139,8 +225,13 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
                 cast = eval(keys[0])
                 if not callable(cast):
                     raise ValueError("dictionary key (casting) has to be a callable function accepting only one argument")
+            else:
+                cast = type(request)
+                request = [request]
+#                warnings.warn("Attempting auto-casting the filter's value. Found '%s' for '%s'." % (cast,request))
 
 
+            less_than = greater_than = False
             for f in functions:
                 f = f.lower()
                 if f[:5]=='begin':
@@ -156,9 +247,18 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
                     match = True
                 if f[:5]=='equal':
                     match = False
+                if f[:3]=='lt':
+                    less_than = True
+                if f[:3]=='gt':
+                    greater_than = True
+
             # print("r:%s h:%s m:%i f:%s" %(request, header_val,
             #                               match, functions))
-            if match:
+            if greater_than:
+                ret.append(True in [cast(r) < cast(header_val) for r in request])
+            elif less_than:
+                ret.append(True in [cast(r) > cast(header_val) for r in request])
+            elif match:
                 ret.append(True in [cast(r) in cast(header_val) for r in request])
             else:
                 ret.append(True in [cast(r) == cast(header_val) for r in request])
@@ -260,85 +360,6 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
         return self.getheaderval(self.sortkey)[0] != \
             other.getheaderval(self.sortkey)[0]
 
-astrofile = AstroFile()
+#astrofile = AstroFile()
 
-
-#######################
-#
-# FITS handling of AstroFile
-#
-##################################
-
-def _fits_reader(filename, hdu=0, datahead=False):
-    import pyfits as pf
-    fl = pf.open(filename)[hdu]
-    if datahead:
-        return fl.data, fl.header
-    else:
-        return fl.data
-def _fits_writer(filename, data, header=None):
-    import pyfits as pf
-    return pf.writeto(filename, data, header, clobber=True)
-def _fits_verify(filename, ffilter=None, hdu=0):
-    import pyfits as pf
-    nc = filename.lower().split('.')[-1] in ['fits', 'fit'] 
-    cmpr = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz'] 
-    if nc or cmpr:
-        if ffilter is None:
-            return True
-        h = pf.getheader(filename, hdu)
-        if isinstance (ffilter,dict):
-            return False not in [(f in h and h[f] == ffilter[f]) for f in ffilter.keys()]
-        if isinstance (ffilter, (list,tuple)):
-            return False not in [f in h for f in ffilter]
-    return False
-# def _fits_filter(_filename, hdu=0, **kwargs):
-#     import pyfits as pf
-#     h=pf.getheader(_filename, hdu)
-#     return True in [k in h and (isinstance(kwargs[k], (tuple, list)) 
-#                                 and [kwargs[k][0](h[k]) in map(kwargs[k][0],kwargs[k][1:])]
-#                                 or [h[k] == kwargs[k]])[0]
-#                     for k in kwargs.keys()]
-def _fits_getheader(_filename, *args, **kwargs):
-    import pyfits as pf
-    hdu=('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
-    h=pf.getheader(_filename, hdu)
-    return tuple([(a in h and [h[a]] or [None])[0] for a in args])
-
-def _fits_setheader(_filename, *args, **kwargs):
-    import pyfits as pf
-    import warnings
-    hdu=('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
-    if 'write' in kwargs and kwargs['write']:
-        save = True
-        try:
-            fits = pf.open(_filename, 'update')[hdu]
-        except IOError:
-            warnings.warn("Read only filesystem. Header update of '%s' will remain only in memory but not on disk." % ', '.join(kwargs.keys()))
-            fits = pf.open(_filename)[hdu]
-            save = False
-    else:
-        fits = pf.open(_filename)[hdu]
-        save = False
-    if 'write' in kwargs:
-        del kwargs['write']
-
-    h = fits.header
-    for k,v in kwargs.items():
-        if v is None:
-            del k[v]
-        else:
-            h[k] = v
-    if save:
-        fits.flush()
-    return True
-
-astrofile.register('fits',_fits_verify,_fits_reader,_fits_writer,
-                   getheader=_fits_getheader, setheader=_fits_setheader)
-
-#############################
-#
-# End FITS
-#
-####################################
 

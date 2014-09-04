@@ -20,8 +20,12 @@
 
 
 from __future__ import division, print_function
+#import dataproc as dp
+import astropy.time as apt
+import datetime
 import dataproc as dp
 import matplotlib.pyplot as plt
+import matplotlib.dates as md
 import pyfits as pf
 import scipy as sp
 
@@ -31,8 +35,10 @@ def imshowz(data,
             minmax=None, xlim=None, ylim=None,
             cxy=None, plot_rad=None,
             ticks=True, colorbar=False,
-            hdu=0,
+            hdu=0, 
+            rotate=0, invertx=False, inverty=False,
             origin='lower', forcenew=False,
+            trim_data=False,
             **kwargs):
     """Plots data using zscale algorithm to fix the min and max values
 
@@ -66,6 +72,7 @@ def imshowz(data,
 """
 
     #set the data to plot
+    d = dp.AstroFile('aa.fits')
     if isinstance(data, pf.hdu.base._BaseHDU):
         data = data.data
         avail = ""
@@ -80,6 +87,18 @@ def imshowz(data,
         avail = "available: %s" % (open_file,)
     if data is None:
         raise ValueError("Nothing to print. HDU %i empty?\n %s" % (hdu, avail))
+
+    if rotate:
+        times = rotate/90
+        if times%1 != 0:
+            raise ValueError("rotate must be a multiple of 90")
+        data = sp.rot90(data, int(times))
+
+    if invertx:
+        data = data[:,::-1]
+
+    if inverty:
+        data = data[::-1,:]
 
     if xlim is  None:
         xlim = [0,data.shape[1]]
@@ -97,6 +116,10 @@ def imshowz(data,
         ylim[0] = ylim[0]*(ylim[0]>0)
         ylim[1] = (ylim[1]>data.shape[0]) and data.shape[0] or ylim[1]
 
+    if trim_data:
+        data = data[ylim[0]:ylim[1],xlim[0]:xlim[1]]
+        xlim = [0, data.shape[1]-1]
+        ylim = [0, data.shape[0]-1]
 
     #Find the contrast
     if minmax is None:
@@ -106,7 +129,7 @@ def imshowz(data,
 
 
     #set the canvas
-    fig, ax = dp.axesfig(axes, forcenew)
+    fig, ax = axesfig(axes, forcenew)
 
     #draw in the canvas
     if title is not None:
@@ -130,13 +153,37 @@ def imshowz(data,
     return mn,mx
 
 
+def axesfig_xdate(axes, x, overwrite=False):
+    """Returns the figure and axes with a properly formatted date X-axis"""
 
-def axesfig(axes=None, forcenew=True):
+    f,ax = dp.axesfig(axes, overwrite=overwrite)
+    if isinstance(x, (apt.Time, datetime.datetime)):
+        if isinstance(x, apt.Time):
+            x = x.plot_date
+        ax.xaxis_date()
+        tdelta = (x[-1]-x[0])*24*60
+        if tdelta < 4: #if range is smaller than 4 minutes
+            fmt = '%H:%M:%S'
+        elif tdelta < 4*60: #if range is smaller than 4 hours
+            fmt = '%H:%M'
+        elif tdelta < 2*60*24: #if range is smaller than 2 days
+            fmt = '%Y-%b-%d %H:%M'
+        elif tdelta < 1*60*24*365: #if range is smaller than 1 years
+            fmt = '%Y %b'
+        else:
+            fmt = '%Y'
+        ax.xaxis.set_major_formatter(md.DateFormatter(fmt))
+
+    return f,ax,x
+
+
+def axesfig(axes=None, forcenew=True, overwrite=False):
     """Function that accepts a variety of canvas formats and returns the output ready for use with matplotlib 
     :param axes:
     :type axes: int, plt.Figure, plt.Axes
     :param forcenew: If true starts a new axes when axes=None instead of using last figure
     :type forcenew: boolean
+    :rtype: figure, axes
 """
     if axes is None:
         if forcenew:
@@ -155,7 +202,8 @@ def axesfig(axes=None, forcenew=True):
         raise ValueError("Given value for axes (%s) is not recognized" 
                          % (axes,))
 
-    ax.cla()
+    if not overwrite:
+        ax.cla()
 
     return fig, ax
 

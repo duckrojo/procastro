@@ -20,15 +20,15 @@
 
 from __future__ import print_function, division
 from functools import wraps as _wraps
-from io_file import astrofile, AstroFile
+import dataproc as dp
 import scipy as sp
 import warnings
 from astropy.utils.exceptions import AstropyUserWarning
 
-class astrodir(object):
-    """Collection of astrofile"""
+class AstroDir(object):
+    """Collection of AstroFile"""
     def __init__(self, path):
-        """Create astrofile container from either a directory path (if given string), or directly from list of string"""
+        """Create AstroFile container from either a directory path (if given string), or directly from list of string"""
         import os
         import glob
         import os.path as pth
@@ -42,16 +42,16 @@ class astrodir(object):
         if len(filndir)==0:
             raise ValueError("invalid path to files or zero-len list given")
         for f in filndir:
-            if isinstance(f,AstroFile):
+            if isinstance(f,dp.AstroFile):
                 nf = f
             elif pth.isdir(f):
                 for sf in os.listdir(f):
-                    nf = astrofile(f+'/'+sf)
+                    nf = dp.AstroFile(f+'/'+sf)
                     if nf:
                         files.append(nf)
                 nf = False
             else:
-                nf = astrofile(f)
+                nf = dp.AstroFile(f)
             if nf:
                 files.append(nf)
         self.files = files
@@ -86,14 +86,15 @@ class astrodir(object):
         return iter(self.files)
 
     def __repr__(self):
-        return "<astrofile container: %s>" % (self.files.__repr__(),)
+        return "<AstroFile container: %s>" % (self.files.__repr__(),)
 
     def __getitem__(self, item):
         if isinstance(item, sp.ndarray):
             if item.dtype=='bool':
-                return astrodir([f for b,f in zip(item,self.files) if b])
+                fdir = [f for b,f in zip(item,self.files) if b]
+                return AstroDir(fdir)
         elif isinstance(item, slice):
-            return astrodir(self.files.__getitem__(item))
+            return AstroDir(self.files.__getitem__(item))
 
         return self.files[item]#.__getitem__(item)
 
@@ -120,7 +121,7 @@ class astrodir(object):
             mapout = len(args)==1 and (lambda x:x[0]) or (lambda x:x)
 
         warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
-        ret = [f.getheaderval(*args, mapout=mapout) for f in self.files]
+        ret = [f.getheaderval(*args, mapout=mapout, **kwargs) for f in self.files]
         warnings.resetwarnings()
         return ret
 

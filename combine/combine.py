@@ -23,9 +23,10 @@ import scipy as sp
 import dataproc as dp
 import os.path as path
 import pyfits as pf
+#import dataproc.combine as cm
 #from dataproc import gr_examine as _gr_examine
 
-class Combine():#_gr_examine):
+class Combine(object):#_gr_examine):
     """"Many ways to combine data"""
 
     def __init__(self,astrodata,
@@ -36,10 +37,16 @@ class Combine():#_gr_examine):
                  load_saved=False,
                  bias=None,
                  descriptor='frame',
+                 normalize_region=None,
+                 normalize_pre = False,
+                 trim=False,
                  **kwargs):
-        """astrodata can be a list of astrofile or a list of array. Uses header of first astrofile element if not supplied. Bias to be substracted can be specified with 'bias' keyword.  This bias can be optionally skiped if its has different sizes and 'biasskip' is set to True, otherwise raise exception
+        """astrodata can be a list of astrofile or a list of array. Uses header of first astrofile element if not supplied. Bias to be substracted can be specified with 'bias' keyword.  
 
 :param saveto: Store filename to be later used with .write(). TODO: decide whether it is better to load from this file if it exists.
+:param bias: Bias to be subtracted from each frame
+:param normalize_pre: Pre-normalize the data before combining using median
+:param normalize_region: [y1,y2,x1,x2] of the region before normalization.
 """
 
         import scipy as sp
@@ -51,6 +58,7 @@ class Combine():#_gr_examine):
 
         if saveto is not None:
             self.saveto = saveto
+
             if load_saved and path.isfile(saveto):
                 #TODO: use dataproc instead of pyfits to open
                 loaded_file = pf.open(saveto)[0]
@@ -69,6 +77,13 @@ class Combine():#_gr_examine):
 
                 return
 
+        y1 = x1 = 0
+        y2, x2 = astrodata[0].reader().shape
+        if normalize_region is not None:
+            if isinstance(normalize_region, (list, tuple)) and len(normalize_region)==4:
+                y1, y2, x1, x2 = normalize_region
+            self._normalize_region = normalize_region
+
         sys.stdout.write (" reading %i %s%s" % (len(astrodata),descriptor,len(astrodata)>1 and "s" or ""))
         for d in astrodata:
             #Check supported type of element
@@ -80,7 +95,7 @@ class Combine():#_gr_examine):
                 #use the first read header to fill all the data without headers
                 if header is None:
                     header = hd.copy()
-                    header.update(flagfield, False, 'Is this header original?')
+                    header[flagfield] = (False, 'Is this header original?')
                     #chck back if any data was without header
                     for h in heads:
                         if h is None:
@@ -103,12 +118,16 @@ class Combine():#_gr_examine):
                 if bias.shape != shape1:
                     raise ValueError("Bias shape (%s) does not match data's (%s)" % (bias.shape, shape1))
                 dt -= bias
+    
+            if normalize_pre:
+                dt /= sp.median(dt[y1:y2, x1:x2])
             arrays.append(dt)
             heads.append(hd)
             sys.stdout.write('.')
             sys.stdout.flush()
 
         sys.stdout.write('\n')
+        sys.stdout.flush()
 
         self.arrays = sp.array(arrays)
 
@@ -117,6 +136,7 @@ class Combine():#_gr_examine):
         if self.sigmas.any():
             raise ValueError("NaN are found self.sigmas!")
 
+        self._trim = trim
         self.okframes = sp.zeros(len(arrays))==0
         if interact:
             print(" selecting good frames")
@@ -129,7 +149,6 @@ class Combine():#_gr_examine):
 
 
 
-
     def _normalize(f):
         """Decorator to noramlize the return"""
         import scipy as sp
@@ -137,17 +156,44 @@ class Combine():#_gr_examine):
         def donorm(instance, *args, **kwargs):
             ret = f(instance, *args, **kwargs)
             if 'normalize' in kwargs and  kwargs['normalize']:
+                y1 = x1 = 0
+                y2, x2 = ret.data.shape
+                if 'normalize_region' in kwargs and kwargs['normalize_region']:
+                    region = kwargs['normalize_region']
+                    if isinstance(region, (list,tuple)) and len(region)==4:
+                        y1, y2, x1, x2 = region
+                elif hasattr(instance, "_normalize_region"):
+                    y1, y2, x1, x2 = instance._normalize_region
                 if kwargs['normalize']=='mean':
-                    norm = ret.data.mean()
+                    norm = ret.data[y1:y2,x1:x2].mean()
+                    norm_name = 'mean'
                 else: #use median as default
-                    norm = sp.median(ret.data)
+                    norm = sp.median(ret.data[y1:y2,x1:x2])
+                    norm_name = 'median'
+                print("Normalizing by method '%s'" % (norm_name,))
             else:
                 norm=1
             instance.norm_fct=norm
 #            print ret.data
             instance.data = instance.data/norm
-            return instance
+            return instance  #[y1:y2, x1:x2]
         return donorm
+
+    def _trim(f):
+        """Decorator to trim the return"""
+        import scipy as sp
+        @_wraps(f)
+        def dotrim(instance, *args, **kwargs):
+            print ("Trimming")
+            ret = f(instance, *args, **kwargs)
+            if instance._trim:
+                y1 = x1 = 0
+                y2, x2 = instance.data.shape
+                if hasattr(instance, "_normalize_region"):
+                    y1, y2, x1, x2 = instance._normalize_region
+                instance.data = instance.data[y1:y2, x1:x2]
+            return instance 
+        return dotrim
 
     ###FOllowing was replaced by a bias= keyword to __init__!
     # def _debias(f):
@@ -199,6 +245,7 @@ class Combine():#_gr_examine):
 
 
     @_ignore_if_load
+    @_trim
     @_checksig
     @_normalize
 #    @_debias
@@ -373,11 +420,15 @@ class Combine():#_gr_examine):
 
 
     @_ignore_if_load
+    @_trim
     @_normalize
     @_checksig
 #    @_debias
     def mean(self, sigclip=False, var=None, **kwargs):
-        """Combines the data using mean. Optionally sigma-clipping beyond the specified sigclip"""
+        """Combines the data using mean. Optionally sigma-clipping beyond the specified sigclip
+
+        :param normalize: Normalizes the data before combination. Accepts 'mean' or any other True to default to median
+        """
         if var is None:
             var = self.sigmas[self.okframes]**2
         arr = self.arrays[self.okframes]
@@ -397,11 +448,15 @@ class Combine():#_gr_examine):
 
 
     @_ignore_if_load
+    @_trim
     @_normalize
     @_checksig
 #    @_debias
     def median(self, var=None, **kwargs):
-        """Combines the data using median"""
+        """Combines the data using median
+
+        :param normalize: Normalizes the data before combination. Accepts 'mean' or any other True to default to median
+        """
         import scipy as sp
         arr=self.arrays[self.okframes]
         comb= sp.median(arr, 0)
