@@ -20,6 +20,7 @@
 
 from __future__ import print_function,division
 
+import sys
 import astrocalc
 import astroplot
 import matplotlib.pyplot as plt
@@ -66,10 +67,13 @@ class Timeseries(astrocalc.AstroCalc):
         labels=None,
         maxskip=6,
         epoch='JD',
+        epoch_format='jd',
         exptime='EXPTIME',
         ingain='GTGAIN11',
         inron='GTRON11',
         offsetxy=None,
+        masterbias = None,
+        masterflat = None,
         #            keytype='IMAGETYP',
         #            mastermode='median',
         ):
@@ -183,7 +187,7 @@ class Timeseries(astrocalc.AstroCalc):
         if not hasattr(self, 'exptime'):
             self.exptime = sp.ones(len(data))
 
-        self.epoch = apt.Time(self.epoch, format='jd', scale='utc')
+        self.epoch = apt.Time(self.epoch, format=epoch_format, scale='utc')
 
         print (" Data list ready for %i elements" % (len(self.files),))
 
@@ -226,6 +230,8 @@ class Timeseries(astrocalc.AstroCalc):
                             for lab,coo in zip(labels,coordsxy)])
                 ))
 
+        self._shape = self.files[0].shape
+
         # instance variables (in addition to self.files, self.isAstrodir and
         # self.mjd,self.masterbias, self.masterbias, self.masterflat)
         self.labels = labels
@@ -236,14 +242,23 @@ class Timeseries(astrocalc.AstroCalc):
         self.gain = ingain
         self.ron = inron
 
+        if masterbias is None:
+            masterbias = sp.zeros(self._shape)
+        if masterflat is None:
+            masterflat = sp.ones(self._shape)
+
+        self.masterbias = masterbias
+        self.masterflat = masterflat
 
 
-    def perform_phot(
-            self,
-            aperture,
-            sky=None,
-            stamprad=25,
-            deg=1):
+    def perform_phot(self,
+                     aperture,
+                     sky=None,
+                     stamprad=25,
+                     sky_store=True,
+                     deg=1,
+                     quiet=False,
+                     ):
         """Perform apperture photometry with the images of the Timeseries object.
 
         :param aperture: aperture photometry radius
@@ -266,33 +281,34 @@ class Timeseries(astrocalc.AstroCalc):
         fwhms = {lab: [] for lab in self.labels}
 
         skydata = []
-        self.skip = []
         targetsxy = {lab:[coo] for lab, coo in self.targetsxy.items()}
+        nframes = len(self.files)
 
-        for rdata, i in zip(self.files, range(len(self.files))):
+        for rdata, i in zip(self.files, range(nframes)):
             if sky is not None:
                 sky_img_dict = {lab: [] for lab in self.labels}
 
             gain = self.gain
             ron = self.ron
-            if isinstance(rdata, dp.AstroDir):
+            if isinstance(rdata, dp.AstroFile):
                 if isinstance(gain,basestring):
                     gain = rdata.getheaderval(self.gain)
                 if isinstance(ron, basestring):
                     ron  = rdata.getheaderval(self.ron)
                 data, head = rdata.reader(datahead=True)
-                ##todo: offer datareduction?
-                # data = self.imagereduction(
-                #     data,
-                #     self.masterbias,
-                #     self.masterflat,
-                #     self.masterdark)
             else:
                 data = rdata
+                
+            sys.stdout.write("about to process\n%s\nwith bias\n%s\nand flat\n%s\n" 
+                             % (data,self.masterbias,self.masterflat))
+            sys.stdout.flush()
+            data = (data - self.masterbias) / self.masterflat
 
             if isinstance(gain, basestring) or isinstance(ron, basestring):
-                raise ValueError("Gain or RON specified as header (%s/%s), but not found: %s/%s" % (ingain,inron,str(gain),str(ron)))
+                raise ValueError("Gain or RON specified as header (%s/%s), but not found: %s/%s" % (self.gain,self.ron,str(gain),str(ron)))
 
+            sys.stdout.write("done\n")
+            sys.stdout.flush()
             for lab, cooxy in targetsxy.items():
                 cx, cy = cooxy[-1]
                 offx=offy=0
@@ -305,24 +321,31 @@ class Timeseries(astrocalc.AstroCalc):
                 sarr = self.subarray(data, cy, cx, stamprad)
                 scy, scx = self.centroid(sarr)
 
+                sys.stdout.write("aaaa\n")
+                sys.stdout.flush()
                 skip = sp.sqrt((stamprad - scy) ** 2 +
                                (stamprad - scx) ** 2)
-                self.skip.append(skip)
                 if skip > self.maxskip:
                     print(("Unexpected jump of %f pixels has occurred on"+
                            " frame %i for star %s") %
                           (skip, i, lab))
 
-                if sky is not None:
+                sys.stdout.write("About to start photometry\n")
+                sys.stdout.flush()
+                if sky is None:
+                    if not hasattr(self, 'skydata'):
+                        raise ValueError('Sky not specified, but no  previous sky data was stored.')
+                    sky_info = self.skydata[i][lab]
+                    phot, phot_err, fwhm, sky_out = self.apphot(sarr, [scy, scx], aperture, sky_info,
+                                                                gain=gain, ron=ron, deg=deg)
+                else:
                     if (sky[1] > 0.8*stamprad):
                         warnings.warn("Stamp radius (%i) might be too small given outer sky radius (%.1f)" %(stamprad,sky[1]))
-                    phot, phot_err, fwhm, sky_out = self.apphot(
-                        sarr, [scy, scx], aperture, sky, gain=gain, ron=ron, deg=deg)
+                    phot, phot_err, fwhm, sky_out = self.apphot(sarr, [scy, scx], aperture, sky,
+                                                                gain=gain, ron=ron, deg=deg)
                     sky_img_dict[lab] = sky_out
-                else:
-                    sky_info = self.skydata[i][lab]
-                    phot, phot_err, fwhm, sky_out = self.apphot(
-                        sarr, [scy, scx], aperture, sky_info, gain=gain, ron=ron, deg=deg)
+                sys.stdout.write("finishing  photometry\n")
+                sys.stdout.flush()
 
                 flx[lab].append(phot)
                 err[lab].append(phot_err)
@@ -330,10 +353,16 @@ class Timeseries(astrocalc.AstroCalc):
                 cooxy.append([cx + scx - stamprad,
                               cy + scy - stamprad])
 
-            if sky is not None:
+            if sky is not None and sky_store:
                 skydata.append(sky_img_dict)
 
-        if sky is not None:
+            if not quiet:
+                sys.stdout.write(("#%%0%ii: %%f +- %%f (%%.1f, %%.1f). %%f\n" 
+                                  % (int(sp.log10(nframes)),) )
+                                 % (i, phot, phot_err, cooxy[-1][0], cooxy[-1][1], fwhm))
+                sys.stdout.flush()
+
+        if sky is not None and sky_store:
             self.skydata = skydata
 
         tsr = TimeseriesResults(self.epoch, flx, err, targetsxy, 
@@ -436,7 +465,9 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
             if frame_number in self.ts.offsetxy.keys():
                 cx += self.ts.offsetxy[frame_number][0]
                 cy += self.ts.offsetxy[frame_number][1]
-            dp.imshowz(self.ts.files[n],
+            frame = (self.ts.files[n]-self.ts.masterbias) / self.ts.masterflat
+
+            dp.imshowz(frame,
                        axes=a, 
                        cxy = [cx, cy],
                        plot_rad = stamprad,
@@ -517,8 +548,9 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
             raise ValueError("Specified frame (%i) is too large (there are %i frames)" % (frame,len(self.ts.files)))
 
         if recenter:
-            stamp = self.ts.files[frame][cy-stamprad: cy+stamprad, 
-                                         cx-stamprad: cx+stamprad]
+            frame = (self.ts.files[frame]-self.ts.masterbias)/self.ts.masterflat
+            stamp = frame[cy-stamprad: cy+stamprad, 
+                          cx-stamprad: cx+stamprad]
             cy, cx = self.ts.centroid(stamp) + sp.array([cy,cx]) - stamprad
         else:
             if (hasattr(self.ts, 'lastphotometry') and 
@@ -527,8 +559,9 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
                 print(" Using coordinates from photometry (%.1f, %.1f) for frame %i" 
                       % (cx, cy, frame))
                 
-        stamp = self.ts.files[frame][int(cy-stamprad): int(cy+stamprad), 
-                                     int(cx-stamprad): int(cx+stamprad)]
+        frame = (self.ts.files[frame]-self.ts.masterbias)/self.ts.masterflat
+        stamp = frame[cy-stamprad: cy+stamprad, 
+                      cx-stamprad: cx+stamprad]
 
         d = self.centraldistances(stamp, 
                                   sp.array(stamp.shape)//2 

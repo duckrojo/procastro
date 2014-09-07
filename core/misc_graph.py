@@ -77,6 +77,7 @@ def imshowz(data,
         data = data.data
         avail = ""
     elif isinstance(data, dp.AstroFile):
+        avail = "available: %s" % (data.reader(hdu=-1),)
         data = data.reader(hdu)
     elif isinstance(data, pf.HDUList):
         avail = "available: %s" % (data,)

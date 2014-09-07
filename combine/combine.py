@@ -18,6 +18,7 @@
 #
 #
 
+from __future__ import print_function, division
 from functools import wraps as _wraps
 import scipy as sp
 import dataproc as dp
@@ -25,6 +26,46 @@ import os.path as path
 import pyfits as pf
 #import dataproc.combine as cm
 #from dataproc import gr_examine as _gr_examine
+
+def _combine_first(method):
+    """Decorator to check whether data has been combined first"""
+    @_wraps(method)
+    def wrapper(instance, *args, **kwargs):
+        if not hasattr(instance, 'ncombine'):
+            return UnboundLocalError("To operate a Combine class, the combination method must have been applied before")
+        return method(instance, *args, **kwargs)
+    return wrapper
+
+
+def _normalize(method):
+    """Decorator to noramlize the return"""
+    import scipy as sp
+    @_wraps(method)
+    def donorm(instance, *args, **kwargs):
+        ret = method(instance, *args, **kwargs)
+        if 'normalize' in kwargs and  kwargs['normalize']:
+            y1 = x1 = 0
+            y2, x2 = ret.data.shape
+            if 'normalize_region' in kwargs and kwargs['normalize_region']:
+                region = kwargs['normalize_region']
+                if isinstance(region, (list,tuple)) and len(region)==4:
+                    y1, y2, x1, x2 = region
+            elif hasattr(instance, "_normalize_region"):
+                y1, y2, x1, x2 = instance._normalize_region
+            if kwargs['normalize']=='mean':
+                norm = ret.data[y1:y2,x1:x2].mean()
+                norm_name = 'mean'
+            else: #use median as default
+                norm = sp.median(ret.data[y1:y2,x1:x2])
+                norm_name = 'median'
+            print("Normalizing by method '%s'" % (norm_name,))
+        else:
+            norm=1
+        ret.norm_fct=norm
+        ret.data = instance.data/norm
+        return ret  #[y1:y2, x1:x2]
+    return donorm
+
 
 class Combine(object):#_gr_examine):
     """"Many ways to combine data"""
@@ -40,6 +81,7 @@ class Combine(object):#_gr_examine):
                  normalize_region=None,
                  normalize_pre = False,
                  trim=False,
+                 force_fits=True,
                  **kwargs):
         """astrodata can be a list of astrofile or a list of array. Uses header of first astrofile element if not supplied. Bias to be substracted can be specified with 'bias' keyword.  
 
@@ -57,6 +99,8 @@ class Combine(object):#_gr_examine):
         shape1 = None
 
         if saveto is not None:
+            if force_fits and '.fit' not in saveto.lower()[-5:]:
+                saveto = saveto + '.fits'
             self.saveto = saveto
 
             if load_saved and path.isfile(saveto):
@@ -77,12 +121,6 @@ class Combine(object):#_gr_examine):
 
                 return
 
-        y1 = x1 = 0
-        y2, x2 = astrodata[0].reader().shape
-        if normalize_region is not None:
-            if isinstance(normalize_region, (list, tuple)) and len(normalize_region)==4:
-                y1, y2, x1, x2 = normalize_region
-            self._normalize_region = normalize_region
 
         sys.stdout.write (" reading %i %s%s" % (len(astrodata),descriptor,len(astrodata)>1 and "s" or ""))
         for d in astrodata:
@@ -100,15 +138,25 @@ class Combine(object):#_gr_examine):
                     for h in heads:
                         if h is None:
                             h = header
+            elif isinstance(d, Combine):
+                dt = d.data
+                hd = d.outhdr
             elif isinstance(d, sp.ndarray):
                 dt = d
                 hd = header
             else:
                 raise TypeError("combine()  initialization only with a list of astrofile or  ndarray is currently supported")
 
-            #check equal size
+            #check equal size and initialize normalization region
             if shape1 is None:
                 shape1=dt.shape
+                y1 = x1 = 0
+                y2, x2 = dt.shape
+                if normalize_region is not None:
+                    if isinstance(normalize_region, (list, tuple)) and len(normalize_region)==4:
+                        y1, y2, x1, x2 = normalize_region
+                    self._normalize_region = normalize_region
+
             elif shape1 != dt.shape:
                 raise ValueError("All arrays passed to combine should have the same dimension")
 
@@ -147,44 +195,21 @@ class Combine(object):#_gr_examine):
 
         self.headers = heads
 
+    def __getitem__(self, key):
+        """Read data and return key"""
+        if hasattr(self,'ncombine'):
+            return self.data[key]
+        return None
 
 
-    def _normalize(f):
-        """Decorator to noramlize the return"""
-        import scipy as sp
-        @_wraps(f)
-        def donorm(instance, *args, **kwargs):
-            ret = f(instance, *args, **kwargs)
-            if 'normalize' in kwargs and  kwargs['normalize']:
-                y1 = x1 = 0
-                y2, x2 = ret.data.shape
-                if 'normalize_region' in kwargs and kwargs['normalize_region']:
-                    region = kwargs['normalize_region']
-                    if isinstance(region, (list,tuple)) and len(region)==4:
-                        y1, y2, x1, x2 = region
-                elif hasattr(instance, "_normalize_region"):
-                    y1, y2, x1, x2 = instance._normalize_region
-                if kwargs['normalize']=='mean':
-                    norm = ret.data[y1:y2,x1:x2].mean()
-                    norm_name = 'mean'
-                else: #use median as default
-                    norm = sp.median(ret.data[y1:y2,x1:x2])
-                    norm_name = 'median'
-                print("Normalizing by method '%s'" % (norm_name,))
-            else:
-                norm=1
-            instance.norm_fct=norm
-#            print ret.data
-            instance.data = instance.data/norm
-            return instance  #[y1:y2, x1:x2]
-        return donorm
+            
+
 
     def _trim(f):
         """Decorator to trim the return"""
         import scipy as sp
         @_wraps(f)
         def dotrim(instance, *args, **kwargs):
-            print ("Trimming")
             ret = f(instance, *args, **kwargs)
             if instance._trim:
                 y1 = x1 = 0
@@ -371,7 +396,6 @@ class Combine(object):#_gr_examine):
     def write(self, filename=None, verbose=True, **kwargs):
         """Write combined array to file. Add specified headers"""
 
-        from dataproc import astrofile
         if (filename is None):
             if (not self.saveto):
                 raise ValueError("Filename to store combined file was not specified with .write, nor in the object initialization")
@@ -382,7 +406,7 @@ class Combine(object):#_gr_examine):
         #TODO: include sigma
         if verbose:
             print("Saving combined array to '%s'" % filename)
-        astrofile(filename).writer(self.data, self.outhdr)
+        dp.AstroFile(filename).writer(self.data, self.outhdr)
         return self
 
 
@@ -452,6 +476,28 @@ class Combine(object):#_gr_examine):
     @_normalize
     @_checksig
 #    @_debias
+    def concatenate(self, axis, **kwargs):
+        """Concatenates the data along given axis
+
+        :param axis: axis along which to concatenate
+        :param normalize: Normalizes the data before combination. Accepts 'mean' or any other True to default to median
+        """
+        arr = self.arrays[self.okframes]
+        sig = self.sigmas[self.okframes]
+
+        self.data  = sp.concatenate(arr, axis)
+        self.sigma = sp.concatenate(arr, axis)
+        self.lastmet = ('concatenate',axis)
+        self.ncombine=len(arr)
+        self.updatehdr()
+        return self
+
+
+    @_ignore_if_load
+    @_trim
+    @_normalize
+    @_checksig
+#    @_debias
     def median(self, var=None, **kwargs):
         """Combines the data using median
 
@@ -468,10 +514,75 @@ class Combine(object):#_gr_examine):
         self.updatehdr()
         return self
 
-    def __len__(self):
-        if hasattr(self,'ncombine'):
-            return self.ncombine
-        return 0
+    # def __len__(self):
+    #     if hasattr(self,'ncombine'):
+    #         return self.ncombine
+    #     return 0
+
+    @_combine_first
+    def __radd__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        return self.data + other
+
+    @_combine_first
+    def __rsub__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        return self.data - other
+
+    @_combine_first
+    def __rtruediv__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        return self.data / other
+
+    @_combine_first
+    def __rfloordiv__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        return self.data // other
+
+    @_combine_first
+    def __rmul__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        return self.data * other
+
+    @_combine_first
+    def __add__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        self.data += other
+        return self
+
+    @_combine_first
+    def __sub__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        self.data -= other
+        return self
+
+    @_combine_first
+    def __truediv__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        self.data /= other
+        return self
+
+    @_combine_first
+    def __floordiv__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        self.data //= other
+        return self
+
+    @_combine_first
+    def __mul__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        self.data *= other
+        return self
 
 
     # def plotpix(self, coords, *args, **kwargs):

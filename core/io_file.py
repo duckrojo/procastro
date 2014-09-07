@@ -22,6 +22,18 @@
 from __future__ import print_function, division
 from functools import wraps as _wraps
 import warnings
+import dataproc.combine as cm
+
+
+def _numerize_other(method):
+    @_wraps(method)
+    def wrapper(instance, other, *args, **kwargs):
+        if isinstance(other, AstroFile):
+            other = other.reader()
+        if isinstance(other, cm.Combine):
+            other = other.data
+        return method(instance, other, *args, **kwargs)
+    return wrapper
 
 
 #######################
@@ -31,7 +43,13 @@ import warnings
 ##################################
 
 def _fits_reader(filename, hdu=0, datahead=False):
+    """Read fits files.
+
+    :param hdu: if -1 return all hdus
+    """
     import pyfits as pf
+    if hdu < 0:
+        return pf.open(filename)
     fl = pf.open(filename)[hdu]
     if datahead:
         return fl.data, fl.header
@@ -360,6 +378,49 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
         return self.getheaderval(self.sortkey)[0] != \
             other.getheaderval(self.sortkey)[0]
 
-#astrofile = AstroFile()
 
 
+
+    @_numerize_other
+    def __add__(self, other):
+        return self.reader() + other
+
+    @_numerize_other
+    def __sub__(self, other):
+        return self.reader() - other
+
+    @_numerize_other
+    def __floordiv__(self, other):
+        return self.reader() // other
+
+    @_numerize_other
+    def __truediv__(self, other):
+        return self.reader() / other
+
+    @_numerize_other
+    def __mul__(self, other):
+        return self.reader() * other
+
+    @_numerize_other
+    def __radd__(self, other):
+        return  other + self.reader()
+
+    @_numerize_other
+    def __rsub__(self, other):
+        return other - self.reader()
+
+    @_numerize_other
+    def __rfloordiv__(self, other):
+        return other // self.reader()
+
+    @_numerize_other
+    def __rtruediv__(self, other):
+        return other / self.reader() 
+
+    @_numerize_other
+    def __rmul__(self, other):
+        return self.reader() * other
+
+    @property
+    def shape(self):
+        return self.reader().shape
