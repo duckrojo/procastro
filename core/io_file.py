@@ -42,7 +42,12 @@ def _numerize_other(method):
 #
 ##################################
 
-def _fits_reader(filename, hdu=0, datahead=False):
+def _fits_header(filename, hdu=0):
+    """Read fits files.
+    """
+    import pyfits as pf
+    return pf.open(filename)[hdu].header
+def _fits_reader(filename, hdu=0):
     """Read fits files.
 
     :param hdu: if -1 return all hdus
@@ -51,13 +56,10 @@ def _fits_reader(filename, hdu=0, datahead=False):
     if hdu < 0:
         return pf.open(filename)
     fl = pf.open(filename)[hdu]
-    if datahead:
-        return fl.data, fl.header
-    else:
-        return fl.data
+    return fl.data
 def _fits_writer(filename, data, header=None):
     import pyfits as pf
-    return pf.writeto(filename, data, header, clobber=True)
+    return pf.writeto(filename, data, header, clobber=True, output_verify='silentfix')
 def _fits_verify(filename, ffilter=None, hdu=0):
     import pyfits as pf
     nc = filename.lower().split('.')[-1] in ['fits', 'fit'] 
@@ -122,6 +124,7 @@ class AstroFile(object):
     """Valid astronomy data file format. Only filename is checked so far"""
 
     _reads={'fits': _fits_reader}
+    _readhs={'fits': _fits_header}
     _ids={'fits': _fits_verify}
     _writes={'fits': _fits_writer}
     _geth={'fits': _fits_getheader}
@@ -160,11 +163,30 @@ class AstroFile(object):
     def __repr__(self):
         return '<astrofile: %s>' % (self.filename,)
 
-    def __init__(self, filename, exists=False, *args, **kwargs):
+    def __init__(self, filename, 
+                 mbias=None, mflat=None, exists=False,
+                 *args, **kwargs):
         import os.path as path
         self.filename = filename
         self.type     = self.checktype(exists, *args, **kwargs)
         self.reqheads = {'basename':path.basename(filename)}
+        if mbias is not None:
+            self.add_bias(mbias)
+        if mflat is not None:
+            self.add_flat(mflat)
+
+
+    def add_bias(self, mbias):
+        if not hasattr(self, 'calib'):
+            self.calib = dp.AstroCalib()
+        self.calib.add_bias(mbias)
+
+
+    def add_flat(self, mflat):
+        if not hasattr(self, 'calib'):
+            self.calib = dp.AstroCalib()
+        self.calib.add_flat(mflat)
+
 
         #todo: following is only necessary because isinstance is not working on combine module!!
 #        self.astrofile=True
@@ -332,9 +354,34 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
 
     @_checkfilename
     def reader(self, *args, **kwargs):
-        """Read astro data"""
+        """Read astro data and return it calibrated if provided
+        
+        :param rawdata: if True return raw instead of calibrated
+
+        TODO: Respond to different exposure times or filters
+        """
         tp = self.type
-        return tp and self._reads[tp](self.filename, *args, **kwargs)
+        if not tp:
+            return False
+        data = self._reads[tp](self.filename, *args, **kwargs)
+
+        if not hasattr(self, 'calib'):
+            self.calib = AstroCalib()
+
+        if ('hdu' in kwargs and kwargs['hdu']<0) or ('rawdata' in kwargs and kwargs['rawdata']):
+            return data
+        return self.calib.reduce(data)
+
+    @_checkfilename
+    def readheader(self, *args, **kwargs):
+        """Read astro header
+        
+        """
+        tp = self.type
+        if not tp:
+            return False
+        return self._readhs[tp](self.filename, *args, **kwargs)
+
 
     @_checkfilename
     def writer(self, *args, **kwargs):

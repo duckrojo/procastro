@@ -48,7 +48,8 @@ class process2d():
 
         #If clone make sure both attrtoclone is specified and data is the appropriate object class
         if isinstance(data, basestring): #filename is given
-            data, header2=astrofile(data).reader(datahead=True)
+            data    = astrofile(data).reader()
+            header2 = astrofile(data).readheader()
             if header is None:
                 header=header2
 

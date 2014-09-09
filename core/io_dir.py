@@ -21,14 +21,20 @@
 from __future__ import print_function, division
 from functools import wraps as _wraps
 import dataproc as dp
+import dataproc.combine as cm
 import scipy as sp
 import warnings
+import copy
 from astropy.utils.exceptions import AstropyUserWarning
 
 class AstroDir(object):
     """Collection of AstroFile"""
-    def __init__(self, path):
-        """Create AstroFile container from either a directory path (if given string), or directly from list of string"""
+
+    def __init__(self, path, mbias=None, mflat=None, calib_force=False):
+        """Create AstroFile container from either a directory path (if given string), or directly from list of string
+        if calib is given, create one calib per directory to avoid using storing calibration files on each AstroFile
+
+"""
         import os
         import glob
         import os.path as pth
@@ -43,7 +49,7 @@ class AstroDir(object):
             raise ValueError("invalid path to files or zero-len list given")
         for f in filndir:
             if isinstance(f,dp.AstroFile):
-                nf = f
+                nf = copy.copy(f)
             elif pth.isdir(f):
                 for sf in os.listdir(f):
                     nf = dp.AstroFile(f+'/'+sf)
@@ -55,6 +61,22 @@ class AstroDir(object):
             if nf:
                 files.append(nf)
         self.files = files
+        calib = AstroCalib(mbias, mflat)
+        for f in files:
+            if calib_force or not hasattr(f, 'calib'):  #allows some of the files to keep their calibration
+                f.calib = calib
+
+    def add_bias(self, mbias):
+        unique_calibs = set([f.calib for f in self.files])
+        for c in unique_calibs:
+            c.add_bias(mbias)
+
+
+    def add_flat(self, mflat):
+        unique_calibs = set([f.calib for f in self.files])
+        for c in unique_calibs:
+            c.add_flat(mflat)
+
 
     def readdata(self):
         import scipy as sp
@@ -65,6 +87,7 @@ class AstroDir(object):
             data.append(f.reader())
         self.datacube = sp.array(data)
         return self.datacube
+
 
     def sort(self, *args):
         """Return sorted list of files according to specified header field, use first match. It uses in situ sorting, but returns itself"""
@@ -125,8 +148,6 @@ class AstroDir(object):
         warnings.resetwarnings()
         return ret
 
-        
-
     def setheader(self, write=False, **kwargs):
         """Sets the header values specified in 'args' from each of the files. Returns a simple list if only one value is specified, or a list of tuples otherwise
 
@@ -138,4 +159,58 @@ class AstroDir(object):
         return self
         
 
+
+class AstroCalib(object):
+
+    def __init__(self, mbias=None, mflat=None):
+        if mbias is None:
+            mbias = 0.0
+        if mflat is None:
+            mflat = 1.0
+
+        self.mbias={}
+        self.mflat={}
+        self.add_bias(mbias)
+        self.add_flat(mflat)
+
+
+    def add_bias(self, mbias):
+        if isinstance(mbias, dict):
+            for k in mbias.keys():
+                self.mbias[k] = mbias[k]
+        elif isinstance(mbias, 
+                        (int, float, sp.ndarray)):
+            self.mbias[-1] =  mbias
+        elif isinstance(mbias,
+                        cm.Combine):
+            self.mbias[-1] = mbias.data
+        else:
+            raise ValueError("Master Bias supplied was not recognized.")
+
+
+    def add_flat(self, mflat):
+        if isinstance(mflat, dict):
+            for k in mflat.keys():
+                self.mflat[k] = mflat[k]
+        elif isinstance(mflat, 
+                        (int, float, sp.ndarray)):
+            self.mflat[''] = mflat
+        elif isinstance(mflat,
+                        cm.Combine):
+            self.mflat[''] = mflat.data
+        else:
+            raise ValueError("Master Flat supplied was not recognized.")
+
+
+
+    def reduce(self, data, exptime=None, afilter=None):
+        if exptime is None:
+            exptime = -1
+        if afilter is None:
+            afilter = ''
+
+        debias = data - self.mbias[exptime]
+        deflat = debias / self.mflat[afilter]
+
+        return deflat
 
