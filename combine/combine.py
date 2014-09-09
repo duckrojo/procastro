@@ -21,6 +21,7 @@
 from __future__ import print_function, division
 from functools import wraps as _wraps
 import scipy as sp
+import warnings
 import dataproc as dp
 import os.path as path
 import pyfits as pf
@@ -118,6 +119,7 @@ class Combine(object):#_gr_examine):
                 for prm in self.headers[0]["COMBPRM*"]:
                     self.lastmet.append(self.headers[0][prm])
                 self.ncombine = self.headers[0]["NCOMBINE"]
+                print ("Loaded result file from '%s'" % (saveto,))
 
                 return
 
@@ -129,7 +131,8 @@ class Combine(object):#_gr_examine):
             #todo: find out why isinstance does not work!!!
             #if isinstance(d, dp.AstroFile):
             if isinstance(d, dp.AstroFile):
-                dt,hd = d.reader(datahead=True)
+                dt = d.reader()
+                hd = d.readheader()
                 #use the first read header to fill all the data without headers
                 if header is None:
                     header = hd.copy()
@@ -406,6 +409,7 @@ class Combine(object):#_gr_examine):
         #TODO: include sigma
         if verbose:
             print("Saving combined array to '%s'" % filename)
+        warnings.filterwarnings("ignore", "Overwriting", UserWarning)
         dp.AstroFile(filename).writer(self.data, self.outhdr)
         return self
 
@@ -538,6 +542,12 @@ class Combine(object):#_gr_examine):
         return self.data / other
 
     @_combine_first
+    def __rdiv__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        return self.data / other
+
+    @_combine_first
     def __rfloordiv__(self, other):
         if isinstance(other, Combine):
             other = other.data
@@ -565,6 +575,13 @@ class Combine(object):#_gr_examine):
 
     @_combine_first
     def __truediv__(self, other):
+        if isinstance(other, Combine):
+            other = other.data
+        self.data /= other
+        return self
+
+    @_combine_first
+    def __div__(self, other):
         if isinstance(other, Combine):
             other = other.data
         self.data /= other
