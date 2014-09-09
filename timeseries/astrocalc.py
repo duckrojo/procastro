@@ -234,9 +234,12 @@ class AstroCalc(object):
         d2   = d[d<sap*4].ravel()
         tofit = lambda d, h,sig:h*dp.gauss(d, sig, ndim=1)
         import scipy.optimize as op
-        sig,cov = op.curve_fit(tofit, d2, res2,
-                               sigma = 1/sp.sqrt(sp.absolute(res2)),
-                               p0=[max(res2),sap/3])
+        try:
+            sig,cov = op.curve_fit(tofit, d2, res2,
+                                   sigma = 1/sp.sqrt(sp.absolute(res2)),
+                                   p0=[max(res2),sap/3])
+        except RuntimeError:
+            sig=sp.array([0,0,0])
         fwhmg = 2.355*sig[1]
 
         #now photometry

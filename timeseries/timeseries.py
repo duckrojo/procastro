@@ -292,23 +292,24 @@ class Timeseries(astrocalc.AstroCalc):
             ron = self.ron
             if isinstance(rdata, dp.AstroFile):
                 if isinstance(gain,basestring):
-                    gain = rdata.getheaderval(self.gain)
+                    gain = rdata.getheaderval(self.gain)[0]
                 if isinstance(ron, basestring):
-                    ron  = rdata.getheaderval(self.ron)
-                data, head = rdata.reader(datahead=True)
+                    ron  = rdata.getheaderval(self.ron)[0]
+                data = rdata.reader()
+                head = rdata.readheader()
             else:
                 data = rdata
                 
-            sys.stdout.write("about to process\n%s\nwith bias\n%s\nand flat\n%s\n" 
-                             % (data,self.masterbias,self.masterflat))
-            sys.stdout.flush()
+            # sys.stdout.write("about to process\n%s\nwith bias\n%s\nand flat\n%s\n" 
+            #                  % (data,self.masterbias,self.masterflat))
+            # sys.stdout.flush()
             data = (data - self.masterbias) / self.masterflat
 
             if isinstance(gain, basestring) or isinstance(ron, basestring):
                 raise ValueError("Gain or RON specified as header (%s/%s), but not found: %s/%s" % (self.gain,self.ron,str(gain),str(ron)))
 
-            sys.stdout.write("done\n")
-            sys.stdout.flush()
+            # sys.stdout.write("done\n")
+            # sys.stdout.flush()
             for lab, cooxy in targetsxy.items():
                 cx, cy = cooxy[-1]
                 offx=offy=0
@@ -321,8 +322,8 @@ class Timeseries(astrocalc.AstroCalc):
                 sarr = self.subarray(data, cy, cx, stamprad)
                 scy, scx = self.centroid(sarr)
 
-                sys.stdout.write("aaaa\n")
-                sys.stdout.flush()
+#                sys.stdout.write("aaaa\n")
+#                sys.stdout.flush()
                 skip = sp.sqrt((stamprad - scy) ** 2 +
                                (stamprad - scx) ** 2)
                 if skip > self.maxskip:
@@ -330,8 +331,8 @@ class Timeseries(astrocalc.AstroCalc):
                            " frame %i for star %s") %
                           (skip, i, lab))
 
-                sys.stdout.write("About to start photometry\n")
-                sys.stdout.flush()
+                # sys.stdout.write("About to start photometry\n")
+                # sys.stdout.flush()
                 if sky is None:
                     if not hasattr(self, 'skydata'):
                         raise ValueError('Sky not specified, but no  previous sky data was stored.')
@@ -344,8 +345,8 @@ class Timeseries(astrocalc.AstroCalc):
                     phot, phot_err, fwhm, sky_out = self.apphot(sarr, [scy, scx], aperture, sky,
                                                                 gain=gain, ron=ron, deg=deg)
                     sky_img_dict[lab] = sky_out
-                sys.stdout.write("finishing  photometry\n")
-                sys.stdout.flush()
+                # sys.stdout.write("finishing  photometry\n")
+                # sys.stdout.flush()
 
                 flx[lab].append(phot)
                 err[lab].append(phot_err)
@@ -358,7 +359,7 @@ class Timeseries(astrocalc.AstroCalc):
 
             if not quiet:
                 sys.stdout.write(("#%%0%ii: %%f +- %%f (%%.1f, %%.1f). %%f\n" 
-                                  % (int(sp.log10(nframes)),) )
+                                  % (int(sp.log10(nframes))+1,) )
                                  % (i, phot, phot_err, cooxy[-1][0], cooxy[-1][1], fwhm))
                 sys.stdout.flush()
 
@@ -549,8 +550,8 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
 
         if recenter:
             frame = (self.ts.files[frame]-self.ts.masterbias)/self.ts.masterflat
-            stamp = frame[cy-stamprad: cy+stamprad, 
-                          cx-stamprad: cx+stamprad]
+            stamp = frame[int(cy-stamprad): int(cy+stamprad), 
+                          int(cx-stamprad): int(cx+stamprad)]
             cy, cx = self.ts.centroid(stamp) + sp.array([cy,cx]) - stamprad
         else:
             if (hasattr(self.ts, 'lastphotometry') and 
@@ -560,8 +561,8 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
                       % (cx, cy, frame))
                 
         frame = (self.ts.files[frame]-self.ts.masterbias)/self.ts.masterflat
-        stamp = frame[cy-stamprad: cy+stamprad, 
-                      cx-stamprad: cx+stamprad]
+        stamp = frame[int(cy-stamprad): int(cy+stamprad), 
+                      int(cx-stamprad): int(cx+stamprad)]
 
         d = self.centraldistances(stamp, 
                                   sp.array(stamp.shape)//2 
@@ -679,6 +680,44 @@ class TimeseriesResults(astroplot.AstroPlot):
         ax.set_title("Timeseries Data")
         ax.set_xlabel("MJD")
         ax.set_ylabel("Flux")
+
+        ax.legend()
+        fig.show()
+        return
+
+
+    def plot_normflux(self, label=None, axes=None):
+        """Display the timeseries data: normalized flux (with errors) as function of epoch
+
+        :param label: Specify a single star to plot
+        :rtype label: basestring
+
+        :rtype: None (and plot display)
+        """
+
+        fig, ax, epoch = dp.axesfig_xdate(axes, self.epoch)
+
+        if label is None:
+            disp = self.flx.keys()
+        else:
+            disp = [label]
+
+        for lab in disp:
+            flx = self.flx[lab]
+            if self.err is None:
+                yerr = None
+            else:
+                yerr = self.err[lab]
+
+            ax.errorbar(epoch,
+                        flx/sp.median(flx),
+                        yerr=yerr/sp.median(flx),
+                        marker="o",
+                        label=lab)
+
+        ax.set_title("Timeseries Data")
+        ax.set_xlabel("MJD")
+        ax.set_ylabel("Normalized Flux")
 
         ax.legend()
         fig.show()
