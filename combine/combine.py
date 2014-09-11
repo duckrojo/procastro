@@ -25,8 +25,14 @@ import warnings
 import dataproc as dp
 import os.path as path
 import pyfits as pf
-#import dataproc.combine as cm
-#from dataproc import gr_examine as _gr_examine
+
+
+###########################################
+#
+# Decorators
+#
+##############
+
 
 def _combine_first(method):
     """Decorator to check whether data has been combined first"""
@@ -66,6 +72,56 @@ def _normalize(method):
         ret.data = instance.data/norm
         return ret  #[y1:y2, x1:x2]
     return donorm
+
+
+def _trim(f):
+    """Decorator to trim the return"""
+    import scipy as sp
+    @_wraps(f)
+    def dotrim(instance, *args, **kwargs):
+        ret = f(instance, *args, **kwargs)
+        if instance._trim:
+            y1 = x1 = 0
+            y2, x2 = instance.data.shape
+            if hasattr(instance, "_normalize_region"):
+                y1, y2, x1, x2 = instance._normalize_region
+            instance.data = instance.data[y1:y2, x1:x2]
+        return instance 
+    return dotrim
+
+
+def _checksig(f):
+    """Decorator to check standard appropriate standard deviation without zeros"""
+    @_wraps(f)
+    def sigmaok(instance, *args, **kwargs):
+        import warnings
+        var=instance.sigmas[instance.okframes]**2
+        if 0 in var:
+            if (var!=0).any():
+                warnings.warn("Confusing as some sigmas were 0 and some not. Ignoring them.")
+        var=instance.arrays*0+1
+        return f(instance, *args, var=var, **kwargs)
+
+    return sigmaok
+
+
+def _ignore_if_load(f):
+    """Decorator to make ignore function if loaded from file instead of being given as arrays"""
+    @_wraps(f)
+    def ignoring(instance, *args, **kwargs):
+        import warnings
+        if hasattr(instance,'loaded') and instance.loaded:
+            return instance
+        return f(instance, *args, **kwargs)
+
+    return ignoring
+
+
+#########################################
+#
+# Combine Class
+#
+##############
 
 
 class Combine(object):#_gr_examine):
@@ -198,78 +254,113 @@ class Combine(object):#_gr_examine):
 
         self.headers = heads
 
-    def __getitem__(self, key):
-        """Read data and return key"""
-        if hasattr(self,'ncombine'):
-            return self.data[key]
-        return None
+
+    def _updatehdr(self, **kwargs):
+        """Returns a header with info about the combination and any other indicated header. It choses the type of the first file."""
+
+        import dataproc as dp
+        from copy import copy
+        if not hasattr(self,'lastmet'):
+            raise ValueError("_updatehdr must be run after a combination method")
+        #TD: it assumes fits header. Not always true
+        if not hasattr(self,'outhdr'):
+            self.outhdr = copy(self.headers[0])
+            self.outhdr["COMBINE"] = (True,"Is this a combination of files?")
+            self.outhdr["NCOMBINE"] = (self.ncombine,"Number of frames combined")
+            self.outhdr["COMBMETH"] = (self.lastmet[0],"Method used to combine")
+            for i, prm in zip(range(len(self.lastmet)-1), self.lastmet[1:]):
+                self.outhdr["COMBPRM%i" %i] = (prm, "Parameter %i to method" % i)
+        for k in kwargs.keys():
+            self.outhdr[k] = kwargs[k]
 
 
-            
+    def save(self, *args, **kwargs):
+        """Alias to write()"""
+        return self.write(*args, **kwargs)
 
 
-    def _trim(f):
-        """Decorator to trim the return"""
+    def write(self, filename=None, verbose=True, **kwargs):
+        """Write combined array to file. Add specified headers"""
+
+        if (filename is None):
+            if (not self.saveto):
+                raise ValueError("Filename to store combined file was not specified with .write, nor in the object initialization")
+            filename = self.saveto
+        if not hasattr(self,'lastmet'):
+            raise ValueError("write must be run after a combination method")
+        self._updatehdr(**kwargs)
+        #TODO: include sigma
+        if verbose:
+            print("Saving combined array to '%s'" % filename)
+        warnings.filterwarnings("ignore", "Overwriting", UserWarning)
+        dp.AstroFile(filename).writer(self.data, self.outhdr)
+        return self
+
+
+    @_ignore_if_load
+    def best(self, field='EXPTIME'):
+        """Finds the best function to use, return a tuple (fcnname, fcn, required_arguments)"""
         import scipy as sp
-        @_wraps(f)
-        def dotrim(instance, *args, **kwargs):
-            ret = f(instance, *args, **kwargs)
-            if instance._trim:
-                y1 = x1 = 0
-                y2, x2 = instance.data.shape
-                if hasattr(instance, "_normalize_region"):
-                    y1, y2, x1, x2 = instance._normalize_region
-                instance.data = instance.data[y1:y2, x1:x2]
-            return instance 
-        return dotrim
+        hd = [h for h,o in zip(self.headers,self.okframes) if o]
+        fv = sp.array([(field in h and h[field]) for h in hd])
 
-    ###FOllowing was replaced by a bias= keyword to __init__!
-    # def _debias(f):
-    #     """Decorator to noramlize the return"""
-    #     import warnings
-    #     import numpy as np
-    #     @_wraps(f)
-    #     def dobias(instance, *args, **kwargs):
-    #         ret = f(instance, *args, **kwargs)
-    #         if 'bias' in kwargs and isinstance(kwargs['bias'],np.ndarray):
-    #             bias = kwargs['bias']
-    #             if instance.data.shape != bias.shape:
-    #                 if 'biasskip' in kwargs and kwargs['biasskip']:
-    #                     warnings.warn(" bias is not the same size as data, ignoring it as requested")
-    #                     return ret
-    #                 else:
-    #                     raise ValueError("Bias (%s) must have same size and dimensions as data (%s)" %
-    #                                  ('x'.join(["%i"%(s,) for s in bias.shape]),
-    #                                   'x'.join(["%i"%(s,) for s in instance.data.shape]))
-    #                                  )
-    #             instance.data = instance.data - bias
-    #         return instance
-    #     return dobias
+        if (fv.all()) and (fv[0] != fv).any():
+            return ("linear interpolation vs '%s' (%.1f - %.1f)" %
+                    (field,  min(fv), max(fv))
+                    , self.lininterp, ('target=%.1f',))
+        if len(hd)>2:
+            return ("median", self.median, ())
+        else:
+            return ("mean", self.mean, ())
 
-    def _checksig(f):
-        """Decorator to check standard appropriate standard deviation without zeros"""
-        @_wraps(f)
-        def sigmaok(instance, *args, **kwargs):
-            import warnings
-            var=instance.sigmas[instance.okframes]**2
-            if 0 in var:
-                if (var!=0).any():
-                    warnings.warn("Confusing as some sigmas were 0 and some not. Ignoring them.")
-            var=instance.arrays*0+1
-            return f(instance, *args, var=var, **kwargs)
 
-        return sigmaok
 
-    def _ignore_if_load(f):
-        """Decorator to make ignore function if loaded from file instead of being given as arrays"""
-        @_wraps(f)
-        def ignoring(instance, *args, **kwargs):
-            import warnings
-            if hasattr(instance,'loaded') and instance.loaded:
-                return instance
-            return f(instance, *args, **kwargs)
+    @_ignore_if_load
+    def auto(self, **kwargs):
+        """Executes the best normalization found by best()"""
 
-        return ignoring
+        name,fcn,reqarg=self.best()
+        for k in reqarg:
+            if k.split('=')[0] not in kwargs:
+                raise ValueError("Auto selected function <%s> needs mandatory argument (%s), but it was not specified" % (name, k))
+
+        print(" Auto-combining with %s. %s" %(name,
+                                              ', '.join([k%kwargs[k.split('=')[0]] for k in reqarg if k.split('=')[0] in kwargs])))
+        return fcn( **kwargs)
+
+
+############################
+#
+# Here goes combine methods
+#
+##############
+
+    @_ignore_if_load
+    @_trim
+    @_normalize
+    @_checksig
+#    @_debias
+    def mean(self, sigclip=False, var=None, **kwargs):
+        """Combines the data using mean. Optionally sigma-clipping beyond the specified sigclip
+
+        :param normalize: Normalizes the data before combination. Accepts 'mean' or any other True to default to median
+        """
+        if var is None:
+            var = self.sigmas[self.okframes]**2
+        arr = self.arrays[self.okframes]
+        sig = self.sigmas[self.okframes]
+        if sigclip:
+            mask = sigmask(arr,sigclip,0)
+            comb = (arr*mask).sum(0)/mask.sum(0, dtype=float)
+        else:
+            comb = arr.mean(0)
+        self.data = comb
+        self.lastmet = ('mean',sigclip)
+        ##TODO: Sigma for mean
+        self.sigma=None
+        self.ncombine=len(arr)
+        self._updatehdr()
+        return self
 
 
     @_ignore_if_load
@@ -370,109 +461,9 @@ class Combine(object):#_gr_examine):
         self.sigma=sig
         self.lastmet=('lininterp',target,field,sigma, doerr)
         self.ncombine = len(arr)
-        self.updatehdr(exptime=target)
+        self._updatehdr(exptime=target)
         return self
 
-
-    def updatehdr(self, **kwargs):
-        """Returns a header with info about the combination and any other indicated header. It choses the type of the first file."""
-
-        import dataproc as dp
-        from copy import copy
-        if not hasattr(self,'lastmet'):
-            raise ValueError("updatehdr must be run after a combination method")
-        #TD: it assumes fits header. Not always true
-        if not hasattr(self,'outhdr'):
-            self.outhdr = copy(self.headers[0])
-            self.outhdr["COMBINE"] = (True,"Is this a combination of files?")
-            self.outhdr["NCOMBINE"] = (self.ncombine,"Number of frames combined")
-            self.outhdr["COMBMETH"] = (self.lastmet[0],"Method used to combine")
-            for i, prm in zip(range(len(self.lastmet)-1), self.lastmet[1:]):
-                self.outhdr["COMBPRM%i" %i] = (prm, "Parameter %i to method" % i)
-        for k in kwargs.keys():
-            self.outhdr[k] = kwargs[k]
-
-    def save(self, *args, **kwargs):
-        """Alias to write()"""
-        return self.write(*args, **kwargs)
-
-    def write(self, filename=None, verbose=True, **kwargs):
-        """Write combined array to file. Add specified headers"""
-
-        if (filename is None):
-            if (not self.saveto):
-                raise ValueError("Filename to store combined file was not specified with .write, nor in the object initialization")
-            filename = self.saveto
-        if not hasattr(self,'lastmet'):
-            raise ValueError("write must be run after a combination method")
-        self.updatehdr(**kwargs)
-        #TODO: include sigma
-        if verbose:
-            print("Saving combined array to '%s'" % filename)
-        warnings.filterwarnings("ignore", "Overwriting", UserWarning)
-        dp.AstroFile(filename).writer(self.data, self.outhdr)
-        return self
-
-
-    @_ignore_if_load
-    def best(self, field='EXPTIME'):
-        """Finds the best function to use, return a tuple (fcnname, fcn, required_arguments)"""
-        import scipy as sp
-        hd = [h for h,o in zip(self.headers,self.okframes) if o]
-        fv = sp.array([(field in h and h[field]) for h in hd])
-
-        if (fv.all()) and (fv[0] != fv).any():
-            return ("linear interpolation vs '%s' (%.1f - %.1f)" %
-                    (field,  min(fv), max(fv))
-                    , self.lininterp, ('target=%.1f',))
-        if len(hd)>2:
-            return ("median", self.median, ())
-        else:
-            return ("mean", self.mean, ())
-
-
-
-    @_ignore_if_load
-    def auto(self, **kwargs):
-        """Executes the best normalization found by best()"""
-
-        name,fcn,reqarg=self.best()
-        for k in reqarg:
-            if k.split('=')[0] not in kwargs:
-                raise ValueError("Auto selected function <%s> needs mandatory argument (%s), but it was not specified" % (name, k))
-
-        print(" Auto-combining with %s. %s" %(name,
-                                              ', '.join([k%kwargs[k.split('=')[0]] for k in reqarg if k.split('=')[0] in kwargs])))
-        return fcn( **kwargs)
-
-
-
-    @_ignore_if_load
-    @_trim
-    @_normalize
-    @_checksig
-#    @_debias
-    def mean(self, sigclip=False, var=None, **kwargs):
-        """Combines the data using mean. Optionally sigma-clipping beyond the specified sigclip
-
-        :param normalize: Normalizes the data before combination. Accepts 'mean' or any other True to default to median
-        """
-        if var is None:
-            var = self.sigmas[self.okframes]**2
-        arr = self.arrays[self.okframes]
-        sig = self.sigmas[self.okframes]
-        if sigclip:
-            mask = sigmask(arr,sigclip,0)
-            comb = (arr*mask).sum(0)/mask.sum(0, dtype=float)
-        else:
-            comb = arr.mean(0)
-        self.data = comb
-        self.lastmet = ('mean',sigclip)
-        ##TODO: Sigma for mean
-        self.sigma=None
-        self.ncombine=len(arr)
-        self.updatehdr()
-        return self
 
 
     @_ignore_if_load
@@ -493,7 +484,7 @@ class Combine(object):#_gr_examine):
         self.sigma = sp.concatenate(arr, axis)
         self.lastmet = ('concatenate',axis)
         self.ncombine=len(arr)
-        self.updatehdr()
+        self._updatehdr()
         return self
 
 
@@ -515,13 +506,15 @@ class Combine(object):#_gr_examine):
         self.ncombine=len(arr)
         self.sigma=None
         self.lastmet=('median',)
-        self.updatehdr()
+        self._updatehdr()
         return self
 
-    # def __len__(self):
-    #     if hasattr(self,'ncombine'):
-    #         return self.ncombine
-    #     return 0
+
+######################################
+#
+# Here comes some arithmethic magic
+#
+################
 
     @_combine_first
     def __radd__(self, other):
@@ -600,27 +593,6 @@ class Combine(object):#_gr_examine):
             other = other.data
         self.data *= other
         return self
-
-
-    # def plotpix(self, coords, *args, **kwargs):
-    #     """plot one pixel against header value if lininterp or frame number otherwise. Plot resultant combination if it was done"""
-
-    #     if hasattr(self,'lastmet') and self.lastmet[0] == 'lininterp':
-    #         x = sp.array([h[self.lastmet[2]] for h in hd])
-    #     else:
-    #         x = None
-
-    #     ax=_gr_examine.plotpix(self, coords, x, **kwargs)
-
-    #     if hasattr(self,'data') and coords is not None and self.data is not None:
-    #         cb=self.data.T
-    #         for c in coords[::-1]:
-    #             cb=cb[c]
-    #         print cb*self.norm_fct
-    #         ax.plot(ax.get_xlim(),[cb]*2,'r')
-
-    #         if self.lastmet[0] == 'lininterp':
-    #             ax.plot([self.lastmet[1]]*2,ax.get_ylim(),'r')
 
 
 

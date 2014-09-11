@@ -23,6 +23,7 @@ import scipy as sp
 import inspect
 import scipy.signal as sg
 import pyfits as pf
+import copy
 
 
 def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=None, full=False):
@@ -203,10 +204,57 @@ def fluxacross(diameter, seeing,
     return dy*dx*(psf*blk).sum()
 
 
-def subarray(data, cxy, rad):
-    """Reurns a subarray centered on cxy with radius rad"""
+def subarray(data, cyx, rad):
+    """Reurns a subarray centered on cxy with radius rad
+    :param arr: original array
+    :type arr: array
+    :param y: vertical center
+    :type y: int
+    :param x: horizontal center
+    :type x: int
+    :param rad: radius
+    :type rad: int
+    :rtype: array
+    """
 
-    return data[cxy[1]-rad:cxy[1]+rad, cxy[0]-rad:cxy[0]+rad]
+    return data[cyx[0]-rad:cyx[0]+rad, cyx[1]-rad:cyx[1]+rad]
+
+
+def centroid(orig_arr, medsub=True):
+    """Find centroid of small array
+    
+    :param arr: array
+    :type arr: array
+    :rtype: [float,float]
+    """
+
+    arr = copy.copy(orig_arr)
+    if medsub:
+        med = sp.median(arr)
+        arr = arr - med
+    arr = arr * (arr > 0)
+
+    iy, ix = sp.mgrid[0:len(arr), 0:len(arr)]
+
+    cy = sp.sum(iy * arr) / sp.sum(arr)
+    cx = sp.sum(ix * arr) / sp.sum(arr)
+
+    return cy, cx
+
+
+def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
+    """Returns the centroid after a number of iterations"""
+
+    sub_array = arr
+    cy, cx = cyx
+
+    for i in range(iters):
+        scy, scx = centroid(subarray(sub_array, [cy, cx], stamprad),
+                            medsub=medsub)
+        cy += scy - stamprad
+        cx += scx - stamprad
+
+    return cy, cx
 
 
 
@@ -224,3 +272,8 @@ def radial(data, cxy):
                              in zip(grid,cxy)]
                             ).sum(0)
                    )
+
+
+
+
+

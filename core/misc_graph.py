@@ -24,6 +24,7 @@ from __future__ import division, print_function
 import astropy.time as apt
 import datetime
 import dataproc as dp
+import dataproc.combine as cm
 import matplotlib.pyplot as plt
 import matplotlib.dates as md
 import pyfits as pf
@@ -79,6 +80,9 @@ def imshowz(data,
     elif isinstance(data, dp.AstroFile):
         avail = "available: %s" % (data.reader(hdu=-1),)
         data = data.reader(hdu)
+    elif isinstance(data, cm.Combine):
+        avail = ""
+        data = data.data
     elif isinstance(data, pf.HDUList):
         avail = "available: %s" % (data,)
         data = data[hdu].data

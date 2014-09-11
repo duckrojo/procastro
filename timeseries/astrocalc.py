@@ -142,9 +142,9 @@ class AstroCalc(object):
             gain = 1.0
 
         var_flux = phot/gain
-        var_sky = ( sky_std) * n_pix_ap * (1+float(n_pix_ap)/n_pix_sky)
+        var_sky = ( sky_std)**2 * n_pix_ap * (1+float(n_pix_ap)/n_pix_sky)
 
-        var_total = var_sky + var_flux
+        var_total = var_sky + var_flux + ron*ron*n_pix_ap
 
         return sp.sqrt(var_total)
         
@@ -155,24 +155,6 @@ class AstroCalc(object):
         #     sp.sqrt(N_e_star + n_pix_ap *
         #             (1.0 + float(n_pix_ap) / n_pix_sky) * (N_e_sky + ron))
         # return phot / SNR
-
-
-    def subarray(self, arr, y, x, rad):
-        """Returns a subarray of arr (with size 2*rad+1 and centered in (y,x))
-
-        :param arr: original array
-        :type arr: array
-        :param y: vertical center
-        :type y: int
-        :param x: horizontal center
-        :type x: int
-        :param rad: radius
-        :type rad: int
-        :rtype: array
-        """
-
-        return arr[int(y - rad):int(y + rad + 1), 
-                   int(x - rad):int(x + rad + 1)]
 
 
 
@@ -256,25 +238,3 @@ class AstroCalc(object):
 
         return phot, error, fwhmg, [fit, idx]
 
-
-
-    def centroid(self, orig_arr, medsub=True):
-        """Find centroid of small array
-
-        :param arr: array
-        :type arr: array
-        :rtype: [float,float]
-        """
-
-        arr = copy.copy(orig_arr)
-        if medsub:
-            med = sp.median(arr)
-            arr = arr - med
-        arr = arr * (arr > 0)
-
-        iy, ix = sp.mgrid[0:len(arr), 0:len(arr)]
-
-        cy = sp.sum(iy * arr) / sp.sum(arr)
-        cx = sp.sum(ix * arr) / sp.sum(arr)
-
-        return cy, cx
