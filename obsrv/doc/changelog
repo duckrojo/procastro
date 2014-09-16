@@ -1,0 +1,23 @@
+2012-10-17	Patricio Rojo <pato@oan.cl>
+
+	* Release 3.02
+	* Complete rewritting of previous static version.
+
+	* Use of python object oriented classes.
+
+	* Does not depend on static ephemeris file but it computes own
+	values from pyephem.
+
+	* Observability plot now allows clicks that display altitude of
+	closer transit on second figure.
+
+
+
+
+
+
+
+--
+Copyright 2012 Patricio Rojo
+Copying and distribution of this file, with or without modification, are
+permitted provided the copyright notice and this notice are preserved.
