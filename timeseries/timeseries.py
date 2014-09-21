@@ -517,6 +517,8 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
             else:
                 ax.set_xlim(xlim)
 
+        fig.show()
+
 
         
     def radialprofile(self, target, frame=0, recenter=False, stamprad=20):
@@ -786,7 +788,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         ax.legend(bbox_to_anchor=(0., 1.02, 1., .302), loc=3,
                    ncol=int(nlab//2.5), mode="expand", borderaxespad=0.,
                    prop={'size': 6})
-        #f.show()
+        f.show()
         return
 
     def tofile(self, filename, all=False, comments=None):
