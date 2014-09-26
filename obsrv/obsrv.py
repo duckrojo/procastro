@@ -160,7 +160,6 @@ class Obsrv(ocalc.ObsCalc):
     cum = mnlen.copy()
     for i in range(len(mnlen))[1:]:
       cum[i:] += mnlen[:-(i)]
-    cum -= 1
     mcum = sp.array(zip(cum,cum)).flatten()
     vlims = [-10,20,20,-10]*6
 
@@ -186,7 +185,7 @@ class Obsrv(ocalc.ObsCalc):
   def _plot_labels(self, ax, title='', **kwargs):
 
     ax.set_title(title)
-    ax.set_xlabel(r"Days from %s" % ( ephem.Date(self.days[0]).datetime().strftime('%Y.%m.%d'), ))
+    ax.set_xlabel(r"Days from %s (Site: %s)" % ( ephem.Date(self.days[0]).datetime().strftime('%Y.%m.%d'), self.params['site']))
     ax.set_ylabel(r'Time (UT). Target: %s' % (self.params['target'],))
     ax.set_xlim(self.xlims)
     ax.set_ylim(sp.array(self.ylims))
@@ -203,7 +202,6 @@ class Obsrv(ocalc.ObsCalc):
     return self
 
 
-
   def _plot_elev_transit(self, day, hour):
 
     if not hasattr(self, "transits"):
@@ -215,7 +213,6 @@ class Obsrv(ocalc.ObsCalc):
     return self._plot_night(closejd, ax)
 
 
-
   def get_closer_transit(self,cd,ch):
 
     xovery = 5.0/4.0
@@ -224,9 +221,9 @@ class Obsrv(ocalc.ObsCalc):
 
     dist = []
     for htr, dtr in zip (self.transit_hours, self.transits):
-      dist.append(sp.sqrt(((cd+self.jd0-dtr)*xovery/dx)**2
+        dist.append(sp.sqrt(((cd+self.jd0-dtr)*xovery/dx)**2
                           + ((ch-htr)/dy)**2))
-      dist.append(sp.sqrt(((cd+self.jd0-dtr)*xovery/dx)**2
+        dist.append(sp.sqrt(((cd+self.jd0-dtr)*xovery/dx)**2
                           + ((ch-(htr-24))/dy)**2))
     return sp.array(zip(self.transits,self.transits)).flatten()[sp.argmin(dist)]
 
@@ -237,6 +234,9 @@ class Obsrv(ocalc.ObsCalc):
     if rect is None:
       rect = [0.1,0.1,0.8,0.8]
     ax.cla()
+    #todo: ax_elev2 should be always initialized
+    if 'plot_ax-elev2' in self.params:
+        self.params['plot_ax-elev2'].cla()
 
     moon = ephem.Moon()
     obs  = self._obs
@@ -264,6 +264,7 @@ class Obsrv(ocalc.ObsCalc):
     uthours = (hours - etout)*24
 
     ax2 = ax.twinx()
+    self.params['plot_ax-elev2'] = ax2
 
     ax.plot(uthours, staralt)
     ax.plot(uthours, moonalt, '--')
@@ -274,19 +275,21 @@ class Obsrv(ocalc.ObsCalc):
     ax.set_ylim([10,90])
     ax.set_xlim([(ss-etout)*24-0.5,(sr-etout)*24+0.5])
     datetime = ephem.date(jd-self.jd0+self.days[0])
-    print(datetime)
-    ax.set_title('%s' % datetime)
+    print(str(datetime)[:-3])
+    ax.set_title('%s' % str(datetime)[:-3])
     ax.set_ylim(ax.get_ylim())
     sam = sp.array([1,1.5,2,3,4,5])
     ax2.set_yticklabels(sam)
     ax2.set_yticks(sp.arcsin(1.0/sam)*180.0/sp.pi)
-    ax.set_ylabel('Elevation')
-    ax.set_xlabel('UT time')
     self.params['current_transit'] = str(datetime).replace(' ', '_')
+    self.params['current_moon_distance'] = self._moon_distance(datetime)
+    ax.set_ylabel('Elevation')
+    ax.set_xlabel('UT time. Moon distance: %s${^\degree}$' %
+                  (int(self.params["current_moon_distance"].degree),))
 
     if hasattr(self, 'transits'):
-      intr = (jd-self.jd0+self.days[0]-etout)*24 - self.transit_length
-      outr = (jd-self.jd0+self.days[0]-etout)*24 + self.transit_length
+      intr = (jd-self.jd0+self.days[0]-etout)*24 - self.transit_length/2
+      outr = (jd-self.jd0+self.days[0]-etout)*24 + self.transit_length/2
       if intr>outr:
         outr+=24
       _plotpoly(ax, [intr,outr],
@@ -304,7 +307,7 @@ class Obsrv(ocalc.ObsCalc):
 
     if event.key=='e' and event.inaxes == axa:
       self._plot_night(event.xdata + self.jd0, axe)
-    elif event.key=='p':
+    elif event.key=='P':
       target_unspace = self.params['target'].replace(' ', '_')
       if 'current_transit' in self.params:
         current_transit = self.params['current_transit'].replace('/', '-')
@@ -315,6 +318,13 @@ class Obsrv(ocalc.ObsCalc):
         self.params['plot_figure'].savefig('%s/%s_T%s.png' %(self.params['savedir'],
                                                              target_unspace,
                                                              self.params['timespan']))
+    elif event.key=='f':
+      self._plot_elev_transit(event.xdata, event.ydata)
+      target_unspace = self.params['target'].replace(' ', '_')
+      current_transit = self.params['current_transit'].replace('/', '-')
+      self.params['plot_figure'].savefig('%s/%s_%s.png' %(self.params['savedir'],
+                                                          target_unspace,
+                                                          current_transit))
 
 
   def _onclick(self, event):

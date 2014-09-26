@@ -80,15 +80,6 @@ class obsplot():
 
 
 
-  def moondist(self, date):
-    obs = self.obs
-    obs.date = date
-    self.star.compute(obs)
-    self.moon.compute(obs)
-    return sp.cos(self.star.dec)*sp.cos(self.moon.dec)*sp.cos(self.star.ra-self.moon.ra) \
-        + sp.sin(self.star.dec)*sp.sin(self.star.dec)
-
-        
 
   def getmoon(self, maxairmass=3.0, **kwargs):
     """Get moon distance"""
