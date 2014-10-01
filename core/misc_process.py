@@ -26,7 +26,7 @@ def _actionlog(f):
     @wraps(f)
     def tolog(self, *args, **kwargs):
         ret= f(self, *args, **kwargs)
-        self.actionlog.append((f.__name__,args))
+        self.actionlog.append((f.__name__, args))
         return ret
     return tolog
 

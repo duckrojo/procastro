@@ -61,7 +61,7 @@ class obsplot():
 
     self.tr_hlen = tr_hlen
 
-#    self.obsll(observer)
+#    self.obsll(Observer)
 #    self.settimespan(timespan)
 #    self.sunsetrise(**kwargs)
 #    self.setysamp(**kwargs)
@@ -139,7 +139,7 @@ class obsplot():
     return timestamp
 
 
-#def obsrv(radec, observer='paranal', tr_period=None, tr_epoch=None, tr_hlen=0, ut_offset=0, 
+#def obsrv(radec, Observer='paranal', tr_period=None, tr_epoch=None, tr_hlen=0, ut_offset=0,
 #          timespan=2013, save=None, title=None, magn=10, epoch_coo=2000,
 #          showmonths=True, daystep=5, hourstep=0.2):
   """
@@ -148,8 +148,8 @@ class obsplot():
 
     Parameters:
     -----------
-    observer: Tuple or Scalar
-         Either a tuple indicating observer's location (lat, long) or the
+    Observer: Tuple or Scalar
+         Either a tuple indicating Observer's location (lat, long) or the
          keyword for a known location (None lists them) 
     radec:    Tuple
          The target's RA and DEC coordinates in a tuple (hours and degrees,

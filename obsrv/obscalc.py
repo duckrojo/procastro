@@ -45,7 +45,7 @@ def _update_airmass(func):
 class ObsCalc(object):
 
   def __init__(self, timespan=2015, target=None,
-               site='paranal', 
+               name='paranal', 
                only_night=True, equinox=2000,
                **kwargs):
     """ =Initializes obsrv class.
@@ -60,17 +60,17 @@ class ObsCalc(object):
     self.params["equinox"] = equinox
     self.daily = {}
 
-    self.set_site(site, timespan, **kwargs)
+    self.set_observer(name, timespan, **kwargs)
 
     if target is not None:
       self.set_target(target, **kwargs)
 
 
-  def set_site(self, site, timespan=None,
-               obsfilename=None, **kwargs):
+  def set_observer(self, observer, timespan=None,
+                   obsfilename=None, **kwargs):
     """Checks whether name's coordinate are known from a list or whether it is a (lat, lon) tuple  
 
-    :param site: identifies the observatory as a name, or (lat, lon) tuple, 
+    :param observer: identifies the observatory as a name, or (lat, lon) tuple, 
 """
 
     obs = self._obs
@@ -83,21 +83,20 @@ class ObsCalc(object):
       field = line.split(',')
       coordinates[field[0]] = (eval(field[1]), eval(field[2]))
 
-    if site==None:
+    if observer==None:
       return coordinates.keys()
 
-    if isinstance(site, str):
+    if isinstance(observer, str):
       try:
-        latlon = coordinates[site]
+        latlon = coordinates[observer]
       except KeyError: 
-        raise KeyError("site keyword is not defined. Valid values are " + \
+        raise KeyError("observer keyword is not defined. Valid values are " + \
             ', '.join(coordinates) + '.')
-    elif isinstance(site, tuple) and len(site)==2: 
-      latlon = site
+    elif isinstance(observer, tuple) and len(observer)==2: 
+      latlon = observer
     else:
       raise TypeError("object can only be a 2-component tuple or a string")
 
-    self.params['site'] = site
 
     ## Parameters for user-friendly values
     self.params["latlon"] = latlon
@@ -151,23 +150,6 @@ class ObsCalc(object):
     return self
 
 
-  def _moon_distance(self, date):
-    obs = self._obs
-    obs.date = date
-    self.star.compute(obs)
-    moon = ephem.Moon()
-    moon.compute(obs)
-    st = apc.SkyCoord(ra=self.star.ra*u.radian, dec=self.star.dec*u.radian, 
-                      frame='icrs')
-    mn = apc.SkyCoord(ra=moon.ra*u.radian, dec=moon.dec*u.radian, 
-                      frame='icrs')
-    dist = st.separation(mn)
-    return dist
-    # return sp.cos(self.star.dec)*sp.cos(moon.dec)*sp.cos(self.star.ra-moon.ra) \
-    #     + sp.sin(self.star.dec)*sp.sin(self.star.dec)
-
-        
-
   def _get_sunsetrise(self, **kwargs):
     """Compute sunsets and sunrises"""
     sunset=[]
@@ -216,7 +198,6 @@ class ObsCalc(object):
     self.params['target'] = target
     if 'current_transit' in self.params:
       del self.params['current_transit']
-      del self.params['current_moon_distance']
 
     try:
       radec = apc.ICRS('%s' % target, unit=(u.hour, u.degree),
@@ -228,14 +209,13 @@ class ObsCalc(object):
       radec = apc.ICRS('%s %s' % (query['RA'][0], query['DEC'][0]),
                        unit=(u.hour, u.degree),
                        equinox = self.params["equinox"])
-      print("success! (%s)" % (radec,))
+      print("success!")
 
     self.star = ephem.readdb("%s,f,%s,%s,%.2f, %f" % 
                              (starname, 
-                              radec.ra.to_string(sep=':', unit=u.hour), 
+                              radec.ra.to_string(sep=':'), 
                               radec.dec.to_string(sep=':'), 
                               magn, radec.equinox))
-
 
     transitfilename = os.path.dirname(__file__)+'/transits.txt'
     for line in open(transitfilename):
