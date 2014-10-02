@@ -1,10 +1,8 @@
-__author__ = 'fran'
-
 # Class support for "Observer" pattern.
 from Synchronization import *
 
 
-class Observer:
+class Observer(object):
 
     def update(observable, arg):
         """Called when the observed object is
@@ -13,18 +11,22 @@ class Observer:
         object's observers of the change."""
         pass
 
-
 class Observable(Synchronization):
     def __init__(self):
+        """ Initializes list of Observable objects.
+            Sets them to unchanged by default and
+            synchronizes them. """
         self.obs = []
         self.changed = 0
         Synchronization.__init__(self)
 
     def addObserver(self, observer):
+        """ Adds new Observer of Observable """
         if observer not in self.obs:
             self.obs.append(observer)
 
     def deleteObserver(self, observer):
+        """ Deletes Observer """
         self.obs.remove(observer)
 
     def notifyObservers(self, arg=None):
@@ -47,11 +49,20 @@ class Observable(Synchronization):
         for observer in localArray:
             observer.update(self, arg)
 
-    def deleteObservers(self): self.obs = []
-    def setChanged(self): self.changed = 1
-    def clearChanged(self): self.changed = 0
-    def hasChanged(self): return self.changed
-    def countObservers(self): return len(self.obs)
+    def deleteObservers(self):
+        self.obs = []
+
+    def setChanged(self):
+        self.changed = 1
+
+    def clearChanged(self):
+        self.changed = 0
+
+    def hasChanged(self):
+        return self.changed
+
+    def countObservers(self):
+        return len(self.obs)
 
 synchronize(Observable,
   "addObserver deleteObserver deleteObservers " +
