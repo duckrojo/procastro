@@ -59,6 +59,7 @@ def _fits_reader(filename, hdu=0):
     return fl.data
 def _fits_writer(filename, data, header=None):
     import pyfits as pf
+    raise NotImplemented("Cuek. More work here. header not ssave, no history. ")
     return pf.writeto(filename, data, header, clobber=True, output_verify='silentfix')
 def _fits_verify(filename, ffilter=None, hdu=0):
     import pyfits as pf
@@ -92,11 +93,11 @@ def _fits_setheader(_filename, *args, **kwargs):
     if 'write' in kwargs and kwargs['write']:
         save = True
         try:
+            #todo: if file does not exists, create it
             fits = pf.open(_filename, 'update')[hdu]
         except IOError:
-            warnings.warn("Read only filesystem. Header update of '%s' will remain only in memory but not on disk." % ', '.join(kwargs.keys()))
-            fits = pf.open(_filename)[hdu]
-            save = False
+            warnings.warn("Read only filesystem or file not found. Header update of '%s' will not remain on disk." % ', '.join(kwargs.keys()))
+            return
     else:
         fits = pf.open(_filename)[hdu]
         save = False
@@ -105,8 +106,9 @@ def _fits_setheader(_filename, *args, **kwargs):
 
     h = fits.header
     for k,v in kwargs.items():
+        #If new value is None, then delete it
         if v is None:
-            del k[v]
+            del h[k]
         else:
             h[k] = v
     if save:
@@ -169,7 +171,7 @@ class AstroFile(object):
         import os.path as path
         self.filename = filename
         self.type     = self.checktype(exists, *args, **kwargs)
-        self.reqheads = {'basename':path.basename(filename)}
+        self.header_cache = {'basename':path.basename(filename)}
         if mbias is not None:
             self.add_bias(mbias)
         if mflat is not None:
@@ -313,9 +315,9 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
         tp = self.type
         for k,v in kwargs.items():
             if v is None:
-                del self.reqheads[k]
+                del self.header_cache[k]
             else:
-                self.reqheads[k] = v
+                self.header_cache[k] = v
         return self._seth[tp](self.filename, **kwargs)
 
 
@@ -328,14 +330,14 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
             if isinstance(args[0],(list,tuple)): #if first argument is tuple use those values as searches
                 args = args[0]
 #if only 1 already-read header is requested, use a shortcut
-            elif args[0] in self.reqheads.keys():
-                return mapout([self.reqheads[args[0]]])
+            elif args[0] in self.header_cache.keys():
+                return mapout([self.header_cache[args[0]]])
                     
-        nkeys = [k for k in args if k not in self.reqheads.keys()]
+        nkeys = [k for k in args if k not in self.header_cache.keys()]
         nhds = nkeys and self._geth[tp](self.filename, *nkeys, **kwargs) or []
         for k,v in zip(nkeys,nhds):
-            self.reqheads[k] = v
-        ret = [self.reqheads[k] for k in args]
+            self.header_cache[k] = v
+        ret = [self.header_cache[k] for k in args]
         return mapout(ret)
 
     #emulating arithmetic
@@ -387,7 +389,9 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
     def writer(self, *args, **kwargs):
         """Write astro data"""
         tp = self.type
-        return tp and  self._writes[tp](self.filename, *args, **kwargs)
+        #todo: save itself if data exists. Now it only saves explicit array given by user
+        data = args[0]
+        return tp and  self._writes[tp](self.filename, data, *args, **kwargs)
 
     @_checkfilename
     def basename(self):

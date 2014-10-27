@@ -3,6 +3,9 @@ from Synchronization import *
 
 
 class Observer(object):
+    def __init__(self, name, elements):
+        self.name = name
+        self.elements = elements
 
     def update(observable, arg):
         """Called when the observed object is
@@ -15,21 +18,26 @@ class Observable(Synchronization):
     def __init__(self):
         """ Initializes list of Observable objects.
             Sets them to unchanged by default and
-            synchronizes them. """
+            synchronizes them.
+            changed = 0 if unchanged """
         self.obs = []
         self.changed = 0
+        #self.name = name
         Synchronization.__init__(self)
 
     def addObserver(self, observer):
         """ Adds new Observer of Observable """
         if observer not in self.obs:
             self.obs.append(observer)
+            print("New Observer added.")
+            #print self.obs
 
-    def deleteObserver(self, observer):
+    def deleteObserver(self, observer, name):
         """ Deletes Observer """
+        print("Observer " + name + " has been deleted.")
         self.obs.remove(observer)
 
-    def notifyObservers(self, arg=None):
+    def notifyObservers(self, label = None, arg = None):
         """ If 'changed' indicates that this object
         has changed, notify all its observers, then
         call clearChanged(). Each Observer has its
@@ -47,9 +55,11 @@ class Observable(Synchronization):
             self.mutex.release()
         # Updating is not required to be synchronized:
         for observer in localArray:
+            print(str(observer) + " has been updated.")
             observer.update(self, arg)
 
     def deleteObservers(self):
+        print("All observers have been deleted.")
         self.obs = []
 
     def setChanged(self):
