@@ -33,9 +33,9 @@ class Observable(Synchronization):
             self.obs.append(observer)
             print("New Observer added: " + str(observer.name))
 
-    def deleteObserver(self, observer, name):
+    def deleteObserver(self, observer):
         """ Deletes Observer """
-        print("Observer " + name + " has been deleted.")
+        print("Observer has been deleted.")
         self.obs.remove(observer)
 
     def notifyObservers(self, label, value, arg = None):

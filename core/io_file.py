@@ -169,13 +169,19 @@ class AstroFile(object):
                  mbias=None, mflat=None, exists=False,
                  *args, **kwargs):
         import os.path as path
-        self.filename = filename
-        self.type     = self.checktype(exists, *args, **kwargs)
-        self.header_cache = {'basename':path.basename(filename)}
-        if mbias is not None:
-            self.add_bias(mbias)
-        if mflat is not None:
-            self.add_flat(mflat)
+        # TODO agregado aca para inicializar sin nombre
+        if not hasattr(self,'filename'):
+            self.filename = None
+            self.type = None
+            self.header_cache = None
+        else:
+            self.filename = filename
+            self.type     = self.checktype(exists, *args, **kwargs)
+            self.header_cache = {'basename':path.basename(filename)}
+            if mbias is not None:
+                self.add_bias(mbias)
+            if mflat is not None:
+                self.add_flat(mflat)
 
 
     def add_bias(self, mbias):
@@ -205,7 +211,8 @@ class AstroFile(object):
     def checktype(self, exists, *args, **kwargs):
         import os.path as path
         if not hasattr(self,'filename'):
-            raise ValueError("Must define file name")
+            #raise ValueError("Must define file name")
+            return None
         if (not isinstance(self.filename, basestring)):
             return None
         if(exists and  not path.isfile(self.filename)):
@@ -397,6 +404,8 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
     def basename(self):
         """Returns file basename"""
         import os.path as path
+        if not hasattr(self, 'filename'):  # TODO ojo aca
+            return None
         return path.basename(self.filename)
 
     @_checkfilename
