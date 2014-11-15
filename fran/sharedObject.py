@@ -28,7 +28,7 @@ class sharedObject(Observable):
     def changeData(self, label, newdata):  # Cambia los datos
             print("Observable data has changed.")
             print("Old data: " + str(self.shared))
-            self.shared[label][0] = newdata
+            self.shared[label] = newdata
             print("New data: " + str(self.shared))
             # Solo si esta abierto, aviso a Observers
             if self.isOpen == 1:
@@ -44,32 +44,54 @@ class sharedObject(Observable):
 
 
 class Eye(Observer):
-    def __init__(self, name, elements):
-        Observer.__init__(self, name, elements)
-        #self.openObserver = Eye.OpenObserver(self)
-        #self.closeObserver = Eye.CloseObserver(self)
+    def __init__(self, name, shared, elements):
+        self.shared = shared
+        self.seen = {}
+        # Preproceso diccionario + lista para registrar que quiero ver y que no
+        for key, value in shared.iteritems():
+            if key in elements:
+                self.seen[key] = [value, 1]
+            else:
+                self.seen[key] = [value, 0]
+        print self.seen
+        Observer.__init__(self, name, self.seen)
+
+    # Para empezar a "ver" nuevos parametros
+    def see(self, new):
+        for n in new:
+            self.seen[n] = [self.shared[n], 1]
+
+    # Para dejar de ver parametros
+    def unsee(self, new):
+        for n in new:
+            self.seen[n][1] = 0
 
 
 
 # Diccionarios con elementos a compartir
 # Dummy values
 # label: [valor, on/off]
-shared_elem = {'fulldata': [10, 1], 'xlim': [5, 1], 'ylim': [7, 1]}
-eye1_elem = {'xlim': 0}
-eye2_elem = {'ylim': 0}
+shared_elem = {'fulldata': 10, 'xlim': 5, 'ylim': 7, 'zoom': 50}
+eye1_elem = ['zoom']
+eye2_elem = ['ylim']
 
 s = sharedObject(1, shared_elem)
-e1 = Eye("Eye1", eye1_elem)
-e2 = Eye("Eye2", eye2_elem)
+e1 = Eye("Eye1", shared_elem, eye1_elem)
+e2 = Eye("Eye2", shared_elem, eye2_elem)
 
 #s.openNotifier.addObserver(e1.openObserver)
 s.open()
 s.addObserver(e1)
 s.addObserver(e2)
 #s.close()
-s.changeData('ylim', 2)
+#s.changeData('ylim', 2)
+s.changeData('xlim', 4)
+e1.see(['xlim'])
+s.changeData('xlim', 3)
+s.changeData('zoom', 25)
+e1.unsee(['zoom'])
+s.changeData('zoom', 20)
 #s.deleteObserver(e1)
 #s.close()
 #s.open()
 #s.changeData('xlim',3)
-print s.countObservers()

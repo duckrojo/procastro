@@ -12,8 +12,10 @@ class Observer(object):
         modified. You call an Observable object's
         notifyObservers method to notify all the
         object's observers of the change."""
-        self.elements[label] = value
-        print("Eye " + str(self.name) + " has changed data " + str(label))
+        if self.elements[label][1] == 1:
+            self.elements[label][0] = value
+            print("Observer " + str(self.name) + " has changed data " + str(label))
+        print self.elements
         pass
 
 class Observable(Synchronization):
@@ -50,13 +52,10 @@ class Observable(Synchronization):
             if not self.changed: return
             # Make a local copy in case of synchronous
             # additions of observers:
-            #print self.obs
             localArray = self.obs[:]
             self.clearChanged()
         finally:
             self.mutex.release()
-        # Updating is not required to be synchronized:
-        print localArray
         for observer in localArray:
             if label in observer.elements:
                 print("Observer has been updated.")
