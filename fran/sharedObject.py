@@ -1,6 +1,6 @@
 __author__ = 'fran'
 
-#from dataproc import core, combine
+import core as core
 from Observer import Observer, Observable
 
 

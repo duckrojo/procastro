@@ -165,7 +165,7 @@ class AstroFile(object):
     def __repr__(self):
         return '<astrofile: %s>' % (self.filename,)
 
-    def __init__(self, filename, 
+    def __init__(self, filename = None,
                  mbias=None, mflat=None, exists=False,
                  *args, **kwargs):
         import os.path as path
@@ -194,6 +194,13 @@ class AstroFile(object):
         if not hasattr(self, 'calib'):
             self.calib = dp.AstroCalib()
         self.calib.add_flat(mflat)
+
+    def load(self, filename, exists=False, *args, **kwargs):
+        import os.path as path
+        self.filename = filename
+        self.type     = self.checktype(exists, *args, **kwargs)
+        self.header_cache = {'basename':path.basename(filename)}
+        print("ok")
 
 
         #todo: following is only necessary because isinstance is not working on combine module!!
