@@ -20,10 +20,11 @@
 
 import types
 
-modules = ['astro',
+"""modules = ['astro',
            'io', 'io_dir', 'io_file',
            'misc_arr', 'misc_lists',
-           'misc_graph', 'misc_math']
+           'misc_graph', 'misc_math']"""
+modules = ['io_file']
            
 
 

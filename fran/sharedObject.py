@@ -1,8 +1,16 @@
 __author__ = 'fran'
 
-import core as core
+#import core as core
 from Observer import Observer, Observable
+import core.io_file as dp
+import subprocess as sp
+import os
 
+
+def genDict(self, filetype):
+    """ Generates a dictionary of shared elements,
+        based on filetype and probably filename.
+    """
 
 class sharedObject(Observable):
     def __init__(self, data, elements):
@@ -44,7 +52,7 @@ class sharedObject(Observable):
 
 
 class Eye(Observer):
-    def __init__(self, name, shared, elements):
+    def __init__(self, name, shared, elements, commandsfile):
         self.shared = shared
         self.seen = {}
         # Preproceso diccionario + lista para registrar que quiero ver y que no
@@ -54,6 +62,8 @@ class Eye(Observer):
             else:
                 self.seen[key] = [value, 0]
         print self.seen
+        # Para tomar los eventos definidos por el usuario
+        self.events = self.setEvents(commandsfile)
         Observer.__init__(self, name, self.seen)
 
     # Para empezar a "ver" nuevos parametros
@@ -66,32 +76,40 @@ class Eye(Observer):
         for n in new:
             self.seen[n][1] = 0
 
+    # Para definir eventos
+    def setEvents(self, filename):
+        events = []
+        cfile = open(filename, 'r')
+        for c in cfile.readlines():
+            if c[0] == '#':
+                events.append(c[2:-1])
+        return events
+
+    # Para aplicar eventos
+    def apply(self, event):
+        #sp.call([event], shell=True)
+        # TODO ojo aca con el path
+        print event + '.py'
+        sp.Popen('python fran/' + event + '.py', shell=True)
+        #os.system('python fran/' + event + '.py')
+        execfile(event + '.py')
+
+
+def foo(self):
+    print "foo\n"
 
 
 # Diccionarios con elementos a compartir
 # Dummy values
 # label: [valor, on/off]
+af = dp.AstroFile()
 shared_elem = {'fulldata': 10, 'xlim': 5, 'ylim': 7, 'zoom': 50}
 eye1_elem = ['zoom']
 eye2_elem = ['ylim']
 
-s = sharedObject(1, shared_elem)
-e1 = Eye("Eye1", shared_elem, eye1_elem)
-e2 = Eye("Eye2", shared_elem, eye2_elem)
+s = sharedObject(af, shared_elem)
 
-#s.openNotifier.addObserver(e1.openObserver)
-s.open()
-s.addObserver(e1)
-s.addObserver(e2)
-#s.close()
-#s.changeData('ylim', 2)
-s.changeData('xlim', 4)
-e1.see(['xlim'])
-s.changeData('xlim', 3)
-s.changeData('zoom', 25)
-e1.unsee(['zoom'])
-s.changeData('zoom', 20)
-#s.deleteObserver(e1)
-#s.close()
-#s.open()
-#s.changeData('xlim',3)
+#cfiles = open('commands', 'r')
+e1 = Eye("Eye1", shared_elem, eye1_elem, 'commands')
+e1.apply('foo')
+

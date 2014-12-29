@@ -1,0 +1,7 @@
+# foo
+def foo(self, n):
+    print "foo\n"
+
+# bar
+def bar(self):
+    print "bar\n"

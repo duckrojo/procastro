@@ -22,7 +22,7 @@
 from __future__ import print_function, division
 from functools import wraps as _wraps
 import warnings
-import dataproc.combine as cm
+import combine as cm
 
 
 def _numerize_other(method):
@@ -47,6 +47,8 @@ def _fits_header(filename, hdu=0):
     """
     import pyfits as pf
     return pf.open(filename)[hdu].header
+
+
 def _fits_reader(filename, hdu=0):
     """Read fits files.
 
@@ -57,10 +59,14 @@ def _fits_reader(filename, hdu=0):
         return pf.open(filename)
     fl = pf.open(filename)[hdu]
     return fl.data
+
+
 def _fits_writer(filename, data, header=None):
     import pyfits as pf
     raise NotImplemented("Cuek. More work here. header not ssave, no history. ")
     return pf.writeto(filename, data, header, clobber=True, output_verify='silentfix')
+
+
 def _fits_verify(filename, ffilter=None, hdu=0):
     import pyfits as pf
     nc = filename.lower().split('.')[-1] in ['fits', 'fit'] 
@@ -74,6 +80,8 @@ def _fits_verify(filename, ffilter=None, hdu=0):
         if isinstance (ffilter, (list,tuple)):
             return False not in [f in h for f in ffilter]
     return False
+
+
 # def _fits_filter(_filename, hdu=0, **kwargs):
 #     import pyfits as pf
 #     h=pf.getheader(_filename, hdu)
@@ -81,15 +89,18 @@ def _fits_verify(filename, ffilter=None, hdu=0):
 #                                 and [kwargs[k][0](h[k]) in map(kwargs[k][0],kwargs[k][1:])]
 #                                 or [h[k] == kwargs[k]])[0]
 #                     for k in kwargs.keys()]
+
+
 def _fits_getheader(_filename, *args, **kwargs):
     import pyfits as pf
-    hdu=('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
-    h=pf.getheader(_filename, hdu)
+    hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
+    h = pf.getheader(_filename, hdu)
     return tuple([(a in h and [h[a]] or [None])[0] for a in args])
+
 
 def _fits_setheader(_filename, *args, **kwargs):
     import pyfits as pf
-    hdu=('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
+    hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
     if 'write' in kwargs and kwargs['write']:
         save = True
         try:
@@ -105,7 +116,7 @@ def _fits_setheader(_filename, *args, **kwargs):
         del kwargs['write']
 
     h = fits.header
-    for k,v in kwargs.items():
+    for k, v in kwargs.items():
         #If new value is None, then delete it
         if v is None:
             del h[k]
@@ -125,28 +136,28 @@ def _fits_setheader(_filename, *args, **kwargs):
 class AstroFile(object):
     """Valid astronomy data file format. Only filename is checked so far"""
 
-    _reads={'fits': _fits_reader}
-    _readhs={'fits': _fits_header}
-    _ids={'fits': _fits_verify}
-    _writes={'fits': _fits_writer}
-    _geth={'fits': _fits_getheader}
-    _seth={'fits':_fits_setheader}
-
+    _reads = {'fits': _fits_reader}
+    _readhs = {'fits': _fits_header}
+    _ids = {'fits': _fits_verify}
+    _writes = {'fits': _fits_writer}
+    _geth = {'fits': _fits_getheader}
+    _seth = {'fits': _fits_setheader}
 
     def _checksortkey(f):
         @_wraps(f)
         def ret(self, *args, **kwargs):
             if not hasattr(self, 'sortkey'):
                 raise ValueError("sortkey must be defined before trying to sort AstroFile")
-            return f(self,*args,**kwargs)
+            return f(self, *args, **kwargs)
         return ret
 
     def _checkfilename(f):
         @_wraps(f)
         def isfiledef(inst, *args, **kwargs):
-            if hasattr(inst,'filename'):
-                if (inst.type is None):
-                    raise ValueError("File %s not a supported astro-type." % (f))
+            if hasattr(inst, 'filename'):
+                if inst.type is None:
+                    #raise ValueError("File %s not a supported astro-type." % (f))
+                    raise ValueError("Please specify filename with setFilename first.")
                 return f(inst, *args, **kwargs)
             else:
                 raise ValueError("Filename not defined. Must give valid filename to AstroFile")
@@ -169,39 +180,52 @@ class AstroFile(object):
                  mbias=None, mflat=None, exists=False,
                  *args, **kwargs):
         import os.path as path
-        # TODO agregado aca para inicializar sin nombre
-        if not hasattr(self,'filename'):
+        # agregado aca para inicializar sin nombre, AstroFile "vacio"
+        if not hasattr(self, 'filename'):
             self.filename = None
             self.type = None
             self.header_cache = None
         else:
             self.filename = filename
-            self.type     = self.checktype(exists, *args, **kwargs)
-            self.header_cache = {'basename':path.basename(filename)}
+            self.type = self.checktype(exists, *args, **kwargs)
+            self.header_cache = {'basename': path.basename(filename)}
             if mbias is not None:
                 self.add_bias(mbias)
             if mflat is not None:
                 self.add_flat(mflat)
-
 
     def add_bias(self, mbias):
         if not hasattr(self, 'calib'):
             self.calib = dp.AstroCalib()
         self.calib.add_bias(mbias)
 
-
     def add_flat(self, mflat):
         if not hasattr(self, 'calib'):
             self.calib = dp.AstroCalib()
         self.calib.add_flat(mflat)
 
+    # Para cargar data a un AstroFile vacio
     def load(self, filename, exists=False, *args, **kwargs):
-        import os.path as path
-        self.filename = filename
-        self.type     = self.checktype(exists, *args, **kwargs)
-        self.header_cache = {'basename':path.basename(filename)}
-        print("ok")
+        if self.filename is None:
+            import os.path as path
+            self.filename = filename
+            self.type = self.checktype(exists, *args, **kwargs)
+            self.header_cache = {'basename': path.basename(filename)}
+            #print("ok")
+        else:
+            raise ValueError("The current Astrofile already has data in it.\n \
+                             Data must be loaded to an empty AstroFile.")
 
+    # Para ponerle filename a los AstroFile que se inicializaron vacios
+    # Para setHeader, puedo querer poner header antes de cargar datos
+    def setFilename(self, filename, exists=False, *args, **kwargs):
+        if self.filename is None:
+            self.filename = filename
+            import os.path as path
+            self.type = self.checktype(exists, *args, **kwargs)
+            self.header_cache = {'basename': path.basename(filename)}
+        else:
+            raise ValueError("Existing file cannot be renamed.")
 
         #todo: following is only necessary because isinstance is not working on combine module!!
 #        self.astrofile=True
@@ -217,12 +241,12 @@ class AstroFile(object):
 
     def checktype(self, exists, *args, **kwargs):
         import os.path as path
-        if not hasattr(self,'filename'):
+        if not hasattr(self, 'filename'):
             #raise ValueError("Must define file name")
             return None
-        if (not isinstance(self.filename, basestring)):
+        if not isinstance(self.filename, basestring):
             return None
-        if(exists and  not path.isfile(self.filename)):
+        if exists and not path.isfile(self.filename):
             return None
         for k in self._ids.keys():
             if self._ids[k](self.filename, *args, **kwargs):
@@ -237,21 +261,19 @@ class AstroFile(object):
 
     @_checkfilename
     def filter(self, *args, **kwargs):
-        """True if the header given by the keyword argument matches its value in the fits header. 
-
-Multiple alternatives can be specified with a dict whose keys are casting function (e.g. filter(exptime={'int':300,10})). Multiple keywords are 'or' alternatives. 
-
-DEPRECATED/NOT ANYMORE: You can also make a substring match search "'needle' in keyword" by specifying None as the first element in the tuple: basename=(None,'dflat').  
-
-If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filter(object='star')) """
+        """True if the header given by the keyword argument matches its value in the fits header.
+            Multiple alternatives can be specified with a dict whose keys are casting function (e.g. filter(exptime={'int':300,10})). Multiple keywords are 'or' alternatives.
+            DEPRECATED/NOT ANYMORE: You can also make a substring match search "'needle' in keyword" by specifying None as the first element in the tuple: basename=(None,'dflat').
+            If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filter(object='star'))
+        """
         ret = []
 
-#        print (kwargs.items())
+#       print (kwargs.items())
         for filter_keyword, request in kwargs.items():
             functions = ['equal']
             exists = True
             cast = lambda x: x
-            filter_keyword= filter_keyword.replace('__','-')
+            filter_keyword = filter_keyword.replace('__', '-')
             if '_' in filter_keyword:
                 tmp = filter_keyword.split('_')
                 filter_keyword = tmp[0]
@@ -267,11 +289,13 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
             if isinstance(request, basestring):
                 request = [request]
             elif isinstance(request, (tuple, list)):
-                raise TypeError("filter string cannot be tuple/list anymore.  It has to be a dictionary with the casting function as key (e.g. 'str')")
+                raise TypeError("Filter string cannot be tuple/list anymore.  "
+                                "It has to be a dictionary with the casting function as key (e.g. 'str')")
             elif isinstance(request, dict):
                 keys = request.keys()
                 if len(keys) != 1:
-                    raise NotImplemented("Only a single key (casting) per filtering function has beeen implemented for multiple alternatives")
+                    raise NotImplemented("Only a single key (casting) per filtering function has been implemented "
+                                         "for multiple alternatives")
                 try:
                     request = list(request[keys[0]])
                     if 'begin' in functions or 'end' in functions:
@@ -280,32 +304,32 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
                     request = [request[keys[0]]]
                 cast = eval(keys[0])
                 if not callable(cast):
-                    raise ValueError("dictionary key (casting) has to be a callable function accepting only one argument")
+                    raise ValueError("Dictionary key (casting) has to be a callable function "
+                                     "accepting only one argument")
             else:
                 cast = type(request)
                 request = [request]
 #                warnings.warn("Attempting auto-casting the filter's value. Found '%s' for '%s'." % (cast,request))
 
-
             less_than = greater_than = False
             for f in functions:
                 f = f.lower()
-                if f[:5]=='begin':
+                if f[:5] == 'begin':
                     header_val = header_val[:len(request[0])]
-                elif f[:3]=='end':
+                elif f[:3] == 'end':
                     header_val = header_val[-len(request[0]):]
-                if f[:5]=='icase':
+                if f[:5] == 'icase':
                     header_val = header_val.lower()
                     request = [a.lower() for a in request]
-                if f[:3]=='not':
+                if f[:3] == 'not':
                     exists = False
-                if f[:5]=='match':
+                if f[:5] == 'match':
                     match = True
-                if f[:5]=='equal':
+                if f[:5] == 'equal':
                     match = False
-                if f[:3]=='lt':
+                if f[:3] == 'lt':
                     less_than = True
-                if f[:3]=='gt':
+                if f[:3] == 'gt':
                     greater_than = True
 
             # print("r:%s h:%s m:%i f:%s" %(request, header_val,
@@ -320,14 +344,14 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
                 ret.append(True in [cast(r) == cast(header_val) for r in request])
 
         #returns whether the filter existed (or not if _not function)
-        return (True in ret)==exists
+        return (True in ret) == exists
 
 
     @_checkfilename
     def setheader(self, *args, **kwargs):
         """Set header values from kwargs. They can be specfied as tuple to add comments as in pyfits"""
         tp = self.type
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             if v is None:
                 del self.header_cache[k]
             else:
@@ -337,19 +361,20 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
 
     @_checkfilename
     def getheaderval(self, *args, **kwargs):
-        """Get header value for each of the fields specified in args. It can also accept a list as a single argument: getheaderval(field1,field2,...) or getheaderval([field1,field2,...])"""
+        """Get header value for each of the fields specified in args.  It can also accept a list
+        as a single argument: getheaderval(field1,field2,...) or getheaderval([field1,field2,...])"""
         tp = self.type
         mapout = ('mapout' in kwargs and [kwargs['mapout']] or [lambda x:x])[0]
-        if len(args)==1:
-            if isinstance(args[0],(list,tuple)): #if first argument is tuple use those values as searches
+        if len(args) == 1:
+            if isinstance(args[0], (list, tuple)):  # if first argument is tuple use those values as searches
                 args = args[0]
 #if only 1 already-read header is requested, use a shortcut
             elif args[0] in self.header_cache.keys():
                 return mapout([self.header_cache[args[0]]])
-                    
+
         nkeys = [k for k in args if k not in self.header_cache.keys()]
         nhds = nkeys and self._geth[tp](self.filename, *nkeys, **kwargs) or []
-        for k,v in zip(nkeys,nhds):
+        for k, v in zip(nkeys,nhds):
             self.header_cache[k] = v
         ret = [self.header_cache[k] for k in args]
         return mapout(ret)
@@ -357,24 +382,26 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
     #emulating arithmetic
     def __add__(self, other):
         return self.reader()+other
+
     def __mul__(self, other):
         return self.reader()*other
+
     def __sub__(self, other):
         return self.reader()-other
+
     def __div__(self, other):
         import warnings
         warnings.warn('Better use "from __future__ import division" for future compability')
         return self.reader()/other
+
     def __truediv__(self, other):
         return self.reader()/other
 
     @_checkfilename
     def reader(self, *args, **kwargs):
         """Read astro data and return it calibrated if provided
-        
-        :param rawdata: if True return raw instead of calibrated
-
-        TODO: Respond to different exposure times or filters
+            :param rawdata: if True return raw instead of calibrated
+            TODO: Respond to different exposure times or filters
         """
         tp = self.type
         if not tp:
@@ -391,7 +418,6 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
     @_checkfilename
     def readheader(self, *args, **kwargs):
         """Read astro header
-        
         """
         tp = self.type
         if not tp:
@@ -444,9 +470,6 @@ If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filte
     def __ne__(self, other):
         return self.getheaderval(self.sortkey)[0] != \
             other.getheaderval(self.sortkey)[0]
-
-
-
 
     @_numerize_other
     def __add__(self, other):
