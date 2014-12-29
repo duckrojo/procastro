@@ -4,7 +4,6 @@ __author__ = 'fran'
 from Observer import Observer, Observable
 import core.io_file as dp
 import subprocess as sp
-import os
 
 
 def genDict(self, filetype):
@@ -61,7 +60,7 @@ class Eye(Observer):
                 self.seen[key] = [value, 1]
             else:
                 self.seen[key] = [value, 0]
-        print self.seen
+        #print self.seen
         # Para tomar los eventos definidos por el usuario
         self.events = self.setEvents(commandsfile)
         Observer.__init__(self, name, self.seen)
@@ -89,14 +88,14 @@ class Eye(Observer):
     def apply(self, event):
         #sp.call([event], shell=True)
         # TODO ojo aca con el path
-        print event + '.py'
-        sp.Popen('python fran/' + event + '.py', shell=True)
-        #os.system('python fran/' + event + '.py')
-        execfile(event + '.py')
+        # ojo: Popen no funciona si event retorna algo
+        #proc = sp.Popen('python ' + event + '.py 15', shell=True)
+        #proc.wait()
 
+        # aca probando con check_output()
+        output = sp.check_output(['python', event + '.py', '15'])
+        print output
 
-def foo(self):
-    print "foo\n"
 
 
 # Diccionarios con elementos a compartir
