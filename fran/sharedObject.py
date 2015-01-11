@@ -10,7 +10,7 @@ class sharedObject(Observable):
     """Implement Observer pattern. A sharedObject is an Observable."""
 
     def __init__(self, data, elements):
-        """Initialize sharedObject (Observable.)
+        """Initialize sharedObject (Observable).
 
         Data corresponds to the actual observed data. It can be an Astrofile, Scipy array,
         or anything really. Initialize as default Observable, added data, elements and open
@@ -79,6 +79,14 @@ class Eye(Observer):
     """Implement Observer pattern. A Eye is an Observer."""
 
     def __init__(self, name, shared, elements, commandsfile):
+        """ Initialize Eye (Observer).
+
+        :param name: String. Label or name of current Eye.
+        :param shared: Dictionary with possible elements to be seen from Observable.
+        :param elements: Elements to be observed by this Observer.
+        :param commandsfile:
+        :return: None
+        """
         self.shared = shared
         self.seen = {}
         # Preproceso diccionario + lista para registrar que quiero ver y que no
@@ -91,27 +99,32 @@ class Eye(Observer):
         # Para tomar los eventos definidos por el usuario
         self.events = self.setEvents(commandsfile)
         Observer.__init__(self, name, self.seen)
+        # TODO raise exceptions/errors
 
     # Para empezar a "ver" nuevos parametros
     def see(self, new):
+        """Add new elements to be seen by the Observer.
+
+        :param new: String. Label or name of new element to be seen.
+        :return: None"""
         for n in new:
             self.seen[n] = [self.shared[n], 1]
+        # TODO raise exceptions/errors
 
     # Para dejar de ver parametros
     def unsee(self, new):
+        """Stop seeing certain elements.
+
+        :param new: Sting. Label or name of element to be unseen.
+        :return: None"""
         for n in new:
             self.seen[n][1] = 0
+        # TODO raise exceptions/errors
 
     # Para definir eventos
+    # Esto ya no deberia ir, se hace con los imports
     def setEvents(self, filename):
         # Default events
-        """l = sp.check_output('ls ./defaultfuncs', shell=True)
-        defaultFiles = [d for d in (l.split('\n'))[:-1] if d[-4:] != '.pyc']
-        defaultFiles.remove('__init__.py')
-
-        for file in defaultFiles:"""
-
-
         events = []
         cfile = open(filename, 'r')
         for c in cfile.readlines():
@@ -121,6 +134,14 @@ class Eye(Observer):
 
     # Para aplicar eventos
     def apply(self, event):
+        """Apply event, through Observer, to Observable.
+
+        Possible events to apply are given by /default and /user package imports.
+        All functions in those packages are available to be applied.
+
+        :param event: String. Name of event.
+        :return: Changed data.
+        """
         #sp.call([event], shell=True)
         # TODO ojo aca con el path
         # ojo: Popen no funciona si event retorna algo
@@ -135,8 +156,9 @@ class Eye(Observer):
         #df = __import__('defaultfuncs.foo', globals(), locals(), ['foo'], -1)
         #df = __import__('defaultfuncs.bar', globals(), locals(), ['bar2'], -1)
         import defaultfuncs
-        defaultfuncs.bar.bar2()
-
+        import user
+        defaultfuncs.hola()
+        # TODO raise exceptions/errors
 
 # Diccionarios con elementos a compartir
 # Dummy values

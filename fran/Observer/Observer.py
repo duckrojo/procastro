@@ -17,7 +17,7 @@ class Observer(object):
         """Update observer.
 
         Called when the observed object is modified. You call an Observable object's
-        notifyObservers method to notify all the object's observers of the change.
+        C{notifyObserver} method to notify all the object's observers of the change.
 
         :param obs: ???
         :param label: String. Name of updated data element.
