@@ -34,16 +34,20 @@ class sharedObject(Observable):
     def open(self):  # Abre "conexion"
         """Open Observable to be observed.
             :return: None"""
-        self.isOpen = 1
-        print("Observable is open.")
-        # TODO raise exceptions/errors
+        if self.isOpen != 1:
+            self.isOpen = 1
+            print('Observable is open.')
+        else:
+            raise Exception('Observable is already open. Can\'t  be opened again!')
 
     def close(self): # Cierra conexion
         """Closes Observable to Observers.
             :return: None"""
-        self.isOpen = 0
-        print("Observable is closed.\n")
-        # TODO raise exceptions/errors
+        if self.isOpen != 0:
+            self.isOpen = 0
+            print('Observable is closed.')
+        else:
+            raise Exception('Observable is already closed. Can\'t  be closed again!')
 
     def changeData(self, label, newdata):  # Cambia los datos
         """Changes data on Observable.
@@ -57,10 +61,13 @@ class sharedObject(Observable):
         print("New data: " + str(self.shared))
         # Solo si esta abierto, aviso a Observers
         if self.isOpen == 1:
-           self.notifyObservers(label, newdata)
+            try:
+                self.shared[label] = newdata
+                self.notifyObservers(label, newdata)
+            except ValueError:
+                print('Data not changed. Error received when notifying Observers.')
         else:
-            print("Observable is closed, Observers not notified of change!")
-        # TODO raise exceptions/errors
+            print('Observable is closed, Observers not notified of change!')
 
     def notifyObservers(self, label, value):
         """Notify all Observes of change.
@@ -71,8 +78,10 @@ class sharedObject(Observable):
         if self.isOpen == 1:
             print("Notification sent to Observers.")
             self.setChanged()  # Esto es para los mutex
-            Observable.notifyObservers(self, label, value)
-        # TODO raise exceptions/errors
+            try:
+                Observable.notifyObservers(self, label, value)
+            except ValueError:
+                print('Observers couldn\'t be notified of changes.')
 
 
 class Eye(Observer):
@@ -90,26 +99,33 @@ class Eye(Observer):
         self.shared = shared
         self.seen = {}
         # Preproceso diccionario + lista para registrar que quiero ver y que no
-        for key, value in shared.iteritems():
-            if key in elements:
-                self.seen[key] = [value, 1]
-            else:
-                self.seen[key] = [value, 0]
-        #print self.seen
-        # Para tomar los eventos definidos por el usuario
-        self.events = self.setEvents(commandsfile)
-        Observer.__init__(self, name, self.seen)
-        # TODO raise exceptions/errors
+        try:
+            for key, value in shared.iteritems():
+                if key in elements:
+                    self.seen[key] = [value, 1]
+                else:
+                    self.seen[key] = [value, 0]
+            #print self.seen
+            # Para tomar los eventos definidos por el usuario
+            self.events = self.setEvents(commandsfile)
+            Observer.__init__(self, name, self.seen)
+        except ValueError:
+            print('Not possible to initialize Observer. Check shared elements.')
 
     # Para empezar a "ver" nuevos parametros
     def see(self, new):
         """Add new elements to be seen by the Observer.
 
+        A value of 1 on an element meens it's being seen by the Observer. A value of 0
+        means the Observer won't be attending to changes on that element.
+
         :param new: String. Label or name of new element to be seen.
         :return: None"""
-        for n in new:
-            self.seen[n] = [self.shared[n], 1]
-        # TODO raise exceptions/errors
+        try:
+            for n in new:
+                self.seen[n] = [self.shared[n], 1]
+        except ValueError:
+            print('Error encountered when adding to seen list. Check shared elements.')
 
     # Para dejar de ver parametros
     def unsee(self, new):
@@ -118,8 +134,10 @@ class Eye(Observer):
         :param new: Sting. Label or name of element to be unseen.
         :return: None"""
         for n in new:
-            self.seen[n][1] = 0
-        # TODO raise exceptions/errors
+            try:
+                self.seen[n][1] = 0
+            except ValueError:
+                print(str(n) + ' cannot be unseen. Possibly not being seen already.')
 
     # Para definir eventos
     # Esto ya no deberia ir, se hace con los imports
@@ -143,7 +161,6 @@ class Eye(Observer):
         :return: Changed data.
         """
         #sp.call([event], shell=True)
-        # TODO ojo aca con el path
         # ojo: Popen no funciona si event retorna algo
         #proc = sp.Popen('python ' + event + '.py 15', shell=True)
         #proc.wait()
@@ -158,7 +175,6 @@ class Eye(Observer):
         import defaultfuncs
         import user
         defaultfuncs.hola()
-        # TODO raise exceptions/errors
 
 # Diccionarios con elementos a compartir
 # Dummy values

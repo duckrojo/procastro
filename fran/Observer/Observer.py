@@ -25,7 +25,7 @@ class Observer(object):
         :return: None"""
         if self.elements[label][1] == 1:
             self.elements[label][0] = value
-            print("Observer " + str(self.name) + " has changed data " + str(label))
+            print('Observer ' + str(self.name) + ' has changed data ' + str(label))
         print self.elements
         pass
 
@@ -47,16 +47,19 @@ class Observable(Synchronization):
             :return: None"""
         if observer not in self.obs:
             self.obs.append(observer)
-            print("New Observer added: " + str(observer.name))
-        # TODO raise exceptions/errors
+            print('New Observer added: ' + str(observer.name))
+        else:
+            print('Observer ' + str(observer.name) + ' already in observers list.')
 
     def deleteObserver(self, observer):
         """Delete Observer.
             :param observer: Observer to be deleted.
             :return: None"""
-        print("Observer has been deleted.")
-        self.obs.remove(observer)
-        # TODO raise exceptions/errors
+        print('Observer has been deleted.')
+        try:
+            self.obs.remove(observer)
+        except ValueError:
+            print(str(observer.name) + ' not in observers list. Cannot be removed.')
 
     def notifyObservers(self, label, value, arg=None):
         """Notify all Observers that a change has occurred.
@@ -80,23 +83,26 @@ class Observable(Synchronization):
             self.mutex.release()
         for observer in localArray:
             if label in observer.elements:
-                print("Observer has been updated.")
+                print('Observer has been updated.')
                 print label, value
                 observer.update(self, label, value)
-        # TODO raise exceptions/errors
+            else:
+                raise ValueError('No Observers to update.')
+
 
     def deleteObservers(self):
         """Delete all Observers from Observer.
             :return: None"""
         print("All observers have been deleted.")
         self.obs = []
-        # TODO raise exceptions/errors
 
     def setChanged(self):
         """Set Observable as changed.
             :return: None"""
-        self.changed = 1
-        # TODO raise exceptions/errors
+        if self.changed != 1:
+            self.changed = 1
+        else:
+            raise Exception('Error: Observable was already set as changed. Possible code error.')
 
     def clearChanged(self):
         """Set Observable as unchanged.
@@ -104,8 +110,11 @@ class Observable(Synchronization):
             Called after all Observers have been updated after a change.
 
             :return: None"""
-        self.changed = 0
-        # TODO raise exceptions/errors
+        if self.changed != 0:
+            self.changed = 0
+        else:
+            raise Exception('Error: Observable was already set as unchanged.'
+                            'clearChanged() shouldn\'t have been called.')
 
     def hasChanged(self):
         """Check if Observable has changed.
