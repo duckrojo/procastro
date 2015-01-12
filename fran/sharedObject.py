@@ -88,7 +88,7 @@ class Eye(Observer):
     """Implement Observer pattern. A Eye is an Observer."""
 
     def __init__(self, name, shared, elements, commandsfile):
-        """ Initialize Eye (Observer).
+        """ Initialize Eye (Observer). Import default and user-defined methods.
 
         :param name: String. Label or name of current Eye.
         :param shared: Dictionary with possible elements to be seen from Observable.
@@ -98,6 +98,9 @@ class Eye(Observer):
         """
         self.shared = shared
         self.seen = {}
+        self.default = __import__('defaultfuncs', globals(), locals(), [], -1)
+        self.user = __import__('user', globals(), locals(), [], -1)
+
         # Preproceso diccionario + lista para registrar que quiero ver y que no
         try:
             for key, value in shared.iteritems():
@@ -107,7 +110,7 @@ class Eye(Observer):
                     self.seen[key] = [value, 0]
             #print self.seen
             # Para tomar los eventos definidos por el usuario
-            self.events = self.setEvents(commandsfile)
+            self.events = self.setEvents(self.default, self.user)
             Observer.__init__(self, name, self.seen)
         except ValueError:
             print('Not possible to initialize Observer. Check shared elements.')
@@ -139,19 +142,32 @@ class Eye(Observer):
             except ValueError:
                 print(str(n) + ' cannot be unseen. Possibly not being seen already.')
 
-    # Para definir eventos
-    # Esto ya no deberia ir, se hace con los imports
-    def setEvents(self, filename):
-        # Default events
+    # Para listar los metodos/funciones que se pueden usar
+    def setEvents(self, default, user):
+        """Get events from default and user-defined packages and add
+            them to list of available events to execute.
+            :return: List of events (String of each event name).
+        """
+        import inspect
+
         events = []
-        cfile = open(filename, 'r')
-        for c in cfile.readlines():
-            if c[0] == '#':
-                events.append(c[2:-1])
+
+        # defaultfuncs
+        for name, data in inspect.getmembers(default, inspect.isfunction):
+            if name == '__builtins__':
+                continue
+            events.append(name)
+
+        # user
+        for name, data in inspect.getmembers(user, inspect.isfunction):
+            if name == '__builtins__':
+                continue
+            events.append(name)
+
         return events
 
     # Para aplicar eventos
-    def apply(self, event):
+    def apply(self, event, args=None):
         """Apply event, through Observer, to Observable.
 
         Possible events to apply are given by /default and /user package imports.
@@ -160,21 +176,12 @@ class Eye(Observer):
         :param event: String. Name of event.
         :return: Changed data.
         """
-        #sp.call([event], shell=True)
-        # ojo: Popen no funciona si event retorna algo
-        #proc = sp.Popen('python ' + event + '.py 15', shell=True)
-        #proc.wait()
-
-        # aca probando con check_output()
-        #output = sp.check_output(['python', event + '.py', '15'])
-        #print output
-
-        #print user
-        #df = __import__('defaultfuncs.foo', globals(), locals(), ['foo'], -1)
-        #df = __import__('defaultfuncs.bar', globals(), locals(), ['bar2'], -1)
-        import defaultfuncs
-        import user
-        defaultfuncs.hola()
+        if event in self.events:
+            try:
+                methodToCall = getattr(self.default, event)
+            except AttributeError:
+                methodToCall = getattr(self.user, event)
+            methodToCall()
 
 # Diccionarios con elementos a compartir
 # Dummy values
@@ -188,5 +195,5 @@ s = sharedObject(af, shared_elem)
 
 #cfiles = open('commands', 'r')
 e1 = Eye("Eye1", shared_elem, eye1_elem, 'commands')
-e1.apply('foo')
+e1.apply('bar2')
 
