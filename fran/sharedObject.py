@@ -87,7 +87,7 @@ class sharedObject(Observable):
 class Eye(Observer):
     """Implement Observer pattern. A Eye is an Observer."""
 
-    def __init__(self, name, shared, elements, commandsfile):
+    def __init__(self, name, shared, elements):
         """ Initialize Eye (Observer). Import default and user-defined methods.
 
         :param name: String. Label or name of current Eye.
@@ -182,18 +182,21 @@ class Eye(Observer):
             except AttributeError:
                 methodToCall = getattr(self.user, event)
             methodToCall()
+        else:
+            raise ValueError('Method ' + event + ' not in available method list.')
+
 
 # Diccionarios con elementos a compartir
 # Dummy values
 # label: [valor, on/off]
-af = dp.AstroFile()
-shared_elem = {'fulldata': 10, 'xlim': 5, 'ylim': 7, 'zoom': 50}
-eye1_elem = ['zoom']
-eye2_elem = ['ylim']
+#af = dp.AstroFile()
+#shared_elem = {'fulldata': 10, 'xlim': 5, 'ylim': 7, 'zoom': 50}
+#eye1_elem = ['zoom']
+#eye2_elem = ['ylim']
 
-s = sharedObject(af, shared_elem)
+#s = sharedObject(af, shared_elem)
 
 #cfiles = open('commands', 'r')
-e1 = Eye("Eye1", shared_elem, eye1_elem, 'commands')
-e1.apply('bar2')
+#e1 = Eye("Eye1", shared_elem, eye1_elem, 'commands')
+#e1.apply('bar2')
 
