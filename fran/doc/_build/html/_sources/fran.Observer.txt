@@ -1,0 +1,30 @@
+fran.Observer package
+=====================
+
+Submodules
+----------
+
+fran.Observer.Observer module
+-----------------------------
+
+.. automodule:: fran.Observer.Observer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fran.Observer.Synchronization module
+------------------------------------
+
+.. automodule:: fran.Observer.Synchronization
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: fran.Observer
+    :members:
+    :undoc-members:
+    :show-inheritance:

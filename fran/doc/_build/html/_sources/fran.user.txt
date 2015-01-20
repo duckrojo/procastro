@@ -1,0 +1,10 @@
+fran.user package
+=================
+
+Module contents
+---------------
+
+.. automodule:: fran.user
+    :members:
+    :undoc-members:
+    :show-inheritance:

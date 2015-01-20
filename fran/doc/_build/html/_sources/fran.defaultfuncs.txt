@@ -1,0 +1,30 @@
+fran.defaultfuncs package
+=========================
+
+Submodules
+----------
+
+fran.defaultfuncs.bar module
+----------------------------
+
+.. automodule:: fran.defaultfuncs.bar
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fran.defaultfuncs.foo module
+----------------------------
+
+.. automodule:: fran.defaultfuncs.foo
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: fran.defaultfuncs
+    :members:
+    :undoc-members:
+    :show-inheritance:

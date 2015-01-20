@@ -1,0 +1,39 @@
+fran package
+============
+
+Subpackages
+-----------
+
+.. toctree::
+
+    fran.Observer
+    fran.defaultfuncs
+    fran.user
+
+Submodules
+----------
+
+fran.sharedObject module
+------------------------
+
+.. automodule:: fran.sharedObject
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+fran.window module
+------------------
+
+.. automodule:: fran.window
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+
+Module contents
+---------------
+
+.. automodule:: fran
+    :members:
+    :undoc-members:
+    :show-inheritance:
