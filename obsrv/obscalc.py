@@ -206,6 +206,11 @@ class ObsCalc(object):
       print("Target coordinates '%s' not understood, attempting query... " %
             (target,), end='')
       query = aqs.Simbad.query_object(target)
+      if query is None:
+        if target[-2:]==' b':
+          query = aqs.Simbad.query_object(target[:-2])
+        else:
+          raise ValueError("Target '%s' not found on Simbad" % (target,))
       radec = apc.ICRS('%s %s' % (query['RA'][0], query['DEC'][0]),
                        unit=(u.hour, u.degree),
                        equinox = self.params["equinox"])

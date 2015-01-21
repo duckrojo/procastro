@@ -22,7 +22,7 @@
 from __future__ import print_function, division
 from functools import wraps as _wraps
 import warnings
-import combine as cm
+import dataproc.combine as cm
 
 
 def _numerize_other(method):

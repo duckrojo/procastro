@@ -264,6 +264,8 @@ class Obsrv(ocalc.ObsCalc):
     uthours = (hours - etout)*24
 
     ax2 = ax.twinx()
+    if 'plot_ax-elev2' in self.params:
+        self.params['plot_figure'].delaxes(self.params['plot_ax-elev2'])
     self.params['plot_ax-elev2'] = ax2
 
     ax.plot(uthours, staralt)
@@ -279,8 +281,8 @@ class Obsrv(ocalc.ObsCalc):
     ax.set_title('%s' % str(datetime)[:-3])
     ax.set_ylim(ax.get_ylim())
     sam = sp.array([1,1.5,2,3,4,5])
-    ax2.set_yticklabels(sam)
     ax2.set_yticks(sp.arcsin(1.0/sam)*180.0/sp.pi)
+    ax2.set_yticklabels(sam)
     self.params['current_transit'] = str(datetime).replace(' ', '_')
     self.params['current_moon_distance'] = self._moon_distance(datetime)
     ax.set_ylabel('Elevation')
@@ -292,8 +294,11 @@ class Obsrv(ocalc.ObsCalc):
       outr = (jd-self.jd0+self.days[0]-etout)*24 + self.transit_length/2
       if intr>outr:
         outr+=24
+      facecolor = '0.5'
+      if self.params['current_moon_distance'].degree<30:
+          facecolor='orange'
       _plotpoly(ax, [intr,outr],
-               [0,0], [90,90], facecolor='0.5')
+               [0,0], [90,90], facecolor=facecolor)
 
     ax.figure.canvas.draw()
 
@@ -305,26 +310,34 @@ class Obsrv(ocalc.ObsCalc):
     axe = self.params["plot_ax-elev"]
     axa = self.params["plot_ax-airm"]
 
-    if event.key=='e' and event.inaxes == axa:
+    if event.key=='e' and event.inaxes == axa:  #at position
       self._plot_night(event.xdata + self.jd0, axe)
-    elif event.key=='P':
+    elif event.key=='P':  #save file at no transit or transit if it has been set before
       target_unspace = self.params['target'].replace(' ', '_')
       if 'current_transit' in self.params:
-        current_transit = self.params['current_transit'].replace('/', '-')
-        self.params['plot_figure'].savefig('%s/%s_%s.png' %(self.params['savedir'],
-                                                            target_unspace,
-                                                            current_transit))
+          current_transit = self.params['current_transit'].replace('/', '-')
+          filename = '%s/%s_%s_%s.png' %(self.params['savedir'],
+                                         target_unspace,
+                                         current_transit,
+                                         self.params['site'])
       else:
-        self.params['plot_figure'].savefig('%s/%s_T%s.png' %(self.params['savedir'],
-                                                             target_unspace,
-                                                             self.params['timespan']))
-    elif event.key=='f':
+          filename = '%s/%s_T%s_%s.png' %(self.params['savedir'],
+                                          target_unspace,
+                                          self.params['timespan'],
+                                          self.params['site'])
+      print ("Saving: %s" % (filename,))
+      self.params['plot_figure'].savefig(filename)
+    elif event.key=='f':  #recenter transit and save file
       self._plot_elev_transit(event.xdata, event.ydata)
       target_unspace = self.params['target'].replace(' ', '_')
-      current_transit = self.params['current_transit'].replace('/', '-')
-      self.params['plot_figure'].savefig('%s/%s_%s.png' %(self.params['savedir'],
-                                                          target_unspace,
-                                                          current_transit))
+      site = self.params['site']
+      current_transit = self.params['current_transit'].replace('/', '-')[:-3].replace(':','')
+      filename = '%s/%s_%s_%s.png' %(self.params['savedir'],
+                                     target_unspace,
+                                     current_transit,
+                                     site)
+      print ("Saving: %s" % (filename,))
+      self.params['plot_figure'].savefig(filename)
 
 
   def _onclick(self, event):

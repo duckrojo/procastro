@@ -22,8 +22,8 @@ from __future__ import print_function, division
 from functools import wraps as _wraps
 import scipy as sp
 import warnings
-#import dataproc as dp
-import core as dp # TODO OJO CON ESTO"!"!!!1
+import dataproc as dp
+#import core as dp # TODO OJO CON ESTO"!"!!!1
 import os.path as path
 import pyfits as pf
 
