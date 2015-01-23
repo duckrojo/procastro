@@ -87,7 +87,7 @@ class process2d():
         import scipy.signal as sg
         import scipy as sp
 
-        a = sg.medfilt2d(sp.array(self.data.data,dtype=float), int(2*radius+1))
+        a = sg.medfilt2d(sp.array(self.data.data, dtype=float), int(2*radius+1))
         self.data.data = a
         return self
 

@@ -1,7 +1,7 @@
 __author__ = 'fran'
 
-from Observer.Observer import Observable, Observer
-import core as dp
+from observer.Observer import Observable, Observer
+import dataproc as dp
 
 class sharedObject(Observable):
     """Implement Observer pattern. A sharedObject is an Observable."""
@@ -184,18 +184,18 @@ class Eye(Observer):
 
     def listMethods(self, ini=None):
         if ini is None:
-            for e in self.events: print e
+            for e in self.events: print(e)
         else:
             l = len(ini)
             for e in self.events:
                 if e[:l] == ini:
-                    print e
+                    print(e)
 
 
 # Diccionarios con elementos a compartir
 # Dummy values
 # label: [valor, on/off]
-af = dp.AstroFile()
+'''af = dp.AstroFile()
 shared_elem = {'fulldata': 10, 'xlim': 5, 'ylim': 7, 'zoom': 50}
 eye1_elem = ['zoom']
 eye2_elem = ['ylim']
@@ -204,5 +204,4 @@ s = sharedObject(af, shared_elem)
 
 #cfiles = open('commands', 'r')
 e1 = Eye('Eye1', shared_elem, eye1_elem)
-e1.apply('bar2')
-e1.listMethods('b')
+e1.listMethods()'''
