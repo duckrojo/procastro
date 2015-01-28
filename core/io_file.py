@@ -180,12 +180,14 @@ class AstroFile(object):
                  mbias=None, mflat=None, exists=False,
                  *args, **kwargs):
         import os.path as path
+        ###TODO: Fran lo siguiente no funciona!! no acepta ningun file nuevo:(, porfa arregla, por mientras lo comente
         # agregado aca para inicializar sin nombre, AstroFile "vacio"
-        if not hasattr(self, 'filename'):
-            self.filename = None
-            self.type = None
-            self.header_cache = None
-        else:
+        # if not hasattr(self, 'filename'):
+        #     self.filename = None
+        #     self.type = None
+        #     self.header_cache = None
+        # else:
+        if 1:
             self.filename = filename
             self.type = self.checktype(exists, *args, **kwargs)
             self.header_cache = {'basename': path.basename(filename)}

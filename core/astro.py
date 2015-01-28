@@ -223,3 +223,8 @@ def filterconversion(target_filter, temp,
 
     return -2.5*sp.log(applyfilter(target_filter, temp) / 
                        applyfilter(target_filter, temp_ref))/sp.log(10) + ref0
+
+
+
+def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
+    return tstar*sp.sqrt((rstar*apc.R_sun/au/apc.au) * sp.sqrt(1-albedo)/2.0)

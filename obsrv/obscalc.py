@@ -45,7 +45,7 @@ def _update_airmass(func):
 class ObsCalc(object):
 
   def __init__(self, timespan=2015, target=None,
-               name='paranal', 
+               site='paranal', 
                only_night=True, equinox=2000,
                **kwargs):
     """ =Initializes obsrv class.
@@ -60,17 +60,19 @@ class ObsCalc(object):
     self.params["equinox"] = equinox
     self.daily = {}
 
-    self.set_observer(name, timespan, **kwargs)
+    self.set_site(site, timespan, **kwargs)
+
+    print (kwargs)
 
     if target is not None:
       self.set_target(target, **kwargs)
 
 
-  def set_observer(self, observer, timespan=None,
+  def set_site(self, site, timespan=None,
                    obsfilename=None, **kwargs):
     """Checks whether name's coordinate are known from a list or whether it is a (lat, lon) tuple  
 
-    :param observer: identifies the observatory as a name, or (lat, lon) tuple, 
+    :param site: identifies the observatory as a name, or (lat, lon) tuple, 
 """
 
     obs = self._obs
@@ -83,23 +85,24 @@ class ObsCalc(object):
       field = line.split(',')
       coordinates[field[0]] = (eval(field[1]), eval(field[2]))
 
-    if observer==None:
+    if site==None:
       return coordinates.keys()
 
-    if isinstance(observer, str):
+    if isinstance(site, str):
       try:
-        latlon = coordinates[observer]
+        latlon = coordinates[site]
       except KeyError: 
-        raise KeyError("observer keyword is not defined. Valid values are " + \
+        raise KeyError("site keyword is not defined. Valid values are " + \
             ', '.join(coordinates) + '.')
-    elif isinstance(observer, tuple) and len(observer)==2: 
-      latlon = observer
+    elif isinstance(site, tuple) and len(site)==2: 
+      latlon = site
     else:
       raise TypeError("object can only be a 2-component tuple or a string")
 
 
     ## Parameters for user-friendly values
     self.params["latlon"] = latlon
+    self.params["site"] = site
     #fraction of day to move from UT to local midday
     self.params["to_local_midday"] = 0.5-latlon[1]/360.0
 
@@ -114,6 +117,24 @@ class ObsCalc(object):
     self.set_timespan(timespan,  **kwargs)
 
     return self
+
+ 
+  def _moon_distance(self, date):
+    obs = self._obs
+    obs.date = date
+    self.star.compute(obs)
+    moon = ephem.Moon()
+    moon.compute(obs)
+    st = apc.SkyCoord(ra=self.star.ra*u.radian, dec=self.star.dec*u.radian, 
+                      frame='icrs')
+    mn = apc.SkyCoord(ra=moon.ra*u.radian, dec=moon.dec*u.radian, 
+                      frame='icrs')
+    dist = st.separation(mn)
+    return dist, moon.phase
+    # return sp.cos(self.star.dec)*sp.cos(moon.dec)*sp.cos(self.star.ra-moon.ra) \
+    #     + sp.sin(self.star.dec)*sp.sin(self.star.dec)
+
+        
 
 
   def set_timespan(self, timespan, samples=60, 
@@ -203,22 +224,32 @@ class ObsCalc(object):
       radec = apc.ICRS('%s' % target, unit=(u.hour, u.degree),
                        equinox = self.params["equinox"])
     except ValueError:
-      print("Target coordinates '%s' not understood, attempting query... " %
-            (target,), end='')
-      query = aqs.Simbad.query_object(target)
-      if query is None:
-        if target[-2:]==' b':
-          query = aqs.Simbad.query_object(target[:-2])
-        else:
-          raise ValueError("Target '%s' not found on Simbad" % (target,))
-      radec = apc.ICRS('%s %s' % (query['RA'][0], query['DEC'][0]),
-                       unit=(u.hour, u.degree),
+      for line in open(os.path.dirname(__file__)+'/coo.txt').readlines():
+        name, ra, dec, note = line.split(None, 4)
+        if target.lower() == name.lower():
+          print("Found in coo.txt file")
+          break
+      else:
+        print("Target coordinates '%s' not understood, attempting query... " %
+              (target,), end='')
+        query = aqs.Simbad.query_object(target)
+        if query is None:
+          if target[-2:]==' b':
+            query = aqs.Simbad.query_object(target[:-2])
+          else:
+            raise ValueError("Target '%s' not found on Simbad" % (target,))
+          ra,dec = query['RA'][0], query['DEC'][0]
+      radec = apc.ICRS('%s %s' % (ra, dec), 
+                       unit=(u.hour, u.degree), 
                        equinox = self.params["equinox"])
-      print("success!")
+      print("success! (%s)" % (radec,))
 
+
+    print("Star at RA/DEC: %s/%s" %(radec.ra.to_string(sep=':'),
+                                    radec.dec.to_string(sep=':')))
     self.star = ephem.readdb("%s,f,%s,%s,%.2f, %f" % 
                              (starname, 
-                              radec.ra.to_string(sep=':'), 
+                              radec.ra.to_string(sep=':', unit=u.hour), 
                               radec.dec.to_string(sep=':'), 
                               magn, radec.equinox))
 
@@ -262,6 +293,7 @@ class ObsCalc(object):
           tr_epoch  = float(query.findtext('transittime'))
       print ("  Found ephemeris: %f + E*%f" % (tr_epoch, tr_period))
 
+    print("length: %s" %tr_length)
     self.set_transits(tr_epoch, tr_period, tr_length=tr_length)
 
     return self

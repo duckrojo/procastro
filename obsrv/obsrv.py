@@ -284,10 +284,11 @@ class Obsrv(ocalc.ObsCalc):
     ax2.set_yticks(sp.arcsin(1.0/sam)*180.0/sp.pi)
     ax2.set_yticklabels(sam)
     self.params['current_transit'] = str(datetime).replace(' ', '_')
-    self.params['current_moon_distance'] = self._moon_distance(datetime)
+    self.params['current_moon_distance'],self.params['current_moon_phase'] = self._moon_distance(datetime)
     ax.set_ylabel('Elevation')
-    ax.set_xlabel('UT time. Moon distance: %s${^\degree}$' %
-                  (int(self.params["current_moon_distance"].degree),))
+    ax.set_xlabel('UT time. Moon distance and phase: %s${^\degree}$ %s%%' %
+                  (int(self.params["current_moon_distance"].degree),
+                   (self.params["current_moon_phase"])))
 
     if hasattr(self, 'transits'):
       intr = (jd-self.jd0+self.days[0]-etout)*24 - self.transit_length/2
@@ -297,6 +298,8 @@ class Obsrv(ocalc.ObsCalc):
       facecolor = '0.5'
       if self.params['current_moon_distance'].degree<30:
           facecolor='orange'
+      if self.params['current_moon_distance'].degree<10:
+          facecolor='red'
       _plotpoly(ax, [intr,outr],
                [0,0], [90,90], facecolor=facecolor)
 
