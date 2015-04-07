@@ -25,9 +25,9 @@ import scipy as sp
 import astropy as ap
 import astropy.coordinates as apc
 import astropy.units as u
-import astroquery.simbad as aqs
 import os
 import xml.etree.ElementTree as ET, urllib, gzip, io
+import dataproc as dp
 
 
 def _update_airmass(func):
@@ -35,6 +35,16 @@ def _update_airmass(func):
     ret = func(self, *args, **kwargs)
     if hasattr(self,'star'):
       self._get_airmass()
+
+    return ret
+
+  return wrapper
+
+def _update_transits(func):
+  def wrapper(self, *args, **kwargs):
+    ret = func(self, *args, **kwargs)
+    if hasattr(self,'transit_info'):
+      self.set_transits()
 
     return ret
 
@@ -136,7 +146,8 @@ class ObsCalc(object):
 
         
 
-
+  @_update_airmass
+  @_update_transits
   def set_timespan(self, timespan, samples=60, 
                    central_time=25,
                    **kwargs):
@@ -157,7 +168,7 @@ class ObsCalc(object):
       ed = sp.arange(ed0,ed1,int((ed1-ed0)/samples))
       xlims = [ed[0]-ed0,ed[-1]-ed0]
     else:
-      raise NotImplementedError( """Supported timespan (%s) not implemented yet. Currently supported:
+      raise NotImplementedError( """Requested timespan (%s) not implemented yet. Currently supported:
                  * single integer (year)
 """ % (timespan,))
     
@@ -209,8 +220,11 @@ class ObsCalc(object):
 
 
   @_update_airmass
+  @_update_transits
   def set_target(self, target, magn=10, starname='', 
-                 tr_epoch=None, tr_period=None, tr_length=1, **kwargs):
+                 tr_epoch=None, tr_period=None, tr_length=1,
+                 home_transit = True, 
+                 **kwargs):
     """Set star and site into pyephem
 
     :param target: either RA and Dec in hours and degrees, or target name to be queried
@@ -220,29 +234,9 @@ class ObsCalc(object):
     if 'current_transit' in self.params:
       del self.params['current_transit']
 
-    try:
-      radec = apc.ICRS('%s' % target, unit=(u.hour, u.degree),
-                       equinox = self.params["equinox"])
-    except ValueError:
-      for line in open(os.path.dirname(__file__)+'/coo.txt').readlines():
-        name, ra, dec, note = line.split(None, 4)
-        if target.lower() == name.lower():
-          print("Found in coo.txt file")
-          break
-      else:
-        print("Target coordinates '%s' not understood, attempting query... " %
-              (target,), end='')
-        query = aqs.Simbad.query_object(target)
-        if query is None:
-          if target[-2:]==' b':
-            query = aqs.Simbad.query_object(target[:-2])
-          else:
-            raise ValueError("Target '%s' not found on Simbad" % (target,))
-          ra,dec = query['RA'][0], query['DEC'][0]
-      radec = apc.ICRS('%s %s' % (ra, dec), 
-                       unit=(u.hour, u.degree), 
-                       equinox = self.params["equinox"])
-      print("success! (%s)" % (radec,))
+    radec = dp.read_coordinates(target, 
+                                  coo_file = os.path.dirname(__file__)+'/coo.txt',
+                                  equinox=self.params["equinox"])
 
 
     print("Star at RA/DEC: %s/%s" %(radec.ra.to_string(sep=':'),
@@ -253,30 +247,40 @@ class ObsCalc(object):
                               radec.dec.to_string(sep=':'), 
                               magn, radec.equinox))
 
-    transitfilename = os.path.dirname(__file__)+'/transits.txt'
-    for line in open(transitfilename):
-      if line[0]=='#' or len(line)<3:
-        continue
-      data = line[:-1].split()
-      planet = data.pop(0).replace('_', ' ')
-      override = []
-      if planet == target:
-        for d in data:
-          if d[0].lower()=='p':
-            override.append('period')
-            tr_period = float(eval(d[1:]))
-          elif d[0].lower()=='e':
-            override.append("epoch")
-            tr_epoch  = float(eval(d[1:]))
-          elif d[0].lower()=='l':
-            override.append("length")
-            tr_length = float(eval(d[1:]))
-          elif d[0].lower()=='c':
-            override.append("comment")
-          else:
-            raise ValueError("data field not understood, it must start with L, P, C, or E:\n%s" % (line,))
-        print ("Overriding from file: %s" %(', '.join(override),))
-          
+    transit_filename_locations = [os.path.dirname(__file__)+'/transits.txt',
+                                  os.path.expanduser("~")+'/.transits']
+
+    for transit_filename in transit_filename_locations:
+      try:
+        open_file = open(transit_filename)
+
+        for line in open_file.readlines():
+
+
+          if line[0]=='#' or len(line)<3:
+            continue
+          data = line[:-1].split()
+          planet = data.pop(0).replace('_', ' ')
+          override = []
+          if planet.lower() == target.lower():
+            for d in data:
+              if d[0].lower()=='p':
+                override.append('period')
+                tr_period = float(eval(d[1:]))
+              elif d[0].lower()=='e':
+                override.append("epoch")
+                tr_epoch  = float(eval(d[1:]))
+              elif d[0].lower()=='l':
+                override.append("length")
+                tr_length = float(eval(d[1:]))
+              elif d[0].lower()=='c':
+                override.append("comment")
+              else:
+                raise ValueError("data field not understood, it must start with L, P, C, or E:\n%s" % (line,))
+            print ("Overriding from file: %s" %(', '.join(override),))
+
+      except IOError:
+        pass
 
     if tr_epoch is None or tr_period is None:
       print("Attempting to query transit information")
@@ -293,21 +297,32 @@ class ObsCalc(object):
           tr_epoch  = float(query.findtext('transittime'))
       print ("  Found ephemeris: %f + E*%f" % (tr_epoch, tr_period))
 
-    print("length: %s" %tr_length)
-    self.set_transits(tr_epoch, tr_period, tr_length=tr_length)
+    if tr_period != 0: 
+      self.transit_info = {'length': tr_length,
+                           'epoch' : tr_epoch,
+                           'period': tr_period}
 
     return self
 
 
 
-  def set_transits(self, tr_epoch, tr_period, tr_length=1, **kwargs):
-    """ Calculate the transits """
-    if tr_period==0:
+  def set_transits(self,
+                   tr_period=None, tr_epoch=None, tr_length=None,
+                   **kwargs):
+    """ Calculate the transits.  It assumes that the decorator has already checked transit_info existence """
+    if tr_period == 0:
       if hasattr(self, 'transits'):
         del self.transits
         del self.transit_hours
-        del self.transit_length
+
       return self
+
+    if tr_period is None:
+      tr_period = self.transit_info['period']
+    if tr_epoch is None:
+      tr_epoch  = self.transit_info['epoch']
+    if tr_length is None:
+      tr_length = self.transit_info['length']
 
     jd0 = self.jd0
     jd1 = ephem.julian_date(ephem.Date(self.days[-1]))
@@ -315,7 +330,6 @@ class ObsCalc(object):
     tr1 = tr_epoch+tr_period*int((jd0-tr_epoch)/tr_period+0.9)
     self.transits = tr1+sp.arange(ntransits)*tr_period
     self.transit_hours = (self.transits-(sp.fix(self.transits-0.5)+0.5))*24
-    self.transit_length = tr_length
 
     if jd0 < tr_epoch:
       print("WARNING: Reference transit epoch is in the future. Are you certain that you are using JD?")

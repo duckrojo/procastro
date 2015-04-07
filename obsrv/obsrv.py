@@ -71,6 +71,9 @@ def _update_plot(func):
 #    cax = ax.figure.add_axes(cbrect)
     self.params["plot_ax-airm"] = ax_airm = fig.add_axes([0.06,0.1,0.35,0.85])#subplot(121)
     self.params["plot_ax-elev"] = ax_elev = fig.add_axes([0.55,0.1,0.4,0.83])#fig.add_subplot(122)
+    #delete right y-axis of the transit night if exists since fig.clf() disconnects it.
+    if 'plot_ax-elev2' in self.params:
+        del self.params['plot_ax-elev2']
 
     if hasattr(self,'airmass'):
       self._plot_airmass(ax_airm)
@@ -98,7 +101,7 @@ def _update_plot(func):
 class Obsrv(ocalc.ObsCalc):
 
   def __init__(self, 
-               show_twilight=True, show_months=True,
+               target=None, show_twilight=True, show_months=True,
                show_colorbar=True, show_transits=True,
                interact=True, savedir='fig/',
                **kwargs):
@@ -116,7 +119,7 @@ class Obsrv(ocalc.ObsCalc):
     self.params["show_colorbar"] = show_colorbar
     self.params["savedir"] = savedir
 
-    super(Obsrv, self).__init__(**kwargs)
+    super(Obsrv, self).__init__(target=target, **kwargs)
 
 
   # @_update_plot
@@ -130,6 +133,10 @@ class Obsrv(ocalc.ObsCalc):
   @_update_plot
   def set_vertical(self, *args, **kwargs):
     super(Obsrv, self).set_vertical(*args, **kwargs)
+
+  @_update_plot
+  def set_transits(self, *args, **kwargs):
+    super(Obsrv, self).set_transits(*args, **kwargs)
 
   # @_update_plot
   # def set_timespan(self, *args, **kwargs):
@@ -176,7 +183,7 @@ class Obsrv(ocalc.ObsCalc):
   def _plot_transits(self, ax, **kwargs):
     x = self.transits-self.jd0
     y = self.transit_hours
-    hlen = self.transit_length/2
+    hlen = self.transit_info['length']/2
 
     ax.errorbar(x, y, yerr=hlen, fmt='o', color="w")
     ax.errorbar(x, y-24, yerr=hlen, fmt='o', color="w")
@@ -286,13 +293,13 @@ class Obsrv(ocalc.ObsCalc):
     self.params['current_transit'] = str(datetime).replace(' ', '_')
     self.params['current_moon_distance'],self.params['current_moon_phase'] = self._moon_distance(datetime)
     ax.set_ylabel('Elevation')
-    ax.set_xlabel('UT time. Moon distance and phase: %s${^\degree}$ %s%%' %
+    ax.set_xlabel('UT time. Moon distance and phase: %s${^\degree}$ %.0f%%' %
                   (int(self.params["current_moon_distance"].degree),
-                   (self.params["current_moon_phase"])))
+                   float(self.params["current_moon_phase"])))
 
     if hasattr(self, 'transits'):
-      intr = (jd-self.jd0+self.days[0]-etout)*24 - self.transit_length/2
-      outr = (jd-self.jd0+self.days[0]-etout)*24 + self.transit_length/2
+      intr = (jd-self.jd0+self.days[0]-etout)*24 - self.transit_info['length']/2
+      outr = (jd-self.jd0+self.days[0]-etout)*24 + self.transit_info['length']/2
       if intr>outr:
         outr+=24
       facecolor = '0.5'
