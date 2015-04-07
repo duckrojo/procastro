@@ -182,6 +182,9 @@ class AstroCalib(object):
                         (int, float, sp.ndarray)):
             self.mbias[-1] =  mbias
         elif isinstance(mbias,
+                        dp.AstroFile):
+            self.mbias[-1] = mbias.reader()
+        elif isinstance(mbias,
                         cm.Combine):
             self.mbias[-1] = mbias.data
         else:
@@ -192,6 +195,9 @@ class AstroCalib(object):
         if isinstance(mflat, dict):
             for k in mflat.keys():
                 self.mflat[k] = mflat[k]
+        elif isinstance(mflat,
+                        dp.AstroFile):
+            self.mflat[''] = mflat.reader()
         elif isinstance(mflat, 
                         (int, float, sp.ndarray)):
             self.mflat[''] = mflat

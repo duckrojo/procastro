@@ -23,6 +23,7 @@ from __future__ import print_function, division
 from functools import wraps as _wraps
 import warnings
 import dataproc.combine as cm
+import dataproc as dp
 
 
 def _numerize_other(method):
@@ -255,6 +256,9 @@ class AstroFile(object):
                 return k
         return None
 
+    def plot(self, *args, **kwargs):
+        return dp.plot_accross(self.reader(), *args, **kwargs)
+
     def imshowz(self, *args, **kwargs):
         return dp.imshowz(self.reader(), *args, **kwargs)
 
@@ -411,7 +415,7 @@ class AstroFile(object):
         data = self._reads[tp](self.filename, *args, **kwargs)
 
         if not hasattr(self, 'calib'):
-            self.calib = AstroCalib()
+            self.calib = dp.AstroCalib()
 
         if ('hdu' in kwargs and kwargs['hdu']<0) or ('rawdata' in kwargs and kwargs['rawdata']):
             return data

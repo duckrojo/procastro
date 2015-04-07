@@ -21,12 +21,15 @@
 from __future__ import division, print_function
 
 import astropy.constants as apc
+import astropy.coordinates as apcoo
 import astropy.units as apu
 import scipy as sp
 import glob
 import os.path as path
 import scipy.interpolate as it
 import dataproc as dp
+import astropy as ap
+import astroquery.simbad as aqs
 
 
 def blackbody(T, x, unit=None):
@@ -74,7 +77,7 @@ def getfilter(name,
               force_positive=True,
               force_increasing=True,
               ):
-    """Apply filter to spectra. It can be given or blackbody
+    """get filter transmission
  
     :param name: filter name
     :param filter_unit: default filter unit that should be in files.  It should be an astropy quantity. Default is nanometers. Can be specified in file as first line with comment 'unit:'
@@ -228,3 +231,62 @@ def filterconversion(target_filter, temp,
 
 def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
     return tstar*sp.sqrt((rstar*apc.R_sun/au/apc.au) * sp.sqrt(1-albedo)/2.0)
+
+
+
+def apply_pm(name,
+             target_epoch=None,
+             proper_motion=None,
+             ):
+    """Propagate proper motion to specified epoch
+
+    :param name: RA/DEC specification or queryable from simbad
+    :param target_epoch: Target epoch for correction of proper motion. If None use today
+    :param proper_motion: [dra,ddec] proper motion. If None, tries to query simbad
+"""
+
+def read_coordinates(target, coo_file=None, return_pm=False, equinox=2000):
+
+    custom_simbad = aqs.Simbad()
+    custom_simbad.add_votable_fields('propermotions')
+
+    try:
+        radec = apcoo.ICRS('%s' % target, unit=(apu.hour, apu.degree),
+                         equinox = equinox)
+    except ValueError:
+        found_in_file=False
+        try:
+            open_file = open(coo_file)
+        except TypeError:
+            open_file=False
+        if open_file:
+            for line in open(coo_file).readlines():
+                name, ra, dec, note = line.split(None, 4)
+                if target.lower() == name.lower():
+                    print("Found in coordinate file: %s" %(coo_file,))
+                    found_in_file = True
+                    break
+
+        if not found_in_file:
+            print(" '%s' not understood as coordinates, attempting query as name... " %
+                  (target,), end='')
+            query = custom_simbad.query_object(target)
+            if query is None:
+                #todo: make a nicer planet filtering option
+                if target[-2:]==' b':
+                    query = custom_simbad.query_object(target[:-2])
+                else:
+                    raise ValueError("Target '%s' not found on Simbad" % (target,))
+            ra, dec = query['RA'][0], query['DEC'][0]
+            pmra, pmdec = query['PMRA'][0], query['PMDEC'][0]
+        radec = apcoo.ICRS('%s %s' % (ra, dec), 
+                           unit=(apu.hour, apu.degree), 
+                           equinox = equinox)
+        print("success! (%s)" % (radec,))
+
+    if return_pm:
+        return radec, pmra, pmdec
+    return radec
+
+
+
