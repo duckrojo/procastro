@@ -30,6 +30,93 @@ import matplotlib.dates as md
 import pyfits as pf
 import scipy as sp
 
+def plot_accross(data,
+                 axes=None, title=None,
+                 ytitle=None, xtitle=None,
+                 xlim=None, ylim=None,
+                 ticks=True, colorbar=False,
+                 hdu=0, 
+                 rotate=0,
+                 pos=0,
+                 forcenew=False,
+                 **kwargs):
+    print(ylim)
+
+    data = prep_data_plot(data, hdu)
+
+    slc = slice(None, None)
+    dt = data
+    if not isinstance(pos, (list, tuple)):
+        pos = [None] + [0]*(len(data.shape)-2) + [pos] 
+    if len(pos) != len(data.shape):
+        raise TypeError("pos (size: %i) must have the same size as data array dimension (%i)" % (len(pos), len(data.shape)))
+    pos = tuple([p is None and slice(None, None) or p for p in pos])
+
+    print(pos)
+
+    accross = data[pos]
+
+    fig, ax = prep_canvas(axes, title, xtitle, ytitle)
+
+    if xlim is not  None:
+        ax.set_xlim(xlim)
+    if ylim is not None:
+        ax.set_ylim(ylim)
+
+    ax.plot(accross, label="ll")
+
+    return accross, data
+
+
+def prep_data_plot(indata, hdu=0):
+    #set the data to plot
+    if isinstance(indata, pf.hdu.base._BaseHDU):
+        data = indata.data
+        error_msg = ""
+    elif isinstance(indata, dp.AstroFile):
+        error_msg = "HDU %i empty?\n available: %s" % (indata.reader(hdu=-1),)
+        data = indata.reader(hdu)
+    elif isinstance(indata, cm.Combine):
+        error_msg = ""
+        data = indata.data
+    elif isinstance(indata, pf.HDUList):
+        error_msg = "HDU %i empty?\n available: %s" % (indata,)
+        data = indata[hdu].data
+    elif isinstance(indata, basestring):
+        open_file  = pf.open(indata)
+        data = open_file[hdu].data
+        error_msg = "HDU %i empty?\n available: %s" % (open_file,)
+    elif isinstance(indata, sp.ndarray):
+        data = indata
+    else:
+        raise TypeError("Unrecognized type for input data: %s" % (indata.__class__,))
+    if data is None:
+        raise ValueError("Nothing to print. %s" % (hdu, error_msg))
+
+    return data
+
+
+
+def prep_canvas(axes=None, title=None,
+                ytitle=None, xtitle=None,
+                forcenew=False,
+                ):
+
+
+    #set the canvas
+    fig, ax = axesfig(axes, forcenew)
+
+    if title is not None:
+        ax.set_title(title)
+    if ytitle is not None:
+        ax.set_ylabel(ytitle)
+    if xtitle is not None:
+        ax.set_xlabel(xtitle)
+
+    return fig, ax
+
+
+
 def imshowz(data, 
             axes=None, title=None,
             ytitle=None, xtitle=None,
@@ -71,27 +158,14 @@ def imshowz(data,
 :type plot_rad: integer
 :param kwargs: passed to matplotlib.pyplot.imshow()
 """
+    data = prep_data_plot(data, hdu)
 
-    #set the data to plot
-    d = dp.AstroFile('aa.fits')
-    if isinstance(data, pf.hdu.base._BaseHDU):
-        data = data.data
-        avail = ""
-    elif isinstance(data, dp.AstroFile):
-        avail = "available: %s" % (data.reader(hdu=-1),)
-        data = data.reader(hdu)
-    elif isinstance(data, cm.Combine):
-        avail = ""
-        data = data.data
-    elif isinstance(data, pf.HDUList):
-        avail = "available: %s" % (data,)
-        data = data[hdu].data
-    elif isinstance(data, basestring):
-        open_file  = pf.open(data)
-        data = open_file[hdu].data
-        avail = "available: %s" % (open_file,)
-    if data is None:
-        raise ValueError("Nothing to print. HDU %i empty?\n %s" % (hdu, avail))
+
+    if xlim is  None:
+        xlim = [0,data.shape[1]]
+    if ylim is None:
+        ylim = [0,data.shape[0]]
+
 
     if rotate:
         times = rotate/90
@@ -104,11 +178,6 @@ def imshowz(data,
 
     if inverty:
         data = data[::-1,:]
-
-    if xlim is  None:
-        xlim = [0,data.shape[1]]
-    if ylim is None:
-        ylim = [0,data.shape[0]]
 
     if cxy is not None:
         border_distance = [data.shape[1]-cxy[0], cxy[0], data.shape[0]-cxy[1], cxy[1]]
@@ -132,17 +201,9 @@ def imshowz(data,
     else:
         mn,mx = minmax
 
-
-    #set the canvas
-    fig, ax = axesfig(axes, forcenew)
+    fig, ax = prep_canvas(axes, title, ytitle, xtitle)
 
     #draw in the canvas
-    if title is not None:
-        ax.set_title(title)
-    if ytitle is not None:
-        ax.set_ylabel(ytitle)
-    if xtitle is not None:
-        ax.set_xlabel(xtitle)
     imag = ax.imshow(data, vmin=mn, vmax=mx, origin=origin, **kwargs)
     if not ticks:
         ax.xaxis.set_ticklabels([' ']*20)
