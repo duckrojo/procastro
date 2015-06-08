@@ -1,13 +1,16 @@
 __author__ = 'fran'
 
-from observer.Observer import Observable, Observer
+from observer.Observable import Observable
+from observer.Observer import Observer
 import dataproc as dp
+import matplotlib.pyplot as plt
 
-class sharedObject(Observable):
-    """Implement Observer pattern. A sharedObject is an Observable."""
+
+class Subject(Observable):
+    """Implement Observer pattern. A Subject is an Observable with data and elements to share."""
 
     def __init__(self, data, elements):
-        """Initialize sharedObject (Observable).
+        """Initialize Subject (Observable).
 
         Data corresponds to the actual observed data. It can be an Astrofile, Scipy array,
         or anything really. Initialize as default Observable, added data, elements and open
@@ -17,18 +20,12 @@ class sharedObject(Observable):
         :param elements: dictionary with elements the Observable is willing to show.
         :return: None
         """
-        """ Ojo: data puede ser un Astrofile o un Scipy array,
-            por eso no especifico por separado el header + data.
-            ELEMENTS son los elementos que el observable esta
-            "dispuesto" a compartir; si un Eye quiere ver algo que
-            el Observable no permite, no puede hacerlo.
-        """
         Observable.__init__(self)
         self.data = data
-        self.shared = elements  # Elementos que permite compartir
-        self.isOpen = 0  # Se inicializa "cerrado"
+        self.shared = elements  # Elements the Subject allows Observers to see
+        self.isOpen = 0  # Subject is initialized as 'closed'
 
-    def open(self):  # Abre "conexion"
+    def open(self):  # Makes Subject seen to Observers
         """Open Observable to be observed.
             :return: None"""
         if self.isOpen != 1:
@@ -37,7 +34,7 @@ class sharedObject(Observable):
         else:
             raise Exception('Observable is already open. Can\'t  be opened again!')
 
-    def close(self): # Cierra conexion
+    def close(self):  # Makes Subject unseen to Observers
         """Closes Observable to Observers.
             :return: None"""
         if self.isOpen != 0:
@@ -46,45 +43,32 @@ class sharedObject(Observable):
         else:
             raise Exception('Observable is already closed. Can\'t  be closed again!')
 
-    def changeData(self, label, newdata):  # Cambia los datos
-        """Changes data on Observable.
+    def set_data(self, new_data):
+        """Changes data of Subject. This will be applied when a mathematical change,
+            filter, addition, etc is carried over the Observable image (Subject data).
+            :param new_data: new data value.
+            :return: None"""
+        self.data = new_data
+        print('Observable data has changed.')
 
-        :param label: label or name of data value to be changed.
-        :param newdata: new data value.
-        :return: None"""
-        print("Observable data has changed.")
-        print("Old data: " + str(self.shared))
-        self.shared[label] = newdata
-        print("New data: " + str(self.shared))
-        # Solo si esta abierto, aviso a Observers
+        # Only if the Observable is open, will the Observers be notified of the data change
         if self.isOpen == 1:
-            try:
-                self.shared[label] = newdata
-                self.notifyObservers(label, newdata)
-            except ValueError:
-                print('Data not changed. Error received when notifying Observers.')
+            self.notify_observers('data', new_data)
         else:
-            print('Observable is closed, Observers not notified of change!')
+            print('Observable is closed. Observers not be notified of data change.')
 
-    def notifyObservers(self, label, value):
-        """Notify all Observes of change.
-
-        :param label: label or name of data value changed.
-        :param value: new value for changed data.
-        :return: None"""
+    def get_data(self):
+        """ Returns current data state of the Subject.
+            :return: self.data
+        """
         if self.isOpen == 1:
-            print("Notification sent to Observers.")
-            self.setChanged()  # Esto es para los mutex
-            try:
-                Observable.notifyObservers(self, label, value)
-            except ValueError:
-                print('Observers couldn\'t be notified of changes.')
+                return self.data
 
 
 class Eye(Observer):
-    """Implement Observer pattern. A Eye is an Observer."""
+    """Implement Observer pattern. An Eye is an Observer."""
 
-    def __init__(self, name, shared, elements):
+    def __init__(self, obj, name, shared, elements):
         """ Initialize Eye (Observer). Import default and user-defined methods.
 
         :param name: String. Label or name of current Eye.
@@ -93,6 +77,10 @@ class Eye(Observer):
         :param commandsfile:
         :return: None
         """
+        Observer.__init__(self)
+        self.name = name
+        self.elements = elements
+        self.obj = obj
         self.shared = shared
         self.seen = {}
         self.default = __import__('defaultfuncs', globals(), locals(), [], -1)
@@ -102,15 +90,19 @@ class Eye(Observer):
         try:
             for key, value in shared.iteritems():
                 if key in elements:
-                    self.seen[key] = [value, 1]
+                    self.seen[key] = [value, 1]  # Seen
                 else:
-                    self.seen[key] = [value, 0]
+                    self.seen[key] = [value, 0]  # Not seen
             #print self.seen
             # Para tomar los eventos definidos por el usuario
             self.events = self.setEvents(self.default, self.user)
             Observer.__init__(self, name, self.seen)
         except ValueError:
             print('Not possible to initialize Observer. Check shared elements.')
+
+    def update(self):
+        print("update")
+
 
     # Para empezar a "ver" nuevos parametros
     def see(self, new):
@@ -190,6 +182,28 @@ class Eye(Observer):
             for e in self.events:
                 if e[:l] == ini:
                     print(e)
+
+    def updateEye(self, data=False):
+        print('in update')
+        #if data == False:
+        #    self.obj.canvas.draw()
+        #else:
+        #print(data)
+        self.obj.set_data(data)
+        plt.draw()
+
+    def changeView(self, changes):
+        try:
+            for key, value in changes.iteritems():
+                if self.seen[key][1] == 1:
+                    self.obj.set(key=value)
+                else:
+                    raise ValueError('Value to be changed not seen by Observer')
+            self.updateEye()
+        except ValueError:
+            print('Not possible to change Observer. Check items and values.')
+
+
 
 
 # Diccionarios con elementos a compartir

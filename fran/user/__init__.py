@@ -17,7 +17,7 @@ import subprocess as sp
 import types
 
 path = os.getcwd()
-l = sp.check_output('ls ' + path + '/fran/user', shell=True)
+l = sp.check_output('ls ' + path + '/user', shell=True)
 modules = [d[:-3] for d in (l.split('\n'))[:-1] if d[-4:] != '.pyc']
 modules.remove('__init__')
 

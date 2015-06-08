@@ -1,6 +1,6 @@
 __author__ = 'fran'
 
-import sharedObject as so
+import subject as so
 from clint.textui import prompt, validators, colored, indent, puts
 
 
@@ -8,13 +8,13 @@ def main():
     #print('Welcome to ADO')
 
     # Create a sharedObject -- whatever it's going to be
-    obj = so.sharedObject(None, None)  # TODO poder inicializar sharedObject vacio
+    obj = so.Subject(None, None)  # TODO poder inicializar sharedObject vacio
     eye = so.Eye(None, {}, [])
     #eye.listMethods()
     #toopen = prompt.query('Installation Path', default='/usr/local/bin/', validators=[validators.PathValidator()])
 
     with indent(1, quote=colored.red('> ')):
-        puts('Welcome to ADONYS! Astronomy Data Observer aNd analYSis')
+        puts('Welcome!')
         puts('Please enter usage path')
 
     toopen = prompt.query('Path', default='/usr/local/bin/', validators=[validators.PathValidator()])
