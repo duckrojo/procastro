@@ -46,7 +46,7 @@ def _combine_first(method):
 
 
 def _normalize(method):
-    """Decorator to noramlize the return"""
+    """Decorator to normalize the return"""
     import scipy as sp
     @_wraps(method)
     def donorm(instance, *args, **kwargs):

@@ -31,39 +31,35 @@ class MyPopup(QWidget):
 
 class AppForm(QMainWindow):
     def __init__(self, parent=None):
-        QMainWindow.__init__(self, parent) # Esta bien, QMainWindow NO debe ser Observer, es la ventana general
-        # Estas cosas de Observable y Observer yo creo que no van aqui
-        self.data, min, max = self.load_data()
-        self.observable = so.Subject(self.data, {'min': min, 'max': max})
-        #self.observer = so.Eye('zoomwindow', {'min': min, 'max': max}, ['min', 'max'])
+        QMainWindow.__init__(self, parent)
+        self.data, self.min, self.max = self.load_data()
+        self.observable = so.Subject(self.data)
         self.observable.open()
-        # Inicializa la ventana
-        self.create_main_frame()
-        self.popups = []
+        self.create_main_frame()  # Starts the main (Observable) window
+        self.popups = []  # New windows for Observers will be kept here
+        self.observer_main = []
 
     def create_main_frame(self):
-        self.observableWindow = QWidget()
+        self.observable_window = QWidget()
 
-        self.observableFig = Figure((4.0, 4.0), dpi=100)
-        self.canvas = FigureCanvas(self.observableFig)
-        self.canvas.setParent(self.observableWindow)
+        self.observable_fig = Figure((4.0, 4.0), dpi=100)
+        self.canvas = FigureCanvas(self.observable_fig)
+        self.canvas.setParent(self.observable_window)
         self.canvas.setFocusPolicy(Qt.StrongFocus)
         self.canvas.setFocus()
 
         self.canvas.mpl_connect('button_press_event', self.on_click)
 
         # Showing initial data on Observable Window
-        self.observableFig.clear()
-        self.observableAxes = self.observableFig.add_subplot(1, 1, 1)
-        min, max = self.observable.get_data('min'), self.observable.get_data('max')
-        self.observableAxes.imshow(self.data, vmin=min, vmax=max, origin='lower')
+        self.observable_fig.clear()
+        self.observable_axes = self.observable_fig.add_subplot(1, 1, 1)
+        min, max = self.min, self.max
+        self.observable_main = self.observable_axes.imshow(self.data, vmin=min, vmax=max, origin='lower')
 
         # Buttons for Observable Window
         hbox = QHBoxLayout()
         self.create_button = QPushButton("&Create Observer")
-        #self.connect(self.draw_button, SIGNAL('clicked()'), self.on_create)
-        observerCount = 0
-        self.create_button.clicked.connect(lambda: self.on_create(observerCount))
+        self.create_button.clicked.connect(lambda: self.on_create(len(self.observable.observers)))
         self.scale_button = QPushButton("&Change scale")
         self.connect(self.scale_button, SIGNAL('clicked()'), self.on_scale)
         hbox.addWidget(self.create_button)
@@ -77,13 +73,13 @@ class AppForm(QMainWindow):
         vbox = QVBoxLayout()
         vbox.addWidget(self.canvas)  # the matplotlib canvas
         # Barra de herramientas de mpl
-        self.mpl_toolbar = NavigationToolbar(self.canvas, self.observableWindow)
+        self.mpl_toolbar = NavigationToolbar(self.canvas, self.observable_window)
         vbox.addWidget(self.mpl_toolbar)
 
         vbox.addLayout(hbox)
 
-        self.observableWindow.setLayout(vbox)
-        self.setCentralWidget(self.observableWindow)
+        self.observable_window.setLayout(vbox)
+        self.setCentralWidget(self.observable_window)
 
     def load_data(self):
         tfits = pf.getdata('test.fits')
@@ -92,18 +88,22 @@ class AppForm(QMainWindow):
         return tfits, min, max
 
     def on_create(self, i):
-        global observerCount
         self.popups.append(MyPopup())
-        print(self.popups, len(self.popups), i)
-        self.observerFig = Figure((4.0, 4.0), dpi=100)
-        self.canvas = FigureCanvas(self.observerFig)
-        self.canvas.setParent(self.popups[i])
+        observer_fig = Figure((4.0, 4.0), dpi=100)
+        observer_canvas = FigureCanvas(observer_fig)
+        observer_canvas.setParent(self.popups[i])
 
-        self.observerAxes = self.observerFig.add_subplot(1, 1, 1)
-        min, max = self.observable.get_data('min'), self.observable.get_data('max')
-        self.observerAxes.imshow(self.data, vmin=min, vmax=max, origin='lower')
-        self.observer = so.Eye(self.observerFig, 'Observer 1', {'min': min, 'max': max}, ['min', 'max'])
-        self.observable.add_observer(self.observer)
+        observer_axes = observer_fig.add_subplot(1, 1, 1)
+        min, max = self.min, self.max
+        self.observer_main.append(observer_axes.imshow(self.data, vmin=min, vmax=max, origin='lower'))
+        new_observer = so.Eye(observer_fig, 'Observer ' + str(i), {'min': min, 'max': max}, ['min', 'max'])
+        self.observable.add_observer(new_observer)
+
+        mpl_toolbar = NavigationToolbar(observer_canvas, self.popups[i])
+        vbox = QVBoxLayout()
+        vbox.addWidget(observer_canvas)
+        vbox.addWidget(mpl_toolbar)
+        self.popups[i].setLayout(vbox)
 
         self.popups[i].show()
 
@@ -134,16 +134,14 @@ class AppForm(QMainWindow):
         self.observer.update()
 
     def on_filter(self):
-        # Esto esta bien, el cambio de data debe hacerse aca y avisarse a los Eyes
-        self.observable.set_data('data', self.data/2)
-        # Esto esta mal, el redraw deberia hacerse en un llamado a alguna funcion de Eye
-        #min, max = self.observable.get_data('min'), self.observable.get_data('max')
-        #self.axes.imshow(self.observable.get_data('data'), vmin=min, vmax=max, origin='lower')
-        #self.axes2.imshow(self.observable.get_data('data'), vmin=min, vmax=max, origin='lower')
-        #self.canvas.draw()
+        self.observable.set_data(self.data/2)
+        new_data = self.observable.get_data()
+        self.observable_main.set_data(new_data)
+        self.observable_fig.canvas.draw()
 
-        # Ya no es necesario llamar al update, se hace solo en observable.set_data
-        #self.observer.update()
+        for i in range(len(self.observable.observers)):
+            self.observer_main[i].set_data(new_data)
+            self.observable.observers[i].obj.canvas.draw()
 
     def on_click(self, event):
         #print('x=%d, y=%d, xdata=%f, ydata=%f' % (event.x, event.y, event.xdata, event.ydata))

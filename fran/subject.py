@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 class Subject(Observable):
     """Implement Observer pattern. A Subject is an Observable with data and elements to share."""
 
-    def __init__(self, data, elements):
+    def __init__(self, data):
         """Initialize Subject (Observable).
 
         Data corresponds to the actual observed data. It can be an Astrofile, Scipy array,
@@ -17,12 +17,10 @@ class Subject(Observable):
         status.
 
         :param data: actual observed data.
-        :param elements: dictionary with elements the Observable is willing to show.
         :return: None
         """
         Observable.__init__(self)
         self.data = data
-        self.shared = elements  # Elements the Subject allows Observers to see
         self.isOpen = 0  # Subject is initialized as 'closed'
 
     def open(self):  # Makes Subject seen to Observers
@@ -54,6 +52,8 @@ class Subject(Observable):
         # Only if the Observable is open, will the Observers be notified of the data change
         if self.isOpen == 1:
             self.notify_observers('data', new_data)
+            #for observer in self.observers:
+            #    print(observer)
         else:
             print('Observable is closed. Observers not be notified of data change.')
 
@@ -95,7 +95,7 @@ class Eye(Observer):
                     self.seen[key] = [value, 0]  # Not seen
             #print self.seen
             # Para tomar los eventos definidos por el usuario
-            self.events = self.setEvents(self.default, self.user)
+            self.events = self.set_events(self.default, self.user)
             Observer.__init__(self, name, self.seen)
         except ValueError:
             print('Not possible to initialize Observer. Check shared elements.')
@@ -104,11 +104,12 @@ class Eye(Observer):
         print("update")
 
 
+    # TODO no se si esto sea necesario
     # Para empezar a "ver" nuevos parametros
     def see(self, new):
         """Add new elements to be seen by the Observer.
 
-        A value of 1 on an element meens it's being seen by the Observer. A value of 0
+        A value of 1 on an element means it's being seen by the Observer. A value of 0
         means the Observer won't be attending to changes on that element.
 
         :param new: String. Label or name of new element to be seen.
@@ -129,10 +130,10 @@ class Eye(Observer):
             try:
                 self.seen[n][1] = 0
             except ValueError:
-                print(str(n) + ' cannot be unseen. Possibly not being seen already.')
+                print(str(n) + ' cannot be unseen. Possibly not being seen yet.')
 
     # Para listar los metodos/funciones que se pueden usar
-    def setEvents(self, default, user):
+    def set_events(self, default, user):
         """Get events from default and user-defined packages and add
             them to list of available events to execute.
             :return: List of events (String of each event name).
@@ -183,14 +184,14 @@ class Eye(Observer):
                 if e[:l] == ini:
                     print(e)
 
-    def updateEye(self, data=False):
+    """def updateEye(self, data=False):
         print('in update')
         #if data == False:
         #    self.obj.canvas.draw()
         #else:
         #print(data)
         self.obj.set_data(data)
-        plt.draw()
+        plt.draw()"""
 
     def changeView(self, changes):
         try:
