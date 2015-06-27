@@ -256,7 +256,40 @@ class AstroFile(object):
                 return k
         return None
 
+
+    def spplot(self,
+               axes=None, title=None, xtitle=None, ytitle=None,
+               *args, **kwargs):
+        fig, ax = dp.prep_canvas(axes, title, xtitle, ytitle)
+        
+        data = self.reader()
+        dim = len(data.shape)
+
+        if dim==2:
+            if data.shape[0]<data.shape[1]:
+                wav=data[0,:]
+                flx=data[1,:]
+            else:
+                wav=data[:,0]
+                flx=data[:,1]
+        elif dim==1:
+            raise NotImplemented("Needs to add reading of wavelength from headers")
+        else:
+            raise NotImplemented("Spectra not understood")
+
+        ax.plot(wav,flx)
+
+
     def plot(self, *args, **kwargs):
+        """ Calls plot_accross(data, axes=None, title=None,
+                 ytitle=None, xtitle=None, xlim=None, ylim=None,
+                 ticks=True, colorbar=False, hdu=0, rotate=0,
+                 pos=0, forcenew=False, **kwargs)
+
+                 
+
+                 """
+
         return dp.plot_accross(self.reader(), *args, **kwargs)
 
     def imshowz(self, *args, **kwargs):
