@@ -247,13 +247,14 @@ class ObsCalc(object):
                               radec.dec.to_string(sep=':'), 
                               magn, radec.equinox))
 
-    transit_filename_locations = [os.path.dirname(__file__)+'/transits.txt',
-                                  os.path.expanduser("~")+'/.transits']
+    transit_filename_locations = [os.path.expanduser("~")+'/.transits',
+                                  os.path.dirname(__file__)+'/transits.txt',]
 
     for transit_filename in transit_filename_locations:
       try:
         open_file = open(transit_filename)
 
+        override = []
         for line in open_file.readlines():
 
 
@@ -261,7 +262,7 @@ class ObsCalc(object):
             continue
           data = line[:-1].split()
           planet = data.pop(0).replace('_', ' ')
-          override = []
+
           if planet.lower() == target.lower():
             for d in data:
               if d[0].lower()=='p':
@@ -277,7 +278,12 @@ class ObsCalc(object):
                 override.append("comment")
               else:
                 raise ValueError("data field not understood, it must start with L, P, C, or E:\n%s" % (line,))
-            print ("Overriding from file: %s" %(', '.join(override),))
+            print ("Overriding for '%s' from file '%s':\n %s" % (planet, 
+                                                                 transit_filename,
+                                                                 ', '.join(override),))
+
+        if len(override):
+          break
 
       except IOError:
         pass
@@ -301,6 +307,8 @@ class ObsCalc(object):
       self.transit_info = {'length': tr_length,
                            'epoch' : tr_epoch,
                            'period': tr_period}
+    else:
+      self.set_transits(tr_period=0)
 
     return self
 

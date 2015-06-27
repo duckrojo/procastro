@@ -284,7 +284,7 @@ class Obsrv(ocalc.ObsCalc):
     ax.set_ylim([10,90])
     ax.set_xlim([(ss-etout)*24-0.5,(sr-etout)*24+0.5])
     datetime = ephem.date(jd-self.jd0+self.days[0])
-    print(str(datetime)[:-3])
+    print("%s %s" % (str(datetime)[:-3], jd))
     ax.set_title('%s' % str(datetime)[:-3])
     ax.set_ylim(ax.get_ylim())
     sam = sp.array([1,1.5,2,3,4,5])
