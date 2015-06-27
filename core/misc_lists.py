@@ -19,6 +19,7 @@
 #
 
 import scipy as sp
+import operator as op
 
 def sortmanynsp(*arr):
     """Sort many lists following the order of the first. Returns a tuple of sorted np.ndarray"""
@@ -28,7 +29,7 @@ def sortmanynsp(*arr):
 def sortmany(*arr):
     """Sort many lists following the order of the first."""
     tups = zip(*arr)
-    tups.sort()
+    tups.sort(key=op.itemgetter(0))
     pret = zip(*tups)
     return pret
 

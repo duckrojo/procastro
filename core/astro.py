@@ -29,7 +29,12 @@ import os.path as path
 import scipy.interpolate as it
 import dataproc as dp
 import astropy as ap
-import astroquery.simbad as aqs
+import imp
+
+try:
+    import astroquery.simbad as aqs
+except ImportError:
+    aqs = None
 
 
 def blackbody(T, x, unit=None):
@@ -238,14 +243,19 @@ def apply_pm(name,
              target_epoch=None,
              proper_motion=None,
              ):
-    """Propagate proper motion to specified epoch
+    """Propagate proper motion to specified epoch.  
 
     :param name: RA/DEC specification or queryable from simbad
     :param target_epoch: Target epoch for correction of proper motion. If None use today
     :param proper_motion: [dra,ddec] proper motion. If None, tries to query simbad
 """
+    pass
 
 def read_coordinates(target, coo_file=None, return_pm=False, equinox=2000):
+    """When RA is obtained from coo_file then it can have prepended a 'd' to indicate a degree specificateion instead of hour"""
+
+    if aqs is None:
+        raise ValueError("Sorry, AstroQuery not available for coordinate querying")
 
     custom_simbad = aqs.Simbad()
     custom_simbad.add_votable_fields('propermotions')
@@ -262,7 +272,9 @@ def read_coordinates(target, coo_file=None, return_pm=False, equinox=2000):
         if open_file:
             for line in open(coo_file).readlines():
                 name, ra, dec, note = line.split(None, 4)
-                if target.lower() == name.lower():
+                if ra[-1] == 'd':
+                    ra = "%f" % (float(ra[:-1])/15,)
+                if target.lower() == name.replace('_',' ').lower():
                     print("Found in coordinate file: %s" %(coo_file,))
                     found_in_file = True
                     break

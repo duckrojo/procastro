@@ -44,7 +44,6 @@ def plot_accross(data,
 
     data = prep_data_plot(data, hdu)
 
-    slc = slice(None, None)
     dt = data
     if not isinstance(pos, (list, tuple)):
         pos = [None] + [0]*(len(data.shape)-2) + [pos] 
@@ -74,18 +73,18 @@ def prep_data_plot(indata, hdu=0):
         data = indata.data
         error_msg = ""
     elif isinstance(indata, dp.AstroFile):
-        error_msg = "HDU %i empty?\n available: %s" % (indata.reader(hdu=-1),)
+        error_msg = "HDU %i empty?\n available: %s" % (hdu, indata.reader(hdu=-1),)
         data = indata.reader(hdu)
     elif isinstance(indata, cm.Combine):
         error_msg = ""
         data = indata.data
     elif isinstance(indata, pf.HDUList):
-        error_msg = "HDU %i empty?\n available: %s" % (indata,)
+        error_msg = "HDU %i empty?\n available: %s" % (hdu, indata,)
         data = indata[hdu].data
     elif isinstance(indata, basestring):
         open_file  = pf.open(indata)
         data = open_file[hdu].data
-        error_msg = "HDU %i empty?\n available: %s" % (open_file,)
+        error_msg = "HDU %i empty?\n available: %s" % (hdu, open_file,)
     elif isinstance(indata, sp.ndarray):
         data = indata
     else:
@@ -243,7 +242,7 @@ def axesfig_xdate(axes, x, overwrite=False):
     return f,ax,x
 
 
-def axesfig(axes=None, forcenew=True, overwrite=False):
+def figaxes(axes=None, forcenew=True, overwrite=False):
     """Function that accepts a variety of canvas formats and returns the output ready for use with matplotlib 
     :param axes:
     :type axes: int, plt.Figure, plt.Axes
@@ -255,6 +254,7 @@ def axesfig(axes=None, forcenew=True, overwrite=False):
         if forcenew:
             fig, ax = plt.subplots()
         else:
+            plt.gcf().clf()
             fig, ax = plt.subplots(num=plt.gcf().number)
     elif isinstance(axes, int):
         fig, ax = plt.subplots(num=axes)
