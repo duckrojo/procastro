@@ -235,8 +235,9 @@ class ObsCalc(object):
       del self.params['current_transit']
 
     radec = dp.read_coordinates(target, 
-                                  coo_file = os.path.dirname(__file__)+'/coo.txt',
-                                  equinox=self.params["equinox"])
+                                coo_files = [os.path.dirname(__file__)+'/coo.txt',
+                                             os.path.expanduser("~")+ '/.coostars'],
+                                equinox=self.params["equinox"])
 
 
     print("Star at RA/DEC: %s/%s" %(radec.ra.to_string(sep=':'),

@@ -251,8 +251,14 @@ def apply_pm(name,
 """
     pass
 
-def read_coordinates(target, coo_file=None, return_pm=False, equinox=2000):
-    """When RA is obtained from coo_file then it can have prepended a 'd' to indicate a degree specificateion instead of hour"""
+
+
+
+def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
+    """When RA is obtained from coo_files then it can have prepended a 'd' to indicate a degree specificateion instead of hour
+
+:param coo_files: it can be a list or a single file from which to take coordinates
+"""
 
     if aqs is None:
         raise ValueError("Sorry, AstroQuery not available for coordinate querying")
@@ -265,21 +271,36 @@ def read_coordinates(target, coo_file=None, return_pm=False, equinox=2000):
                          equinox = equinox)
     except ValueError:
         found_in_file=False
-        try:
-            open_file = open(coo_file)
-        except TypeError:
-            open_file=False
-        if open_file:
-            for line in open(coo_file).readlines():
-                name, ra, dec, note = line.split(None, 4)
-                if ra[-1] == 'd':
-                    ra = "%f" % (float(ra[:-1])/15,)
-                if target.lower() == name.replace('_',' ').lower():
-                    print("Found in coordinate file: %s" %(coo_file,))
-                    found_in_file = True
-                    break
 
-        if not found_in_file:
+
+        if not isinstance(coo_files, (list,tuple)):
+            coo_files = [coo_files]
+
+        for coo_file in coo_files:
+            # try:
+            #     open_file = open(coo_file)
+            # except TypeError:
+            #     open_file=False
+            try:
+                open_file = open(coo_file)
+            except IOError:
+                pass
+            else:
+                with open_file:
+                    for line in open_file.readlines():
+                        name, ra, dec, note = line.split(None, 4)
+                        if ra[-1] == 'd':
+                            ra = "%f" % (float(ra[:-1])/15,)
+                        if target.lower() == name.replace('_',' ').lower():
+                            print("Found in coordinate file: %s" %(coo_file,))
+                            found_in_file = True
+                            break
+                        #this is to break out of two for loops
+                    else:                        
+                        continue
+                    break
+        #if coordinate not in file
+        else:
             print(" '%s' not understood as coordinates, attempting query as name... " %
                   (target,), end='')
             query = custom_simbad.query_object(target)
@@ -287,10 +308,12 @@ def read_coordinates(target, coo_file=None, return_pm=False, equinox=2000):
                 #todo: make a nicer planet filtering option
                 if target[-2:]==' b':
                     query = custom_simbad.query_object(target[:-2])
-                else:
-                    raise ValueError("Target '%s' not found on Simbad" % (target,))
+
+            if query is None:
+                raise ValueError("Target '%s' not found on Simbad" % (target,))
             ra, dec = query['RA'][0], query['DEC'][0]
             pmra, pmdec = query['PMRA'][0], query['PMDEC'][0]
+            
         radec = apcoo.ICRS('%s %s' % (ra, dec), 
                            unit=(apu.hour, apu.degree), 
                            equinox = equinox)

@@ -90,7 +90,7 @@ def prep_data_plot(indata, hdu=0):
     else:
         raise TypeError("Unrecognized type for input data: %s" % (indata.__class__,))
     if data is None:
-        raise ValueError("Nothing to print. %s" % (hdu, error_msg))
+        raise ValueError("Nothing to plot for HDU %i. %s" % (hdu, error_msg))
 
     return data
 
@@ -103,7 +103,7 @@ def prep_canvas(axes=None, title=None,
 
 
     #set the canvas
-    fig, ax = axesfig(axes, forcenew)
+    fig, ax = figaxes(axes, forcenew)
 
     if title is not None:
         ax.set_title(title)
@@ -221,7 +221,7 @@ def imshowz(data,
 def axesfig_xdate(axes, x, overwrite=False):
     """Returns the figure and axes with a properly formatted date X-axis"""
 
-    f,ax = dp.axesfig(axes, overwrite=overwrite)
+    f,ax = dp.figaxes(axes, overwrite=overwrite)
     if isinstance(x, (apt.Time, datetime.datetime)):
         if isinstance(x, apt.Time):
             x = x.plot_date

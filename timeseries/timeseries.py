@@ -484,7 +484,7 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
 
 
         colors = ['rx', 'b^', 'go', 'r^', 'bx', 'g+']
-        fig, ax = dp.axesfig(axes)
+        fig, ax = dp.figaxes(axes)
 
         ax.cla()
         ax.set_xlabel('distance')
@@ -730,14 +730,14 @@ class TimeseriesResults(astroplot.AstroPlot):
                   legend_size=None):
         """Plot the calculated fwhm
         :param axes: multi-choice for axes
-        :type axes: see dp.axesfig()
+        :type axes: see dp.figaxes()
         :param method: Method to compute the fwhm, currently supported: stdev
         :type method: string
         :param label: Target's label or None if plotting both
         :type label: string or None
 """
 
-        f, ax, epoch = dp.axesfig(axes, self.epoch)
+        f, ax, epoch = dp.figaxes(axes, self.epoch)
 
         if label is None:
             label = self.flx.keys()
@@ -774,7 +774,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         :rtype: None (and plot display)
         """
 
-        f, ax = dp.axesfig(axes)
+        f, ax = dp.figaxes(axes)
 
         lines = []
         leg = []
