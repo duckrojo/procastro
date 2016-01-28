@@ -22,7 +22,8 @@
 Data proc docstring
 """
 
-import core, types
+import types
+__import__('core', globals(), locals(), [], 1)
 
 core = reload(core)
 
