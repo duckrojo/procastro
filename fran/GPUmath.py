@@ -1,9 +1,8 @@
-__version__ = "$Revision$"
 __author__ = 'fran'
 
-from functools import wraps as _wraps
-import scipy as sp
+import pyopencl as cl
 import warnings
+import scipy as sp
 
 def _kernel_warning(k):
     message = "Given kernel size is not odd. (kernel_size+1)=" + str(k) + " will be used."

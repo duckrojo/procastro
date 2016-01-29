@@ -82,7 +82,7 @@ class AppForm(QMainWindow):
         self.setCentralWidget(self.observable_window)
 
     def load_data(self):
-        tfits = pf.getdata('test.fits')
+        tfits = pf.getdata('fran/test.fits')
         import core as ma
         min, max = ma.misc_arr.zscale(tfits)
         return tfits, min, max

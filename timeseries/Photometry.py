@@ -34,6 +34,7 @@ import copy
 import scipy as sp
 import dataproc as dp
 import warnings
+import TimeSerie as ts
 
 
 # def plot_apnsky(cxy, apnsky, 
@@ -54,7 +55,7 @@ import warnings
 #     plt.fill_between(xsk1, ysk1, apcolor, alpha=alpha)
 
 
-class TimeSeries(astrocalc.AstroCalc):
+class Photometry(astrocalc.AstroCalc):
 
     """Timeseries class inherited from AstroCalc class.The purpose of this class is to organize all the calculation tasks related to the timeseries analysis.
 
@@ -63,15 +64,15 @@ class TimeSeries(astrocalc.AstroCalc):
     def __init__(
         self,
         data,
-        coordsxy=None,
-        labels=None,
-        maxskip=6,
-        epoch='JD',
-        epoch_format='jd',
-        exptime='EXPTIME',
-        ingain='GTGAIN11',
-        inron='GTRON11',
-        offsetxy=None,
+        coordsxy = None,
+        labels = None,
+        maxskip = 6,
+        epoch = 'JD',
+        epoch_format = 'jd',
+        exptime = 'EXPTIME',
+        ingain = 'GTGAIN11',
+        inron = 'GTRON11',
+        offsetxy = None,
         masterbias = None,
         masterflat = None,
         #            keytype='IMAGETYP',
@@ -101,13 +102,13 @@ class TimeSeries(astrocalc.AstroCalc):
         # data type check
         if isinstance(data, str):  # data is a string (path to a directory)
             self.files = dp.AstroDir(data)
-            if isinstance(epoch,basestring):
+            if isinstance(epoch, basestring):
                 self.files = self.files.sort(epoch)
             self.isAstrodir = True
 
         elif isinstance(data, dp.AstroDir):  # data is an astrodir object
             self.files = data
-            if isinstance(epoch,basestring):
+            if isinstance(epoch, basestring):
                 self.files = self.files.sort(epoch)
             self.isAstrodir = True
 
@@ -118,11 +119,11 @@ class TimeSeries(astrocalc.AstroCalc):
                 if not isinstance(img, sp.ndarray):
                     raise TypeError(
                         'data is a list but not all the elements are ndarray')
-            if isinstance(epoch,(list,tuple,sp.ndarray)):
+            if isinstance(epoch, (list, tuple, sp.ndarray)):
                 self.epoch, self.files = dp.sortmany(epoch, self.files)
             else:
                 warnings.warn("Epochs were not specified and list of data was given")
-            if isinstance(exptime,(list,tuple)):
+            if isinstance(exptime, (list, tuple)):
                 self.exptime = exptime
             else:
                 warnings.warn("Exposure time was not specified and list of data was given")
@@ -182,14 +183,14 @@ class TimeSeries(astrocalc.AstroCalc):
 #             self.masterdark = self.masterimage(dark_files, mode=mastermode)
 #             self.masterflat = self.masterimage(flat_files, mode=mastermode)
 
-        if not hasattr(self,'epoch'):
+        if not hasattr(self, 'epoch'):
             epoch = sp.arange(len(data))
         if not hasattr(self, 'exptime'):
             self.exptime = sp.ones(len(data))
 
         self.epoch = apt.Time(self.epoch, format=epoch_format, scale='utc')
 
-        print (" Data list ready for %i elements" % (len(self.files),))
+        print("Data list ready for %i elements" % (len(self.files),))
 
         # # coordsxy check
         # if coordsxy is None:
@@ -224,10 +225,10 @@ class TimeSeries(astrocalc.AstroCalc):
             raise ValueError("Coordinates of target stars need to be "+
                              "specified as a list of 2 elements, not: %s" %
                              (str(coordsxy),))
-        print (" Initial guess received for %i targets: %s" %
+        print("Initial guess received for %i targets: %s" %
                (len(coordsxy),
-                ", ". join(["%s %s" % (lab,coo) 
-                            for lab,coo in zip(labels,coordsxy)])
+                ", ". join(["%s %s" % (lab, coo)
+                            for lab, coo in zip(labels, coordsxy)])
                 ))
 
         self._shape = self.files[0].shape
@@ -253,11 +254,11 @@ class TimeSeries(astrocalc.AstroCalc):
 
     def perform_phot(self,
                      aperture,
-                     sky=None,
-                     stamprad=25,
-                     sky_store=True,
-                     deg=1,
-                     quiet=False,
+                     sky = None,
+                     stamprad = 25,
+                     sky_store = True,
+                     deg = 1,
+                     quiet = False,
                      ):
         """Perform apperture photometry with the images of the Timeseries object.
 
@@ -281,7 +282,7 @@ class TimeSeries(astrocalc.AstroCalc):
         fwhms = {lab: [] for lab in self.labels}
 
         skydata = []
-        targetsxy = {lab:[coo] for lab, coo in self.targetsxy.items()}
+        targetsxy = {lab: [coo] for lab, coo in self.targetsxy.items()}
         nframes = len(self.files)
 
         for rdata, i in zip(self.files, range(nframes)):
@@ -294,7 +295,7 @@ class TimeSeries(astrocalc.AstroCalc):
                 if isinstance(gain,basestring):
                     gain = rdata.getheaderval(self.gain)[0]
                 if isinstance(ron, basestring):
-                    ron  = rdata.getheaderval(self.ron)[0]
+                    ron = rdata.getheaderval(self.ron)[0]
                 data = rdata.reader()
                 head = rdata.readheader()
             else:
@@ -307,7 +308,7 @@ class TimeSeries(astrocalc.AstroCalc):
 
             for lab, cooxy in targetsxy.items():
                 cx, cy = cooxy[-1]
-                offx=offy=0
+                offx = offy = 0
                 frame_number = len(cooxy)-1
                 if frame_number in self.offsetxy.keys():
                     offx = self.offsetxy[frame_number][0]
@@ -317,12 +318,12 @@ class TimeSeries(astrocalc.AstroCalc):
 
                 scy, scx = dp.subcentroid(data, [cy, cx], stamprad)
                 sarr = dp.subarray(data, [scy, scx], stamprad)
-                relscy, relscx = [stamprad + scy%1, stamprad + scx%1]
+                relscy, relscx = [stamprad + scy % 1, stamprad + scx % 1]
 
                 skip = sp.sqrt((cy - scy) ** 2 +
                                (cx - scx) ** 2)
                 if skip > self.maxskip:
-                    print(("Unexpected jump of %f pixels has occurred on"+
+                    print(("Unexpected jump of %f pixels has occurred on" +
                            " frame %i for star %s") %
                           (skip, i, lab))
 
@@ -379,11 +380,11 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
         """
         self.ts = timeseries
 
-    def imshowz(self, frame=0,
-                apcolor='w', skcolor='LightCyan',
-                alpha=0.6, axes=None,
-                annotate=False,
-                npoints=30, **kwargs):
+    def imshowz(self, frame = 0,
+                apcolor = 'w', skcolor = 'LightCyan',
+                alpha = 0.6, axes = None,
+                annotate = False,
+                npoints = 30, **kwargs):
         """Plot image"""
 
         dp.imshowz(self.ts.files[frame],
