@@ -32,7 +32,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 class AstroDir(object):
     """Collection of AstroFile"""
 
-    def __init__(self, path, mbias=None, mflat=None, calib_force=False):
+    def __init__(self, path, mbias=None, mflat=None, mdark=None, calib_force=False):
         """Create AstroFile container from either a directory path (if given string), or directly from list of string
         if calib is given, create one calib per directory to avoid using storing calibration files on each AstroFile
 
@@ -68,32 +68,40 @@ class AstroDir(object):
             if calib_force or not hasattr(f, 'calib'):  #allows some of the files to keep their calibration
                 f.calib = calib
 
+        self.bias = mbias
+        self.dark = mdark
+        self.flat = mflat
+
     def add_bias(self, mbias):
         unique_calibs = set([f.calib for f in self.files])
         for c in unique_calibs:
             c.add_bias(mbias)
-
 
     def add_flat(self, mflat):
         unique_calibs = set([f.calib for f in self.files])
         for c in unique_calibs:
             c.add_flat(mflat)
 
-
-    def readdata(self):
+    def readdata(self, rawdata=True):
+        """
+        Reads data from AstroDir
+        :param rawdata: if True returns raw data, if False returns reduced
+        :return:
+        """
         import scipy as sp
-        if isinstance(self,'datacube'):
-            return self.datacube
+        # TODO datacube must be a class to be allowed as arg 2 in isinstance
+        #if isinstance(self,'datacube'):
+        #    return self.datacube
         data = []
-        for f in self.files():
-            data.append(f.reader())
+        for f in self.files:
+            data.append(f.reader(rawdata))
         self.datacube = sp.array(data)
         return self.datacube
 
-
     def sort(self, *args):
-        """Return sorted list of files according to specified header field, use first match. It uses in situ sorting, but returns itself"""
-        if len(args)==0:
+        """ Return sorted list of files according to specified header field, use first match.
+            It uses in situ sorting, but returns itself"""
+        if len(args) == 0:
             raise ValueError("At least one valid header field must be specified to sort")
         hdrfld=False
         for a in args:
@@ -128,7 +136,8 @@ class AstroDir(object):
         return self.files.__len__()
 
     def filter(self, *args, **kwargs):
-        """Filter files according to those whose filter return True to the given arguments. What the filter does is type-dependent in each file. Check docstring of a single element."""
+        """ Filter files according to those whose filter return True to the given arguments.
+            What the filter does is type-dependent in each file. Check docstring of a single element."""
         from copy import copy
         new = copy(self)
         new.files = [f for f in self if f.filter(*args,**kwargs)]
@@ -139,7 +148,8 @@ class AstroDir(object):
         return joinchr.join([b.basename() for b in self])
 
     def getheaderval(self, *args, **kwargs):
-        """Gets the header values specified in 'args' from each of the files. Returns a simple list if only one value is specified, or a list of tuples otherwise"""
+        """ Gets the header values specified in 'args' from each of the files.
+            Returns a simple list if only one value is specified, or a list of tuples otherwise"""
         if 'mapout' in kwargs:
             mapout = kwargs['mapout']
         else:
@@ -151,15 +161,16 @@ class AstroDir(object):
         return ret
 
     def setheader(self, write=False, **kwargs):
-        """Sets the header values specified in 'args' from each of the files. Returns a simple list if only one value is specified, or a list of tuples otherwise
+        """ Sets the header values specified in 'args' from each of the files.
+            Returns a simple list if only one value is specified, or a list of tuples otherwise
 
-        The special kwarg 'write' can be used to force the update of the fits with the keyword or just leave it in memory"""
+            The special kwarg 'write' can be used to force the update of the fits
+            with the keyword or just leave it in memory"""
 
         if False in [f.setheaderval(**kwargs) for f in self.files]:
             raise ValueError("Setting the header of a file returned error... panicking!")
 
         return self
-        
 
 
 class AstroCalib(object):
@@ -174,7 +185,6 @@ class AstroCalib(object):
         self.mflat={}
         self.add_bias(mbias)
         self.add_flat(mflat)
-
 
     def add_bias(self, mbias):
         if isinstance(mbias, dict):
@@ -192,7 +202,6 @@ class AstroCalib(object):
         else:
             raise ValueError("Master Bias supplied was not recognized.")
 
-
     def add_flat(self, mflat):
         if isinstance(mflat, dict):
             for k in mflat.keys():
@@ -208,8 +217,6 @@ class AstroCalib(object):
             self.mflat[''] = mflat.data
         else:
             raise ValueError("Master Flat supplied was not recognized.")
-
-
 
     def reduce(self, data, exptime=None, afilter=None):
         if exptime is None:

@@ -351,6 +351,7 @@ class Combine(object):#_gr_examine):
         arr = self.arrays[self.okframes]
         sig = self.sigmas[self.okframes]
         if sigclip:
+            #TODO sigmask!!!
             mask = sigmask(arr,sigclip,0)
             comb = (arr*mask).sum(0)/mask.sum(0, dtype=float)
         else:

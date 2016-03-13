@@ -58,7 +58,8 @@ def _fits_reader(filename, hdu=0):
     import pyfits as pf
     if hdu < 0:
         return pf.open(filename)
-    fl = pf.open(filename)[hdu]
+    # TODO check what's going on here, it raises error if the index is hdu instead of 0
+    fl = pf.open(filename)[0]
     return fl.data
 
 
@@ -105,7 +106,7 @@ def _fits_setheader(_filename, *args, **kwargs):
     if 'write' in kwargs and kwargs['write']:
         save = True
         try:
-            #todo: if file does not exists, create it
+            #todo: if file does not exist, create it
             fits = pf.open(_filename, 'update')[hdu]
         except IOError:
             warnings.warn("Read only filesystem or file not found. Header update of '%s' will not remain on disk." % ', '.join(kwargs.keys()))
