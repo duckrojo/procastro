@@ -68,6 +68,7 @@ class AstroDir(object):
             if calib_force or not hasattr(f, 'calib'):  #allows some of the files to keep their calibration
                 f.calib = calib
 
+        self.path = path
         self.bias = mbias
         self.dark = mdark
         self.flat = mflat

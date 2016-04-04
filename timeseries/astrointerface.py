@@ -36,6 +36,8 @@ class AstroInterface(object):
         self.ver, self.hor = self.data.shape
         self.zscale = None
         self.photo = self._get_photo_image()
+        self.labels = []
+        #self.entries = []
 
         # DYNAMIC PIXEL COORDINATES FROM POINTS IN THE IMAGE (INT VALUES)
         self.dynamic_pixcoo = []
@@ -165,7 +167,7 @@ class AstroInterface(object):
             F2,
             text='CONTINUE',
             state=DISABLED,
-            command=self.root.destroy)
+            command=self._read_data)
         self.cont.pack()
         self.label = Label(
             F2,
@@ -181,7 +183,7 @@ class AstroInterface(object):
         """
 
         self.root.mainloop()
-        return self.dynamic_points
+        return self.dynamic_points, self.labels
 
     def _exit_button(self):
         """Exit button function. A warning is triggered when the exit button is pressed.
@@ -193,6 +195,11 @@ class AstroInterface(object):
         if answer:
             self.root.destroy()
             exit('Program finished from interface\n')
+
+    def _read_data(self):
+        for t in self.entries:
+            self.labels.append(t.get())
+        print self.labels
 
     def _get_photo_image(self, mode='zscale'):
         """Returns the scaled version of the image given in the constructor as a PhotoImage instance.
@@ -264,17 +271,22 @@ class AstroInterface(object):
 
         self.dynamic_frame.pack_forget()
         self.dynamic_frame.destroy()
+        self.entries = []
         self.dynamic_frame = Frame(self.Fpoints)
         self.dynamic_frame.pack()
 
         for coo, i in zip(self.dynamic_points, range(len(self.dynamic_points))):
             L = Label(self.dynamic_frame, text=str([coo[0], coo[1]]))
+            T = Entry(self.dynamic_frame, width=15)
+            T.insert(INSERT, "Target name")
             B = Button(
                 self.dynamic_frame,
                 text='\xe2\x98\x92'.decode('utf8'),
                 command=lambda i=i: self._button_remove_point(i))
             L.grid(row=i + 1, column=1)
-            B.grid(row=i + 1, column=2)
+            T.grid(row=i + 1, column=2)
+            B.grid(row=i + 1, column=3)
+            self.entries.append(T)
 
         if len(self.dynamic_points) > 0:
             self.cont.configure(state=ACTIVE)
@@ -359,3 +371,94 @@ class AstroInterface(object):
         posy = round((self.ver - event.y) / self.scale_factor, 2)
         self.posx.set('%s' % str(posx))
         self.posy.set('%s' % str(posy))
+
+#Define aperture range and sky to use
+def define_aperture(slist,y,x,rad,path,t):
+
+	go=True
+
+	if(t==0):
+		fits=pf.open(slist[0])
+		tdata=fits[0].data
+		t0=fits[0].header['MJD-OBS']
+		fits.close()
+	else:
+		t0=t
+
+	sdata=subarray(tdata,y,x,rad,path)
+	ny,nx=centroide(sdata)
+	data=subarray(sdata,ny,nx,rad,path)
+
+	pl.ion()
+
+	fig=pl.figure(figsize=(15, 15), dpi=40)
+
+	ax1=fig.add_axes([0.3,0.55,0.4,0.4]) #left,bottom,width,height
+	ax2=fig.add_axes([0.1,0.1,0.8,0.4])
+
+	l,u=zscale(data)
+	ax1.imshow(data,cmap=pl.cm.Greys_r)
+	ax1.grid(True,color='red')
+
+	y,x=sp.mgrid[0:2*rad+1,0:2*rad+1]
+	d=sp.sqrt((y-ny)**2 + (x-nx)**2)
+	ax2.plot(d,data,'k+')
+	ax2.grid(True)
+	xtext2=ax2.set_xlabel('pixels')
+	ytext2=ax2.set_ylabel('flux')
+	sky2=0
+
+	while(go==True):
+
+		try:
+			ap1,ap2,sky1,sky2=input("Insert APERTURE 1,APERTURE 2,SKY-INNER,SKY-OUTER:")
+			#getaperture(aperture,sky1,sky2,list,y,x,)
+
+		except ValueError:
+			print "Please insert APERTURE,SKY-INNER,SKY-OUTER\n"
+
+
+		if(ap2==0):
+			ap2=ap1
+
+		ax1.clear()
+		ax2.clear()
+
+		#Primer Grafico: Imagen
+		l,u=zscale(data)
+		ax1.imshow(data,cmap=pl.cm.Greys_r)
+		ax1.grid(True,color='red')
+
+		circlea1=pl.Circle((ny,nx),int(ap1),color='g',fill=False) #aperture1
+		circlea2=pl.Circle((ny,nx),int(ap2),color='g',fill=False) #aperture2
+		circle2=pl.Circle((ny,nx),int(sky1),color='r',fill=False) #inner sky
+		circle3=pl.Circle((ny,nx),int(sky2),color='r',fill=False) #outer sky
+		ax1.add_artist(circlea1)
+		ax1.add_artist(circlea2)
+		ax1.add_artist(circle2)
+		ax1.add_artist(circle3)
+		xtext1=ax1.set_xlabel('pixels')
+		ytext1=ax1.set_ylabel('pixels')
+
+		#Segundo Grafico: Perfil radial
+		y,x=sp.mgrid[0:2*rad+1,0:2*rad+1]
+		d=sp.sqrt((y-ny)**2 + (x-nx)**2)
+		ax2.plot(d,data,'k+')
+		pl.vlines(ap1,data.min(),data.max(),color='g')
+		pl.vlines(ap2,data.min(),data.max(),color='g')
+		pl.vlines(sky1,data.min(),data.max(),color='r')
+		pl.vlines(sky2,data.min(),data.max(),color='r')
+		#ax2.grid(True)
+		xtext2=ax2.set_xlabel('pixels')
+		ytext2=ax2.set_ylabel('flux')
+
+		isok=raw_input("Ok?: (y/n) ")
+
+		if isok=="y":
+			go=False
+			"""many=raw_input("Aperture range?: (y/n) ")
+			if many=="y":
+				amin,amax=input("Insert Aperture range MIN,MAX: ")
+				return aperture,[sky1,sky2],amin,amax"""
+
+	return range(ap1,ap2+1),[sky1,sky2],t0#,None,None#,amin,amax
