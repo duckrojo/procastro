@@ -348,11 +348,14 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
 
             res = np.zeros((len(ft[0]), ), dtype=np.float32)
             cl.enqueue_copy(queue, res, res_buf)
-            this_phot.append(res)
-            print("res: " + str(res[0]) + " || stamp: " + str(ft[0][0]))
-            #print((res > 0).any())
+            #print("res: " + str(res[0] - (res[2]/res[3])*res[1]) + " || stamp: " + str(ft[0][0]))
+            #print("a_sum: " + str(res[0]) + " || a_cnt: " + str(res[1]) +
+                  " || ssum: " + str(res[2]) + " || scnt: " + str(res[3]) +
+                  " || " + str((res[2]/res[3])*res[1]))
+            res_val = res[0] - (res[2]/res[3])*res[1]
+            this_phot.append(res_val)
 
-        all_phot.append(list(this_phot))
+        all_phot.append(this_phot)
         all_err.append(res)
 
     import TimeSeries as ts
