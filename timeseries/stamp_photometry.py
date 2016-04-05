@@ -360,7 +360,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
 
 
 def stamp_photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky,
-                     gain=None, ron=None, gpu=False):
+                     deg=1, gain=None, ron=None, gpu=False):
     """ Performs photometry by reducing and using only the stamps around each corresponding target. The rest
     of the image is not reduced and is completely ignored through the process.
     :param sci: Scientific images to obtain TimeSerie from.
@@ -386,7 +386,7 @@ def stamp_photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_ra
     if gpu:
         ts = GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, gain, ron)
     else:
-        ts = CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, gain, ron)
+        ts = CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, deg, gain, ron)
 
     ts.set_epoch(epoch)
     ts.set_ids(labels)
