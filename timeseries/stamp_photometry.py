@@ -357,7 +357,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
     return ts.TimeSeries(all_phot, all_err, None)
 
 
-def get_lightcurve(sci, bias, dark, flat, target_coords, target_labels, aperture, stamp_rad, sky,
+def get_lightcurve(sci, bias, dark, flat, target_coords, target_labels = None, aperture, stamp_rad, sky,
                      combine_mode=CPUmath.mean_combine, exp_time=1, deg=1, gain=None, ron=None, gpu=False):
     """ Performs photometry by reducing and using only the stamps around each corresponding target. The rest
     of the image is not reduced and is completely ignored through the process.
