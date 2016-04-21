@@ -1,7 +1,9 @@
 import dataproc as dp
 import copy
 import scipy as sp
+import warnings
 import CPUmath
+import numpy as np
 
 def zscale(img,  trim = 0.05, contr=1, mask=None):
     """Returns lower and upper limits found by zscale algorithm for improved contrast in astronomical images.
@@ -133,7 +135,6 @@ def get_stamps(sci, target_coords, stamp_rad):
     all_cubes = []
     data = sci.readdata()
     epoch = sci.getheaderval('MJD-OBS')
-    labels = sci.getheaderval('OBJECT')
     new_coords = []
     stamp_coords =[]
 
@@ -160,7 +161,7 @@ def get_stamps(sci, target_coords, stamp_rad):
         new_coords.append(new_c)
         stamp_coords.append(st_c)
 
-    return all_cubes, new_coords, stamp_coords, epoch, labels[-2:]
+    return all_cubes, new_coords, stamp_coords, epoch
 
 
 def CPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, gain=None, ron=None):
@@ -356,7 +357,7 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
     return ts.TimeSeries(all_phot, all_err, None)
 
 
-def get_lightcurve(sci, bias, dark, flat, target_coords, aperture, stamp_rad, sky,
+def get_lightcurve(sci, bias, dark, flat, target_coords, target_labels, aperture, stamp_rad, sky,
                      combine_mode=CPUmath.mean_combine, exp_time=1, deg=1, gain=None, ron=None, gpu=False):
     """ Performs photometry by reducing and using only the stamps around each corresponding target. The rest
     of the image is not reduced and is completely ignored through the process.
@@ -378,34 +379,35 @@ def get_lightcurve(sci, bias, dark, flat, target_coords, aperture, stamp_rad, sk
     :param gpu: True if GPU processing is desired. Default is gpu=False (CPU processing)
     :return: TimeSerie object
     """
-    sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(sci, target_coords, stamp_rad)
+    sci_stamps, new_coords, stamp_coords, epoch = get_stamps(sci, target_coords, stamp_rad)
 
+    from reduction import get_masterbias, get_masterdark, get_masterflat
     if bias is not None:
         if isinstance(bias, dp.AstroDir):
             print("Is AstroDir")
             bias_data = bias.readdata()
-            mbias = get_masterbias(bias_data, combine_mode, save_masters)
+            mbias = get_masterbias(bias_data, combine_mode)
         else:
             warnings.warn('Combining bias with function: %s' % (combine_mode))
-            mbias = get_masterbias(bias, combine_mode, save_masters)
+            mbias = get_masterbias(bias, combine_mode)
     else:
         mbias = sci.bias
     if dark is not None:
         if isinstance(dark, dp.AstroDir):
             dark_data = dark.readdata()
-            mdark = get_masterdark(dark_data, combine_mode, exp_time, save_masters)
+            mdark = get_masterdark(dark_data, combine_mode, exp_time)
         else:
             warnings.warn('Combining darks with function: %s' % (combine_mode))
-            mdark = get_masterdark(dark, combine_mode, exp_time, save_masters)
+            mdark = get_masterdark(dark, combine_mode, exp_time)
     else:
         md = sci.dark
     if flat is not None:
         if isinstance(flat, dp.AstroDir):
             flat_data = flat.readdata()
-            mflat = get_masterflat(flat_data, combine_mode, save_masters)
+            mflat = get_masterflat(flat_data, combine_mode)
         else:
             warnings.warn('Combining flats with function: %s' % (combine_mode))
-            mflat = get_masterflat(flat, combine_mode, save_masters)
+            mflat = get_masterflat(flat, combine_mode)
     else:
         mflat = sci.flat
 
@@ -415,5 +417,5 @@ def get_lightcurve(sci, bias, dark, flat, target_coords, aperture, stamp_rad, sk
         ts = CPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, deg, gain, ron)
 
     ts.set_epoch(epoch)
-    ts.set_ids(labels)
+    ts.set_ids(target_labels)
     return ts
