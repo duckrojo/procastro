@@ -146,6 +146,7 @@ class TimeSeries(object):
 
         :rtype: None (and plot display)
         """
+        print("PLOT!")
         import dataproc as dp
         fig, ax, epoch = dp.axesfig_xdate(axes, self.epoch)
 
@@ -156,14 +157,15 @@ class TimeSeries(object):
 
         # TODO check yerr
         for lab in disp:
-            if self.__getitem__(lab, error=True) is None:
-                yerr = None
-            else:
-                yerr = self.__getitem__(lab, error=True)
+        #    if self.__getitem__(lab, error=True) is None:
+        #        yerr = None
+        #    else:
+        #        yerr = self.__getitem__(lab, error=True)
+        print lab
 
             ax.errorbar(epoch,
                         self.flx[lab],
-                        #yerr=yerr,
+                        self.errors[lab],
                         marker="o",
                         label=lab)
 

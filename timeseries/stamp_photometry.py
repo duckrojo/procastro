@@ -1,6 +1,7 @@
 import dataproc as dp
 import copy
 import scipy as sp
+import CPUmath
 
 def zscale(img,  trim = 0.05, contr=1, mask=None):
     """Returns lower and upper limits found by zscale algorithm for improved contrast in astronomical images.
@@ -267,7 +268,6 @@ def CPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
 
 
 def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, gain=None, ron=None):
-    # TODO results are not being returned properly... do not use yet!
     import pyopencl as cl
     import os
     os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
@@ -282,53 +282,42 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
         if len(devices) == 0:
             print("Could not find OpenCL GPU or CPU device.")
 
-    print("Device max work group size:", devices[0].max_work_group_size)
-    print("Device max work item sizes:", devices[0].max_work_item_sizes)
-    #print("Device kernel work group size:", devices[0].max_kernel_work_group_size)
-
     ctx = cl.Context([devices[0]])
     queue = cl.CommandQueue(ctx)
     mf = cl.mem_flags
 
     n_targets = len(sci)
-    n_frames = len(sci[0])
     all_phot = []
     all_err = []
+
     for n in range(n_targets):  # For each target
         target = np.array(sci[n])
         c = stamp_coords[n]
         c_full = coords[n]
-        t_phot, t_err = [], []
         cx, cy = c[0][0], c[0][1]
-        cxf, cyf = c_full[n][0], c_full[n][1]
+        cxf, cyf = int(c_full[n][0]), int(c_full[n][1])
         dark_stamp = dark[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
         flat_stamp = flat[(cxf-stamp_rad):(cxf+stamp_rad+1), (cyf-stamp_rad):(cyf+stamp_rad+1)]
 
         flattened_dark = dark_stamp.flatten()
-        dark_f = flattened_dark.reshape(1, len(flattened_dark))
+        dark_f = flattened_dark.reshape(len(flattened_dark))
 
         flattened_flat = flat_stamp.flatten()
         flat_f = flattened_flat.reshape(len(flattened_flat))
 
-        print flat_f
+        this_phot, this_error = [], []
 
-        target_flat = []
-        this_phot = []
         for f in target:
-
             s = f.shape
             ss = s[0] * s[1]
             ft = f.reshape(1, ss)
-            #target_flat.append(ft[0])
-
-            #print(len(ft[0]))
 
             target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ft[0])
-            dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f[0])
-            flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f)
-            res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((len(ft[0]), ), dtype=np.float32).nbytes)
+            dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f)#np.array(dark_stamp))
+            flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=flat_f)#np.array(flat_stamp))
+            res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
 
-            f = open('photometry.cl', 'r')
+            f_cl = open('photometry.cl', 'r')
             defines = """
                     #define n %d
                     #define centerX %d
@@ -336,41 +325,46 @@ def GPUphot(sci, dark, flat, coords, stamp_coords, ap, sky, stamp_rad, deg=1, ga
                     #define aperture %d
                     #define sky_inner %d
                     #define sky_outer %d
-                    """ % (2*stamp_rad, cx, cy, ap, sky[0], sky[1])
-            programName = defines + "".join(f.readlines())
+                    """ % (2*stamp_rad+1, cx, cy, ap, sky[0], sky[1])
+            programName = defines + "".join(f_cl.readlines())
 
             program = cl.Program(ctx, programName).build()
             #queue, global work group size, local work group size
-            program.photometry(queue, ft[0].shape, #np.zeros((2*stamp_rad, 2*stamp_rad, 1)).shape,
-                               None, #np.zeros((512)).shape,
-                               target_buf, dark_buf, flat_buf, res_buf,
-                               cl.LocalMemory(ft[0].nbytes))  # sizeX, sizeY, sizeZ
+            program.photometry(queue, ft[0].shape, #(512, 512, 1), #np.zeros((2*stamp_rad, 2*stamp_rad, 1)).shape,
+                               None, #(1, 1, 1), #np.zeros((512)).shape,
+                               target_buf, dark_buf, flat_buf, res_buf)
 
-            res = np.zeros((len(ft[0]), ), dtype=np.float32)
+            res = np.zeros((4, ), dtype=np.int32)
             cl.enqueue_copy(queue, res, res_buf)
-            #print("res: " + str(res[0] - (res[2]/res[3])*res[1]) + " || stamp: " + str(ft[0][0]))
-            #print("a_sum: " + str(res[0]) + " || a_cnt: " + str(res[1]) +
-                  " || ssum: " + str(res[2]) + " || scnt: " + str(res[3]) +
-                  " || " + str((res[2]/res[3])*res[1]))
+
             res_val = res[0] - (res[2]/res[3])*res[1]
             this_phot.append(res_val)
 
+            #now the error
+            if gain is None:
+                error = None
+            else:
+                d = centraldistances(f, [cx, cy])
+                sky_std = f[(d > sky[0]) & (d < sky[1])].std()
+                error = phot_error(res_val, sky_std, res[1], res[3], gain, ron=ron)
+            this_error.append(error)
+
         all_phot.append(this_phot)
-        all_err.append(res)
+        all_err.append(this_error)
 
     import TimeSeries as ts
     return ts.TimeSeries(all_phot, all_err, None)
 
 
-def stamp_photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_rad, sky,
-                     deg=1, gain=None, ron=None, gpu=False):
+def get_lightcurve(sci, bias, dark, flat, target_coords, aperture, stamp_rad, sky,
+                     combine_mode=CPUmath.mean_combine, exp_time=1, deg=1, gain=None, ron=None, gpu=False):
     """ Performs photometry by reducing and using only the stamps around each corresponding target. The rest
     of the image is not reduced and is completely ignored through the process.
     :param sci: Scientific images to obtain TimeSerie from.
     :type sci: AstroDir
-    :param mbias: Master bias
-    :param mdark: Master dark
-    :param mflat: Master flat
+    :param bias: AstroDir of bias
+    :param dark: AstroDir of darks
+    :param flat: AstroDir of flats
     :param target_coords: list of target and reference coordinates in format [[x1, y1], [x2, y2], ...]
     :param aperture: Aperture radius for photometry
     :param stamp_rad: Square radius for stamp
@@ -385,6 +379,35 @@ def stamp_photometry(sci, mbias, mdark, mflat, target_coords, aperture, stamp_ra
     :return: TimeSerie object
     """
     sci_stamps, new_coords, stamp_coords, epoch, labels = get_stamps(sci, target_coords, stamp_rad)
+
+    if bias is not None:
+        if isinstance(bias, dp.AstroDir):
+            print("Is AstroDir")
+            bias_data = bias.readdata()
+            mbias = get_masterbias(bias_data, combine_mode, save_masters)
+        else:
+            warnings.warn('Combining bias with function: %s' % (combine_mode))
+            mbias = get_masterbias(bias, combine_mode, save_masters)
+    else:
+        mbias = sci.bias
+    if dark is not None:
+        if isinstance(dark, dp.AstroDir):
+            dark_data = dark.readdata()
+            mdark = get_masterdark(dark_data, combine_mode, exp_time, save_masters)
+        else:
+            warnings.warn('Combining darks with function: %s' % (combine_mode))
+            mdark = get_masterdark(dark, combine_mode, exp_time, save_masters)
+    else:
+        md = sci.dark
+    if flat is not None:
+        if isinstance(flat, dp.AstroDir):
+            flat_data = flat.readdata()
+            mflat = get_masterflat(flat_data, combine_mode, save_masters)
+        else:
+            warnings.warn('Combining flats with function: %s' % (combine_mode))
+            mflat = get_masterflat(flat, combine_mode, save_masters)
+    else:
+        mflat = sci.flat
 
     if gpu:
         ts = GPUphot(sci_stamps, mdark-mbias, mflat-mbias, new_coords, stamp_coords, aperture, sky, stamp_rad, gain, ron)
