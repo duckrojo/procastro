@@ -3,7 +3,6 @@ from dataproc.timeseries.stamp_photometry import Photometry
 
 raw = AstroDir("./data/raw")
 
-bias = AstroFile("./data/bias.fits")
 dark = AstroFile("./data/dark.fits")
 flat = AstroFile("./data/flat.fits")
 
@@ -19,7 +18,7 @@ gain = 1.
 
 # Initialize Photometry object. It calculate_stamps=True, stamps for photometry will be calculated upon
 # initialization and get_stamps does not have to be explicitely called by the user
-phot = Photometry(raw, aperture, sky, mbias=bias, mdark=dark, mflat=flat,
+phot = Photometry(raw, aperture, sky, mdark=dark, mflat=flat,
                   calculate_stamps=True, target_coords=target_coords, stamp_rad=stamp_rad,
                   labels=labels, gain=gain, ron=ron)
 
@@ -32,7 +31,7 @@ ts_cpu.plot()
 ts_gpu.plot()
 
 # Can be run without reducing, ie without bias, dark, flat
-phot2 = Photometry(raw, aperture, sky, mbias=None, mdark=None, mflat=None,
+phot2 = Photometry(raw, aperture, sky, mdark=None, mflat=None,
                   calculate_stamps=True, target_coords=target_coords, stamp_rad=stamp_rad,
                   labels=labels, gain=gain, ron=ron)
 
@@ -43,7 +42,7 @@ ts_cpu2 = phot2.photometry()
 # It should NOT be necessary to run the program this way as get_stamps is called inside photometry
 # But added to example just in case
 sci_stamps, centroid_coords, stamp_coords, epoch, labels = phot.get_stamps(raw, target_coords, stamp_rad)
-phot3 = Photometry(sci_stamps, aperture, sky, mbias=bias, mdark=dark, mflat=flat, calculate_stamps=False,
+phot3 = Photometry(sci_stamps, aperture, sky, mdark=dark, mflat=flat, calculate_stamps=False,
                    target_coords=target_coords, stamp_rad=stamp_rad, new_coords=centroid_coords,
                    stamp_coords=stamp_coords, epoch=epoch, labels=labels, gain=gain, ron=ron)
 
