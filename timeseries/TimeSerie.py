@@ -3,6 +3,9 @@ __author__ = 'fran'
 import scipy as sp
 import warnings
 import numpy as np
+import dataproc as dp
+from datetime import datetime
+from matplotlib import dates
 
 class TimeSeries(object):
 
@@ -12,10 +15,9 @@ class TimeSeries(object):
         # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
         self.group = [1] + [0 for i in range(len(data)-1)]
         # Default grouping: 1st coordinate is 1 group, all other objects are another group
+        self.labels = {}
         if ids is not None:
-            self.flx = self.set_ids(ids)  # Dictionary for names?
-        else:
-            self.flx = {}
+            self.labels = self.set_labels(ids)  # Dictionary for names?
 
         self.channels.append([])  # Group 1 operation result; is overwritten every time a new op is defined
         self.errors.append([])
@@ -71,14 +73,11 @@ class TimeSeries(object):
         """
         return [self.errors[i] for i in range(len(self.errors) - 2) if not self.group[i]]
 
-    def set_ids(self, ids):
-        """ Sets list of target IDs to TimeSerie in order to plot with target names.
-        :param ids: List
-        """
+    def set_labels(self, ids):
         self.ids = ids
         for i in range(len(self.ids)):
-            self.flx[self.ids[i]] = self.channels[i]
-        return self.flx
+            self.labels[self.ids[i]] = self.channels[i]
+        return self.labels
 
     def set_epoch(self, e):
         """ Sets list of observation epochs to TimeSerie in order to plot
@@ -147,25 +146,28 @@ class TimeSeries(object):
         :rtype: None (and plot display)
         """
         print("PLOT!")
-        import dataproc as dp
-        fig, ax, epoch = dp.axesfig_xdate(axes, self.epoch)
+
+        date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S.%f") for e in self.epoch]
+        newepoch = [dates.date2num(dts) for dts in date_epoch]
+        #newepoch = self.epoch
+
+        fig, ax, epoch = dp.axesfig_xdate(axes, newepoch)
 
         if label is None:
-            disp = self.flx.keys()
+            disp = self.labels.keys()
         else:
             disp = [label]
 
         # TODO check yerr
         for lab in disp:
-        #    if self.__getitem__(lab, error=True) is None:
-        #        yerr = None
-        #    else:
-        #        yerr = self.__getitem__(lab, error=True)
-        print lab
+            if self.__getitem__(lab, error=True) is None:
+                yerr = None
+            else:
+                yerr = self.__getitem__(lab, error=True)
 
             ax.errorbar(epoch,
-                        self.flx[lab],
-                        self.errors[lab],
+                        self.labels[lab],
+                        yerr=yerr,
                         marker="o",
                         label=lab)
 
