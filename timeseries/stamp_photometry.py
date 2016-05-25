@@ -6,42 +6,43 @@ import numpy as np
 import warnings
 import TimeSerie
 
+class Photometry(object):
 
-def Photometry(object):
-
-    def __init__(self, sci, mbias, mdark, mflat, aperture, sky, calculate_stamps=True,
+    def __init__(self, sci, aperture, sky, mbias=None, mdark=None, mflat=None, calculate_stamps=True,
                    target_coords=None, stamp_rad=None, new_coords=None, stamp_coords=None,
                    epoch=None, labels=None, deg=1, gain=None, ron=None):
         if calculate_stamps:
-            self.sci_stamps, self.new_coords, self.stamp_coords, self.epoch, self.labels = get_stamps(sci, target_coords, stamp_rad)
+            self.sci_stamps, self.new_coords, self.stamp_coords, self.epoch, self.labels = self.get_stamps(sci, target_coords, stamp_rad)
+            self.stamp_rad = stamp_rad
         else:
             self.sci_stamps = sci
+            self.stamp_rad = stamp_rad
             self.new_coords = new_coords
             self.stamp_coords = stamp_coords
             self.epoch = epoch
             self.labels = labels
-            self.deg = deg
-            self.gain = gain
-            self.ron = ron
-        self.mbias = mbias
-        self.mdark = mdark
-        self.mflat = mflat
+        if mbias is not None and mdark is not None and mflat is not None:
+            self.calib = True
+            self.bias = mbias
+            self.dark = mdark
+            self.flat = mflat
+        else:
+            self.calib = False
         self.target_coords = target_coords
         self.aperture = aperture
         self.sky = sky
+        self.deg = deg
+        self.gain = gain
+        self.ron = ron
 
     def photometry(self, gpu=False):
-        calib = self.mdark - self.mbias
-        flat_calib = self.mflat - self.mbias
         if gpu:
-            ts = GPUphot(self)
+            ts = self.GPUphot()
         else:
-            ts = GPUphot(self)
-        ts.set_epoch(self.epoch)
-        ts.set_labels(self.labels)
+            ts = self.CPUphot()
         return ts
 
-    def phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
+    def phot_error(self, phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
         """Calculates the photometry error
 
         :param phot: star flux
@@ -77,7 +78,7 @@ def Photometry(object):
 
         return sp.sqrt(var_total)
 
-    def centroid(orig_arr, medsub=True):
+    def centroid(self, orig_arr, medsub=True):
         """Find centroid of small array
         :param arr: array
         :type arr: array
@@ -99,7 +100,7 @@ def Photometry(object):
         return cy, cx
 
 
-    def get_stamps(sci, target_coords, stamp_rad):
+    def get_stamps(self, sci, target_coords, stamp_rad):
         """
 
         :param sci:
@@ -112,7 +113,6 @@ def Photometry(object):
         data = sci.files
 
         all_cubes = []
-        #data = sci.readdata()
         epoch = sci.getheaderval('DATE-OBS')
         #epoch = sci.getheaderval('MJD-OBS')
         labels = sci.getheaderval('OBJECT')
@@ -128,7 +128,7 @@ def Photometry(object):
                 dlist = pf.open(df.filename)
                 d = dlist[0].data
                 stamp = d[cx - stamp_rad:cx + stamp_rad + 1, cy - stamp_rad:cy + stamp_rad +1]
-                cx_s, cy_s = centroid(stamp)
+                cx_s, cy_s = self.centroid(stamp)
                 cx = cx - stamp_rad + cx_s.round()
                 cy = cy - stamp_rad + cy_s.round()
                 stamp = d[cx - stamp_rad:cx + stamp_rad + 1, cy - stamp_rad:cy + stamp_rad +1]
@@ -152,7 +152,7 @@ def Photometry(object):
         for n in range(n_targets):  # For each target
             target = self.sci_stamps[n]
             c = self.stamp_coords[n]
-            c_full = self.target_coords[n]
+            c_full = self.new_coords[n]
             t_phot, t_err = [], []
             for t in range(n_frames):
                 cx, cy = c[0][0], c[0][1]  # TODO ojo con esto
@@ -161,14 +161,19 @@ def Photometry(object):
 
                 # Reduction!
                 # Callibration stamps are obtained using coordinates from the "full" image
-                dark_stamp = self.dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                             (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                             (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                data = (target[t] - dark_stamp) / (flat_stamp/np.mean(flat_stamp))
+                if self.calib is True:
+                    dark = self.dark - self.bias
+                    flat = self.flat - self.bias
+                    dark_stamp = dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
+                    flat_stamp = flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
+                    data = (target[t] - dark_stamp) / (flat_stamp/np.mean(flat_stamp))
+                else:
+                    data = target[t]
 
                 # Photometry!
-                d = centraldistances(data, cs)
+                d = self.centraldistances(data, cs)
                 dy, dx = data.shape
                 y, x = sp.mgrid[-cs[0]:dy - cs[0], -cs[1]:dx - cs[1]]
 
@@ -182,14 +187,14 @@ def Photometry(object):
                 else:
                     import scipy.optimize as op
                     idx = (d > self.sky[0]) * (d < self.sky[1])
-                    errfunc = lambda coef, x, y, z: (bipol(coef, x, y) - z).flatten()
+                    errfunc = lambda coef, x, y, z: (self.bipol(coef, x, y) - z).flatten()
                     coef0 = sp.zeros((self.deg, self.deg))
                     coef0[0, 0] = data[idx].mean()
                     fit, cov, info, mesg, success = op.leastsq(errfunc, coef0.flatten(), args=(x[idx], y[idx], data[idx]), full_output=1)
 
                 # Apply sky correction
                 n_pix_sky = idx.sum()
-                sky_fit = bipol(fit, x, y)
+                sky_fit = self.bipol(fit, x, y)
                 sky_std = (data-sky_fit)[idx].std()
                 res = data - sky_fit  # minus sky
 
@@ -215,14 +220,14 @@ def Photometry(object):
                     error = None
                 else:
                     n_pix_ap = res[d < self.aperture].sum()
-                    error = phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
+                    error = self.phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
 
                 t_phot.append(phot)
                 t_err.append(error)
             all_phot.append(t_phot)
             all_err.append(t_err)
 
-        return TimeSerie.TimeSeries(all_phot, all_err, None)
+        return TimeSerie.TimeSeries(all_phot, all_err, ids=self.labels, epoch=self.epoch)
 
 
     def GPUphot(self):
@@ -251,13 +256,19 @@ def Photometry(object):
         for n in range(n_targets):  # For each target
             target = np.array(self.sci_stamps[n])
             c = self.stamp_coords[n]
-            c_full = self.coords[n]
+            c_full = self.new_coords[n]
             cx, cy = c[0][0], c[0][1]
             cxf, cyf = int(c_full[n][0]), int(c_full[n][1])
-            dark_stamp = self.dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                         (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-            flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                         (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
+            if self.calib is True:
+                dark = self.dark - self.bias
+                flat = self.flat - self.bias
+                dark_stamp = dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
+                flat_stamp = flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
+            else:
+                dark_stamp = np.zeros((self.stamp_rad, self.stamp_rad))
+                flat_stamp = np.ones((self.stamp_rad, self.stamp_rad))
 
             flattened_dark = dark_stamp.flatten()
             dark_f = flattened_dark.reshape(len(flattened_dark))
@@ -277,7 +288,7 @@ def Photometry(object):
                 flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/np.mean(flat_f)))
                 res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
 
-                f_cl = open('./photometry.cl', 'r')
+                f_cl = open('../photometry.cl', 'r')
                 defines = """
                     #define n %d
                     #define centerX %d
@@ -305,18 +316,18 @@ def Photometry(object):
                 if self.gain is None:
                     error = None
                 else:
-                    d = centraldistances(f, [cx, cy])
+                    d = self.centraldistances(f, [cx, cy])
                     sky_std = f[(d > self.sky[0]) & (d < self.sky[1])].std()
-                    error = phot_error(res_val, sky_std, res[1], res[3], self.gain, ron=self.ron)
+                    error = self.phot_error(res_val, sky_std, res[1], res[3], self.gain, ron=self.ron)
                 this_error.append(error)
 
             all_phot.append(this_phot)
             all_err.append(this_error)
 
-        return TimeSerie.TimeSeries(all_phot, all_err, None)
+        return TimeSerie.TimeSeries(all_phot, all_err, ids=self.labels, epoch=self.epoch)
 
 
-    def centraldistances(data, c):
+    def centraldistances(self, data, c):
         """Computes distances for every matrix position from a central point c.
         :param data: array
         :type data: sp.ndarray
@@ -329,7 +340,7 @@ def Photometry(object):
         return sp.sqrt((y - c[0]) * (y - c[0]) + (x - c[1]) * (x - c[1]))
 
 
-    def bipol(coef, x, y):
+    def bipol(self, coef, x, y):
         """Polynomial fit for sky subtraction
 
         :param coef: sky fit polynomial coefficients
