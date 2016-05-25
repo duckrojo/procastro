@@ -8,7 +8,7 @@ import TimeSerie
 
 class Photometry(object):
 
-    def __init__(self, sci, aperture, sky, mbias=None, mdark=None, mflat=None, calculate_stamps=True,
+    def __init__(self, sci, aperture, sky, mdark=None, mflat=None, calculate_stamps=True,
                    target_coords=None, stamp_rad=None, new_coords=None, stamp_coords=None,
                    epoch=None, labels=None, deg=1, gain=None, ron=None):
         if calculate_stamps:
@@ -21,9 +21,8 @@ class Photometry(object):
             self.stamp_coords = stamp_coords
             self.epoch = epoch
             self.labels = labels
-        if mbias is not None and mdark is not None and mflat is not None:
+        if mdark is not None and mflat is not None:
             self.calib = True
-            self.bias = mbias
             self.dark = mdark
             self.flat = mflat
         else:
@@ -162,11 +161,9 @@ class Photometry(object):
                 # Reduction!
                 # Callibration stamps are obtained using coordinates from the "full" image
                 if self.calib is True:
-                    dark = self.dark - self.bias
-                    flat = self.flat - self.bias
-                    dark_stamp = dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                    dark_stamp = self.dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
                                     (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                    flat_stamp = flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                    flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
                                     (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
                     data = (target[t] - dark_stamp) / (flat_stamp/np.mean(flat_stamp))
                 else:
@@ -260,11 +257,9 @@ class Photometry(object):
             cx, cy = c[0][0], c[0][1]
             cxf, cyf = int(c_full[n][0]), int(c_full[n][1])
             if self.calib is True:
-                dark = self.dark - self.bias
-                flat = self.flat - self.bias
-                dark_stamp = dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                dark_stamp = self.dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
                                     (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                flat_stamp = flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
+                flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
                                     (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
             else:
                 dark_stamp = np.zeros((self.stamp_rad, self.stamp_rad))
