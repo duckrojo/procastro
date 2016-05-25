@@ -72,7 +72,7 @@ def _fits_writer(filename, data, header=None):
 def _fits_verify(filename, ffilter=None, hdu=0):
     import pyfits as pf
     nc = filename.lower().split('.')[-1] in ['fits', 'fit'] 
-    cmpr = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz'] 
+    cmpr = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip','fitzip'] 
     if nc or cmpr:
         if ffilter is None:
             return True
