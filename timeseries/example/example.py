@@ -18,17 +18,26 @@ gain = 1.
 
 # Initialize Photometry object. It calculate_stamps=True, stamps for photometry will be calculated upon
 # initialization and get_stamps does not have to be explicitely called by the user
-phot = Photometry(raw, aperture, sky, mdark=dark, mflat=flat,
+
+phot = Photometry(raw, aperture=aperture, sky=sky, mdark=dark, mflat=flat,
                   calculate_stamps=True, target_coords=target_coords, stamp_rad=stamp_rad,
                   labels=labels, gain=gain, ron=ron)
 
-ts_cpu = phot.photometry()
+.imshowz()
+plot_radialprofile()
+showstamp
+
+ts_cpu = phot.photometry(apert,sky)
+#apert & sky are optional, in which , they 
+
 ts_gpu = phot.photometry(gpu=True)
 
 print(ts_cpu.__class__)  # Just to show that it is a TimeSerie.TimeSeries object
 
 ts_cpu.plot()
 ts_gpu.plot()
+
+ts_cpu[1]/ts_cpu[-1]
 
 # Can be run without reducing, ie without bias, dark, flat
 phot2 = Photometry(raw, aperture, sky, mdark=None, mflat=None,
