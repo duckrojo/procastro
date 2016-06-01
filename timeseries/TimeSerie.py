@@ -9,15 +9,23 @@ from matplotlib import dates
 
 class TimeSeries(object):
 
-    def __init__(self, data, errors, ids=None, epoch=None):
-        self.channels = data  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
-        self.errors = errors
+    def __init__(self, data, errors, labels=None, epoch=None):
+        dc = []
+        for d in data:
+            dc.append(sp.array(d))  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
+        self.channels = dc
+        de = []
+        for e in errors:
+            de.append(sp.array(e))
+        self.errors = de
         # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
         self.group = [1] + [0 for i in range(len(data)-1)]
         # Default grouping: 1st coordinate is 1 group, all other objects are another group
         self.labels = {}
-        if ids is not None:
-            self.labels = self.set_labels(ids)  # Dictionary for names?
+        if labels is not None:
+            self.labels = self.set_labels(labels)  # Dictionary for names?
+        #else:
+        #    self.labels = {}
 
         self.channels.append([])  # Group 1 operation result; is overwritten every time a new op is defined
         self.errors.append([])
@@ -40,37 +48,22 @@ class TimeSeries(object):
             else:
                 return self.errors[self.ids.index(item)]
 
+    def get_error(self, item):
+        return self.__getitem__(item, error=True)
+
     def group1(self):
-        """
-        Returns all channels in group 1
-        :return: List
-        """
         return [self.channels[i] for i in range(len(self.channels) - 2) if self.group[i]]
 
     def group2(self):
-        """ Returns all channels in group 2
-        :return: List
-        """
         return [self.channels[i] for i in range(len(self.channels) - 2) if not self.group[i]]
 
-    def set_group(self, new_group):
-        """ Used to define group of channels within time series, using a mask of 0s and 1s.
-        For example [0 1 0 0 1 0] is used to define 2 different groups.
-        Only 2 groups per TimeSerie supported.
-        :param new_group: Group mask
-        """
+    def set_group(self, new_group):  # Receives pe [0 1 0 0 1 0] and that is used to define 2 groups
         self.group = new_group
 
     def errors_group1(self):
-        """ Returns error channels from all the channels in group 1
-        :return: List
-        """
         return [self.errors[i] for i in range(len(self.errors) - 2) if self.group[i]]
 
     def errors_group2(self):
-        """ Returns error channels from all the channels in group 2
-        :return: List
-        """
         return [self.errors[i] for i in range(len(self.errors) - 2) if not self.group[i]]
 
     def set_labels(self, ids):
@@ -80,18 +73,9 @@ class TimeSeries(object):
         return self.labels
 
     def set_epoch(self, e):
-        """ Sets list of observation epochs to TimeSerie in order to plot
-        :param e: List
-        """
         self.epoch = e
 
     def mean(self, group_id):
-        """
-        Calculates the mean of all the channels in the group given by group_id.
-        This operation returns the resulting new channel, but also overwrites TimeSerie[-group_id] with the result.
-        :param group_id: id of group to operate on. {1, 2}
-        :return: []
-        """
         if group_id > 2:
             warnings.warn("group_id must be 1 or 2 only. Group 2 will be used as default.")
             group = self.group2()
@@ -112,12 +96,6 @@ class TimeSeries(object):
         return self.channels[-group_id]
 
     def median(self, group_id):
-        """
-        Calculates the median of all the channels in the group given by group_id
-        This operation returns the resulting new channel, but also overwrites TimeSerie[-group_id] with the result.
-        :param group_id: id of group to operate on. {1, 2}
-        :return: []
-        """
         if group_id > 2:
             warnings.warn("group_id must be 1 or 2 only. Group 2 will be used as default.")
             group = self.group2()
@@ -145,7 +123,9 @@ class TimeSeries(object):
 
         :rtype: None (and plot display)
         """
-        print("PLOT!")
+        import dataproc as dp
+        from datetime import datetime
+        from matplotlib import dates
 
         date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S.%f") for e in self.epoch]
         newepoch = [dates.date2num(dts) for dts in date_epoch]
