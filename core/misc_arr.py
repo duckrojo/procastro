@@ -92,19 +92,18 @@ def zscale(img,  trim = 0.05, contr=1, mask=None):
     Minimum and maximum values recommended by zscale
 """
 
-
     if not isinstance(img, sp.ndarray):
         img = sp.array(img)
     if mask is None:
-        mask = (sp.isnan(img)==False)
+        mask = (sp.isnan(img) == False)
 
     itrim = int(img.size*trim)
     x = sp.arange(mask.sum()-2*itrim)+itrim
 
     sy = sp.sort(img[mask].flatten())[itrim:img[mask].size-itrim]
-    a,b = sp.polyfit(x, sy, 1)
+    a, b = sp.polyfit(x, sy, 1)
 
-    return b,a*img.size/contr+b
+    return b, a*img.size/contr+b
 
 
 

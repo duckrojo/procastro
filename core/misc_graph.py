@@ -157,26 +157,26 @@ def imshowz(data,
 :type plot_rad: integer
 :param kwargs: passed to matplotlib.pyplot.imshow()
 """
+
     data = prep_data_plot(data, hdu)
 
-
-    if xlim is  None:
-        xlim = [0,data.shape[1]]
+    if xlim is None:
+        xlim = [0, data.shape[1]]
     if ylim is None:
-        ylim = [0,data.shape[0]]
+        ylim = [0, data.shape[0]]
 
 
     if rotate:
         times = rotate/90
-        if times%1 != 0:
+        if times % 1 != 0:
             raise ValueError("rotate must be a multiple of 90")
         data = sp.rot90(data, int(times))
 
     if invertx:
-        data = data[:,::-1]
+        data = data[:, ::-1]
 
     if inverty:
-        data = data[::-1,:]
+        data = data[::-1, :]
 
     if cxy is not None:
         border_distance = [data.shape[1]-cxy[0], cxy[0], data.shape[0]-cxy[1], cxy[1]]
@@ -185,9 +185,9 @@ def imshowz(data,
         xlim = [cxy[0]-plot_rad, cxy[0]+plot_rad]
         ylim = [cxy[1]-plot_rad, cxy[1]+plot_rad]
         xlim[0] = xlim[0]*(xlim[0]>0)
-        xlim[1] = (xlim[1]>data.shape[1]) and data.shape[1] or xlim[1]
+        xlim[1] = (xlim[1] > data.shape[1]) and data.shape[1] or xlim[1]
         ylim[0] = ylim[0]*(ylim[0]>0)
-        ylim[1] = (ylim[1]>data.shape[0]) and data.shape[0] or ylim[1]
+        ylim[1] = (ylim[1] > data.shape[0]) and data.shape[0] or ylim[1]
 
     if trim_data:
         data = data[ylim[0]:ylim[1],xlim[0]:xlim[1]]
@@ -196,9 +196,9 @@ def imshowz(data,
 
     #Find the contrast
     if minmax is None:
-        mn,mx = dp.zscale(data[ylim[0]:ylim[1],xlim[0]:xlim[1]])
+        mn, mx = dp.zscale(data[ylim[0]:ylim[1], xlim[0]:xlim[1]])
     else:
-        mn,mx = minmax
+        mn, mx = minmax
 
     fig, ax = prep_canvas(axes, title, ytitle, xtitle)
 
@@ -214,8 +214,8 @@ def imshowz(data,
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
-    fig.show()
-    return mn,mx
+    plt.show()
+    return mn, mx
 
 
 def axesfig_xdate(axes, x, overwrite=False):

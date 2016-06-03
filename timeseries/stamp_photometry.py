@@ -5,10 +5,11 @@ import time
 import numpy as np
 import warnings
 import TimeSerie
+import matplotlib.pyplot as plt
 
 class Photometry(object):
 
-    def __init__(self, sci, aperture, sky, mdark=None, mflat=None, calculate_stamps=True,
+    def __init__(self, sci, aperture=None, sky=None, mdark=None, mflat=None, calculate_stamps=True,
                    target_coords=None, stamp_rad=None, new_coords=None, stamp_coords=None,
                    epoch=None, labels=None, deg=1, gain=None, ron=None):
         if calculate_stamps:
@@ -21,20 +22,64 @@ class Photometry(object):
             self.stamp_coords = stamp_coords
             self.epoch = epoch
             self.labels = labels
+
         if mdark is not None and mflat is not None:
             self.calib = True
             self.dark = mdark
             self.flat = mflat
         else:
             self.calib = False
+
         self.target_coords = target_coords
         self.aperture = aperture
         self.sky = sky
         self.deg = deg
         self.gain = gain
         self.ron = ron
+        self.len = len(self.sci_stamps[0])
 
-    def photometry(self, gpu=False):
+        # label list
+        if isinstance(target_coords, dict):
+            labels = target_coords.keys()
+            coordsxy = target_coords.values()
+        try:
+            if labels is None:
+                labels = []
+            nstars = len(target_coords)
+            if len(labels) > nstars:
+                labels = labels[:nstars]
+            elif len(labels) < nstars:
+                labels = list(
+                    labels) + sp.arange(len(labels),
+                                        nstars).astype(str).tolist()
+            targetsxy = {lab: coo
+                            for coo, lab in zip(target_coords, labels)}
+        except:
+            raise ValueError("Coordinates of target stars need to be " +
+                                "specified as a list of 2 elements, not: %s" %
+                                (str(target_coords),))
+        print (" Initial guess received for %i targets: %s" %
+                (len(target_coords),
+                ", ". join(["%s %s" % (lab,coo)
+                            for lab, coo in zip(labels, target_coords)])
+                ))
+
+        self.labels = labels
+        self.targetsxy = targetsxy
+
+
+    def photometry(self, aperture=None, sky=None, gpu=False):
+        if aperture is not None:
+            self.aperture = aperture
+        if sky is not None:
+            self.sky = sky
+
+        if self.aperture is None or self.sky is None:
+            raise ValueError("ERROR: aperture photometry parameters are incomplete. Either aperture "
+                             "photometry radius or sky annulus were not giving. Please call photometry "
+                             "with the following keywords: photometry(aperture=a, sky=s) or define aperture "
+                             "and sky when initializing Photometry object.")
+
         if gpu:
             ts = self.GPUphot()
         else:
@@ -224,7 +269,7 @@ class Photometry(object):
             all_phot.append(t_phot)
             all_err.append(t_err)
 
-        return TimeSerie.TimeSeries(all_phot, all_err, ids=self.labels, epoch=self.epoch)
+        return TimeSerie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
 
 
     def GPUphot(self):
@@ -319,7 +364,7 @@ class Photometry(object):
             all_phot.append(this_phot)
             all_err.append(this_error)
 
-        return TimeSerie.TimeSeries(all_phot, all_err, ids=self.labels, epoch=self.epoch)
+        return TimeSerie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
 
 
     def centraldistances(self, data, c):
@@ -358,3 +403,142 @@ class Photometry(object):
                 plane += coef[i, j] * (x ** j) * (y ** (i - j))
 
         return plane
+
+    def plot_radialprofile(self, targets=None, xlim=None, axes=1,
+                           legend_size=None,
+                           **kwargs):
+        """Plot Radial Profile from data using radialprofile() function
+        :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
+        :type target: integer/string or 2-element list
+        """
+
+        colors = ['rx', 'b^', 'go', 'r^', 'bx', 'g+']
+        fig, ax = dp.figaxes(axes)
+
+        ax.cla()
+        ax.set_xlabel('distance')
+        ax.set_ylabel('ADU')
+        if targets is None:
+            targets = self.targetsxy.keys()
+        elif isinstance(targets, basestring):
+            targets = [targets]
+        elif isinstance(targets, (list, tuple)) and \
+                not isinstance(targets[0], (basestring, list, tuple)):
+                #Assume that it is a coordinate
+            targets = [targets]
+
+        trgcolor = {str(trg): color for trg, color in zip(targets, colors)}
+
+        for trg in targets:
+            distance, value, center = self.radialprofile(trg, stamprad=self.stamp_rad, **kwargs)
+            ax.plot(distance, value, trgcolor[str(trg)],
+                    label="%s: (%.1f, %.1f)" % (trg,
+                                                  center[1],
+                                                  center[0]),
+                    )
+        prop = {}
+        if legend_size is not None:
+            prop['size'] = legend_size
+        ax.legend(loc=1, prop=prop)
+
+        if xlim is not None:
+            if isinstance(xlim, (int,float)):
+                ax.set_xlim([0,xlim])
+            else:
+                ax.set_xlim(xlim)
+
+        plt.show()
+
+    def radialprofile(self, target, stamprad=None, frame=0, recenter=False):
+        """Returns the x&y arrays for radial profile
+
+        :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
+        :type target: integer/string or 2-element list
+        :param frame: which frame to show
+        :type frame: integer
+        :param recenter: whether to recenter
+        :type recenter: bool
+        :rtype: (x-array,y-array, [x,y] center)
+"""
+        if isinstance(target, (int, str)):
+            try:
+                cx, cy = self.targetsxy[target]
+                target = self.target_coords.index([cx, cy])
+            except KeyError:
+                raise KeyError("Invalid target specification. Choose from '%s'" % ', '.join(self.targetsxy.keys()))
+        elif isinstance(target, (list, tuple)):
+            cx, cy = target
+        else:
+            print("Invalid coordinate specification '%s'" % (target,))
+
+        if (frame > self.len):
+            raise ValueError("Specified frame (%i) is too large (there are %i frames)"
+                             % (frame, self.len))
+
+        if recenter:
+            #image = (self.ts.files[frame]-self.ts.masterbias)/self.ts.masterflat
+            image = self.sci_stamps[target][frame]
+            cy, cx = dp.subcentroid(image, [cy, cx], stamprad) #+ sp.array([cy,cx]) - stamprad
+            print(" Using coordinates from recentering (%.1f, %.1f) for frame %i"
+                  % (cx, cy, frame))
+        else:
+            #if (hasattr(self.ts, 'lastphotometry') and
+            #    isinstance(self.ts.lastphotometry, TimeSerie)):
+            cx, cy = self.new_coords[target][frame+1][0], self.new_coords[target][frame+1][1]
+            print(" Using coordinates from photometry (%.1f, %.1f) for frame %i"
+                      % (cx, cy, frame))
+
+        stamp = self.sci_stamps[target][frame]#-self.ts.masterbias)/self.ts.masterflat
+
+        d = self.centraldistances(stamp, self.stamp_coords[target][frame]).flatten()
+        x, y = dp.sortmanynsp(d, stamp.flatten())
+
+        return x, y, (cy, cx)
+
+
+    def showstamp(self, target=None, stamprad=30,
+                  first=0, last=-1, figure=None, ncol=None):
+        """Show the star at the same position for the different frames
+
+        :param target: None for the first key()
+        :param stamprad: Plotting radius
+        :param first: First frame to show
+        :param last: Last frame to show. It can be onPython negative format
+        :param figure: Specify figure number
+        :param ncol: Number of columns
+"""
+        if last < 0:
+            nimages = self.len + 1 + last - first
+        else:
+            nimages = last - first
+
+        if target is None:
+            target = self.targetsxy.keys()[0]
+
+        if ncol is None:
+            ncol = int(sp.sqrt(nimages))
+        nrow = int(sp.ceil(nimages/ncol))
+
+        f, ax = plt.subplots(nrow, ncol, num=figure,
+                             sharex=True, sharey=True)
+        f.subplots_adjust(hspace=0, wspace=0)
+        ax1 = list(sp.array(ax).reshape(-1))
+
+        cx, cy = self.targetsxy[target]
+        target = self.target_coords.index([cx, cy])
+        cx_s, cy_s = self.stamp_coords[target][0]
+
+        #for n, a in zip(range(nimages), ax1):
+        ik = 0
+        for n, a in zip(self.sci_stamps, ax1):
+            frame_number = ik + first
+            ik += 1
+            frame = (self.sci_stamps[target][frame_number])# - self.ts.masterbias) / self.ts.masterflat
+
+            dp.imshowz(frame,
+                       axes=a,
+                       cxy=[cx_s, cy_s],
+                       plot_rad=self.stamp_rad,
+                       ticks=False,
+                       trim_data=False,
+                       )

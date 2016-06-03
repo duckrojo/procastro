@@ -30,7 +30,9 @@ phot.plot_radialprofile(targets=['Ref1'])
 # Can also specify for which frame to plot
 phot.plot_radialprofile(targets=['Ref1', 'Target'], frame=2)
 
+# Plot stamps used for photometry, first and last frames to be used can be given
 phot.showstamp()
+phot.showstamp(first=0, last=5)
 
 # ======= EXECUTING PHOTOMETRY =======
 # Aperture and sky are optional, they can be given when initializing Photometry object or when running
