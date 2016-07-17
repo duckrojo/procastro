@@ -71,9 +71,9 @@ def _fits_writer(filename, data, header=None):
 
 def _fits_verify(filename, ffilter=None, hdu=0):
     import pyfits as pf
-    nc = filename.lower().split('.')[-1] in ['fits', 'fit'] 
-    compressed = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip', 'fitzip']
-    if nc or compressed:
+    single_extension = filename.lower().split('.')[-1] in ['fits', 'fit', 'ftsc']
+    double_extension = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip', 'fitzip']
+    if single_extension or double_extension:
         if ffilter is None:
             return True
         h = pf.getheader(filename, hdu)
@@ -181,7 +181,7 @@ class AstroFile(object):
 #         return new
 
     def __repr__(self):
-        return '<astrofile: %s>' % (self.filename,)
+        return '<AstroFile: %s>' % (self.filename,)
 
     def __init__(self, filename = None,
                  mbias=None, mflat=None, exists=False,
@@ -197,6 +197,8 @@ class AstroFile(object):
             hduh=hdu
         if hdud is None:
             hdud=hdu
+        self._hduh = hduh
+        self._hdud = hdud
 
         if mbias is not None:
             self.add_bias(mbias)
