@@ -28,11 +28,11 @@ import copy
 from astropy.utils.exceptions import AstropyUserWarning
 
 
-
 class AstroDir(object):
     """Collection of AstroFile"""
 
-    def __init__(self, path, mbias=None, mflat=None, mdark=None, calib_force=False):
+    def __init__(self, path, mbias=None, mflat=None, mdark=None, calib_force=False,
+                 hdu=0, hdud=None, hduh=None):
         """Create AstroFile container from either a directory path (if given string), or directly from list of string
         if calib is given, create one calib per directory to avoid using storing calibration files on each AstroFile
 
@@ -40,21 +40,26 @@ class AstroDir(object):
         import os
         import glob
         import os.path as pth
-        files=[]
+        files = []
+
+        if hduh is None:
+            hduh=hdu
+        if hdud is None:
+            hdud=hdu
 
         if isinstance(path, basestring):
             filndir = glob.glob(path)
         else:
             filndir = path
 
-        if len(filndir)==0:
+        if len(filndir) == 0:
             raise ValueError("invalid path to files or zero-len list given")
         for f in filndir:
-            if isinstance(f,dp.AstroFile):
+            if isinstance(f, dp.AstroFile):
                 nf = copy.copy(f)
             elif pth.isdir(f):
                 for sf in os.listdir(f):
-                    nf = dp.AstroFile(f+'/'+sf)
+                    nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud)
                     if nf:
                         files.append(nf)
                 nf = False
@@ -65,7 +70,7 @@ class AstroDir(object):
         self.files = files
         calib = AstroCalib(mbias, mflat)
         for f in files:
-            if calib_force or not hasattr(f, 'calib'):  #allows some of the files to keep their calibration
+            if calib_force or not hasattr(f, 'calib'):  # allows some of the files to keep their calibration
                 f.calib = calib
 
         self.path = path
@@ -91,7 +96,7 @@ class AstroDir(object):
         """
         import scipy as sp
         # TODO datacube must be a class to be allowed as arg 2 in isinstance
-        #if isinstance(self,'datacube'):
+        # if isinstance(self,'datacube'):
         #    return self.datacube
         data = []
         for f in self.files:
@@ -104,16 +109,20 @@ class AstroDir(object):
             It uses in situ sorting, but returns itself"""
         if len(args) == 0:
             raise ValueError("At least one valid header field must be specified to sort")
-        hdrfld=False
+        hdrfld = False
+
         for a in args:
-            if self.getheaderval(a, **kwargs):
-                hdrfld=a
+            if self.getheaderval(a):
+                hdrfld = a
                 break
         if not hdrfld:
-            raise ValueError("A valid header field must be specified to use as a sort key. None of the currently requested were found: %s" %(', '.join(args),))
-        #Sorting is done using python operators __lt__, __gt__, ... who are inquired by .sort() directly.
+            raise ValueError(
+                "A valid header field must be specified to use as a sort key. None of the currently requested were found: %s" % (
+                ', '.join(args),))
+
+        # Sorting is done using python operators __lt__, __gt__, ... who are inquired by .sort() directly.
         for f in self.files:
-            f.sortkey=hdrfld
+            f.sortkey = hdrfld
         self.files.sort()
         return self
 
@@ -125,14 +134,13 @@ class AstroDir(object):
 
     def __getitem__(self, item):
         if isinstance(item, sp.ndarray):
-            if item.dtype=='bool':
-                fdir = [f for b,f in zip(item,self.files) if b]
+            if item.dtype == 'bool':
+                fdir = [f for b, f in zip(item, self.files) if b]
                 return AstroDir(fdir)
         elif isinstance(item, slice):
             return AstroDir(self.files.__getitem__(item))
 
-        return self.files[item]#.__getitem__(item)
-
+        return self.files[item]  # .__getitem__(item)
 
     def __len__(self):
         return self.files.__len__()
@@ -142,7 +150,7 @@ class AstroDir(object):
             What the filter does is type-dependent in each file. Check docstring of a single element."""
         from copy import copy
         new = copy(self)
-        new.files = [f for f in self if f.filter(*args,**kwargs)]
+        new.files = [f for f in self if f.filter(*args, **kwargs)]
         return new
 
     def basename(self, joinchr=', '):
@@ -155,7 +163,7 @@ class AstroDir(object):
         if 'mapout' in kwargs:
             mapout = kwargs['mapout']
         else:
-            mapout = len(args)==1 and (lambda x:x[0]) or (lambda x:x)
+            mapout = len(args) == 1 and (lambda x: x[0]) or (lambda x: x)
 
         warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
         ret = [f.getheaderval(*args, mapout=mapout, **kwargs) for f in self.files]
@@ -176,15 +184,14 @@ class AstroDir(object):
 
 
 class AstroCalib(object):
-
     def __init__(self, mbias=None, mflat=None):
         if mbias is None:
             mbias = 0.0
         if mflat is None:
             mflat = 1.0
 
-        self.mbias={}
-        self.mflat={}
+        self.mbias = {}
+        self.mflat = {}
         self.add_bias(mbias)
         self.add_flat(mflat)
 
@@ -192,9 +199,9 @@ class AstroCalib(object):
         if isinstance(mbias, dict):
             for k in mbias.keys():
                 self.mbias[k] = mbias[k]
-        elif isinstance(mbias, 
+        elif isinstance(mbias,
                         (int, float, sp.ndarray)):
-            self.mbias[-1] =  mbias
+            self.mbias[-1] = mbias
         elif isinstance(mbias,
                         dp.AstroFile):
             self.mbias[-1] = mbias.reader()
@@ -211,7 +218,7 @@ class AstroCalib(object):
         elif isinstance(mflat,
                         dp.AstroFile):
             self.mflat[''] = mflat.reader()
-        elif isinstance(mflat, 
+        elif isinstance(mflat,
                         (int, float, sp.ndarray)):
             self.mflat[''] = mflat
         elif isinstance(mflat,
@@ -230,4 +237,3 @@ class AstroCalib(object):
         deflat = debias / self.mflat[afilter]
 
         return deflat
-

@@ -1,4 +1,4 @@
-#
+
 # dataproc - general data processing routines
 #
 # Copyright (C) 2013 Patricio Rojo
@@ -65,21 +65,21 @@ def _fits_reader(filename, hdu=0):
 
 def _fits_writer(filename, data, header=None):
     import pyfits as pf
-    raise NotImplemented("Cuek. More work here. header not ssave, no history. ")
+    raise NotImplemented("Cuek. More work here. header not save, no history. ")
     return pf.writeto(filename, data, header, clobber=True, output_verify='silentfix')
 
 
 def _fits_verify(filename, ffilter=None, hdu=0):
     import pyfits as pf
     nc = filename.lower().split('.')[-1] in ['fits', 'fit'] 
-    cmpr = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip','fitzip'] 
-    if nc or cmpr:
+    compressed = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip', 'fitzip']
+    if nc or compressed:
         if ffilter is None:
             return True
         h = pf.getheader(filename, hdu)
-        if isinstance (ffilter,dict):
+        if isinstance(ffilter, dict):
             return False not in [(f in h and h[f] == ffilter[f]) for f in ffilter.keys()]
-        if isinstance (ffilter, (list,tuple)):
+        if isinstance(ffilter, (list, tuple)):
             return False not in [f in h for f in ffilter]
     return False
 
@@ -135,6 +135,30 @@ def _fits_setheader(_filename, *args, **kwargs):
 ####################################
 
 
+def _checksortkey(f):
+    @_wraps(f)
+    def ret(self, *args, **kwargs):
+        if not hasattr(self, 'sortkey'):
+            raise ValueError("sortkey must be defined before trying to sort AstroFile")
+        return f(self, *args, **kwargs)
+
+    return ret
+
+
+def _checkfilename(f):
+    @_wraps(f)
+    def isfiledef(inst, *args, **kwargs):
+        if hasattr(inst, 'filename'):
+            if inst.type is None:
+                # raise ValueError("File %s not a supported astro-type." % (f))
+                raise ValueError("Please specify filename with setFilename first.")
+            return f(inst, *args, **kwargs)
+        else:
+            raise ValueError("Filename not defined. Must give valid filename to AstroFile")
+
+    return isfiledef
+
+
 class AstroFile(object):
     """Valid astronomy data file format. Only filename is checked so far"""
 
@@ -145,25 +169,6 @@ class AstroFile(object):
     _geth = {'fits': _fits_getheader}
     _seth = {'fits': _fits_setheader}
 
-    def _checksortkey(f):
-        @_wraps(f)
-        def ret(self, *args, **kwargs):
-            if not hasattr(self, 'sortkey'):
-                raise ValueError("sortkey must be defined before trying to sort AstroFile")
-            return f(self, *args, **kwargs)
-        return ret
-
-    def _checkfilename(f):
-        @_wraps(f)
-        def isfiledef(inst, *args, **kwargs):
-            if hasattr(inst, 'filename'):
-                if inst.type is None:
-                    #raise ValueError("File %s not a supported astro-type." % (f))
-                    raise ValueError("Please specify filename with setFilename first.")
-                return f(inst, *args, **kwargs)
-            else:
-                raise ValueError("Filename not defined. Must give valid filename to AstroFile")
-        return isfiledef
 
 #     def __call__(self):
 #         import copy
@@ -180,23 +185,23 @@ class AstroFile(object):
 
     def __init__(self, filename = None,
                  mbias=None, mflat=None, exists=False,
+                 hdu=0, hduh=None, hdud=None,
                  *args, **kwargs):
         import os.path as path
-        ###TODO: Fran lo siguiente no funciona!! no acepta ningun file nuevo:(, porfa arregla, por mientras lo comente
-        # agregado aca para inicializar sin nombre, AstroFile "vacio"
-        # if not hasattr(self, 'filename'):
-        #     self.filename = None
-        #     self.type = None
-        #     self.header_cache = None
-        # else:
-        if 1:
-            self.filename = filename
-            self.type = self.checktype(exists, *args, **kwargs)
-            self.header_cache = {'basename': path.basename(filename)}
-            if mbias is not None:
-                self.add_bias(mbias)
-            if mflat is not None:
-                self.add_flat(mflat)
+
+        self.filename = filename
+        self.type = self.checktype(exists, *args, **kwargs)
+        self.header_cache = {'basename': path.basename(filename)}
+
+        if hduh is None:
+            hduh=hdu
+        if hdud is None:
+            hdud=hdu
+
+        if mbias is not None:
+            self.add_bias(mbias)
+        if mflat is not None:
+            self.add_flat(mflat)
 
     def add_bias(self, mbias):
         if not hasattr(self, 'calib'):
@@ -243,12 +248,13 @@ class AstroFile(object):
     #     self._seth[name]=setheader
     #     self._geth[name]=getheader
 
+
     def checktype(self, exists, *args, **kwargs):
         import os.path as path
         if not hasattr(self, 'filename'):
             #raise ValueError("Must define file name")
             return None
-        if not isinstance(self.filename, basestring):
+        if not isinstance(self.filename, str):
             return None
         if exists and not path.isfile(self.filename):
             return None
@@ -310,8 +316,11 @@ class AstroFile(object):
 
 #       print (kwargs.items())
         for filter_keyword, request in kwargs.items():
-            functions = ['equal']
+            functions = []
+            #by default is not comparing match, but rather equality
+            match = False
             exists = True
+
             cast = lambda x: x
             filter_keyword = filter_keyword.replace('__', '-')
             if '_' in filter_keyword:
@@ -326,7 +335,7 @@ class AstroFile(object):
                 ret.append(False)
                 continue
 
-            if isinstance(request, basestring):
+            if isinstance(request, str):
                 request = [request]
             elif isinstance(request, (tuple, list)):
                 raise TypeError("Filter string cannot be tuple/list anymore.  "
@@ -375,36 +384,41 @@ class AstroFile(object):
             # print("r:%s h:%s m:%i f:%s" %(request, header_val,
             #                               match, functions))
             if greater_than:
-                ret.append(True in [cast(r) < cast(header_val) for r in request])
+                ret.append((True in [cast(r) < cast(header_val) for r in request]) == exists)
             elif less_than:
-                ret.append(True in [cast(r) > cast(header_val) for r in request])
+                ret.append((True in [cast(r) > cast(header_val) for r in request]) == exists)
             elif match:
-                ret.append(True in [cast(r) in cast(header_val) for r in request])
+                ret.append((True in [cast(r) in cast(header_val) for r in request]) == exists)
             else:
-                ret.append(True in [cast(r) == cast(header_val) for r in request])
+                ret.append((True in [cast(r) == cast(header_val) for r in request]) == exists)
 
         #returns whether the filter existed (or not if _not function)
-        return (True in ret) == exists
+        return (True in ret)
 
 
     @_checkfilename
     def setheader(self, *args, **kwargs):
         """Set header values from kwargs. They can be specfied as tuple to add comments as in pyfits"""
         tp = self.type
+        hdu = kwargs.pop('hduh', self._hduh)
         for k, v in kwargs.items():
             if v is None:
                 del self.header_cache[k]
             else:
                 self.header_cache[k] = v
-        return self._seth[tp](self.filename, **kwargs)
+        return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
 
     @_checkfilename
     def getheaderval(self, *args, **kwargs):
         """Get header value for each of the fields specified in args.  It can also accept a list
         as a single argument: getheaderval(field1,field2,...) or getheaderval([field1,field2,...])"""
+
         tp = self.type
-        mapout = ('mapout' in kwargs and [kwargs['mapout']] or [lambda x:x])[0]
+
+        mapout = kwargs.pop('mapout', lambda x:x)
+        hdu = kwargs.pop('hdu',self._hduh)
+
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):  # if first argument is tuple use those values as searches
                 args = args[0]
@@ -413,10 +427,13 @@ class AstroFile(object):
                 return mapout([self.header_cache[args[0]]])
 
         nkeys = [k for k in args if k not in self.header_cache.keys()]
-        nhds = nkeys and self._geth[tp](self.filename, *nkeys, **kwargs) or []
+        nhds = not (not nkeys or not self._geth[tp](self.filename, *nkeys, hdu=hdu)) or []
+
         for k, v in zip(nkeys,nhds):
             self.header_cache[k] = v
+
         ret = [self.header_cache[k] for k in args]
+
         return mapout(ret)
 
     #emulating arithmetic
@@ -444,9 +461,11 @@ class AstroFile(object):
             TODO: Respond to different exposure times or filters
         """
         tp = self.type
+        hdu = kwargs.pop('hdud', self._hdud)
+
         if not tp:
             return False
-        data = self._reads[tp](self.filename, *args, **kwargs)
+        data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
 
         if not hasattr(self, 'calib'):
             self.calib = dp.AstroCalib()
@@ -460,9 +479,11 @@ class AstroFile(object):
         """Read astro header
         """
         tp = self.type
+        hdu = kwargs.pop('hdu', self._hduh)
+
         if not tp:
             return False
-        return self._readhs[tp](self.filename, *args, **kwargs)
+        return self._readhs[tp](self.filename, *args, hdu=hdu, **kwargs)
 
 
     @_checkfilename
