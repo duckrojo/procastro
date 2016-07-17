@@ -74,6 +74,9 @@ class TimeSeries(astrocalc.AstroCalc):
         offsetxy=None,
         masterbias = None,
         masterflat = None,
+            hdu=0,
+            hdud=None,
+            hduh=None,
         #            keytype='IMAGETYP',
         #            mastermode='median',
         ):
@@ -98,11 +101,16 @@ class TimeSeries(astrocalc.AstroCalc):
         # :param mastermode: mode for master (BIAS, DARK, FLAT, etc) image obtention. Options: 'mean' and 'median' (default).
         # :type mastermode: str
 
+        if hduh is None:
+            hduh = hdu
+        if hdud is None:
+            hdud = hdu    
+        
         # data type check
         if isinstance(data, str):  # data is a string (path to a directory)
             self.files = dp.AstroDir(data)
             if isinstance(epoch,basestring):
-                self.files = self.files.sort(epoch)
+                self.files = self.files.sort(epoch, hduh=hduh)
             self.isAstrodir = True
 
         elif isinstance(data, dp.AstroDir):  # data is an astrodir object
@@ -602,6 +610,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         self.exptime = sp.array(exptime)
         self.ratio = None
         self.apnsky = apnsky
+    
 
 
 
@@ -641,6 +650,8 @@ class TimeseriesResults(astroplot.AstroPlot):
                     color=color, ls='none',
                     yerr=self.ratio_error,
                     capsize=0, **kwargs)
+
+
         f.show()
 #        plt.plot(self.epoch, self.ratio, 'r')
 #        axes.title("Ratio for target = " + str(trg))
@@ -684,7 +695,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         return
 
 
-    def plot_normflux(self, label=None, axes=None):
+    def plot_normflux(self, label=None, axes=None, lowylim=0):
         """Display the timeseries data: normalized flux (with errors) as function of epoch
 
         :param label: Specify a single star to plot
@@ -717,7 +728,7 @@ class TimeseriesResults(astroplot.AstroPlot):
         ax.set_xlabel("MJD")
         ax.set_ylabel("Normalized Flux")
         yl1, yl2 = ax.get_ylim()
-        ax.set_ylim([0,yl2])
+        ax.set_ylim([lowylim,yl2])
 
         ax.legend()
         fig.show()

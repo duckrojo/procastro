@@ -99,18 +99,19 @@ class AstroDir(object):
         self.datacube = sp.array(data)
         return self.datacube
 
-    def sort(self, *args):
+    def sort(self, *args, **kwargs):
         """ Return sorted list of files according to specified header field, use first match.
             It uses in situ sorting, but returns itself"""
         if len(args) == 0:
             raise ValueError("At least one valid header field must be specified to sort")
         hdrfld=False
         for a in args:
-            if self.getheaderval(a):
+            if self.getheaderval(a, **kwargs):
                 hdrfld=a
                 break
         if not hdrfld:
             raise ValueError("A valid header field must be specified to use as a sort key. None of the currently requested were found: %s" %(', '.join(args),))
+        #Sorting is done using python operators __lt__, __gt__, ... who are inquired by .sort() directly.
         for f in self.files:
             f.sortkey=hdrfld
         self.files.sort()

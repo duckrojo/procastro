@@ -260,11 +260,6 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
 :param coo_files: it can be a list or a single file from which to take coordinates
 """
 
-    if aqs is None:
-        raise ValueError("Sorry, AstroQuery not available for coordinate querying")
-
-    custom_simbad = aqs.Simbad()
-    custom_simbad.add_votable_fields('propermotions')
 
     try:
         radec = apcoo.ICRS('%s' % target, unit=(apu.hour, apu.degree),
@@ -303,6 +298,12 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
         else:
             print(" '%s' not understood as coordinates, attempting query as name... " %
                   (target,), end='')
+            if aqs is None:
+                raise ValueError("Sorry, AstroQuery not available for coordinate querying")
+
+            custom_simbad = aqs.Simbad()
+            custom_simbad.add_votable_fields('propermotions')
+            
             query = custom_simbad.query_object(target)
             if query is None:
                 #todo: make a nicer planet filtering option
