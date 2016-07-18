@@ -58,8 +58,8 @@ def _fits_reader(filename, hdu=0):
     import pyfits as pf
     if hdu < 0:
         return pf.open(filename)
-    # TODO check what's going on here, it raises error if the index is hdu instead of 0
-    fl = pf.open(filename)[0]
+
+    fl = pf.open(filename)[hdu]
     return fl.data
 
 
@@ -428,10 +428,10 @@ class AstroFile(object):
             elif args[0] in self.header_cache.keys():
                 return mapout([self.header_cache[args[0]]])
 
-        nkeys = [k for k in args if k not in self.header_cache.keys()]
-        nhds = not (not nkeys or not self._geth[tp](self.filename, *nkeys, hdu=hdu)) or []
+        new_keys = [k for k in args if k not in self.header_cache.keys()]
+        new_values = new_keys and self._geth[tp](self.filename, *new_keys, hdu=hdu) or []
 
-        for k, v in zip(nkeys,nhds):
+        for k, v in zip(new_keys,new_values):
             self.header_cache[k] = v
 
         ret = [self.header_cache[k] for k in args]
@@ -467,6 +467,7 @@ class AstroFile(object):
 
         if not tp:
             return False
+
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
 
         if not hasattr(self, 'calib'):

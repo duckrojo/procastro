@@ -64,7 +64,7 @@ class AstroDir(object):
                         files.append(nf)
                 nf = False
             else:
-                nf = dp.AstroFile(f)
+                nf = dp.AstroFile(f, hduh=hduh, hdud=hdud)
             if nf:
                 files.append(nf)
         self.files = files

@@ -25,7 +25,8 @@ Data proc docstring
 import types
 __import__('core', globals(), locals(), [], 1)
 
-core = reload(core)
+#causes conflict on pycharms the following
+#core = reload(core)
 
 for v in dir(core):
     if v[0] == '_' or isinstance(getattr(core,v), types.ModuleType):
