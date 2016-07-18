@@ -21,7 +21,7 @@ gain = 1.
 # Initialize Photometry object. If calculate_stamps=True, stamps for photometry will be calculated upon
 # initialization and get_stamps does not have to be explicitely called by the user
 phot = Photometry(raw, aperture=aperture, sky=sky, mdark=dark, mflat=flat,
-                  calculate_stamps=True, target_coords=target_coords, stamp_rad=stamp_rad,
+                  calculate_stamps=True, target_coords_xy=target_coords, stamp_rad=stamp_rad,
                   labels=labels, gain=gain, ron=ron)
 
 # Plot radial profile of targets; can specify targets with labels
@@ -45,7 +45,7 @@ print(ts_cpu.__class__)  # Just to show that it is a TimeSerie.TimeSeries object
 
 # Can be run without reducing, ie without bias, dark, flat
 phot2 = Photometry(raw, aperture, sky, mdark=None, mflat=None,
-                  calculate_stamps=True, target_coords=target_coords, stamp_rad=stamp_rad,
+                  calculate_stamps=True, target_coords_xy=target_coords, stamp_rad=stamp_rad,
                   labels=labels, gain=gain, ron=ron)
 
 ts_cpu2 = phot2.photometry()
@@ -56,7 +56,7 @@ ts_cpu2 = phot2.photometry()
 # But added to example just in case
 sci_stamps, centroid_coords, stamp_coords, epoch, labels = phot.get_stamps(raw, target_coords, stamp_rad)
 phot3 = Photometry(sci_stamps, aperture, sky, mdark=dark, mflat=flat, calculate_stamps=False,
-                   target_coords=target_coords, stamp_rad=stamp_rad, new_coords=centroid_coords,
+                   target_coords_xy=target_coords, stamp_rad=stamp_rad, new_coords=centroid_coords,
                    stamp_coords=stamp_coords, epoch=epoch, labels=labels, gain=gain, ron=ron)
 
 ts_cpu_3 = phot3.photometry()

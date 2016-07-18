@@ -1,7 +1,8 @@
+from __future__ import print_function
 import dataproc as dp
 import copy
 import scipy as sp
-import time
+import sys
 import numpy as np
 import warnings
 import TimeSerie
@@ -9,43 +10,35 @@ import matplotlib.pyplot as plt
 
 class Photometry(object):
 
-    def __init__(self, sci, aperture=None, sky=None, mdark=None, mflat=None, calculate_stamps=True,
-                   target_coords=None, stamp_rad=None, new_coords=None, stamp_coords=None,
-                   epoch=None, labels=None, deg=1, gain=None, ron=None):
-        if calculate_stamps:
-            self.sci_stamps, self.new_coords, self.stamp_coords, self.epoch, self.labels = self.get_stamps(sci, target_coords, stamp_rad)
-            self.stamp_rad = stamp_rad
-        else:
-            self.sci_stamps = sci
-            self.stamp_rad = stamp_rad
-            self.new_coords = new_coords
-            self.stamp_coords = stamp_coords
+    def __init__(self, sci_files, aperture=None, sky=None, mdark=None, mflat=None,
+                 target_coords_xy=None, stamp_rad=None,
+                 new_coords=None, stamp_coords=None, epoch=None, labels=None,
+                 deg=1, gain=None, ron=None):
+
+
+        if isinstance(epoch, str):
+            self.epoch = sci_files.getheaderval(epoch)
+        elif hasattr(epoch, '__iter__'):
             self.epoch = epoch
-            self.labels = labels
-
-        if mdark is not None and mflat is not None:
-            self.calib = True
-            self.dark = mdark
-            self.flat = mflat
         else:
-            self.calib = False
+            raise ValueError("Epoch must be an array of dates in julian date, or a a header's keyword for the Julian date of the observation")
 
-        self.target_coords = target_coords
+        self.target_coords_xy = target_coords_xy
         self.aperture = aperture
         self.sky = sky
         self.deg = deg
         self.gain = gain
         self.ron = ron
-        self.len = len(self.sci_stamps[0])
+        self.stamp_rad = stamp_rad
 
         # label list
-        if isinstance(target_coords, dict):
-            labels = target_coords.keys()
-            coordsxy = target_coords.values()
+        if isinstance(target_coords_xy, dict):
+            labels = target_coords_xy.keys()
+            coordsxy = target_coords_xy.values()
         try:
             if labels is None:
                 labels = []
-            nstars = len(target_coords)
+            nstars = len(target_coords_xy)
             if len(labels) > nstars:
                 labels = labels[:nstars]
             elif len(labels) < nstars:
@@ -53,26 +46,33 @@ class Photometry(object):
                     labels) + sp.arange(len(labels),
                                         nstars).astype(str).tolist()
             targetsxy = {lab: coo
-                            for coo, lab in zip(target_coords, labels)}
+                            for coo, lab in zip(target_coords_xy, labels)}
         except:
             raise ValueError("Coordinates of target stars need to be " +
                                 "specified as a list of 2 elements, not: %s" %
-                                (str(target_coords),))
+                                (str(target_coords_xy),))
         print (" Initial guess received for %i targets: %s" %
-                (len(target_coords),
+                (len(target_coords_xy),
                 ", ". join(["%s %s" % (lab,coo)
-                            for lab, coo in zip(labels, target_coords)])
+                            for lab, coo in zip(labels, target_coords_xy)])
                 ))
 
         self.labels = labels
         self.targetsxy = targetsxy
 
+        self.sci_stamps, self.new_coords_xy = self.get_stamps(sci_files, target_coords_xy, stamp_rad,
+                                                              mdark=mdark, mflat=mflat)
+        self.mdark = mdark
+        self.mflat = mflat
 
-    def photometry(self, aperture=None, sky=None, gpu=False):
+
+    def photometry(self, aperture=None, sky=None, gpu=False, deg=None):
         if aperture is not None:
             self.aperture = aperture
         if sky is not None:
             self.sky = sky
+        if deg is not None:
+            self.deg = deg
 
         if self.aperture is None or self.sky is None:
             raise ValueError("ERROR: aperture photometry parameters are incomplete. Either aperture "
@@ -144,80 +144,82 @@ class Photometry(object):
         return cy, cx
 
 
-    def get_stamps(self, sci, target_coords, stamp_rad):
+    def get_stamps(self, sci_files, target_coords_xy, stamp_rad, mdark= None, mflat=None):
         """
 
-        :param sci:
-        :type sci: AstroDir
-        :param target_coords: [[t1x, t1y], [t2x, t2y], ...]
+        :param sci_files:
+        :type sci_files: AstroDir
+        :param target_coords_xy: [[t1x, t1y], [t2x, t2y], ...]
         :param stamp_rad:
         :return:
         """
 
-        data = sci.files
-
         all_cubes = []
-        epoch = sci.getheaderval('DATE-OBS')
-        #epoch = sci.getheaderval('MJD-OBS')
-        labels = sci.getheaderval('OBJECT')
+        #epoch = sci_files.getheaderval('DATE-OBS')
+        #epoch = sci_files.getheaderval('MJD-OBS')
+        #labels = sci_files.getheaderval('OBJECT')
         new_coords = []
-        stamp_coords =[]
+        stamp_coords = []
 
-        import pyfits as pf
+        skipcalib = False
+        if mdark is None and mflat is None:
+            skipcalib = True
+        if mdark is None:
+            mdark = sp.zeros(sci_files[0].shape)
+        if mflat is None:
+            mflat = sp.ones(sci_files[0].shape)
 
-        for tc in target_coords:
-            cube, new_c, st_c = [], [], []
-            cx, cy = tc[0], tc[1]
-            for df in data:
-                dlist = pf.open(df.filename)
-                d = dlist[0].data
-                stamp = d[cx - stamp_rad:cx + stamp_rad + 1, cy - stamp_rad:cy + stamp_rad +1]
-                cx_s, cy_s = self.centroid(stamp)
-                cx = cx - stamp_rad + cx_s.round()
-                cy = cy - stamp_rad + cy_s.round()
-                stamp = d[cx - stamp_rad:cx + stamp_rad + 1, cy - stamp_rad:cy + stamp_rad +1]
+        all_cubes = [[] for i in target_coords_xy]
+        center_xy = [[[xx,yy]] for xx,yy in target_coords_xy]
+        print("Obtaining stamps for {0} files".format(len(sci_files)))
+
+        for astrofile in sci_files:
+            print('.', end='')
+            sys.stdout.flush()
+
+            d = astrofile.reader()
+            if not skipcalib:
+                d = (d-mdark)/mflat
+
+            for tc_xy, cube in zip(center_xy, all_cubes):
+                cx, cy = int(tc_xy[-1][0]), int(tc_xy[-1][1])
+                stamp = d[cy - stamp_rad:cy + stamp_rad + 1,
+                          cx - stamp_rad:cx + stamp_rad + 1]
+                cy_s, cx_s = self.centroid(stamp)
+                cx = cx - stamp_rad + cx_s
+                cy = cy - stamp_rad + cy_s
+                icx = int(cx)
+                icy = int(cy)
+                stamp = d[icy - stamp_rad:icy + stamp_rad + 1,
+                          icx - stamp_rad:icx + stamp_rad + 1]
+
                 cube.append(stamp)
-                st_c.append([cx_s.round(), cy_s.round()])
-                new_c.append([cx, cy])
-                dlist.close()
-            all_cubes.append(cube)
-            new_coords.append(new_c)
-            stamp_coords.append(st_c)
+                tc_xy.append([cx, cy])
 
-        return all_cubes, new_coords, stamp_coords, epoch, labels[-2:]
+        print('')
+
+        return all_cubes, center_xy#, epoch, labels[-2:]
 
 
     def CPUphot(self):
-        n_targets = len(self.sci_stamps)
-        n_frames = len(self.sci_stamps[0])
         all_phot = []
         all_err = []
 
-        for n in range(n_targets):  # For each target
-            target = self.sci_stamps[n]
-            c = self.stamp_coords[n]
-            c_full = self.new_coords[n]
+        print("Processing CPU photometry for {0} targets: ".format(len(self.sci_stamps)), end='')
+        sys.stdout.flush()
+        for target, centers_xy in zip(self.sci_stamps, self.new_coords_xy):  # For each target
             t_phot, t_err = [], []
-            for t in range(n_frames):
-                cx, cy = c[0][0], c[0][1]  # TODO ojo con esto
-                cxf, cyf = int(c_full[t][0]), int(c_full[t][1])
-                cs = [cy, cx]
 
-                # Reduction!
-                # Callibration stamps are obtained using coordinates from the "full" image
-                if self.calib is True:
-                    dark_stamp = self.dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                    flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                    data = (target[t] - dark_stamp) / (flat_stamp/np.mean(flat_stamp))
-                else:
-                    data = target[t]
+            for data, center_xy in zip(target, centers_xy):
+                cx, cy = center_xy
 
-                # Photometry!
-                d = self.centraldistances(data, cs)
+                #Stamps are already centered, only decimals could be different
+                cstamp = [self.stamp_rad+cy%1, self.stamp_rad+cx%1]
+
+                # Preparing arrays for photometry
+                d = self.centraldistances(data, cstamp)
                 dy, dx = data.shape
-                y, x = sp.mgrid[-cs[0]:dy - cs[0], -cs[1]:dx - cs[1]]
+                y, x = sp.mgrid[-cstamp[0]:dy - cstamp[0], -cstamp[1]:dx - cstamp[1]]
 
                 # Compute sky correction
                 # Case 1: sky = [fit, map_of_sky_pixels]
@@ -234,23 +236,20 @@ class Photometry(object):
                     coef0[0, 0] = data[idx].mean()
                     fit, cov, info, mesg, success = op.leastsq(errfunc, coef0.flatten(), args=(x[idx], y[idx], data[idx]), full_output=1)
 
-                # Apply sky correction
+                # Apply sky subtraction
                 n_pix_sky = idx.sum()
                 sky_fit = self.bipol(fit, x, y)
                 sky_std = (data-sky_fit)[idx].std()
                 res = data - sky_fit  # minus sky
 
+                # Following to compute FWHM by fitting gaussian
                 res2 = res[d < self.aperture*4].ravel()
                 d2 = d[d < self.aperture*4].ravel()
-
                 tofit = lambda d, h, sig: h*dp.gauss(d, sig, ndim=1)
-
-                import scipy.optimize as op
                 try:
                     sig, cov = op.curve_fit(tofit, d2, res2, sigma=1/sp.sqrt(sp.absolute(res2)), p0=[max(res2), self.aperture/3])
                 except RuntimeError:
                     sig = sp.array([0, 0, 0])
-
                 fwhmg = 2.355*sig[1]
 
                 #now photometry
@@ -266,10 +265,15 @@ class Photometry(object):
 
                 t_phot.append(phot)
                 t_err.append(error)
+
             all_phot.append(t_phot)
             all_err.append(t_err)
+            print('X', end='')
+            sys.stdout.flush()
 
-        return TimeSerie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
+        print ('')
+        return TimeSerie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch,
+                                    extras={'centers_xy': self.new_coords_xy})
 
 
     def GPUphot(self):
@@ -471,9 +475,11 @@ class Photometry(object):
         else:
             print("Invalid coordinate specification '%s'" % (target,))
 
-        if (frame > self.len):
+        slen = len(self.sci_stamps[0])
+
+        if (frame > slen):
             raise ValueError("Specified frame (%i) is too large (there are %i frames)"
-                             % (frame, self.len))
+                             % (frame, slen))
 
         if recenter:
             #image = (self.ts.files[frame]-self.ts.masterbias)/self.ts.masterflat
@@ -508,7 +514,7 @@ class Photometry(object):
         :param ncol: Number of columns
 """
         if last < 0:
-            nimages = self.len + 1 + last - first
+            nimages = len(self.sci_stamps) + 1 + last - first
         else:
             nimages = last - first
 

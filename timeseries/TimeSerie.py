@@ -1,3 +1,4 @@
+
 #
 #
 # Copyright (C) 2016 Francisca Concha
@@ -17,11 +18,7 @@
 # Boston, MA  02110-1301, USA.
 #
 #
-
-
-
-__author__ = 'fran'
-
+import copy
 import scipy as sp
 import warnings
 import numpy as np
@@ -29,64 +26,102 @@ import dataproc as dp
 from datetime import datetime
 from matplotlib import dates
 
+
+__author__ = 'fran'
+
 class TimeSeries(object):
 
-    def __init__(self, data, errors, labels=None, epoch=None):
-        dc = []
-        for d in data:
-            dc.append(sp.array(d))  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
-        self.channels = dc
-        de = []
-        for e in errors:
-            de.append(sp.array(e))
-        self.errors = de
-        # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
-        self.group = [1] + [0 for i in range(len(data)-1)]
+    def __repr__(self):
+        return "<timeseries object with {channels} channels of {size} elements (Extras={extras}). {ret}>".format(channels=len(self.channels), size=len(self.channels[0]), extras=self.extras.keys(),
+                                                                                                                 ret=self._extra_call is not None and "Returning extra {ex}".format(ex=self._extra_call) or "")
+
+
+    def __init__(self, data, errors=None, labels=None, epoch=None, extras=None):
+
+        self.channels = [sp.array(d) for d in data]  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
+
+
+        self.group = [True] + [False]*(len(data)-1)
         # Default grouping: 1st coordinate is 1 group, all other objects are another group
+
+
         self.labels = {}
         if labels is not None:
             self.labels = self.set_labels(labels)  # Dictionary for names?
         #else:
         #    self.labels = {}
 
+        if extras is None:
+            extras = {}
+        elif not isinstance(extras, dict):
+            raise TypeError("extras must be a dictionary")
+        else:
+            if False in [isinstance(v,(list, )) for v in extras.values()]:
+                raise TypeError("Each element of 'extras' dictionary must be a list")
+
+        self.extras=extras
+        self._extra_call=None
+
+        if errors is None:
+            errors = []
+        self.extras['errors'] = [sp.array(e) for e in errors]
+        # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
+
+
         self.channels.append([])  # Group 1 operation result; is overwritten every time a new op is defined
-        self.errors.append([])
+        for v in self.extras.values():
+            v.append([])
 
         self.channels.append([])  # Group 2 operation result; is overwritten every time a new op is defined
-        self.errors.append([])
+        for v in self.extras.values():
+            v.append([])
 
         self.epoch = epoch
 
-    def __getitem__(self, item, error=False):
+    def __call__(self, **kwargs):
+        if len(kwargs)!=1:
+            raise ValueError("Only one argument in the form 'field=target' must be given to index it")
+        k,v = kwargs.items()[0]
+
+        if isinstance(v, str):
+            item = self.ids.index(v)
+
+        if k in self.extras:
+            return self.extras[k][v]
+        else:
+            raise ValueError("Cannot find requested field '{0}'".format(k))
+
+
+    def __getitem__(self, item):
+        """To recover errors or any of the other extras try: ts('error')[0] ts['centers_xy']['Target'], etc"""
         # This is so I can do ts[0]/ts[2] and it works directly with the channels!
-        try:
-            if error is False:
-                return self.channels[item]
-            else:
-                return self.errors[item]
-        except TypeError:
-            if error is False:
-                return self.channels[self.ids.index(item)]
-            else:
-                return self.errors[self.ids.index(item)]
+
+
+        if isinstance(item, str):
+            item = self.ids.index(item)
+
+        ret = self.channels[item]
+
+        return ret
+
 
     def get_error(self, item):
-        return self.__getitem__(item, error=True)
+        return self('errors')[item]
 
     def group1(self):
-        return [self.channels[i] for i in range(len(self.channels) - 2) if self.group[i]]
+        return sp.array(self.channels[:-2])[sp.array(self.group)]
 
     def group2(self):
-        return [self.channels[i] for i in range(len(self.channels) - 2) if not self.group[i]]
+        return sp.array(self.channels[:-2])[sp.array(self.group)==False]
 
     def set_group(self, new_group):  # Receives pe [0 1 0 0 1 0] and that is used to define 2 groups
         self.group = new_group
 
     def errors_group1(self):
-        return [self.errors[i] for i in range(len(self.errors) - 2) if self.group[i]]
+        return [self(errors=e) for lab,g in zip(self.labels, self.group) if g]
 
     def errors_group2(self):
-        return [self.errors[i] for i in range(len(self.errors) - 2) if not self.group[i]]
+        return [self(errors=e) for lab,g in zip(self.labels, self.group) if not g]
 
     def set_labels(self, ids):
         self.ids = ids
@@ -113,7 +148,7 @@ class TimeSeries(object):
         err = np.zeros((1, len(g_errors[0])))
         for i in range(len(g_errors)):
             err += np.divide(g_errors[i]/group[i])**2
-        self.errors[-group_id] = np.sqrt(err)
+        self('errors')[-group_id] = np.sqrt(err)
 
         return self.channels[-group_id]
 
