@@ -197,8 +197,9 @@ class Photometry(object):
                 tc_xy.append([cx, cy])
 
         print('')
+        center_xy.pop(0)
 
-        return all_cubes, center_xy#, epoch, labels[-2:]
+        return all_cubes, center_xy
 
 
     def CPUphot(self):
@@ -262,6 +263,7 @@ class Photometry(object):
                 else:
                     n_pix_ap = res[d < self.aperture].sum()
                     error = self.phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
+                    raise
 
                 t_phot.append(phot)
                 t_err.append(error)

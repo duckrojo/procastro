@@ -217,7 +217,7 @@ class AstroCalc(object):
         tofit = lambda d, h,sig:h*dp.gauss(d, sig, ndim=1)
         import scipy.optimize as op
         try:
-            sig,cov = op.curve_fit(tofit, d2, res2,
+            sig, cov = op.curve_fit(tofit, d2, res2,
                                    sigma = 1/sp.sqrt(sp.absolute(res2)),
                                    p0=[max(res2),sap/3])
         except RuntimeError:
@@ -235,6 +235,7 @@ class AstroCalc(object):
             error = self.phot_error(phot, sky_std,
                                     n_pix_ap, n_pix_sky,
                                     gain, ron=ron)
+            raise
 
         return phot, error, fwhmg, [fit, idx]
 

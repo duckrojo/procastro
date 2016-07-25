@@ -97,6 +97,7 @@ class TimeSeries(object):
         # This is so I can do ts[0]/ts[2] and it works directly with the channels!
 
 
+
         if isinstance(item, str):
             item = self.ids.index(item)
 
@@ -118,10 +119,10 @@ class TimeSeries(object):
         self.group = new_group
 
     def errors_group1(self):
-        return [self(errors=e) for lab,g in zip(self.labels, self.group) if g]
+        return [self(errors=lab) for lab,g in zip(self.labels, self.group) if g]
 
     def errors_group2(self):
-        return [self(errors=e) for lab,g in zip(self.labels, self.group) if not g]
+        return [self(errors=lab) for lab,g in zip(self.labels, self.group) if not g]
 
     def set_labels(self, ids):
         self.ids = ids
