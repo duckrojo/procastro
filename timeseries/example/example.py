@@ -1,5 +1,5 @@
 from dataproc.core import AstroFile, AstroDir
-from dataproc.timeseries.stamp_photometry import Photometry
+from dataproc.timeseries.photometry import Photometry
 
 raw = AstroDir("./data/raw")
 

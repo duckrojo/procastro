@@ -5,7 +5,7 @@ import scipy as sp
 import sys
 import numpy as np
 import warnings
-import TimeSerie
+import timeserie
 import matplotlib.pyplot as plt
 
 class Photometry(object):
@@ -271,7 +271,7 @@ class Photometry(object):
             sys.stdout.flush()
 
         print ('')
-        return TimeSerie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch,
+        return timeserie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch,
                                     extras={'centers_xy': self.new_coords_xy})
 
 

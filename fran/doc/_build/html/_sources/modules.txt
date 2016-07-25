@@ -1,7 +1,0 @@
-fran
-====
-
-.. toctree::
-   :maxdepth: 4
-
-   fran
