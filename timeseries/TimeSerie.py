@@ -1,7 +1,7 @@
 
 #
 #
-# Copyright (C) 2016 Francisca Concha
+# Copyright (C) 2016 Francisca Concha, Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of version 2 of the GNU General 
@@ -107,7 +107,7 @@ class TimeSeries(object):
 
 
     def get_error(self, item):
-        return self('errors')[item]
+        return self(errors=item)
 
     def group1(self):
         return sp.array(self.channels[:-2])[sp.array(self.group)]
