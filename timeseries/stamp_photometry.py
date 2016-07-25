@@ -66,7 +66,7 @@ class Photometry(object):
         self.mflat = mflat
 
 
-    def photometry(self, aperture=None, sky=None, gpu=False, deg=None):
+    def photometry(self, aperture=None, sky=None, deg=None):
         if aperture is not None:
             self.aperture = aperture
         if sky is not None:
@@ -80,10 +80,7 @@ class Photometry(object):
                              "with the following keywords: photometry(aperture=a, sky=s) or define aperture "
                              "and sky when initializing Photometry object.")
 
-        if gpu:
-            ts = self.GPUphot()
-        else:
-            ts = self.CPUphot()
+        ts = self.CPUphot()
         return ts
 
     def phot_error(self, phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
@@ -277,100 +274,6 @@ class Photometry(object):
         return TimeSerie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch,
                                     extras={'centers_xy': self.new_coords_xy})
 
-
-    def GPUphot(self):
-        import pyopencl as cl
-        import os
-        os.environ['PYOPENCL_COMPILER_OUTPUT'] = '1'
-        platforms = cl.get_platforms()
-        if len(platforms) == 0:
-            print("Failed to find any OpenCL platforms.")
-
-        devices = platforms[0].get_devices(cl.device_type.GPU)
-        if len(devices) == 0:
-            print("Could not find GPU device, trying CPU...")
-            devices = platforms[0].get_devices(cl.device_type.CPU)
-            if len(devices) == 0:
-                print("Could not find OpenCL GPU or CPU device.")
-
-        ctx = cl.Context([devices[0]])
-        queue = cl.CommandQueue(ctx)
-        mf = cl.mem_flags
-
-        n_targets = len(self.sci_stamps)
-        all_phot = []
-        all_err = []
-
-        for n in range(n_targets):  # For each target
-            target = np.array(self.sci_stamps[n])
-            c = self.stamp_coords[n]
-            c_full = self.new_coords[n]
-            cx, cy = c[0][0], c[0][1]
-            cxf, cyf = int(c_full[n][0]), int(c_full[n][1])
-            if self.calib is True:
-                dark_stamp = self.dark[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-                flat_stamp = self.flat[(cxf-self.stamp_rad):(cxf+self.stamp_rad+1),
-                                    (cyf-self.stamp_rad):(cyf+self.stamp_rad+1)]
-            else:
-                dark_stamp = np.zeros((self.stamp_rad, self.stamp_rad))
-                flat_stamp = np.ones((self.stamp_rad, self.stamp_rad))
-
-            flattened_dark = dark_stamp.flatten()
-            dark_f = flattened_dark.reshape(len(flattened_dark))
-
-            flattened_flat = flat_stamp.flatten()
-            flat_f = flattened_flat.reshape(len(flattened_flat))
-
-            this_phot, this_error = [], []
-
-            for f in target:
-                s = f.shape
-                ss = s[0] * s[1]
-                ft = f.reshape(1, ss)
-
-                target_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=ft[0])
-                dark_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=dark_f)
-                flat_buf = cl.Buffer(ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=(flat_f/np.mean(flat_f)))
-                res_buf = cl.Buffer(ctx, mf.WRITE_ONLY, np.zeros((4, ), dtype=np.int32).nbytes)
-
-                f_cl = open('../photometry.cl', 'r')
-                defines = """
-                    #define n %d
-                    #define centerX %d
-                    #define centerY %d
-                    #define aperture %d
-                    #define sky_inner %d
-                    #define sky_outer %d
-                    #define SIZE %d
-                    """ % (2*self.stamp_rad+1, cx, cy, self.aperture, self.sky[0], self.sky[1], f.shape[0])
-                programName = defines + "".join(f_cl.readlines())
-
-                program = cl.Program(ctx, programName).build()
-                #queue, global work group size, local work group size
-                program.photometry(queue, ft[0].shape,
-                                   None,
-                                   target_buf, dark_buf, flat_buf, res_buf)
-
-                res = np.zeros((4, ), dtype=np.int32)
-                cl.enqueue_copy(queue, res, res_buf)
-
-                res_val = (res[0] - (res[2]/res[3])*res[1])
-                this_phot.append(res_val)
-
-                #now the error
-                if self.gain is None:
-                    error = None
-                else:
-                    d = self.centraldistances(f, [cx, cy])
-                    sky_std = f[(d > self.sky[0]) & (d < self.sky[1])].std()
-                    error = self.phot_error(res_val, sky_std, res[1], res[3], self.gain, ron=self.ron)
-                this_error.append(error)
-
-            all_phot.append(this_phot)
-            all_err.append(this_error)
-
-        return TimeSerie.TimeSeries(all_phot, all_err, labels=self.labels, epoch=self.epoch)
 
 
     def centraldistances(self, data, c):
