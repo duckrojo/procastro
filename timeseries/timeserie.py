@@ -107,7 +107,7 @@ class TimeSeries(object):
             item = self.labels.index(item)
         elif item < 0:
             return self.combine['op'](sp.array(self.channels)[sp.array(self.groups) == abs(item)],
-                                      **(self.combine['args']))
+                                      **(self.combine['prm']))
 
         return self.channels[item]
 
@@ -123,7 +123,7 @@ class TimeSeries(object):
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
 
-    def plot(self, label=None, axes=None):
+    def plot(self, label=None, axes=None, normalize=False):
         """Display the timeseries data: flux (with errors) as function of mjd
 
         :param label: Specify a single star to plot
@@ -131,15 +131,7 @@ class TimeSeries(object):
 
         :rtype: None (and plot display)
         """
-        # import dataproc as dp
-        # from datetime import datetime
-        # from matplotlib import dates
-        #
-        # date_epoch = [datetime.strptime(e, "%Y-%m-%dT%H:%M:%S.%f") for e in self.epoch]
-        # newepoch = [dates.date2num(dts) for dts in date_epoch]
-        # #newepoch = self.epoch
 
-        # fig, ax, epoch = dp.axesfig_xdate(axes, newepoch)
         fig, ax = dp.figaxes(axes)
 
         if label is None:
@@ -148,7 +140,13 @@ class TimeSeries(object):
             disp = [label]
 
         for lab in disp:
-            ax.errorbar(self.epoch, self[lab], yerr=self(errors=lab),
+            value = self[lab]
+            error = self(errors=lab)
+            if normalize:
+                norm = value.mean()
+                value /= norm
+                error /= norm
+            ax.errorbar(self.epoch, value, yerr=error,
                         marker="o", label=lab)
 
         ax.set_title("Timeseries Data")
@@ -168,7 +166,7 @@ class TimeSeries(object):
                     marker="o")
 
         labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
-        ax.set_title("Flux Ratio: \{{}\}/\{{}\}".format(labs[0], labs[1]))
+        ax.set_title("Flux Ratio: [{}]/[{}]".format(labs[0], labs[1]))
         ax.set_xlabel("MJD")
         ax.set_ylabel("Flux Ratio")
 

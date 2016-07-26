@@ -20,8 +20,11 @@
 from __future__ import division, print_function
 import scipy as sp
 import scipy.optimize as op
+from IPython.core.debugger import Tracer
+
 import dataproc as dp
 import copy
+import pdb
 
 
 class AstroCalc(object):
@@ -156,9 +159,7 @@ class AstroCalc(object):
         #             (1.0 + float(n_pix_ap) / n_pix_sky) * (N_e_sky + ron))
         # return phot / SNR
 
-
-
-    def apphot(self, data, cs, sap, skydata, deg=1, gain=None, ron=None):
+    def apphot(self, data, cs, sap, skydata, deg=1, gain=None, ron=None, raisee=False):
         """Do aperture photometry on data array
 
         :param data: image
@@ -235,7 +236,9 @@ class AstroCalc(object):
             error = self.phot_error(phot, sky_std,
                                     n_pix_ap, n_pix_sky,
                                     gain, ron=ron)
-            raise
+
+        # if raisee:
+        #     Tracer()()
 
         return phot, error, fwhmg, [fit, idx]
 

@@ -20,7 +20,7 @@
 
 import types
 
-modules = ['timeseries']
+modules = ['photometry']
            
 for modulename in modules:
     module = __import__(modulename, globals(), locals(), [], -1)

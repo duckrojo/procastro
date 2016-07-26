@@ -347,7 +347,8 @@ class TimeSeries(astrocalc.AstroCalc):
                         warnings.warn("Stamp radius (%i) might be too small given outer sky radius (%.1f)" %(stamprad,sky[1]))
                     phot, phot_err, fwhm, sky_out = self.apphot(sarr, [relscy, relscx],
                                                                 aperture, sky,
-                                                                gain=gain, ron=ron, deg=deg)
+                                                                gain=gain, ron=ron, deg=deg,
+                                                                raisee=lab=='Target')
                     sky_img_dict[lab] = sky_out
 
 
