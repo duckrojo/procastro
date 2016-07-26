@@ -139,6 +139,8 @@ class AstroDir(object):
                 return AstroDir(fdir)
         elif isinstance(item, slice):
             return AstroDir(self.files.__getitem__(item))
+        if item >= len(self):
+            raise ValueError("AstroDir has smaller length ({}) than requested ({})".format(len(self), item))
 
         return self.files[item]  # .__getitem__(item)
 

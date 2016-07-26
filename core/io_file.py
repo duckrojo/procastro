@@ -20,6 +20,8 @@
 #
 
 from __future__ import print_function, division
+
+import scipy as sp
 from functools import wraps as _wraps
 import warnings
 import dataproc.combine as cm
@@ -84,15 +86,6 @@ def _fits_verify(filename, ffilter=None, hdu=0):
     return False
 
 
-# def _fits_filter(_filename, hdu=0, **kwargs):
-#     import pyfits as pf
-#     h=pf.getheader(_filename, hdu)
-#     return True in [k in h and (isinstance(kwargs[k], (tuple, list)) 
-#                                 and [kwargs[k][0](h[k]) in map(kwargs[k][0],kwargs[k][1:])]
-#                                 or [h[k] == kwargs[k]])[0]
-#                     for k in kwargs.keys()]
-
-
 def _fits_getheader(_filename, *args, **kwargs):
     import pyfits as pf
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
@@ -100,7 +93,7 @@ def _fits_getheader(_filename, *args, **kwargs):
     return tuple([(a in h and [h[a]] or [None])[0] for a in args])
 
 
-def _fits_setheader(_filename, *args, **kwargs):
+def _fits_setheader(_filename, **kwargs):
     import pyfits as pf
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
     if 'write' in kwargs and kwargs['write']:
@@ -130,10 +123,26 @@ def _fits_setheader(_filename, *args, **kwargs):
 
 #############################
 #
-# End FITS
+# Start sparray type
 #
 ####################################
 
+def array_reader(filename, **kwargs):
+    return filename
+
+def array_verify(filename, **kwargs):
+    if isinstance(filename, sp.ndarray):
+        return True
+    return False
+
+#############################
+#
+# End Defs
+#
+####################################
+
+def return_none(*args, **kwargs):
+    return None
 
 def _checksortkey(f):
     @_wraps(f)
@@ -162,36 +171,52 @@ def _checkfilename(f):
 class AstroFile(object):
     """Valid astronomy data file format. Only filename is checked so far"""
 
-    _reads = {'fits': _fits_reader}
-    _readhs = {'fits': _fits_header}
-    _ids = {'fits': _fits_verify}
-    _writes = {'fits': _fits_writer}
-    _geth = {'fits': _fits_getheader}
-    _seth = {'fits': _fits_setheader}
-
-
-#     def __call__(self):
-#         import copy
-#         import os.path as path
-#         new = copy.copy(self)
-#         new.filename = filename
-#         new.type = new.checktype(exists,*args, **kwargs)
-#         new.reqheads={'basename':path.basename(filename)}
-# #        new.filter.__func__.__doc__=new._flts[new.type].__doc__
-#         return new
+    _reads =  {'fits': _fits_reader,    'sparray': array_reader}
+    _readhs = {'fits': _fits_header,    'sparray': return_none}
+    _ids =    {'fits': _fits_verify,    'sparray': array_verify}
+    _writes = {'fits': _fits_writer,    'sparray': return_none}
+    _geth =   {'fits': _fits_getheader, 'sparray': return_none}
+    _seth =   {'fits': _fits_setheader, 'sparray': return_none}
 
     def __repr__(self):
         return '<AstroFile: %s>' % (self.filename,)
 
-    def __init__(self, filename = None,
+    def __new__(cls, *args, **kwargs):
+        """If passed an AstroFile, then do not create a new instance, just pass that one"""
+        if isinstance(args[0], AstroFile):
+            return args[0]
+        else:
+            return super(AstroFile, cls).__new__(cls, *args, **kwargs)
+
+    def __init__(self, filename=None,
                  mbias=None, mflat=None, exists=False,
                  hdu=0, hduh=None, hdud=None,
                  *args, **kwargs):
+        """
+
+        :param filename: Filename, magic var
+        :param mbias: Default Master bias
+        :param mflat:
+        :param exists:
+        :param hdu:
+        :param hduh:
+        :param hdud:
+        :param args:
+        :param kwargs:
+        """
+
         import os.path as path
 
-        self.filename = filename
+        if isinstance(filename, AstroFile):
+            return
+
+        if isinstance(filename, str):
+            self.filename = filename
+            self.header_cache = {'basename': path.basename(filename)}
+        else:
+            self.filename = None
+            self.header_cache = {}
         self.type = self.checktype(exists, *args, **kwargs)
-        self.header_cache = {'basename': path.basename(filename)}
 
         if hduh is None:
             hduh=hdu
@@ -250,21 +275,20 @@ class AstroFile(object):
     #     self._seth[name]=setheader
     #     self._geth[name]=getheader
 
-
     def checktype(self, exists, *args, **kwargs):
         import os.path as path
         if not hasattr(self, 'filename'):
-            #raise ValueError("Must define file name")
             return None
         if not isinstance(self.filename, str):
             return None
+        elif self.filename is None:
+            return "array"
         if exists and not path.isfile(self.filename):
             return None
         for k in self._ids.keys():
             if self._ids[k](self.filename, *args, **kwargs):
                 return k
         return None
-
 
     def spplot(self,
                axes=None, title=None, xtitle=None, ytitle=None,
@@ -463,18 +487,24 @@ class AstroFile(object):
             TODO: Respond to different exposure times or filters
         """
         tp = self.type
-        hdu = kwargs.pop('hdud', self._hdud)
+        hdu = kwargs.pop('hdud', None)
+        if hdu is None:
+            hdu = kwargs.pop('hdu', self._hdud)
+        kwargs.pop('hdu', None)
 
         if not tp:
             return False
 
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
+        if data is None:
+            raise ValueError("HDU %i empty?\n available: %s" % (hdu, self.reader(hdu=-1),))
 
         if not hasattr(self, 'calib'):
             self.calib = dp.AstroCalib()
 
         if ('hdu' in kwargs and kwargs['hdu']<0) or ('rawdata' in kwargs and kwargs['rawdata']):
             return data
+
         return self.calib.reduce(data)
 
     @_checkfilename

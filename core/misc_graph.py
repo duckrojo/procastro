@@ -67,30 +67,38 @@ def plot_accross(data,
     return accross, data
 
 
-def prep_data_plot(indata, hdu=0):
+def prep_data_plot(indata, **kwargs):
+    """Extract from data the array to plot, currently accepts:
+    dataproc.Astrofile, dataproc.combine.Combine, pyfits.HDUlist,
+    string (assumed AstroFile-compatible file), or scipy.array"""
     #set the data to plot
-    if isinstance(indata, pf.hdu.base._BaseHDU):
-        data = indata.data
-        error_msg = ""
-    elif isinstance(indata, dp.AstroFile):
-        error_msg = "HDU %i empty?\n available: %s" % (hdu, indata.reader(hdu=-1),)
-        data = indata.reader(hdu)
-    elif isinstance(indata, cm.Combine):
-        error_msg = ""
+    error_msg = None
+
+
+    af = dp.AstroFile(indata)
+    if af:
+        data = af.reader(**kwargs)
+
+    elif isinstance(indata, pf.hdu.base._BaseHDU):
         data = indata.data
     elif isinstance(indata, pf.HDUList):
-        error_msg = "HDU %i empty?\n available: %s" % (hdu, indata,)
+        hdu = kwargs.pop('hdu', 0)
         data = indata[hdu].data
-    elif isinstance(indata, basestring):
-        open_file  = pf.open(indata)
-        data = open_file[hdu].data
-        error_msg = "HDU %i empty?\n available: %s" % (hdu, open_file,)
+        error_msg = "for HDU {}.\n".format(hdu)
+
+    elif isinstance(indata, cm.Combine):
+        data = indata.data
+
     elif isinstance(indata, sp.ndarray):
         data = indata
+
     else:
         raise TypeError("Unrecognized type for input data: %s" % (indata.__class__,))
+
     if data is None:
-        raise ValueError("Nothing to plot for HDU %i. %s" % (hdu, error_msg))
+        if error_msg is None:
+            error_msg = indata
+        raise ValueError("Nothing to plot %s" % (error_msg,))
 
     return data
 
@@ -122,7 +130,6 @@ def imshowz(data,
             minmax=None, xlim=None, ylim=None,
             cxy=None, plot_rad=None,
             ticks=True, colorbar=False,
-            hdu=0, 
             rotate=0, invertx=False, inverty=False,
             origin='lower', forcenew=False,
             trim_data=False,
@@ -158,7 +165,7 @@ def imshowz(data,
 :param kwargs: passed to matplotlib.pyplot.imshow()
 """
 
-    data = prep_data_plot(data, hdu)
+    data = prep_data_plot(data, **kwargs)
 
     if xlim is None:
         xlim = [0, data.shape[1]]

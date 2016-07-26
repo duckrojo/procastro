@@ -204,7 +204,7 @@ def fluxacross(diameter, seeing,
 
 
 def subarray(data, cyx, rad):
-    """Reurns a subarray centered on cxy with radius rad
+    """Returns a subarray centered on cxy with radius rad
     :param arr: original array
     :type arr: array
     :param y: vertical center
@@ -216,7 +216,9 @@ def subarray(data, cyx, rad):
     :rtype: array
     """
 
-    return data[cyx[0]-rad:cyx[0]+rad, cyx[1]-rad:cyx[1]+rad]
+    icy = int(cyx[0])
+    icx = int(cyx[1])
+    return data[icy-rad:icy+rad+1, icx-rad:icx+rad+1]
 
 
 def centroid(orig_arr, medsub=True):
@@ -250,11 +252,10 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     for i in range(iters):
         scy, scx = centroid(subarray(sub_array, [cy, cx], stamprad),
                             medsub=medsub)
-        cy += scy - stamprad
-        cx += scx - stamprad
+        cy = int(cy) - stamprad + scy
+        cx = int(cx) - stamprad + scx
 
     return cy, cx
-
 
 
 def radial(data, cxy):
