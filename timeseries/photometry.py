@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import logging
 from IPython.core.debugger import Tracer
 
 import dataproc as dp
@@ -14,11 +15,18 @@ import timeserie
 import matplotlib.pyplot as plt
 
 
+def _warning(message, *args, **kwargs):
+    print(message)
+
+
+warnings.showwarning = _warning
+
+
 class Photometry(object):
     def __init__(self, sci_files, aperture=None, sky=None, mdark=None, mflat=None,
                  target_coords_xy=None, stamp_rad=None,
-                 maxskip=8, max_counts = 50000,
-                 new_coords=None, stamp_coords=None, epoch=None, labels=None,
+                 maxskip=8, max_counts=50000,
+                 new_coords=None, stamp_coords=None, epoch='JD', labels=None,
                  deg=1, gain=None, ron=None):
 
         if isinstance(epoch, str):
@@ -36,7 +44,7 @@ class Photometry(object):
         self.gain = gain
         self.ron = ron
         self.stamp_rad = stamp_rad
-        self.max_counts = max_counts
+        self.set_max_counts(max_counts)
 
         # label list
         if isinstance(target_coords_xy, dict):
@@ -73,13 +81,18 @@ class Photometry(object):
         self.mdark = mdark
         self.mflat = mflat
 
-    def photometry(self, aperture=None, sky=None, deg=None):
+    def set_max_counts(self, counts):
+        self.max_counts = counts
+
+    def photometry(self, aperture=None, sky=None, deg=None, max_counts=None):
         if aperture is not None:
             self.aperture = aperture
         if sky is not None:
             self.sky = sky
         if deg is not None:
             self.deg = deg
+        if max_counts is not None:
+            self.set_max_counts(self.max_counts)
 
         if self.aperture is None or self.sky is None:
             raise ValueError("ERROR: aperture photometry parameters are incomplete. Either aperture "
@@ -90,7 +103,8 @@ class Photometry(object):
         ts = self.CPUphot()
         return ts
 
-    def phot_error(self, phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
+    @staticmethod
+    def phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
         """Calculates the photometry error
 
         :param phot: star flux
@@ -112,11 +126,11 @@ class Photometry(object):
         #       (phot, sky_std, n_pix_ap, n_pix_sky, gain, ron))
 
         if ron is None:
-            print("Photometric error calculated without RON")
+            warnings.warn("Photometric error calculated without read-out-noise")
             ron = 0.0
 
         if gain is None:
-            print("Photometric error calculated without Gain")
+            warnings.warn("Photometric error calculated without Gain")
             gain = 1.0
 
         var_flux = phot / gain
@@ -173,9 +187,9 @@ class Photometry(object):
         if mdark is None and mflat is None:
             skipcalib = True
         if mdark is None:
-            mdark = sp.zeros(sci_files[0].shape)
+            mdark = 0.0
         if mflat is None:
-            mflat = sp.ones(sci_files[0].shape)
+            mflat = 1.0
 
         frame_id = []
         all_cubes = [[] for i in target_coords_xy]
@@ -189,6 +203,9 @@ class Photometry(object):
             d = astrofile.reader()
             frame_id.append(astrofile.filename)
             if not skipcalib:
+                if astrofile.has_calib():
+                    logging.warning("Skipping calibration given to Photometry() because "
+                                    "calibration files\nwere included in AstroFile: {}".format(astrofile))
                 d = (d - mdark) / mflat
 
             for tc_xy, cube, lab in zip(center_xy, all_cubes, self.labels):
@@ -196,10 +213,11 @@ class Photometry(object):
                 ncy, ncx = dp.subcentroid(d, [cy, cx], stamp_rad)
                 stamp = dp.subarray(d, [ncy, ncx], stamp_rad)
 
-                skip = sp.sqrt((cx-ncx)**2+(cy-ncy)**2)
-                if skip>maxskip:
-                    warnings.warn("\nUnexpected jump of {skip} pixels has occurred on frame"
-                                  " {frame} for star '{name}'".format(skip=skip, frame=i, name=lab))
+                skip = sp.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
+                if skip > maxskip:
+                    warnings.warn(
+                        "\nUnexpected jump of {skip} pixels has occurred on frame {frame} for star '{name}'".format(
+                            skip=skip, frame=i, name=lab))
 
                 cube.append(stamp)
                 tc_xy.append([ncx, ncy])
@@ -266,9 +284,9 @@ class Photometry(object):
                 fwhmg = 2.355 * sig[1]
 
                 # now photometry
-                psf = res[d<self.aperture]
-                if (psf>self.max_counts).any():
-                    warnings.warn("Object {} on frame {} has count above the "
+                psf = res[d < self.aperture]
+                if (psf > self.max_counts).any():
+                    warnings.warn("Object {} on frame {} has counts above the "
                                   "threshold ({})".format(label, frame_id, self.max_counts))
                 phot = float(psf.sum())
                 # print("phot: %.5d" % (phot))
@@ -280,6 +298,7 @@ class Photometry(object):
                     n_pix_ap = (d < self.aperture).sum()
                     error = self.phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
 
+                #                Tracer()()
                 t_phot.append(phot)
                 t_err.append(error)
 

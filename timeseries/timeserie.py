@@ -18,6 +18,8 @@
 #
 #
 import scipy as sp
+from IPython.core.debugger import Tracer
+
 import dataproc as dp
 from datetime import datetime
 from matplotlib import dates
@@ -73,7 +75,7 @@ class TimeSeries(object):
         k, v = kwargs.items()[0]
 
         if k in self.extras:
-            ret_extra = self.extras[k]
+            ret_extra = sp.array(self.extras[k])
         else:
             raise ValueError("Cannot find requested field '{0}'".format(k))
 
@@ -88,9 +90,10 @@ class TimeSeries(object):
                     if not (self.combine['name'] == 'mean' or self.combine['name'] == 'median'):
                         raise NotImplementedError("Only know how to compute error of median- or mean-combined groups.")
                     sample = sp.array(self.groups) == abs(item)
-                    sigma = sp.array(ret_extra)[sample]
+                    sigma = ret_extra[sample]
                     variance = (sigma ** 2).sum(0)
-                    return sp.sqrt(variance) / len(sample)
+                    #Tracer()()
+                    return sp.sqrt(variance) / sample.sum()
                 else:
                     raise NotImplementedError("Only combined errors have been implemented")
             else:
@@ -166,7 +169,7 @@ class TimeSeries(object):
                     marker="o")
 
         labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
-        ax.set_title("Flux Ratio: [{}]/[{}]".format(labs[0], labs[1]))
+        ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
         ax.set_xlabel("MJD")
         ax.set_ylabel("Flux Ratio")
 

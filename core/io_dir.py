@@ -25,13 +25,14 @@ import dataproc.combine as cm
 import scipy as sp
 import warnings
 import copy
+import sys
 from astropy.utils.exceptions import AstropyUserWarning
 
 
 class AstroDir(object):
     """Collection of AstroFile"""
 
-    def __init__(self, path, mbias=None, mflat=None, mdark=None, calib_force=False,
+    def __init__(self, path, mflat=None, mdark=None, calib_force=False,
                  hdu=0, hdud=None, hduh=None):
         """Create AstroFile container from either a directory path (if given string), or directly from list of string
         if calib is given, create one calib per directory to avoid using storing calibration files on each AstroFile
@@ -56,7 +57,7 @@ class AstroDir(object):
             raise ValueError("invalid path to files or zero-len list given")
         for f in filndir:
             if isinstance(f, dp.AstroFile):
-                nf = copy.copy(f)
+                nf = copy.deepcopy(f)
             elif pth.isdir(f):
                 for sf in os.listdir(f):
                     nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud)
@@ -68,13 +69,14 @@ class AstroDir(object):
             if nf:
                 files.append(nf)
         self.files = files
-        calib = AstroCalib(mbias, mflat)
+        self.props = {}
+        calib = dp.AstroCalib(mdark, mflat)
         for f in files:
-            if calib_force or not hasattr(f, 'calib'):  # allows some of the files to keep their calibration
+            if calib_force or not f.has_calib():  # allows some of the files to keep their calibration
+                #AstroFile are created with an empty calib by default, which is overwritten here. Hoping taht garbage collection works:D
                 f.calib = calib
 
         self.path = path
-        self.bias = mbias
         self.dark = mdark
         self.flat = mflat
 
@@ -147,6 +149,20 @@ class AstroDir(object):
     def __len__(self):
         return self.files.__len__()
 
+    def stats(self, *args, **kwargs):
+        """
+Return stats
+        :param args: Specify the stats that want to be returned
+        :param kwargs: verbose_headings is the only keyword accepted to print a heading
+        :return: the stat as returned by each of the AstroFiles
+        """
+        verbose_heading = kwargs.pop('verbose_heading', True)
+        if kwargs:
+            raise SyntaxError("only keyword argument for stats should be 'verbose_heading'")
+        return [self.files[0].stats(*args,
+                                    verbose_heading=verbose_heading)] + \
+                [af.stats(*args, verbose_heading=False) for af in self.files[1:]]
+
     def filter(self, *args, **kwargs):
         """ Filter files according to those whose filter return True to the given arguments.
             What the filter does is type-dependent in each file. Check docstring of a single element."""
@@ -184,58 +200,57 @@ class AstroDir(object):
 
         return self
 
+    def get_datacube(self, normalize_region=None, normalize=False, verbose=False):
+        if verbose:
+            print("Reading {} frames{}: ".format(len(self),
+                                                normalize and " and normalizing" or ""),
+                                                end='')
+        if normalize_region is None:
+            if 'normalize_region' in self.props:
+                normalize_region = self.props['normalize_region']
+            else:
+                normalize_region = slice(None)
+        all_data = sp.zeros([len(self)]+list(self[0].shape))
+        for ad, af in zip(all_data, self):
+            data = af.reader()
+            if normalize:
+                data /= data[normalize_region].mean()
+            ad[:, :] = data
+            if verbose:
+                print(".", end='')
+                sys.stdout.flush()
+        if verbose:
+            print("")
+        return all_data
 
-class AstroCalib(object):
-    def __init__(self, mbias=None, mflat=None):
-        if mbias is None:
-            mbias = 0.0
-        if mflat is None:
-            mflat = 1.0
+    def median(self, normalize_region=None, normalize=False, verbose=True):
+        data = self.get_datacube(normalize_region=normalize_region,
+                                 normalize=normalize,
+                                 verbose=verbose)
+        # todo: return AstroFile
 
-        self.mbias = {}
-        self.mflat = {}
-        self.add_bias(mbias)
-        self.add_flat(mflat)
+        if verbose:
+            print("Median combining: ", end="")
+        sys.stdout.flush()
+        ret = sp.median(data, axis=0)
+        if verbose:
+            print("done")
+            sys.stdout.flush()
 
-    def add_bias(self, mbias):
-        if isinstance(mbias, dict):
-            for k in mbias.keys():
-                self.mbias[k] = mbias[k]
-        elif isinstance(mbias,
-                        (int, float, sp.ndarray)):
-            self.mbias[-1] = mbias
-        elif isinstance(mbias,
-                        dp.AstroFile):
-            self.mbias[-1] = mbias.reader()
-        elif isinstance(mbias,
-                        cm.Combine):
-            self.mbias[-1] = mbias.data
-        else:
-            raise ValueError("Master Bias supplied was not recognized.")
+        return ret
 
-    def add_flat(self, mflat):
-        if isinstance(mflat, dict):
-            for k in mflat.keys():
-                self.mflat[k] = mflat[k]
-        elif isinstance(mflat,
-                        dp.AstroFile):
-            self.mflat[''] = mflat.reader()
-        elif isinstance(mflat,
-                        (int, float, sp.ndarray)):
-            self.mflat[''] = mflat
-        elif isinstance(mflat,
-                        cm.Combine):
-            self.mflat[''] = mflat.data
-        else:
-            raise ValueError("Master Flat supplied was not recognized.")
+    def mean(self, normalize_region=None, normalize=False, verbose=True):
+        data = self.get_datacube(normalize_region=normalize_region,
+                                 normalize=normalize,
+                                 verbose=verbose)
+        # todo: return AstroFile
+        if verbose:
+            print("Median combining: ", end="")
+            sys.stdout.flush()
+        ret = sp.mean(data, axis=0)
+        if verbose:
+            print("done")
+            sys.stdout.flush()
 
-    def reduce(self, data, exptime=None, afilter=None):
-        if exptime is None:
-            exptime = -1
-        if afilter is None:
-            afilter = ''
+        return ret
 
-        debias = data - self.mbias[exptime]
-        deflat = debias / self.mflat[afilter]
-
-        return deflat

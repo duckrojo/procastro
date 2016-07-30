@@ -1,4 +1,3 @@
-
 # dataproc - general data processing routines
 #
 # Copyright (C) 2013 Patricio Rojo
@@ -21,6 +20,7 @@
 
 from __future__ import print_function, division
 
+import logging
 import scipy as sp
 from functools import wraps as _wraps
 import warnings
@@ -36,6 +36,7 @@ def _numerize_other(method):
         if isinstance(other, cm.Combine):
             other = other.data
         return method(instance, other, *args, **kwargs)
+
     return wrapper
 
 
@@ -99,10 +100,12 @@ def _fits_setheader(_filename, **kwargs):
     if 'write' in kwargs and kwargs['write']:
         save = True
         try:
-            #todo: if file does not exist, create it
+            # todo: if file does not exist, create it
             fits = pf.open(_filename, 'update')[hdu]
         except IOError:
-            warnings.warn("Read only filesystem or file not found. Header update of '%s' will not remain on disk." % ', '.join(kwargs.keys()))
+            warnings.warn(
+                "Read only filesystem or file not found. Header update of '%s' will not remain on disk." % ', '.join(
+                    kwargs.keys()))
             return
     else:
         fits = pf.open(_filename)[hdu]
@@ -112,7 +115,7 @@ def _fits_setheader(_filename, **kwargs):
 
     h = fits.header
     for k, v in kwargs.items():
-        #If new value is None, then delete it
+        # If new value is None, then delete it
         if v is None:
             del h[k]
         else:
@@ -120,6 +123,7 @@ def _fits_setheader(_filename, **kwargs):
     if save:
         fits.flush()
     return True
+
 
 #############################
 #
@@ -130,10 +134,12 @@ def _fits_setheader(_filename, **kwargs):
 def array_reader(filename, **kwargs):
     return filename
 
+
 def array_verify(filename, **kwargs):
     if isinstance(filename, sp.ndarray):
         return True
     return False
+
 
 #############################
 #
@@ -143,6 +149,7 @@ def array_verify(filename, **kwargs):
 
 def return_none(*args, **kwargs):
     return None
+
 
 def _checksortkey(f):
     @_wraps(f)
@@ -171,19 +178,19 @@ def _checkfilename(f):
 class AstroFile(object):
     """Valid astronomy data file format. Only filename is checked so far"""
 
-    _reads =  {'fits': _fits_reader,    'sparray': array_reader}
-    _readhs = {'fits': _fits_header,    'sparray': return_none}
-    _ids =    {'fits': _fits_verify,    'sparray': array_verify}
-    _writes = {'fits': _fits_writer,    'sparray': return_none}
-    _geth =   {'fits': _fits_getheader, 'sparray': return_none}
-    _seth =   {'fits': _fits_setheader, 'sparray': return_none}
+    _reads = {'fits': _fits_reader, 'sparray': array_reader}
+    _readhs = {'fits': _fits_header, 'sparray': return_none}
+    _ids = {'fits': _fits_verify, 'sparray': array_verify}
+    _writes = {'fits': _fits_writer, 'sparray': return_none}
+    _geth = {'fits': _fits_getheader, 'sparray': return_none}
+    _seth = {'fits': _fits_setheader, 'sparray': return_none}
 
     def __repr__(self):
         return '<AstroFile: %s>' % (self.filename,)
 
     def __new__(cls, *args, **kwargs):
         """If passed an AstroFile, then do not create a new instance, just pass that one"""
-        if isinstance(args[0], AstroFile):
+        if args and isinstance(args[0], AstroFile):
             return args[0]
         else:
             return super(AstroFile, cls).__new__(cls, *args, **kwargs)
@@ -219,25 +226,18 @@ class AstroFile(object):
         self.type = self.checktype(exists, *args, **kwargs)
 
         if hduh is None:
-            hduh=hdu
+            hduh = hdu
         if hdud is None:
-            hdud=hdu
+            hdud = hdu
         self._hduh = hduh
         self._hdud = hdud
 
-        if mbias is not None:
-            self.add_bias(mbias)
-        if mflat is not None:
-            self.add_flat(mflat)
+        self.calib = AstroCalib(mbias, mflat)
 
     def add_bias(self, mbias):
-        if not hasattr(self, 'calib'):
-            self.calib = dp.AstroCalib()
         self.calib.add_bias(mbias)
 
     def add_flat(self, mflat):
-        if not hasattr(self, 'calib'):
-            self.calib = dp.AstroCalib()
         self.calib.add_flat(mflat)
 
     # Para cargar data a un AstroFile vacio
@@ -247,7 +247,7 @@ class AstroFile(object):
             self.filename = filename
             self.type = self.checktype(exists, *args, **kwargs)
             self.header_cache = {'basename': path.basename(filename)}
-            #print("ok")
+            # print("ok")
         else:
             raise ValueError("The current Astrofile already has data in it.\n \
                              Data must be loaded to an empty AstroFile.")
@@ -263,17 +263,8 @@ class AstroFile(object):
         else:
             raise ValueError("Existing file cannot be renamed.")
 
-        #todo: following is only necessary because isinstance is not working on combine module!!
-#        self.astrofile=True
-
-    # def register(self,name,identify, reader, writer, 
-    #              getheader=None, setheader=None):
-    #     """register(name, id_fcn, read_fcn, write_fcn): Register the read-, write-, and identify-able functions for a new type of astro filename (name)"""
-    #     self._ids[name]=identify
-    #     self._reads[name]=reader
-    #     self._writes[name]=writer
-    #     self._seth[name]=setheader
-    #     self._geth[name]=getheader
+            # todo: following is only necessary because isinstance is not working on combine module!!
+        #        self.astrofile=True
 
     def checktype(self, exists, *args, **kwargs):
         import os.path as path
@@ -294,24 +285,23 @@ class AstroFile(object):
                axes=None, title=None, xtitle=None, ytitle=None,
                *args, **kwargs):
         fig, ax = dp.prep_canvas(axes, title, xtitle, ytitle)
-        
+
         data = self.reader()
         dim = len(data.shape)
 
-        if dim==2:
-            if data.shape[0]<data.shape[1]:
-                wav=data[0,:]
-                flx=data[1,:]
+        if dim == 2:
+            if data.shape[0] < data.shape[1]:
+                wav = data[0, :]
+                flx = data[1, :]
             else:
-                wav=data[:,0]
-                flx=data[:,1]
-        elif dim==1:
+                wav = data[:, 0]
+                flx = data[:, 1]
+        elif dim == 1:
             raise NotImplemented("Needs to add reading of wavelength from headers")
         else:
             raise NotImplemented("Spectra not understood")
 
-        ax.plot(wav,flx)
-
+        ax.plot(wav, flx)
 
     def plot(self, *args, **kwargs):
         """ Calls plot_accross(data, axes=None, title=None,
@@ -329,7 +319,7 @@ class AstroFile(object):
         return dp.imshowz(self.reader(), *args, **kwargs)
 
     def __nonzero__(self):
-        return hasattr(self,'filename') and (self.type is not None)
+        return hasattr(self, 'filename') and (self.type is not None)
 
     @_checkfilename
     def filter(self, *args, **kwargs):
@@ -340,10 +330,10 @@ class AstroFile(object):
         """
         ret = []
 
-#       print (kwargs.items())
+        #       print (kwargs.items())
         for filter_keyword, request in kwargs.items():
             functions = []
-            #by default is not comparing match, but rather equality
+            # by default is not comparing match, but rather equality
             match = False
             exists = True
 
@@ -354,9 +344,9 @@ class AstroFile(object):
                 filter_keyword = tmp[0]
                 functions.extend(tmp[1:])
             header_val = self.getheaderval(filter_keyword)[0]
-#            print ("hv:%s fk:%s rq:%s" % (header_val, filter_keyword, request))
+            #            print ("hv:%s fk:%s rq:%s" % (header_val, filter_keyword, request))
 
-            #treat specially the not-found and list as filter_keyword
+            # treat specially the not-found and list as filter_keyword
             if header_val is None:
                 ret.append(False)
                 continue
@@ -384,7 +374,7 @@ class AstroFile(object):
             else:
                 cast = type(request)
                 request = [request]
-#                warnings.warn("Attempting auto-casting the filter's value. Found '%s' for '%s'." % (cast,request))
+            #                warnings.warn("Attempting auto-casting the filter's value. Found '%s' for '%s'." % (cast,request))
 
             less_than = greater_than = False
             for f in functions:
@@ -418,9 +408,8 @@ class AstroFile(object):
             else:
                 ret.append((True in [cast(r) == cast(header_val) for r in request]) == exists)
 
-        #returns whether the filter existed (or not if _not function)
+        # returns whether the filter existed (or not if _not function)
         return (True in ret)
-
 
     @_checkfilename
     def setheader(self, *args, **kwargs):
@@ -434,7 +423,6 @@ class AstroFile(object):
                 self.header_cache[k] = v
         return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
-
     @_checkfilename
     def getheaderval(self, *args, **kwargs):
         """Get header value for each of the fields specified in args.  It can also accept a list
@@ -442,43 +430,43 @@ class AstroFile(object):
 
         tp = self.type
 
-        mapout = kwargs.pop('mapout', lambda x:x)
-        hdu = kwargs.pop('hdu',self._hduh)
+        mapout = kwargs.pop('mapout', lambda x: x)
+        hdu = kwargs.pop('hdu', self._hduh)
 
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):  # if first argument is tuple use those values as searches
                 args = args[0]
-#if only 1 already-read header is requested, use a shortcut
+            # if only 1 already-read header is requested, use a shortcut
             elif args[0] in self.header_cache.keys():
                 return mapout([self.header_cache[args[0]]])
 
         new_keys = [k for k in args if k not in self.header_cache.keys()]
         new_values = new_keys and self._geth[tp](self.filename, *new_keys, hdu=hdu) or []
 
-        for k, v in zip(new_keys,new_values):
+        for k, v in zip(new_keys, new_values):
             self.header_cache[k] = v
 
         ret = [self.header_cache[k] for k in args]
 
         return mapout(ret)
 
-    #emulating arithmetic
+    # emulating arithmetic
     def __add__(self, other):
-        return self.reader()+other
+        return self.reader() + other
 
     def __mul__(self, other):
-        return self.reader()*other
+        return self.reader() * other
 
     def __sub__(self, other):
-        return self.reader()-other
+        return self.reader() - other
 
     def __div__(self, other):
         import warnings
         warnings.warn('Better use "from __future__ import division" for future compability')
-        return self.reader()/other
+        return self.reader() / other
 
     def __truediv__(self, other):
-        return self.reader()/other
+        return self.reader() / other
 
     @_checkfilename
     def reader(self, *args, **kwargs):
@@ -496,16 +484,26 @@ class AstroFile(object):
             return False
 
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
-        if data is None:
-            raise ValueError("HDU %i empty?\n available: %s" % (hdu, self.reader(hdu=-1),))
 
-        if not hasattr(self, 'calib'):
-            self.calib = dp.AstroCalib()
-
-        if ('hdu' in kwargs and kwargs['hdu']<0) or ('rawdata' in kwargs and kwargs['rawdata']):
+        # Just print the HDUs if requested hdu=-1
+        if hdu == -1:
             return data
 
-        return self.calib.reduce(data)
+        if data is None:
+            raise ValueError("HDU {hdu} empty at file {file}?\n "
+                             "available: {hdus}".format(hdu=hdu, file=self.filename,
+                                                        hdus=self.reader(hdu=-1)))
+
+        if ('hdu' in kwargs and kwargs['hdu'] < 0) or ('rawdata' in kwargs and kwargs['rawdata']):
+            return data
+
+        if self.has_calib():
+            return self.calib.reduce(data)
+
+        return data
+
+    def has_calib(self):
+        return self.calib.has_calib
 
     @_checkfilename
     def readheader(self, *args, **kwargs):
@@ -518,14 +516,13 @@ class AstroFile(object):
             return False
         return self._readhs[tp](self.filename, *args, hdu=hdu, **kwargs)
 
-
     @_checkfilename
     def writer(self, *args, **kwargs):
         """Write astro data"""
         tp = self.type
-        #todo: save itself if data exists. Now it only saves explicit array given by user
+        # todo: save itself if data exists. Now it only saves explicit array given by user
         data = args[0]
-        return tp and  self._writes[tp](self.filename, data, *args, **kwargs)
+        return tp and self._writes[tp](self.filename, data, *args, **kwargs)
 
     @_checkfilename
     def basename(self):
@@ -538,32 +535,37 @@ class AstroFile(object):
     @_checkfilename
     def __getitem__(self, key):
         """Read data and return key"""
-        return self.reader()[key]
+
+        ###TODO: return header
+        if isinstance(key, str):
+            return self.getheaderval(key)[0]
+        else:
+            return self.reader()[key]
 
     @_checksortkey
     def __lt__(self, other):
         return self.getheaderval(self.sortkey)[0] < \
-            other.getheaderval(self.sortkey)[0]
+               other.getheaderval(self.sortkey)[0]
 
     @_checksortkey
     def __le__(self, other):
         return self.getheaderval(self.sortkey)[0] <= \
-            other.getheaderval(self.sortkey)[0]
+               other.getheaderval(self.sortkey)[0]
 
     @_checksortkey
     def __gt__(self, other):
         return self.getheaderval(self.sortkey)[0] > \
-            other.getheaderval(self.sortkey)[0]
+               other.getheaderval(self.sortkey)[0]
 
     @_checksortkey
     def __eq__(self, other):
         return self.getheaderval(self.sortkey)[0] == \
-            other.getheaderval(self.sortkey)[0]
+               other.getheaderval(self.sortkey)[0]
 
     @_checksortkey
     def __ne__(self, other):
         return self.getheaderval(self.sortkey)[0] != \
-            other.getheaderval(self.sortkey)[0]
+               other.getheaderval(self.sortkey)[0]
 
     @_numerize_other
     def __add__(self, other):
@@ -587,7 +589,7 @@ class AstroFile(object):
 
     @_numerize_other
     def __radd__(self, other):
-        return  other + self.reader()
+        return other + self.reader()
 
     @_numerize_other
     def __rsub__(self, other):
@@ -599,12 +601,136 @@ class AstroFile(object):
 
     @_numerize_other
     def __rtruediv__(self, other):
-        return other / self.reader() 
+        return other / self.reader()
 
     @_numerize_other
     def __rmul__(self, other):
         return self.reader() * other
 
+    def __len__(self):
+        return len(self.reader())
+
     @property
     def shape(self):
         return self.reader().shape
+
+    def stats(self, *args, **kwargs):
+        verbose_heading = kwargs.pop('verbose_heading', True)
+        if kwargs:
+            raise SyntaxError("only keyword argument for stats should be 'verbose_heading'")
+
+        if not args:
+            args = ['min', 'max', 'mean', 'mean3sclip', 'median', 'std']
+        if verbose_heading:
+            print("Computing the following stats: {}".format(", ".join(args)))
+        ret = []
+        data = self.reader()
+        for stat in args:
+            if stat == 'min':
+                ret.append(data.min())
+            elif stat == 'max':
+                ret.append(data.max())
+            elif stat == 'mean':
+                ret.append(data.mean())
+            elif stat == 'mean3sclip':
+                clip = data.copy()
+                clip -= data.mean()
+                std = data.std()
+                ret.append(clip[sp.absolute(clip) < 3 * std].mean())
+            elif stat == 'std':
+                ret.append(data.std())
+            elif stat == 'median':
+                ret.append(sp.median(data))
+            else:
+                raise ValueError("Unknown stat '{}' was requested for "
+                                 "file {}".format(stat, self.filename))
+        return ret
+
+
+class AstroCalib(object):
+    """Object to hold calibration frames. It is a separate entity than AstroFile, since if is set by AstroDir, there will be no duplication of calibration frames, but just a common object."""
+    def __init__(self, mbias=None, mflat=None):
+        # it is always created false, if the add_*() has something, then it is turned true.
+        self.has_calib = False
+
+        self.mbias = {}
+        self.mflat = {}
+        self.add_bias(mbias)
+        self.add_flat(mflat)
+
+    def add_bias(self, mbias):
+        """
+Add Master Bias to Calib object.
+
+        :param mbias: It can be either a dictionary indexed by exposure
+        time or an array/AstroFile for generic times
+        """
+        if mbias is None:
+            self.mbias[-1] = 0.0
+            return
+        self.has_calib = True
+        if isinstance(mbias, dict):
+            for k in mbias.keys():
+                self.mbias[k] = mbias[k]
+        elif isinstance(mbias,
+                        (int, float, sp.ndarray)):
+            self.mbias[-1] = mbias
+        elif isinstance(mbias,
+                        dp.AstroFile):
+            self.mbias[-1] = mbias.reader()
+        elif isinstance(mbias,
+                        cm.Combine):
+            self.mbias[-1] = mbias.data
+        else:
+            raise ValueError("Master Bias supplied was not recognized.")
+
+    def add_flat(self, mflat):
+        """
+Add master flat to Calib object
+
+        :param mflat: it can be either a dictionary
+         indexed by filter name, or an AstroFile/array for generic filter.
+        """
+        if mflat is None:
+            self.mflat[''] = 1.0
+            return
+        self.has_calib = True
+        if isinstance(mflat, dict):
+            for k in mflat.keys():
+                self.mflat[k] = mflat[k]
+        elif isinstance(mflat,
+                        dp.AstroFile):
+            self.mflat[''] = mflat.reader()
+        elif isinstance(mflat,
+                        (int, float, sp.ndarray)):
+            self.mflat[''] = mflat
+        elif isinstance(mflat,
+                        cm.Combine):
+            self.mflat[''] = mflat.data
+        else:
+            raise ValueError("Master Flat supplied was not recognized.")
+
+    def reduce(self, data, exptime=None, afilter=None):
+        """
+Process flat & bias
+        :param data: science sp.array()
+        :param exptime: exposure time for master bias
+        :param afilter: filter for flat
+        :return: reduced data
+        """
+        if exptime is None:
+            exptime = -1
+        if afilter is None:
+            afilter = ''
+
+        if exptime not in self.mbias:
+            raise ValueError("Requested exposure time ({}) is not available "
+                             "for mbias, only: {}".format(exptime, ", ".join(mbias.keys())))
+        if afilter not in self.mflat:
+            raise ValueError("Requested filter ({}) is not available "
+                             "for mflat, only: {}".format(afilter, ", ".join(mflat.keys())))
+
+        debias = data - self.mbias[exptime]
+        deflat = debias / self.mflat[afilter]
+
+        return deflat
