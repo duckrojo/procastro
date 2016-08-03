@@ -1,10 +1,10 @@
-from dataproc.core import AstroFile, AstroDir
-from dataproc.timeseries.photometry import Photometry
+import dataproc as dp
+import dataproc.timeseries as tm
 
-raw = AstroDir("./data/raw")
+raw = dp.AstroDir("./data/raw")
 
-dark = AstroFile("./data/dark.fits")
-flat = AstroFile("./data/flat.fits")
+dark = dp.AstroFile("./data/dark.fits")
+flat = dp.AstroFile("./data/flat.fits")
 
 target_coords = [[570, 269], [436, 539]] # Coordinates of 1 target and 1 reference
 # Coordinates in y, x format!!!
@@ -20,9 +20,10 @@ gain = 1.
 # ======= INITIALIZING PHOTOMETRY OBJECT =======
 # Initialize Photometry object. If calculate_stamps=True, stamps for photometry will be calculated upon
 # initialization and get_stamps does not have to be explicitely called by the user
-phot = Photometry(raw, aperture=aperture, sky=sky, mdark=dark, mflat=flat,
-                  calculate_stamps=True, target_coords_xy=target_coords, stamp_rad=stamp_rad,
-                  labels=labels, gain=gain, ron=ron)
+phot = tm.Photometry(raw, aperture=aperture, sky=sky, mdark=dark, mflat=flat,
+                     calculate_stamps=True, target_coords_xy=target_coords,
+                     stamp_rad=stamp_rad,
+                     labels=labels, gain=gain, ron=ron)
 
 # Plot radial profile of targets; can specify targets with labels
 phot.plot_radialprofile()
