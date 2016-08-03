@@ -21,7 +21,7 @@ gain = 1.
 # Initialize Photometry object. If calculate_stamps=True, stamps for photometry will be calculated upon
 # initialization and get_stamps does not have to be explicitely called by the user
 phot = tm.Photometry(raw, aperture=aperture, sky=sky, mdark=dark, mflat=flat,
-                     calculate_stamps=True, target_coords_xy=target_coords,
+                     arget_coords_xy=target_coords,
                      stamp_rad=stamp_rad,
                      labels=labels, gain=gain, ron=ron)
 
