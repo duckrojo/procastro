@@ -106,12 +106,12 @@ def prep_data_plot(indata, **kwargs):
 
 def prep_canvas(axes=None, title=None,
                 ytitle=None, xtitle=None,
-                forcenew=False,
+                force_new=False,
                 ):
 
 
     #set the canvas
-    fig, ax = figaxes(axes, forcenew)
+    fig, ax = figaxes(axes, force_new)
 
     if title is not None:
         ax.set_title(title)
@@ -124,15 +124,15 @@ def prep_canvas(axes=None, title=None,
 
 
 
-def imshowz(data, 
+def imshowz(data,
             axes=None, title=None,
             ytitle=None, xtitle=None,
             minmax=None, xlim=None, ylim=None,
             cxy=None, plot_rad=None,
             ticks=True, colorbar=False,
             rotate=0, invertx=False, inverty=False,
-            origin='lower', forcenew=False,
-            trim_data=False,
+            origin='lower', force_new=False,
+            trim_data=False, force_show=True,
             **kwargs):
     """Plots data using zscale algorithm to fix the min and max values
 
@@ -156,8 +156,8 @@ def imshowz(data,
 :type hdu: int
 :param origin: Option of the same name given to imshow
 :type origin: string
-:param forcenew: whether to create a new plot if no axis has been specified
-:type forcenew: boolean
+:param force_new: whether to create a new plot if no axis has been specified
+:type force_new: boolean
 :param cxy: Center at this coordinate and use plot_rad as radius.  If both xlim and cxy are specified, then only cxy is considered.
 :type cxy: 2-element tuple or list
 :param plot_rad: Radius of plotting area. Only relevant if cxy is not None. If None then it is the minimum distance to an image border.
@@ -221,7 +221,8 @@ def imshowz(data,
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
-    plt.show()
+    if force_show:
+        plt.show()
     return mn, mx
 
 

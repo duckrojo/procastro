@@ -15,11 +15,124 @@ import timeserie
 import matplotlib.pyplot as plt
 
 
-def _warning(message, *args, **kwargs):
-    print(message)
+# def _warning(message, *args, **kwargs):
+#     print(message)
+#
+#
+# warnings.showwarning = _warning
 
 
-warnings.showwarning = _warning
+
+
+def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
+               mdark=None, mflat=None, labels=None):
+    """
+
+    :param sci_files:
+    :type sci_files: AstroDir
+    :param target_coords_xy: [[t1x, t1y], [t2x, t2y], ...]
+    :param stamp_rad:
+    :return:
+    """
+
+    all_cubes = []
+    # epoch = sci_files.getheaderval('DATE-OBS')
+    # epoch = sci_files.getheaderval('MJD-OBS')
+    # labels = sci_files.getheaderval('OBJECT')
+    new_coords = []
+    stamp_coords = []
+
+    if labels is None:
+        labels = range(len(all_cubes))
+
+    skipcalib = False
+    if mdark is None and mflat is None:
+        skipcalib = True
+    if mdark is None:
+        mdark = 0.0
+    if mflat is None:
+        mflat = 1.0
+
+    all_cubes = sp.zeros([len(target_coords_xy), len(sci_files),
+                          stamp_rad*2+1, stamp_rad*2+1])
+    #all_cubes = [[] for i in target_coords_xy]
+    center_xy = [[[xx, yy]] for xx, yy in target_coords_xy]
+    print("Obtaining stamps for {0} files".format(len(sci_files)))
+
+    for astrofile, file_id in zip(sci_files, range(len(sci_files))):
+        print('.', end='')
+        sys.stdout.flush()
+
+        d = astrofile.reader()
+        if not skipcalib:
+            if astrofile.has_calib():
+                logging.warning("Skipping calibration given to Photometry() because "
+                                "calibration files\nwere included in AstroFile: {}".format(astrofile))
+            d = (d - mdark) / mflat
+
+        for tc_xy, cube, lab in zip(center_xy, all_cubes, labels):
+            #todo: make fallbacks when star is closer than stamp_Rad to a border
+            cx, cy = tc_xy[-1][0], tc_xy[-1][1]
+            ncy, ncx = dp.subcentroid(d, [cy, cx], stamp_rad)
+            cube[file_id] = dp.subarray(d, [ncy, ncx], stamp_rad)
+
+            skip = sp.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
+            if skip > maxskip:
+                if file_id==0:
+                    logging.warning(
+                        "\nPosition of user coordinates adjusted by {skip} pixels on first frame for target '{name}'".format(
+                            skip=skip, name=lab))
+                else:
+                    logging.warning(
+                        "\nUnexpected jump of {skip} pixels has occurred on frame {frame} for star '{name}'".format(
+                            skip=skip, frame=astrofile, name=lab))
+
+            tc_xy.append([ncx, ncy])
+
+    print('')
+
+    # get rid of user-provided first guesses for centers
+    dummy = [stamp_cnt.pop(0) for stamp_cnt in center_xy]
+
+    return all_cubes, center_xy
+
+
+def _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain=None, ron=None):
+    """Calculates the photometry error
+
+    :param phot: star flux
+    :type phot: float
+    :param sky: sky flux
+    :type sky: float
+    :param n_pix_ap: number of pixels in the aperture
+    :type n_pix_ap: int
+    :param n_pix_sky: number of pixels in the sky annulus
+    :type n_pix_sky: int
+    :param gain: gain
+    :type gain: float
+    :param ron: read-out-noise
+    :type ron: float (default value: None)
+    :rtype: float
+    """
+
+    # print("f,s,npa,nps,g,ron: %f,%f,%i,%i,%f,%f" %
+    #       (phot, sky_std, n_pix_ap, n_pix_sky, gain, ron))
+
+    if ron is None:
+        logging.warning("Photometric error calculated without read-out-noise")
+        ron = 0.0
+
+    if gain is None:
+        logging.warning("Photometric error calculated without Gain")
+        gain = 1.0
+
+    var_flux = phot / gain
+    var_sky = sky_std ** 2 * n_pix_ap * (1 + float(n_pix_ap) / n_pix_sky)
+
+    var_total = var_sky + var_flux + ron * ron * n_pix_ap
+
+    return sp.sqrt(var_total)
+
 
 
 class Photometry(object):
@@ -37,9 +150,10 @@ class Photometry(object):
             raise ValueError(
                 "Epoch must be an array of dates in julian date, or a a header's keyword for the Julian date of the observation")
 
-        self.target_coords_xy = target_coords_xy
+        #following as default but are not used until .photometry(), which can override them
         self.aperture = aperture
         self.sky = sky
+
         self.deg = deg
         self.gain = gain
         self.ron = ron
@@ -48,8 +162,8 @@ class Photometry(object):
 
         # label list
         if isinstance(target_coords_xy, dict):
+            coords_user_xy = target_coords_xy.values()
             labels = target_coords_xy.keys()
-            coordsxy = target_coords_xy.values()
         try:
             if labels is None:
                 labels = []
@@ -60,29 +174,30 @@ class Photometry(object):
                 labels = list(
                     labels) + sp.arange(len(labels),
                                         nstars).astype(str).tolist()
-            targetsxy = {lab: coo
-                         for coo, lab in zip(target_coords_xy, labels)}
         except:
             raise ValueError("Coordinates of target stars need to be " +
-                             "specified as a list of 2 elements, not: %s" %
+                             "specified as dictionary or as a list of 2 elements, not: %s" %
                              (str(target_coords_xy),))
         print(" Initial guess received for %i targets: %s" %
               (len(target_coords_xy),
                ", ".join(["%s %s" % (lab, coo)
-                          for lab, coo in zip(labels, target_coords_xy)])
+                          for lab, coo in zip(labels, coords_user_xy)])
                ))
 
         self.labels = labels
-        self.targetsxy = targetsxy
+        self.coords_user_xy = coords_user_xy
 
-        self.sci_stamps, self.new_coords_xy = self.get_stamps(sci_files, target_coords_xy, stamp_rad,
-                                                              maxskip,
-                                                              mdark=mdark, mflat=mflat)
+        self.sci_stamps, self.coords_new_xy = _get_stamps(sci_files, self.coords_user_xy,
+                                                          self.stamp_rad, maxskip=maxskip,
+                                                          mdark=mdark, mflat=mflat,
+                                                          labels=labels)
+        self.frame_id = sci_files.getheaderval('basename')
         self.mdark = mdark
         self.mflat = mflat
 
     def set_max_counts(self, counts):
         self.max_counts = counts
+
 
     def photometry(self, aperture=None, sky=None, deg=None, max_counts=None):
         if aperture is not None:
@@ -103,141 +218,17 @@ class Photometry(object):
         ts = self.CPUphot()
         return ts
 
-    @staticmethod
-    def phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain, ron=None):
-        """Calculates the photometry error
 
-        :param phot: star flux
-        :type phot: float
-        :param sky: sky flux
-        :type sky: float
-        :param n_pix_ap: number of pixels in the aperture
-        :type n_pix_ap: int
-        :param n_pix_sky: number of pixels in the sky annulus
-        :type n_pix_sky: int
-        :param gain: gain
-        :type gain: float
-        :param ron: read-out-noise
-        :type ron: float (default value: None)
-        :rtype: float
-        """
-
-        # print("f,s,npa,nps,g,ron: %f,%f,%i,%i,%f,%f" %
-        #       (phot, sky_std, n_pix_ap, n_pix_sky, gain, ron))
-
-        if ron is None:
-            warnings.warn("Photometric error calculated without read-out-noise")
-            ron = 0.0
-
-        if gain is None:
-            warnings.warn("Photometric error calculated without Gain")
-            gain = 1.0
-
-        var_flux = phot / gain
-        var_sky = sky_std ** 2 * n_pix_ap * (1 + float(n_pix_ap) / n_pix_sky)
-
-        var_total = var_sky + var_flux + ron * ron * n_pix_ap
-
-        return sp.sqrt(var_total)
-
-    @staticmethod
-    def centroid(orig_arr, medsub=True):
-        """Find centroid of small array
-        :param orig_arr:
-        :param medsub:
-        :return:
-        :param arr: array
-        :type arr: array
-        :rtype: [float,float]
-        """
-        arr = copy.copy(orig_arr)
-
-        if medsub:
-            med = sp.median(arr)
-            arr = arr - med
-
-        arr = arr * (arr > 0)
-
-        iy, ix = sp.mgrid[0:len(arr), 0:len(arr)]
-
-        cy = sp.sum(iy * arr) / sp.sum(arr)
-        cx = sp.sum(ix * arr) / sp.sum(arr)
-
-        return cy, cx
-
-    def get_stamps(self, sci_files, target_coords_xy, stamp_rad, maxskip,
-                   mdark=None, mflat=None):
-        """
-
-        :param sci_files:
-        :type sci_files: AstroDir
-        :param target_coords_xy: [[t1x, t1y], [t2x, t2y], ...]
-        :param stamp_rad:
-        :return:
-        """
-
-        all_cubes = []
-        # epoch = sci_files.getheaderval('DATE-OBS')
-        # epoch = sci_files.getheaderval('MJD-OBS')
-        # labels = sci_files.getheaderval('OBJECT')
-        new_coords = []
-        stamp_coords = []
-
-        skipcalib = False
-        if mdark is None and mflat is None:
-            skipcalib = True
-        if mdark is None:
-            mdark = 0.0
-        if mflat is None:
-            mflat = 1.0
-
-        frame_id = []
-        all_cubes = [[] for i in target_coords_xy]
-        center_xy = [[[xx, yy]] for xx, yy in target_coords_xy]
-        print("Obtaining stamps for {0} files".format(len(sci_files)))
-
-        for astrofile in sci_files:
-            print('.', end='')
-            sys.stdout.flush()
-
-            d = astrofile.reader()
-            frame_id.append(astrofile.filename)
-            if not skipcalib:
-                if astrofile.has_calib():
-                    logging.warning("Skipping calibration given to Photometry() because "
-                                    "calibration files\nwere included in AstroFile: {}".format(astrofile))
-                d = (d - mdark) / mflat
-
-            for tc_xy, cube, lab in zip(center_xy, all_cubes, self.labels):
-                cx, cy = tc_xy[-1][0], tc_xy[-1][1]
-                ncy, ncx = dp.subcentroid(d, [cy, cx], stamp_rad)
-                stamp = dp.subarray(d, [ncy, ncx], stamp_rad)
-
-                skip = sp.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
-                if skip > maxskip:
-                    warnings.warn(
-                        "\nUnexpected jump of {skip} pixels has occurred on frame {frame} for star '{name}'".format(
-                            skip=skip, frame=i, name=lab))
-
-                cube.append(stamp)
-                tc_xy.append([ncx, ncy])
-
-        print('')
-
-        # get rid of user-provided first guesses for centers
-        dummy = [stamp_cnt.pop(0) for stamp_cnt in center_xy]
-        self.frame_id = frame_id
-
-        return all_cubes, center_xy
 
     def CPUphot(self):
         all_phot = []
         all_err = []
+        all_fwhm = []
 
         print("Processing CPU photometry for {0} targets: ".format(len(self.sci_stamps)), end='')
         sys.stdout.flush()
-        for label, target, centers_xy in zip(self.labels, self.sci_stamps, self.new_coords_xy):  # For each target
-            t_phot, t_err = [], []
+        for label, target, centers_xy in zip(self.labels, self.sci_stamps, self.coords_new_xy):  # For each target
+            t_phot, t_err, t_fwhm = [], [], []
 
             for data, center_xy, frame_id in zip(target, centers_xy, self.frame_id):
                 cx, cy = center_xy
@@ -286,7 +277,7 @@ class Photometry(object):
                 # now photometry
                 psf = res[d < self.aperture]
                 if (psf > self.max_counts).any():
-                    warnings.warn("Object {} on frame {} has counts above the "
+                    logging.warning("Object {} on frame {} has counts above the "
                                   "threshold ({})".format(label, frame_id, self.max_counts))
                 phot = float(psf.sum())
                 # print("phot: %.5d" % (phot))
@@ -296,21 +287,23 @@ class Photometry(object):
                     error = None
                 else:
                     n_pix_ap = (d < self.aperture).sum()
-                    error = self.phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
+                    error = _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
 
                 #                Tracer()()
                 t_phot.append(phot)
                 t_err.append(error)
+                t_fwhm.append(fwhmg)
 
             all_phot.append(t_phot)
             all_err.append(t_err)
+            all_fwhm.append(t_fwhm)
             print('X', end='')
             sys.stdout.flush()
 
         print('')
         return timeserie.TimeSeries(all_phot, all_err,
                                     labels=self.labels, epoch=self.epoch,
-                                    extras={'centers_xy': self.new_coords_xy})
+                                    extras={'centers_xy': self.coords_new_xy, 'fwhm':all_fwhm})
 
     def centraldistances(self, data, c):
         """Computes distances for every matrix position from a central point c.
@@ -441,7 +434,7 @@ class Photometry(object):
 
         return x, y, (cy, cx)
 
-    def showstamp(self, target=None, stamprad=30,
+    def showstamp(self, target=None, stamp_rad=None,
                   first=0, last=-1, figure=None, ncol=None):
         """Show the star at the same position for the different frames
 
@@ -452,13 +445,19 @@ class Photometry(object):
         :param figure: Specify figure number
         :param ncol: Number of columns
 """
+        if target is None:
+            target = 0
+        elif isinstance(target,str):
+            target = self.labels.index(target)
+
         if last < 0:
-            nimages = len(self.sci_stamps) + 1 + last - first
+            nimages = len(self.sci_stamps[target]) + 1 + last - first
         else:
             nimages = last - first
 
-        if target is None:
-            target = self.targetsxy.keys()[0]
+
+        if stamp_rad is None or stamp_rad > self.stamp_rad:
+            stamp_rad = self.stamp_rad
 
         if ncol is None:
             ncol = int(sp.sqrt(nimages))
@@ -469,21 +468,15 @@ class Photometry(object):
         f.subplots_adjust(hspace=0, wspace=0)
         ax1 = list(sp.array(ax).reshape(-1))
 
-        cx, cy = self.targetsxy[target]
-        target = self.target_coords.index([cx, cy])
-        cx_s, cy_s = self.stamp_coords[target][0]
-
-        # for n, a in zip(range(nimages), ax1):
-        ik = 0
-        for n, a in zip(self.sci_stamps, ax1):
-            frame_number = ik + first
-            ik += 1
-            frame = (self.sci_stamps[target][frame_number])  # - self.ts.masterbias) / self.ts.masterflat
-
+        for frame, a in zip(self.sci_stamps[target], ax1):
+            #todo: take provisions about star near the border
             dp.imshowz(frame,
                        axes=a,
-                       cxy=[cx_s, cy_s],
-                       plot_rad=self.stamp_rad,
+                       cxy=[stamp_rad, stamp_rad],
+                       plot_rad=stamp_rad,
                        ticks=False,
                        trim_data=False,
+                       force_show=False
                        )
+
+        plt.show()
