@@ -198,17 +198,39 @@ Return stats
 
         return self
 
-    def get_datacube(self, normalize_region=None, normalize=False, verbose=False):
+    def get_datacube(self, normalize_region=None, normalize=False, verbose=False,
+                     check_unique=None):
+        """
+
+        :param normalize_region:
+        :param normalize:
+        :param verbose:
+        :param check_unique: receives a list of headers that need to be checked for uniqueness. Exposure time by default (it makes no sense to merge otherwise)
+        :return:
+        """
         if verbose:
             print("Reading {} frames{}: ".format(len(self),
                                                 normalize and " and normalizing" or ""),
                                                 end='')
+        if check_unique is None:
+            check_unique = []
         if normalize_region is None:
             if 'normalize_region' in self.props:
                 normalize_region = self.props['normalize_region']
             else:
                 normalize_region = slice(None)
         all_data = sp.zeros([len(self)]+list(self[0].shape))
+
+        #check uniqueness... first get the number of unique header values for each requested keyword and then complain if any greater than 1
+        if len(check_unique)>1:
+            lens = sp.array([len(set(rets)) for rets in zip(*self.getheaderval(*check_unique))])
+        elif len(check_unique) == 1:
+            lens = sp.array([len(set(self.getheaderval(*check_unique)))])
+        else:
+            lens = sp.array([])
+        if True in (lens > 1):
+            raise ValueError("Header(s) {} are not unique in the input dataset".format(", ".join(sp.array(check_unique)[lens>1])))
+
         for ad, af in zip(all_data, self):
             data = af.reader()
             if normalize:
@@ -221,10 +243,26 @@ Return stats
             print("")
         return all_data
 
-    def median(self, normalize_region=None, normalize=False, verbose=True):
+
+    def median(self, normalize_region=None, normalize=False, verbose=True, check_unique=None):
+        """
+
+        :param normalize_region: Subregion to use for normalization
+        :param normalize:  Whether to Normalize
+        :param verbose:   Output progress indicator
+        :param check_unique: Check uniquenes in heaeder
+        :return:
+        """
+        if check_unique is None:
+            if normalize:
+                check_unique = []
+            else:
+                check_unique = ['exptime']
+
         data = self.get_datacube(normalize_region=normalize_region,
                                  normalize=normalize,
-                                 verbose=verbose)
+                                 verbose=verbose,
+                                 check_unique=check_unique)
         # todo: return AstroFile
 
         if verbose:
@@ -237,10 +275,25 @@ Return stats
 
         return ret
 
-    def mean(self, normalize_region=None, normalize=False, verbose=True):
+    def mean(self, normalize_region=None, normalize=False, verbose=True, check_unique=None):
+        """
+
+        :param normalize_region: Subregion to use for normalization
+        :param normalize:  Whether to Normalize
+        :param verbose:   Output progress indicator
+        :param check_unique: Check uniquenes in heaeder
+        :return:
+        """
+        if check_unique is None:
+            if normalize:
+                check_unique = []
+            else:
+                check_unique = ['exptime']
+
         data = self.get_datacube(normalize_region=normalize_region,
                                  normalize=normalize,
-                                 verbose=verbose)
+                                 verbose=verbose,
+                                 check_unique=check_unique)
         # todo: return AstroFile
         if verbose:
             print("Median combining: ", end="")
