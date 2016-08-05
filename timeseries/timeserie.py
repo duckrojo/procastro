@@ -44,8 +44,7 @@ class TimeSeries(object):
                          data]  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
 
         # Default grouping: 1st coordinate is 1 group, all other objects are another group
-        self.groups = sp.ones(len(self.channels)) + 1
-        self.groups[0] = 1
+        self.set_main(0)
 
         self.labels = []
         if labels is not None:
@@ -102,17 +101,35 @@ class TimeSeries(object):
             raise TypeError("unrecognized channel specification ({}) for "
                             "extra '{}'".format(item, k))
 
-    def __getitem__(self, item):
+#todo: implement ignore channels
+    def set_main(self, target, ignore=None):
+        """
+Set target channel as group 1, and all other channels as group 2.
+        :param ignore: Channel, or list of channels, to be placed in group 3
+        :param target: Channel to be set to group 1
+        :return:
+        """
+        target = self._search_channel(target)
+
+        self.groups = sp.ones(len(self.channels)) + 1
+        self.groups[target] = 1
+        return self
+
+    def _search_channel(self, target):
+        if isinstance(target, str):
+            target = self.labels.index(target)
+        return target
+
+    def __getitem__(self, target):
         """To recover errors or any of the other extras try: ts('error')[0] ts['centers_xy']['Target'], etc"""
         # This is so I can do ts[0]/ts[2] and it works directly with the channels!
 
-        if isinstance(item, str):
-            item = self.labels.index(item)
-        elif item < 0:
-            return self.combine['op'](sp.array(self.channels)[sp.array(self.groups) == abs(item)],
+        target = self._search_channel(target)
+        if target < 0:
+            return self.combine['op'](sp.array(self.channels)[sp.array(self.groups) == abs(target)],
                                       **(self.combine['prm']))
 
-        return self.channels[item]
+        return self.channels[target]
 
     def grouping_with(self, op):
         self.combine['name'] = op
@@ -124,7 +141,6 @@ class TimeSeries(object):
             self.combine['prm'] = {'axis': 0}
         else:
             raise ValueError("Unrecognized combine operation '{}'".format(op))
-
 
     def plot(self, label=None, axes=None, normalize=False):
         """Display the timeseries data: flux (with errors) as function of mjd
