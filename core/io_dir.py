@@ -19,6 +19,11 @@
 #
 
 from __future__ import print_function, division
+
+import logging
+
+iologger = logging.getLogger('dataproc.io')
+
 import dataproc as dp
 import scipy as sp
 import warnings
@@ -46,8 +51,10 @@ class AstroDir(object):
         if hdud is None:
             hdud=hdu
 
-        if isinstance(path, basestring):
+        if isinstance(path, str):
             filndir = glob.glob(path)
+        elif isinstance(path, dp.AstroFile):
+            filndir = [path]
         else:
             filndir = path
 
@@ -75,34 +82,16 @@ class AstroDir(object):
                 f.calib = calib
 
         self.path = path
-        self.dark = mdark
-        self.flat = mflat
 
     def add_bias(self, mbias):
-        unique_calibs = set([f.calib for f in self.files])
+        unique_calibs = set([f.calib for f in self])
         for c in unique_calibs:
             c.add_bias(mbias)
 
     def add_flat(self, mflat):
-        unique_calibs = set([f.calib for f in self.files])
+        unique_calibs = set([f.calib for f in self])
         for c in unique_calibs:
             c.add_flat(mflat)
-
-    def readdata(self, rawdata=True):
-        """
-        Reads data from AstroDir
-        :param rawdata: if True returns raw data, if False returns reduced
-        :return:
-        """
-        import scipy as sp
-        # TODO datacube must be a class to be allowed as arg 2 in isinstance
-        # if isinstance(self,'datacube'):
-        #    return self.datacube
-        data = []
-        for f in self.files:
-            data.append(f.reader(rawdata))
-        self.datacube = sp.array(data)
-        return self.datacube
 
     def sort(self, *args, **kwargs):
         """ Return sorted list of files according to specified header field, use first match.
@@ -121,31 +110,49 @@ class AstroDir(object):
                 ', '.join(args),))
 
         # Sorting is done using python operators __lt__, __gt__, ... who are inquired by .sort() directly.
-        for f in self.files:
+        for f in self:
             f.sortkey = hdrfld
         self.files.sort()
         return self
 
-    def __iter__(self):
-        return iter(self.files)
-
     def __repr__(self):
         return "<AstroFile container: %s>" % (self.files.__repr__(),)
 
+    def __add__(self, other):
+        if isinstance(other, AstroDir):
+            other_af = other.files
+        elif isinstance(other, (list, tuple)) and isinstance(other[0], str):
+            iologger.warning("Adding list of files to Astrodir, calib and hdu defaults"
+                             " will be shared from first AstroFile in AstroDir")
+            other_af = [dp.AstroFile(filename,
+                                     hdud=self[0]._hdud,
+                                     hduh=self[0]._hduh,
+                                     mflat=self[0].calib.mflat,
+                                     mbias=self[0].calib.mbias)
+                        for filename in other]
+        else:
+            raise TypeError("Cannot add {} + {}", self.__class__, other.__class__)
+
+        return dp.AstroDir(self.files+other_af)
+
     def __getitem__(self, item):
+        # imitate indexing on boolean array as in scipy.
         if isinstance(item, sp.ndarray):
             if item.dtype == 'bool':
-                fdir = [f for b, f in zip(item, self.files) if b]
+                if len(item) != len(self):
+                    raise ValueError("Attempted to index AstroDir with a boolean array "
+                                     "of different size (it must include all bads)")
+
+                fdir = [f for b, f in zip(item, self) if b]
                 return AstroDir(fdir)
+
         elif isinstance(item, slice):
             return AstroDir(self.files.__getitem__(item))
-        if item >= len(self):
-            raise ValueError("AstroDir has smaller length ({}) than requested ({})".format(len(self), item))
 
         return self.files[item]  # .__getitem__(item)
 
     def __len__(self):
-        return self.files.__len__()
+        return len(self.files)
 
     def stats(self, *args, **kwargs):
         """
@@ -155,11 +162,15 @@ Return stats
         :return: the stat as returned by each of the AstroFiles
         """
         verbose_heading = kwargs.pop('verbose_heading', True)
+        extra_headers = kwargs.pop('extra_headers', True)
         if kwargs:
-            raise SyntaxError("only keyword argument for stats should be 'verbose_heading'")
-        return [self.files[0].stats(*args,
-                                    verbose_heading=verbose_heading)] + \
-                [af.stats(*args, verbose_heading=False) for af in self.files[1:]]
+            raise SyntaxError("only the following keyword arguments for stats are accepted 'verbose_heading', 'extra_headers'")
+        ret = []
+        for af in self:
+            ret.append(af.stats(*args, verbose_heading=verbose_heading, extra_headers=extra_headers))
+            verbose_heading = False
+        return ret
+
 
     def filter(self, *args, **kwargs):
         """ Filter files according to those whose filter return True to the given arguments.
@@ -182,7 +193,7 @@ Return stats
             mapout = len(args) == 1 and (lambda x: x[0]) or (lambda x: x)
 
         warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
-        ret = [f.getheaderval(*args, mapout=mapout, **kwargs) for f in self.files]
+        ret = [f.getheaderval(*args, mapout=mapout, **kwargs) for f in self]
         warnings.resetwarnings()
         return ret
 
@@ -193,7 +204,7 @@ Return stats
             The special kwarg 'write' can be used to force the update of the fits
             with the keyword or just leave it in memory"""
 
-        if False in [f.setheaderval(**kwargs) for f in self.files]:
+        if False in [f.setheaderval(**kwargs) for f in self]:
             raise ValueError("Setting the header of a file returned error... panicking!")
 
         return self
@@ -201,7 +212,7 @@ Return stats
     def get_datacube(self, normalize_region=None, normalize=False, verbose=False,
                      check_unique=None):
         """
-
+Returns all data from the AstroFiles in a datacube
         :param normalize_region:
         :param normalize:
         :param verbose:
@@ -209,9 +220,9 @@ Return stats
         :return:
         """
         if verbose:
-            print("Reading {} frames{}: ".format(len(self),
-                                                normalize and " and normalizing" or ""),
-                                                end='')
+            print("Reading {} good frames{}: ".format(len(self),
+                                                      normalize and " and normalizing" or ""),
+                                                      end='')
         if check_unique is None:
             check_unique = []
         if normalize_region is None:
@@ -305,3 +316,13 @@ Return stats
 
         return ret
 
+    def jd_from_ut(self, target='jd', source='date-obs'):
+        """
+Add jd in header's cache to keyword 'target' using ut on keyword 'source'
+        :param target: target keyword for JD storage
+        :param source: input value in UT format
+        """
+        for af in self:
+            af.jd_from_ut(target, source)
+
+        return self
