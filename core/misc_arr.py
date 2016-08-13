@@ -24,6 +24,9 @@ import inspect
 import scipy.signal as sg
 import pyfits as pf
 import copy
+from IPython.core.debugger import Tracer
+
+from .misc_lists import sortmanynsp
 
 
 def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=None, full=False):
@@ -115,7 +118,7 @@ def expandlims(xl,yl,offset=0):
     dx = xl[1]-xl[0]
     dy = yl[1]-yl[0]
     return xl[0]-offset*dx,xl[1]+offset*dx, \
-        yl[0]-offset*dy,yl[1]+offset*dy
+        yl[0]-offset*dy, yl[1]+offset*dy
 
 
 def irafwav(h, axis=1):
@@ -203,7 +206,7 @@ def fluxacross(diameter, seeing,
     return dy*dx*(psf*blk).sum()
 
 
-def subarray(data, cyx, rad):
+def subarray(data, cyx, rad, padding=False, return_offset=False):
     """Returns a subarray centered on cxy with radius rad
     :param arr: original array
     :type arr: array
@@ -218,7 +221,24 @@ def subarray(data, cyx, rad):
 
     icy = int(cyx[0])
     icx = int(cyx[1])
-    return data[icy-rad:icy+rad+1, icx-rad:icx+rad+1]
+    ret0 = data[(icy-rad>0)*(icy-rad):icy+rad+1,
+                (icx-rad>0)*(icx-rad):icx+rad+1]
+    ny, nx = data.shape
+    stamp = 2*rad+1
+    y1 = (rad - icy > 0) * (rad - icy)
+    x1 = (rad - icx > 0) * (rad - icx)
+    if padding and (ret0.shape[0] < stamp or ret0.shape[1] < stamp):
+        ret = sp.zeros([2*rad+1, 2*rad+1])
+        y2 = stamp + (ny - icy - rad - 1 < 0) * (ny - icy - rad - 1)
+        x2 = stamp + (nx - icx - rad - 1 < 0) * (nx - icx - rad - 1)
+        ret[y1:y2, x1:x2] = ret0
+    else:
+        ret = ret0
+
+    if return_offset:
+        return ret, (y1, x1)
+    else:
+        return ret
 
 
 def centroid(orig_arr, medsub=True):
@@ -235,7 +255,7 @@ def centroid(orig_arr, medsub=True):
         arr = arr - med
     arr = arr * (arr > 0)
 
-    iy, ix = sp.mgrid[0:len(arr), 0:len(arr)]
+    iy, ix = sp.mgrid[0:arr.shape[0], 0:arr.shape[1]]
 
     cy = sp.sum(iy * arr) / sp.sum(arr)
     cx = sp.sum(ix * arr) / sp.sum(arr)
@@ -250,30 +270,68 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     cy, cx = cyx
 
     for i in range(iters):
-        scy, scx = centroid(subarray(sub_array, [cy, cx], stamprad),
-                            medsub=medsub)
-        cy = int(cy) - stamprad + scy
-        cx = int(cx) - stamprad + scx
+        sub_array, (offy, offx) = subarray(sub_array, [cy, cx], stamprad,
+                                           padding=False, return_offset=True)
+        scy, scx = centroid(sub_array, medsub=medsub)
+        cy = int(cy) - stamprad + scy + offy
+        cx = int(cx) - stamprad + scx + offx
 
     return cy, cx
 
 
-def radial(data, cxy):
-    """Return a same-dimensional array with the pixel distance to cxy"""
+def radial(data, cyx):
+    """Return a same-dimensional array with the pixel distance to cxy
+    :param data: data to get the shape from
+    :param cyx:  Center in native Y-X coordinates
+    :return:
+    """
 
     ndim = data.ndim
-    if len(cxy) != ndim:
-        raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cxy), ndim))
+    if len(cyx) != ndim:
+        raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
 
     grid = sp.meshgrid(*[sp.arange(l) for l in data.shape])
 
     return sp.sqrt(sp.array([(dgrid-c)**2
-                             for dgrid,c
-                             in zip(grid,cxy)]
+                             for dgrid, c
+                             in zip(grid, cyx)]
                             ).sum(0)
                    )
 
 
+def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
+    """Returns the x&y arrays for radial profile
+
+    :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
+    :type target: integer/string or 2-element list
+    :param frame: which frame to show
+    :type frame: integer
+    :param recenter: whether to recenter
+    :type recenter: bool
+    :rtype: (x-array,y-array, [x,y] center)
+"""
+
+    ny, nx = data.shape
+
+    #use data's center if not given explicit
+    if cnt_xy is None:
+        cx, cy = nx//2, ny//2
+    else:
+        cx, cy = cnt_xy
 
 
+    #use the whole data range if no stamp radius is given
+    if stamp_rad is None:
+        to_show = data
+    else:
+        to_show = subarray(data, [cy, cx], stamp_rad)
 
+    if recenter:
+        cy, cx = centroid(to_show)
+        if stamp_rad is not None:
+            to_show = subarray(data, [cy, cx], stamp_rad)
+
+    d = radial(to_show, [cy, cx])
+    x, y = sortmanynsp(d.flatten(), to_show.flatten())
+
+    return x, y, (cy, cx)

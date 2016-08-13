@@ -58,3 +58,28 @@ def gauss(grid, sigma, center=None, norm=False, ndim=None):
         gauss *= norm
 
     return gauss
+
+
+def bipol(self, coef, x, y):
+    """Polynomial fit for sky subtraction
+
+    :param coef: sky fit polynomial coefficients
+    :type coef: sp.ndarray
+    :param x: horizontal coordinates
+    :type x: sp.ndarray
+    :param y: vertical coordinates
+    :type y: sp.ndarray
+    :rtype: sp.ndarray
+    """
+    plane = sp.zeros(x.shape)
+    deg = sp.sqrt(coef.size).astype(int)
+    coef = coef.reshape((deg, deg))
+
+    if deg * deg != coef.size:
+        print("Malformed coefficient: " + str(coef.size) + "(size) != " + str(deg) + "(dim)^2")
+
+    for i in sp.arange(coef.shape[0]):
+        for j in sp.arange(i + 1):
+            plane += coef[i, j] * (x ** j) * (y ** (i - j))
+
+    return plane

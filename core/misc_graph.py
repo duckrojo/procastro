@@ -172,18 +172,15 @@ def imshowz(data,
     if ylim is None:
         ylim = [0, data.shape[0]]
 
+    x0, x1 = 0, xlim[1]
+    y0, y1 = 0, ylim[1]
 
     if rotate:
         times = rotate/90
         if times % 1 != 0:
             raise ValueError("rotate must be a multiple of 90")
         data = sp.rot90(data, int(times))
-
-    if invertx:
-        data = data[:, ::-1]
-
-    if inverty:
-        data = data[::-1, :]
+        #todo: update x0, x1, y0, y1
 
     if cxy is not None:
         border_distance = [data.shape[1]-cxy[0], cxy[0], data.shape[0]-cxy[1], cxy[1]]
@@ -197,9 +194,18 @@ def imshowz(data,
         ylim[1] = (ylim[1] > data.shape[0]) and data.shape[0] or ylim[1]
 
     if trim_data:
-        data = data[ylim[0]:ylim[1],xlim[0]:xlim[1]]
+        y0, y1, x0, x1 = ylim[0], ylim[1], xlim[0], xlim[1]
+        data = data[y0: y1, x0: x1]
         xlim = [0, data.shape[1]-1]
         ylim = [0, data.shape[0]-1]
+
+    if invertx:
+        data = data[:, ::-1]
+        x1, x0 = x0, x1
+
+    if inverty:
+        data = data[::-1, :]
+        y0, y1 = y1, y0
 
     #Find the contrast
     if minmax is None:
@@ -210,7 +216,8 @@ def imshowz(data,
     fig, ax = prep_canvas(axes, title, ytitle, xtitle)
 
     #draw in the canvas
-    imag = ax.imshow(data, vmin=mn, vmax=mx, origin=origin, **kwargs)
+    imag = ax.imshow(data, vmin=mn, vmax=mx, origin=origin,
+                     extent=[x0, x1, y0, y1], **kwargs)
     if not ticks:
         ax.xaxis.set_ticklabels([' ']*20)
         ax.yaxis.set_ticklabels([' ']*20)
@@ -226,28 +233,39 @@ def imshowz(data,
     return mn, mx
 
 
-def axesfig_xdate(axes, x, overwrite=False):
-    """Returns the figure and axes with a properly formatted date X-axis"""
+def axesfig_xdate(x, axes=None, overwrite=False):
+    """Returns the figure and axes with a properly formatted date X-axis.
+    :param axes:
+    :param x: It can be astropy Time, datetime.datetime, or float. If the latter, then assumes JD
+    :param overwrite:
+    :return:
+    """
 
-    f,ax = dp.figaxes(axes, overwrite=overwrite)
-    if isinstance(x, (apt.Time, datetime.datetime)):
-        if isinstance(x, apt.Time):
-            x = x.plot_date
-        ax.xaxis_date()
-        tdelta = (x[-1]-x[0])*24*60
-        if tdelta < 4: #if range is smaller than 4 minutes
-            fmt = '%H:%M:%S'
-        elif tdelta < 4*60: #if range is smaller than 4 hours
-            fmt = '%H:%M'
-        elif tdelta < 2*60*24: #if range is smaller than 2 days
-            fmt = '%Y-%b-%d %H:%M'
-        elif tdelta < 1*60*24*365: #if range is smaller than 1 years
-            fmt = '%Y %b'
-        else:
-            fmt = '%Y'
-        ax.xaxis.set_major_formatter(md.DateFormatter(fmt))
+    f, ax = dp.figaxes(axes, overwrite=overwrite)
+    if isinstance(x, apt.Time):
+        retx = x.plot_date
+    elif isinstance(x, datetime.datetime):
+        retx = x
+    elif hasattr(x, '__iter__') and isinstance(x[0], (float, int)):
+        retx = apt.Time(x, format='jd').plot_date
+    else:
+        raise ValueError("Time format not understood")
 
-    return f,ax,x
+    ax.xaxis_date()
+    tdelta = (retx[-1] - retx[0])*24*60
+    if tdelta < 4: #if range is smaller than 4 minutes
+        fmt = '%H:%M:%S'
+    elif tdelta < 8*60: #if range is smaller than 8 hours
+        fmt = '%H:%M'
+    elif tdelta < 5*60*24: #if range is smaller than 5 days
+        fmt = '%Y-%b-%d %H:%M'
+    elif tdelta < 1*60*24*365: #if range is smaller than 1 years
+        fmt = '%Y %b'
+    else:
+        fmt = '%Y'
+    ax.xaxis.set_major_formatter(md.DateFormatter(fmt))
+
+    return f, ax, retx
 
 
 def figaxes(axes=None, forcenew=True, overwrite=False):
@@ -288,4 +306,4 @@ def polygonxy(cxy, rad, npoints=20):
     xx = cxy[0] + rad*sp.cos(angles)
     yy = cxy[1] + rad*sp.sin(angles)
 
-    return xx,yy
+    return xx, yy

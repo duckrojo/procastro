@@ -245,7 +245,7 @@ class AstroFile(object):
     def add_flat(self, mflat):
         self.calib.add_flat(mflat)
 
-    # Para cargar data a un AstroFile vacio
+    # To load data to an empty AstroFile
     def load(self, filename, exists=False, *args, **kwargs):
         if self.filename is None:
             import os.path as path
