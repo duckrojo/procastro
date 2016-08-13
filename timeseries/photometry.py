@@ -129,14 +129,14 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
             print('.', end='')
         sys.stdout.flush()
 
-        to_store+=1
+        to_store += 1
 
     print('')
 
     # get rid of user-provided first guesses for centers
     dummy = [stamp_cnt.pop(0) for stamp_cnt in center_xy]
 
-    return all_cubes, center_xy
+    return all_cubes, sp.array(center_xy)
 
 
 def _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain=None, ron=None):
@@ -363,6 +363,9 @@ Adds more files to photometry
         sci_files = dp.AstroDir(sci_files)
         start_frame = len(self.frame_id)
 
+        if ignore is None:
+            ignore = []
+
         offset_list = sp.zeros([len(sci_files), 2])
         if offsets_xy is not None:
             for k, v in offsets_xy.items():
@@ -379,7 +382,7 @@ Adds more files to photometry
                                                 logger=self._logger,
                                                 ignore=ignore)
         self.sci_stamps = sp.concatenate((self.sci_stamps, sci_stamps), axis=1)
-        self.coords_new_xy = sp.concatenate((self.coords_new_xy, coords_new_xy))
+        self.coords_new_xy = sp.concatenate((self.coords_new_xy, coords_new_xy), axis=1)
 
         self.frame_id += ["{}/{}".format(d, f) for d, f, i in zip(sci_files.getheaderval('dirname'),
                                                                   sci_files.getheaderval('basename'),
