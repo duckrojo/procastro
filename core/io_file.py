@@ -21,20 +21,20 @@
 from __future__ import print_function, division
 
 import logging
+
+iologger = logging.getLogger('dataproc.io')
+
 import scipy as sp
 from functools import wraps as _wraps
 import warnings
-import dataproc.combine as cm
 import dataproc as dp
-
+import astropy.time as apt
 
 def _numerize_other(method):
     @_wraps(method)
     def wrapper(instance, other, *args, **kwargs):
         if isinstance(other, AstroFile):
             other = other.reader()
-        if isinstance(other, cm.Combine):
-            other = other.data
         return method(instance, other, *args, **kwargs)
 
     return wrapper
@@ -103,8 +103,8 @@ def _fits_setheader(_filename, **kwargs):
             # todo: if file does not exist, create it
             fits = pf.open(_filename, 'update')[hdu]
         except IOError:
-            warnings.warn(
-                "Read only filesystem or file not found. Header update of '%s' will not remain on disk." % ', '.join(
+            iologger.warning(
+                "Read-only filesystem or file not found. Header update of '%s' will not remain on disk." % ', '.join(
                     kwargs.keys()))
             return
     else:
@@ -186,14 +186,17 @@ class AstroFile(object):
     _seth = {'fits': _fits_setheader, 'sparray': return_none}
 
     def __repr__(self):
-        return '<AstroFile: %s>' % (self.filename,)
+        return '<AstroFile{}: {}>'.format(self.has_calib() and "({}{})".format(self.calib.has_bias and "B" or "",
+                                                                               self.calib.has_flat and "F" or "",)
+                                          or "",
+                                          self.filename,)
 
     def __new__(cls, *args, **kwargs):
         """If passed an AstroFile, then do not create a new instance, just pass that one"""
         if args and isinstance(args[0], AstroFile):
             return args[0]
         else:
-            return super(AstroFile, cls).__new__(cls, *args, **kwargs)
+            return super(AstroFile, cls).__new__(cls, *args)
 
     def __init__(self, filename=None,
                  mbias=None, mflat=None, exists=False,
@@ -219,7 +222,9 @@ class AstroFile(object):
 
         if isinstance(filename, str):
             self.filename = filename
-            self.header_cache = {'basename': path.basename(filename)}
+            self.header_cache = {'basename': path.basename(filename),
+                                 'dirname':  path.dirname(filename),
+                                 }
         else:
             self.filename = None
             self.header_cache = {}
@@ -262,9 +267,6 @@ class AstroFile(object):
             self.header_cache = {'basename': path.basename(filename)}
         else:
             raise ValueError("Existing file cannot be renamed.")
-
-            # todo: following is only necessary because isinstance is not working on combine module!!
-        #        self.astrofile=True
 
     def checktype(self, exists, *args, **kwargs):
         import os.path as path
@@ -322,10 +324,9 @@ class AstroFile(object):
         return hasattr(self, 'filename') and (self.type is not None)
 
     @_checkfilename
-    def filter(self, *args, **kwargs):
+    def filter(self, **kwargs):
         """True if the header given by the keyword argument matches its value in the fits header.
             Multiple alternatives can be specified with a dict whose keys are casting function (e.g. filter(exptime={'int':300,10})). Multiple keywords are 'or' alternatives.
-            DEPRECATED/NOT ANYMORE: You can also make a substring match search "'needle' in keyword" by specifying None as the first element in the tuple: basename=(None,'dflat').
             If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filter(object='star'))
         """
         ret = []
@@ -344,7 +345,6 @@ class AstroFile(object):
                 filter_keyword = tmp[0]
                 functions.extend(tmp[1:])
             header_val = self.getheaderval(filter_keyword)[0]
-            #            print ("hv:%s fk:%s rq:%s" % (header_val, filter_keyword, request))
 
             # treat specially the not-found and list as filter_keyword
             if header_val is None:
@@ -374,7 +374,6 @@ class AstroFile(object):
             else:
                 cast = type(request)
                 request = [request]
-            #                warnings.warn("Attempting auto-casting the filter's value. Found '%s' for '%s'." % (cast,request))
 
             less_than = greater_than = False
             for f in functions:
@@ -412,7 +411,7 @@ class AstroFile(object):
         return (True in ret)
 
     @_checkfilename
-    def setheader(self, *args, **kwargs):
+    def setheader(self, **kwargs):
         """Set header values from kwargs. They can be specfied as tuple to add comments as in pyfits"""
         tp = self.type
         hdu = kwargs.pop('hduh', self._hduh)
@@ -440,7 +439,11 @@ class AstroFile(object):
             elif args[0] in self.header_cache.keys():
                 return mapout([self.header_cache[args[0]]])
 
-        new_keys = [k for k in args if k not in self.header_cache.keys()]
+# read some typical keywords on first pass just in case to speed up
+        args_n_def = args + ('exptime', 'filter', 'date-obs')
+
+# only open fits file if there are non-cached keywords.
+        new_keys = [k for k in args_n_def if k not in self.header_cache.keys()]
         new_values = new_keys and self._geth[tp](self.filename, *new_keys, hdu=hdu) or []
 
         for k, v in zip(new_keys, new_values):
@@ -498,12 +501,15 @@ class AstroFile(object):
             return data
 
         if self.has_calib():
-            return self.calib.reduce(data)
+            return self.calib.reduce(data,
+                                     exptime=self[self.calib.exptime_keyword],
+                                     filter=self[self.calib.filter_keyword]
+                                     )
 
         return data
 
     def has_calib(self):
-        return self.calib.has_calib
+        return self.calib.has_flat or self.calib.has_bias
 
     @_checkfilename
     def readheader(self, *args, **kwargs):
@@ -616,13 +622,15 @@ class AstroFile(object):
 
     def stats(self, *args, **kwargs):
         verbose_heading = kwargs.pop('verbose_heading', True)
+        extra_headers = kwargs.pop('extra_headers', [])
         if kwargs:
-            raise SyntaxError("only keyword argument for stats should be 'verbose_heading'")
+            raise SyntaxError("only the following keyword argument for stats are permitted 'verbose_heading', 'extra_headers'")
 
         if not args:
             args = ['min', 'max', 'mean', 'mean3sclip', 'median', 'std']
         if verbose_heading:
-            print("Computing the following stats: {}".format(", ".join(args)))
+            print("Computing the following stats: {} {}".format(", ".join(args),
+                                                                len(extra_headers) and "\nand showing the following headers: {}".format(", ".join(extra_headers)) or ""))
         ret = []
         data = self.reader()
         for stat in args:
@@ -644,17 +652,34 @@ class AstroFile(object):
             else:
                 raise ValueError("Unknown stat '{}' was requested for "
                                  "file {}".format(stat, self.filename))
+        for h in extra_headers:
+            ret.append(self[h])
+
         return ret
+
+    def jd_from_ut(self, target='jd', source='date-obs'):
+        """
+Add jd in header's cache to keyword 'target' using ut on keyword 'source'
+        :param target: target keyword for JD storage
+        :param source: input value in UT format
+        """
+        newhd = {}
+        newhd[target] = apt.Time(self[source]).jd
+        self.setheader(**newhd)
 
 
 class AstroCalib(object):
     """Object to hold calibration frames. It is a separate entity than AstroFile, since if is set by AstroDir, there will be no duplication of calibration frames, but just a common object."""
-    def __init__(self, mbias=None, mflat=None):
+    def __init__(self, mbias=None, mflat=None,
+                 exptime_keyword='exptime',
+                 filter_keyword='filter'):
         # it is always created false, if the add_*() has something, then it is turned true.
-        self.has_calib = False
+        self.has_bias = self.has_flat = False
 
         self.mbias = {}
         self.mflat = {}
+        self.exptime_keyword = exptime_keyword
+        self.filter_keyword = filter_keyword
         self.add_bias(mbias)
         self.add_flat(mflat)
 
@@ -668,7 +693,7 @@ Add Master Bias to Calib object.
         if mbias is None:
             self.mbias[-1] = 0.0
             return
-        self.has_calib = True
+        self.has_bias = True
         if isinstance(mbias, dict):
             for k in mbias.keys():
                 self.mbias[k] = mbias[k]
@@ -678,9 +703,6 @@ Add Master Bias to Calib object.
         elif isinstance(mbias,
                         dp.AstroFile):
             self.mbias[-1] = mbias.reader()
-        elif isinstance(mbias,
-                        cm.Combine):
-            self.mbias[-1] = mbias.data
         else:
             raise ValueError("Master Bias supplied was not recognized.")
 
@@ -694,7 +716,7 @@ Add master flat to Calib object
         if mflat is None:
             self.mflat[''] = 1.0
             return
-        self.has_calib = True
+        self.has_flat = True
         if isinstance(mflat, dict):
             for k in mflat.keys():
                 self.mflat[k] = mflat[k]
@@ -704,13 +726,10 @@ Add master flat to Calib object
         elif isinstance(mflat,
                         (int, float, sp.ndarray)):
             self.mflat[''] = mflat
-        elif isinstance(mflat,
-                        cm.Combine):
-            self.mflat[''] = mflat.data
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, afilter=None):
+    def reduce(self, data, exptime=None, filter=None):
         """
 Process flat & bias
         :param data: science sp.array()
@@ -718,19 +737,20 @@ Process flat & bias
         :param afilter: filter for flat
         :return: reduced data
         """
-        if exptime is None:
+        if exptime is None or exptime not in self.mbias:
             exptime = -1
-        if afilter is None:
-            afilter = ''
+        if filter is None or filter not in self.mflat:
+            filter = ''
 
         if exptime not in self.mbias:
             raise ValueError("Requested exposure time ({}) is not available "
-                             "for mbias, only: {}".format(exptime, ", ".join(mbias.keys())))
-        if afilter not in self.mflat:
+                             "for mbias, only: {}".format(exptime, ", ".join(map(str,
+                                                                                 self.mbias.keys()))))
+        if filter not in self.mflat:
             raise ValueError("Requested filter ({}) is not available "
-                             "for mflat, only: {}".format(afilter, ", ".join(mflat.keys())))
+                             "for mflat, only: {}".format(filter, ", ".join(self.mflat.keys())))
 
         debias = data - self.mbias[exptime]
-        deflat = debias / self.mflat[afilter]
+        deflat = debias / self.mflat[filter]
 
         return deflat
