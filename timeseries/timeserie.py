@@ -17,12 +17,11 @@
 # Boston, MA  02110-1301, USA.
 #
 #
+
 import scipy as sp
 from IPython.core.debugger import Tracer
 
 import dataproc as dp
-from datetime import datetime
-from matplotlib import dates
 import matplotlib.pyplot as plt
 
 __author__ = 'fran'
@@ -110,7 +109,6 @@ Set target channel as group 1, and all other channels as group 2.
         :return:
         """
         target = self._search_channel(target)
-
         self.groups = sp.ones(len(self.channels)) + 1
         self.groups[target] = 1
         return self

@@ -25,6 +25,15 @@ Data proc docstring
 import types
 __import__('core', globals(), locals(), [], 1)
 
+import logging
+dplogger = logging.getLogger('dataproc')
+ch = logging.StreamHandler()
+formatter = logging.Formatter('%(name)s %(levelname)s: %(message)s')
+ch.setFormatter(formatter)
+dplogger.addHandler(ch)
+del ch
+del formatter
+
 #causes conflict on pycharms the following
 #core = reload(core)
 
