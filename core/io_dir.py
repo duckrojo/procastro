@@ -35,7 +35,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 class AstroDir(object):
     """Collection of AstroFile"""
 
-    def __init__(self, path, mflat=None, mdark=None, calib_force=False,
+    def __init__(self, path, mflat=None, mdark=None, calib_force=False, read_keywords=None,
                  hdu=0, hdud=None, hduh=None):
         """Create AstroFile container from either a directory path (if given string), or directly from list of string
         if calib is given, create one calib per directory to avoid using storing calibration files on each AstroFile
@@ -53,32 +53,36 @@ class AstroDir(object):
 
         if isinstance(path, str):
             filndir = glob.glob(path)
+            if len(filndir)==0:
+                raise ValueError("Invalid path to files given")
         elif isinstance(path, dp.AstroFile):
             filndir = [path]
         else:
             filndir = path
 
-        if len(filndir) == 0:
-            raise ValueError("invalid path to files or zero-len list given")
+        # if len(filndir) == 0:
+        #     raise ValueError("invalid path to files or zero-len list given")
         for f in filndir:
             if isinstance(f, dp.AstroFile):
                 nf = copy.deepcopy(f)
             elif pth.isdir(f):
                 for sf in os.listdir(f):
-                    nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud)
+                    nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud, read_keywords=read_keywords)
                     if nf:
                         files.append(nf)
                 nf = False
             else:
-                nf = dp.AstroFile(f, hduh=hduh, hdud=hdud)
+                nf = dp.AstroFile(f, hduh=hduh, hdud=hdud, read_keywords=read_keywords)
             if nf:
                 files.append(nf)
+
         self.files = files
         self.props = {}
         calib = dp.AstroCalib(mdark, mflat)
         for f in files:
             if calib_force or not f.has_calib():  # allows some of the files to keep their calibration
-                #AstroFile are created with an empty calib by default, which is overwritten here. Hoping taht garbage collection works:D
+                # AstroFile are created with an empty calib by default, which is overwritten here.
+                #  Hoping that garbage collection works:D
                 f.calib = calib
 
         self.path = path
@@ -106,8 +110,8 @@ class AstroDir(object):
                 break
         if not hdrfld:
             raise ValueError(
-                "A valid header field must be specified to use as a sort key. None of the currently requested were found: %s" % (
-                ', '.join(args),))
+                "A valid header field must be specified to use as a sort key."
+                " None of the currently requested were found: %s" % (', '.join(args),))
 
         # Sorting is done using python operators __lt__, __gt__, ... who are inquired by .sort() directly.
         for f in self:
@@ -171,7 +175,6 @@ Return stats
             verbose_heading = False
         return ret
 
-
     def filter(self, *args, **kwargs):
         """ Filter files according to those whose filter return True to the given arguments.
             What the filter does is type-dependent in each file. Check docstring of a single element."""
@@ -186,24 +189,32 @@ Return stats
 
     def getheaderval(self, *args, **kwargs):
         """ Gets the header values specified in 'args' from each of the files.
-            Returns a simple list if only one value is specified, or a list of tuples otherwise"""
-        if 'mapout' in kwargs:
-            mapout = kwargs['mapout']
+            Returns a simple list if only one value is specified, or a list of tuples otherwise
+            :param cast: output function
+            :param single_in_list: default False
+            """
+        if 'single_in_list' in kwargs:
+            single_in_list = kwargs['single_in_list']
         else:
-            mapout = len(args) == 1 and (lambda x: x[0]) or (lambda x: x)
+            single_in_list = False
+
+        if 'cast' in kwargs:
+            cast = kwargs['cast']
+        else:
+            if len(args) == 1 and not single_in_list:
+                cast = lambda x: x[0]
+            else:
+                cast = lambda x: x
 
         warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
-        ret = [f.getheaderval(*args, mapout=mapout, **kwargs) for f in self]
+        ret = [f.getheaderval(*args, cast=cast, **kwargs) for f in self]
         warnings.resetwarnings()
         return ret
 
-    def setheader(self, write=False, **kwargs):
+    def setheader(self, **kwargs):
         """ Sets the header values specified in 'args' from each of the files.
             Returns a simple list if only one value is specified, or a list of tuples otherwise
-
-            The special kwarg 'write' can be used to force the update of the fits
-            with the keyword or just leave it in memory"""
-
+"""
         if False in [f.setheaderval(**kwargs) for f in self]:
             raise ValueError("Setting the header of a file returned error... panicking!")
 
@@ -222,7 +233,7 @@ Returns all data from the AstroFiles in a datacube
         if verbose:
             print("Reading {} good frames{}: ".format(len(self),
                                                       normalize and " and normalizing" or ""),
-                                                      end='')
+                  end='')
         if check_unique is None:
             check_unique = []
         if normalize_region is None:
@@ -232,15 +243,17 @@ Returns all data from the AstroFiles in a datacube
                 normalize_region = slice(None)
         all_data = sp.zeros([len(self)]+list(self[0].shape))
 
-        #check uniqueness... first get the number of unique header values for each requested keyword and then complain if any greater than 1
-        if len(check_unique)>1:
+        # check uniqueness... first get the number of unique header values for each requested keyword
+        # and then complain if any greater than 1
+        if len(check_unique) > 1:
             lens = sp.array([len(set(rets)) for rets in zip(*self.getheaderval(*check_unique))])
         elif len(check_unique) == 1:
             lens = sp.array([len(set(self.getheaderval(*check_unique)))])
         else:
             lens = sp.array([])
         if True in (lens > 1):
-            raise ValueError("Header(s) {} are not unique in the input dataset".format(", ".join(sp.array(check_unique)[lens>1])))
+            raise ValueError("Header(s) {} are not unique in the input dataset".
+                             format(", ".join(sp.array(check_unique)[lens > 1])))
 
         for ad, af in zip(all_data, self):
             data = af.reader()

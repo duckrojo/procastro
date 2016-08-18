@@ -200,7 +200,7 @@ class AstroFile(object):
 
     def __init__(self, filename=None,
                  mbias=None, mflat=None, exists=False,
-                 hdu=0, hduh=None, hdud=None,
+                 hdu=0, hduh=None, hdud=None, read_keywords=None,
                  *args, **kwargs):
         """
 
@@ -238,6 +238,10 @@ class AstroFile(object):
         self._hdud = hdud
 
         self.calib = AstroCalib(mbias, mflat)
+
+        self._read_kw = ['exptime', 'filter', 'date-obs']
+        if read_keywords is not None:
+            self._read_kw.extend([k for k in read_keywords if k not in self._read_kw])
 
     def add_bias(self, mbias):
         self.calib.add_bias(mbias)
@@ -429,18 +433,18 @@ class AstroFile(object):
 
         tp = self.type
 
-        mapout = kwargs.pop('mapout', lambda x: x)
+        cast = kwargs.pop('cast', lambda x: x)
         hdu = kwargs.pop('hdu', self._hduh)
 
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):  # if first argument is tuple use those values as searches
                 args = args[0]
             # if only 1 already-read header is requested, use a shortcut
-            elif args[0] in self.header_cache.keys():
-                return mapout([self.header_cache[args[0]]])
+            elif args[0].lower() in self.header_cache.keys():
+                return cast([self.header_cache[args[0].lower()]])
 
 # read some typical keywords on first pass just in case to speed up
-        args_n_def = args + ('exptime', 'filter', 'date-obs')
+        args_n_def = [a.lower() for a in args] + self._read_kw
 
 # only open fits file if there are non-cached keywords.
         new_keys = [k for k in args_n_def if k not in self.header_cache.keys()]
@@ -451,7 +455,7 @@ class AstroFile(object):
 
         ret = [self.header_cache[k] for k in args]
 
-        return mapout(ret)
+        return cast(ret)
 
     # emulating arithmetic
     def __add__(self, other):

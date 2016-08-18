@@ -133,9 +133,16 @@ def imshowz(data,
             rotate=0, invertx=False, inverty=False,
             origin='lower', force_new=False,
             trim_data=False, force_show=True,
+            extent=None,
             **kwargs):
     """Plots data using zscale algorithm to fix the min and max values
 
+    :param extent:  Use this for limits to the drawing... no subarraying
+    :param inverty:
+    :param invertx:
+    :param rotate:
+    :param trim_data:
+    :param force_show:
 :param data: Data to  be plotted
 :type data: string, HDU, HDUList, sp.array
 :param axes: Where to plot
@@ -167,6 +174,9 @@ def imshowz(data,
 
     data = prep_data_plot(data, **kwargs)
 
+    if extent is not None and xlim is not None and ylim is not None:
+        raise ValueError("If extents is specified for imshowz, then xlim and ylim should not")
+
     if xlim is None:
         xlim = [0, data.shape[1]]
     if ylim is None:
@@ -188,9 +198,9 @@ def imshowz(data,
             plot_rad = min(border_distance)
         xlim = [cxy[0]-plot_rad, cxy[0]+plot_rad]
         ylim = [cxy[1]-plot_rad, cxy[1]+plot_rad]
-        xlim[0] = xlim[0]*(xlim[0]>0)
+        xlim[0] *= xlim[0] > 0
         xlim[1] = (xlim[1] > data.shape[1]) and data.shape[1] or xlim[1]
-        ylim[0] = ylim[0]*(ylim[0]>0)
+        ylim[0] *= ylim[0] > 0
         ylim[1] = (ylim[1] > data.shape[0]) and data.shape[0] or ylim[1]
 
     if trim_data:
@@ -207,23 +217,24 @@ def imshowz(data,
         data = data[::-1, :]
         y0, y1 = y1, y0
 
-    #Find the contrast
+    # Find the contrast
     if minmax is None:
-        mn, mx = dp.zscale(data[ylim[0]:ylim[1], xlim[0]:xlim[1]])
+        mn, mx = dp.zscale(data) # [ylim[0]:ylim[1], xlim[0]:xlim[1]])  only if trimmed it will not use the whole image
     else:
         mn, mx = minmax
 
-    fig, ax = prep_canvas(axes, title, ytitle, xtitle)
+    fig, ax = prep_canvas(axes, title, ytitle, xtitle, force_new=force_new)
 
     #draw in the canvas
+    if extent is None:
+        extent = [x0, x1, y0, y1]
     imag = ax.imshow(data, vmin=mn, vmax=mx, origin=origin,
-                     extent=[x0, x1, y0, y1], **kwargs)
+                     extent=extent, **kwargs)
     if not ticks:
         ax.xaxis.set_ticklabels([' ']*20)
         ax.yaxis.set_ticklabels([' ']*20)
     if colorbar:
         fig.colorbar(imag)
-
 
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
@@ -233,7 +244,7 @@ def imshowz(data,
     return mn, mx
 
 
-def axesfig_xdate(x, axes=None, overwrite=False):
+def figaxes_xdate(x, axes=None, overwrite=False):
     """Returns the figure and axes with a properly formatted date X-axis.
     :param axes:
     :param x: It can be astropy Time, datetime.datetime, or float. If the latter, then assumes JD
@@ -283,8 +294,13 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
             plt.gcf().clf()
             fig, ax = plt.subplots(num=plt.gcf().number)
     elif isinstance(axes, int):
-        fig, ax = plt.subplots(num=axes)
+        fig = plt.figure(axes)
+        if not overwrite:
+            dummy = [fig.delaxes(a) for a in fig.axes]
+        ax = fig.add_subplot(111)
     elif isinstance(axes, plt.Figure):
+        if not overwrite:
+            dummy = [axes.delaxes(a) for a in fig.axes]
         ax = axes.add_subplot(111)
         fig = axes
     elif isinstance(axes, plt.Axes):
