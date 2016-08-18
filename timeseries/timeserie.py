@@ -23,11 +23,10 @@ from IPython.core.debugger import Tracer
 
 import dataproc as dp
 import matplotlib.pyplot as plt
+from cycler import cycler
 
-__author__ = 'fran'
 
-
-class TimeSeries(object):
+class TimeSeries:
     def __repr__(self):
         return "<timeseries object with {channels} channels of {size} " \
                "elements (Extras={extras}).>".format(channels=len(self.channels),
@@ -54,7 +53,7 @@ class TimeSeries(object):
         elif not isinstance(extras, dict):
             raise TypeError("extras must be a dictionary")
         else:
-            if False in [isinstance(v, (list,)) for v in extras.values()]:
+            if False in [isinstance(v, (list, tuple, sp.ndarray)) for v in extras.values()]:
                 raise TypeError("Each element of 'extras' dictionary must be a list")
 
         self.extras = extras
@@ -143,6 +142,8 @@ Set target channel as group 1, and all other channels as group 2.
     def plot(self, label=None, axes=None, normalize=False):
         """Display the timeseries data: flux (with errors) as function of mjd
 
+        :param axes:
+        :param normalize:
         :param label: Specify a single star to plot
         :rtype label: basestring
 
@@ -166,21 +167,39 @@ Set target channel as group 1, and all other channels as group 2.
             ax.errorbar(self.epoch, value, yerr=error,
                         marker="o", label=lab)
 
-        ax.set_title("Timeseries Data")
+        ax.set_title("TimeSeries Data")
         ax.set_xlabel("MJD")
         ax.set_ylabel("Flux")
 
         ax.legend()
         plt.show()
 
-    def plot_ratio(self, label=None, axes=None):
+    def plot_ratio(self, label=None, axes=None, fmt='x', grouping=None):
         fig, ax = dp.figaxes(axes)
 
         ratio = self[-1] / self[-2]
         ratio_error = ratio * sp.sqrt((self(errors=-1) / self[-1]) ** 2 +
                                       (self(errors=-2) / self[-2]) ** 2)
-        ax.errorbar(self.epoch, ratio, yerr=ratio_error,
-                    marker="o")
+
+
+        if grouping is None:
+            grouping = {}
+            group_by = self.epoch*0
+            group_labels = ['']
+        else:
+            group_by = list(set(self.extras[grouping['extra']]))
+            group_labels = group_by
+
+        colors = grouping.pop('colors', ['c', 'm', 'y', 'k'])
+        markers = grouping.pop('markers', ['^', 'v', 'x'])
+
+        epochs, groups, errors = self.make_groups(self.epoch, ratio,
+                                                  group_by, ratio_error)
+
+        for x, y, e, c, lab in zip(epochs, groups, errors, colors, group_labels):
+            ax.set_prop_cycle(cycler('color', colors),
+                              cycler('marker', markers),)
+            ax.errorbar(x, y, yerr=e, props={"ls": 'None'}, label=lab)
 
         labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
         ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
@@ -188,6 +207,11 @@ Set target channel as group 1, and all other channels as group 2.
         ax.set_ylabel("Flux Ratio")
 
         plt.show()
+
+    def save_to_file(self, filename):
+        to_save=sp.zeros([len(self), len(extras)])
+
+        sp.savetxt(header="# {}".format(", ".join(self.epoch, self[-1]/self[-2], err, )))
 
         # def get_error(self, item):
         #     return self(errors=item)
