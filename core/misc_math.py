@@ -60,7 +60,7 @@ def gauss(grid, sigma, center=None, norm=False, ndim=None):
     return gauss
 
 
-def bipol(self, coef, x, y):
+def bipol(coef, x, y):
     """Polynomial fit for sky subtraction
 
     :param coef: sky fit polynomial coefficients
