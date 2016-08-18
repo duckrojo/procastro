@@ -168,7 +168,9 @@ class Obsrv(ocalc.ObsCalc):
     for i in range(len(mnlen))[1:]:
       cum[i:] += mnlen[:-(i)]
     mcum = sp.array(zip(cum,cum)).flatten()
-    vlims = [-10,20,20,-10]*6
+    vlims = list(ax.get_ylim())
+    vlims = (vlims + vlims[::-1])*6
+    # vlims = [-10,20,20,-10]*6
 
     y,m,d = ephem.Date(self.days[0]).triple()
     jan1 = self.days[0]-((m-1!=0)*cum[m-2]+d-1)
