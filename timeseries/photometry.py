@@ -190,6 +190,8 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         flag = {}
         msg_filter = FilterMessage().add_needle('Using default ')
         logger.addFilter(msg_filter)
+        print("Entering interactive mode:\n"
+              " 'd'elete frame, re'c'enter apertures, flag '1'-'9', 'q'uit, <- prev frame, -> next frame")
 
     to_store = 0
     stat = 0
@@ -266,7 +268,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
             f.show()
             dp.imshowz(d, axes=ax, force_show=False)
             ax.set_ylabel('Frame #{}'.format(idx))
-            curr_center_xy = center_xy[:, idx, :]
+            curr_center_xy = center_xy[:, to_store, :]
             on_click_action = [1]
 
             def onclick(event):
@@ -277,15 +279,18 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 elif event.key == 'q':
                     logger.log(PROGRESS, "User canceled stamp acquisition")
                     on_click_action[0] = -10
-                elif event.key == 'left':  # frame ics good
+                elif event.key == 'left':  # previous frame
                     on_click_action[0] = -1
-                elif event.key == 'i':  # ignore this frame
-                    ignore.append(idx)
+                elif event.key == 'd':  # ignore this frame
+                    if idx in ignore:
+                        ignore.pop(ignore.index(idx))
+                    else:
+                        ignore.append(idx)
                     on_click_action[0] = 0
-                elif event.key == 'o':  # Fix the jump (offset)
+                elif event.key == 'c':  # Fix the jump (offset)
                     prev_cnt_bright = center_xy[brightest][to_store-1]
-                    offsets_xy[to_store] = [event.xdata - prev_cnt_bright[0],
-                                            event.ydata - prev_cnt_bright[1]]
+                    offsets_xy[idx] = [event.xdata - prev_cnt_bright[0],
+                                       event.ydata - prev_cnt_bright[1]]
                     on_click_action[0] = 0
                 elif '9' >= event.key >= '1':  # flag the frame
                     d_idx = str(int(event.key))
@@ -297,7 +302,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                     return
                 event.inaxes.figure.canvas.stop_event_loop()
 
-            f.canvas.mpl_connect('key_press_event', onclick)
+            cid = f.canvas.mpl_connect('key_press_event', onclick)
             ap_color = sk_color = 'w'
             if idx in ignore:
                 ap_color = sk_color = 'r'
@@ -310,9 +315,14 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                             sk_color=sk_color, ap_color=ap_color)
             f.show()
             f.canvas.start_event_loop(timeout=-1)
+            f.canvas.mpl_disconnect(cid)
 
             if on_click_action[0] == -1:
+                if not idx:
+                    continue
                 idx -= 1
+                if idx not in ignore:
+                    to_store -= 1
                 continue
             elif on_click_action[0] == 0:
                 continue
