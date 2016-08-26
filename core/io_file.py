@@ -453,7 +453,7 @@ class AstroFile(object):
         for k, v in zip(new_keys, new_values):
             self.header_cache[k] = v
 
-        ret = [self.header_cache[k] for k in args]
+        ret = [self.header_cache[k.lower()] for k in args]
 
         return cast(ret)
 
