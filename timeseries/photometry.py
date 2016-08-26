@@ -19,9 +19,6 @@
 
 from __future__ import print_function
 # noinspection PyUnresolvedReferences
-# from future.builtins.disabled import *
-# noinspection PyCompatibility
-from builtins import input
 
 from IPython.core.debugger import Tracer
 import dataproc as dp
@@ -80,6 +77,9 @@ def _show_apertures(coords, aperture=None, sky=None,
     for p in [pp for pp in ax.patches]:
         # noinspection PyArgumentList
         p.remove()
+    for t in [tt for tt in ax.texts]:
+        # noinspection PyArgumentList
+        t.remove()
 
     if labels is None:
         labels = [''] * len(coords)
@@ -146,6 +146,8 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     if ignore is None:
         ignore = []
 
+    skip_interactive = True
+
     ngood = len(sci_files)
 
     if max_change_allowed is None:
@@ -191,12 +193,15 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         msg_filter = FilterMessage().add_needle('Using default ')
         logger.addFilter(msg_filter)
         print("Entering interactive mode:\n"
-              " 'd'elete frame, re'c'enter apertures, flag '1'-'9', 'q'uit, <- prev frame, -> next frame")
+              " 'd'elete frame, re'c'enter apertures, flag '1'-'9', 'q'uit, "
+              "keep 'g'oing until drift, <- prev frame, -> next frame")
+        skip_interactive = False
 
     to_store = 0
     stat = 0
     previous_distance = None
     idx = 0
+    try_dedrift = True
     n_files = len(sci_files)
     while idx < n_files:
         astrofile = sci_files[idx]
@@ -257,13 +262,20 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         else:
             change = sp.absolute(distance_to_brightest - previous_distance)
             max_change = max(change)
-            if max_change > max_change_allowed:
-                stat |= 4
-                logger.warning("Found star drifting from brightest by {:.1f} pixels between consecutive frames "
-                               "for target {}.".format(max_change,
-                                                       labels[list(change).index(max_change)]))
+            if max_change > max_change_allowed and idx not in ignore:
+                if try_dedrift:
+                    # todo: attempt an auto dedrift
+                    raise NotImplementedError("Still need to add try_dedrift")
+#                    try_dedrift = False
+#                    continue
+                else:
+                    stat |= 4
+                    logger.warning("Found star drifting from brightest by {:.1f} pixels between consecutive frames "
+                                   "for target {}.".format(max_change,
+                                                           labels[list(change).index(max_change)]))
 
-        if interactive:
+        if interactive and (not skip_interactive or stat & 4):
+            skip_interactive = False
             ax.cla()
             f.show()
             dp.imshowz(d, axes=ax, force_show=False)
@@ -292,6 +304,8 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                     offsets_xy[idx] = [event.xdata - prev_cnt_bright[0],
                                        event.ydata - prev_cnt_bright[1]]
                     on_click_action[0] = 0
+                elif event.key == 'g':
+                    on_click_action[0] = 10
                 elif '9' >= event.key >= '1':  # flag the frame
                     d_idx = str(int(event.key))
                     if d_idx not in flag:
@@ -326,6 +340,8 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 continue
             elif on_click_action[0] == 0:
                 continue
+            elif on_click_action[0] == 10:  # continue until drift detected
+                skip_interactive = True
             elif on_click_action[0] == -10:
                 break
 
@@ -352,6 +368,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         stat = 0
         to_store += 1
         idx += 1
+        try_dedrift = False
 
     all_cubes = all_cubes[:, :to_store, :, :]
     indexing = indexing[:to_store]
@@ -360,12 +377,17 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     logger.log(PROGRESS, "Skipped {} flagged frames".format(ngood-to_store))
 
     if interactive:
-        print ("offsets_xy ={", end='')
+        _show_apertures(curr_center_xy, axes=ax, labels=labels,
+                        sk_color=sk_color, ap_color=ap_color)
+        f.show()
+        print ("offsets_xy = {", end='')
         for idx in range(len(offsets_xy)):
             if idx in ignore:
                 print ("{:d}:0, ".format(idx+idx0), end='')
-            elif offsets_xy[idx].sum() > 0:
-                print ("{:d}: [{:.0f}, {:.0f}],".format(idx+idx0, offsets_xy[idx][0], offsets_xy[idx][1]))
+            elif offsets_xy[idx].sum() != 0:
+                print ("{:d}: [{:.0f}, {:.0f}],\n              ".format(idx+idx0,
+                                                                        offsets_xy[idx][0], offsets_xy[idx][1]),
+                       end="")
         print("}")
         print ("flags = {")
         for i in range(1, 10):
@@ -373,7 +395,6 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 print ("{:d}: {},".format(i, list(sp.array(list(set(flag[str(i)]))) + idx0)))
         print("}")
         logger.removeFilter(msg_filter)
-
 
     return indexing, all_cubes, center_xy
 
@@ -413,7 +434,7 @@ def _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain=None, ron=None):
 class Photometry:
     def __init__(self, sci_files, target_coords_xy, offsets_xy=None, idx0=0,
                  aperture=None, sky=None, mdark=None, mflat=None,
-                 stamp_rad=30,
+                 stamp_rad=30, outer_ap=1.2,
                  max_skip=8, max_counts=50000, recenter=True,
                  epoch='JD', labels=None, brightest=None,
                  deg=1, gain=None, ron=None,
@@ -456,6 +477,7 @@ class Photometry:
             aperture = stamp_rad / 4.0
         if sky is None:
             sky = [int(stamp_rad*0.6), int(stamp_rad*0.8)]
+        self.surrounding_ap_limit = outer_ap
         self.aperture = aperture
         self.sky = sky
 
@@ -579,7 +601,18 @@ class Photometry:
     def set_max_counts(self, counts):
         self.max_counts = counts
 
-    def photometry(self, aperture=None, sky=None, deg=None, max_counts=None):
+    def photometry(self, aperture=None, sky=None,
+                   deg=None, max_counts=None,
+                   outer_ap=None):
+        """
+
+        :param aperture:
+        :param sky:
+        :param deg:
+        :param max_counts:
+        :param outer_ap:  Outer ring as a fraction of aperture, to report surrounding region
+        :return:
+        """
         if aperture is not None:
             self.aperture = aperture
         if sky is not None:
@@ -588,6 +621,8 @@ class Photometry:
             self.deg = deg
         if max_counts is not None:
             self.set_max_counts(self.max_counts)
+        if outer_ap is not None:
+            self.surrounding_ap_limit = outer_ap
 
         if self.aperture is None or self.sky is None:
             raise ValueError("ERROR: aperture photometry parameters are incomplete. Either aperture "
@@ -627,6 +662,7 @@ Adds more files to photometry
 
         ignore, offset_list = _prep_offset(start_frame, offsets_xy, ignore)
         last_coords = [coords[-1] for coords in self.coords_new_xy]
+        brightest = self.brightest
 
         indexing,\
             sci_stamps, coords_new_xy = _get_stamps(sci_files, last_coords,
@@ -636,15 +672,13 @@ Adds more files to photometry
                                                     labels=self.labels,
                                                     offsets_xy=offset_list,
                                                     logger=self._logger,
-                                                    ignore=ignore)
+                                                    ignore=ignore,
+                                                    brightest=brightest)
         self.sci_stamps = sp.concatenate((self.sci_stamps, sci_stamps), axis=1)
         self.coords_new_xy = sp.concatenate((self.coords_new_xy, coords_new_xy), axis=1)
 
         last_idx = self.indexing[-1]+1
         self.indexing += [idx + last_idx for idx in indexing]
-        # self.frame_id += ["{}/{}".format(d, f) for d, f, i in zip(sci_files.getheaderval('dirname'),
-        #                                                           sci_files.getheaderval('basename'),
-        #                                                           range(len(sci_files)))]
         # noinspection PyUnusedLocal
         dummy = [self.extras[x].extend(v)
                  for x, v in zip(extra, zip(*sci_files.getheaderval(*extra,
@@ -656,16 +690,25 @@ Adds more files to photometry
 
         :return:
         """
-        all_phot = []
-        all_err = []
-        all_fwhm = []
+        if isinstance(self.aperture, (list, tuple)):
+            aperture = self.aperture
+        else:
+            aperture = [self.aperture]
+
+        ns = len(self.indexing)
+        nt = len(self.coords_new_xy)
+        na = len(aperture)
+        all_phot = sp.zeros([na, nt, ns])
+        all_err = sp.zeros([na, nt, ns])
+        all_fwhm = sp.zeros([nt, ns])
+        all_surrounding = sp.zeros([na, nt, ns])
+
 
         print("Processing CPU photometry for {0} targets: ".format(len(self.sci_stamps)), end='')
         sys.stdout.flush()
-        for label, target, centers_xy in zip(self.labels, self.sci_stamps, self.coords_new_xy):  # For each target
-            t_phot, t_err, t_fwhm = [], [], []
+        for label, target, centers_xy, t in zip(self.labels, self.sci_stamps, self.coords_new_xy, range(nt)):  # For each target
 
-            for data, center_xy, non_ignore_idx in zip(target, centers_xy, self.indexing):
+            for data, center_xy, non_ignore_idx, s in zip(target, centers_xy, self.indexing, range(ns)):
                 cx, cy = center_xy
 
                 # Stamps are already centered, only decimals could be different
@@ -709,48 +752,54 @@ Adds more files to photometry
                 res = data - sky_fit  # minus sky
 
                 # Following to compute FWHM by fitting gaussian
-                res2 = res[d < self.aperture * 4].ravel()
-                d2 = d[d < self.aperture * 4].ravel()
+                res2 = res[d < self.sky[1]].ravel()
+                d2 = d[d < self.sky[1]].ravel()
                 to_fit = lambda dd, h, sigma: h * dp.gauss(dd, sigma, ndim=1)
                 try:
                     sig, cov = op.curve_fit(to_fit, d2, res2, sigma=1 / sp.sqrt(sp.absolute(res2)),
-                                            p0=[max(res2), self.aperture / 3])
+                                            p0=[max(res2), 3])
                 except RuntimeError:
                     sig = sp.array([0, 0, 0])
                 fwhm_g = 2.355 * sig[1]
+                all_fwhm[t, s] = fwhm_g
 
                 # now photometry
-                psf = res[d < self.aperture]
-                if (psf > self.max_counts).any():
-                    logging.warning("Object {} on frame #{} has counts above the "
-                                    "threshold ({})".format(label,
-                                                            self.indexing[non_ignore_idx],
-                                                            self.max_counts))
-                phot = float(psf.sum())
+                for ap_idx in range(len(aperture)):
+                    psf = res[d < aperture[ap_idx]]
+                    if (psf > self.max_counts).any():
+                        logging.warning("Object {} on frame #{} has counts above the "
+                                        "threshold ({})".format(label,
+                                                                self.indexing[non_ignore_idx],
+                                                                self.max_counts))
+                    all_phot[ap_idx, t, s] = phot = float(psf.sum())
+                    all_surrounding[ap_idx, t, s] = float(res[(d < (self.surrounding_ap_limit*aperture[ap_idx])) *
+                                                              (d > aperture[ap_idx])].sum())
 
-                # now the error
-                if self.gain is None:
-                    error = None
-                else:
-                    n_pix_ap = (d < self.aperture).sum()
-                    error = _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
+                    # now the error
+                    if self.gain is None:
+                        error = None
+                    else:
+                        n_pix_ap = (d < aperture[ap_idx]).sum()
+                        error = _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
+                    all_err[ap_idx, t, s] = error
 
-                t_phot.append(phot)
-                t_err.append(error)
-                t_fwhm.append(fwhm_g)
-
-            all_phot.append(t_phot)
-            all_err.append(t_err)
-            all_fwhm.append(t_fwhm)
             print('X', end='')
             sys.stdout.flush()
 
         print('')
         # todo: make a nicer epoch passing
-        return timeserie.TimeSeries(all_phot, all_err,
+        extras = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm,
+                  'outer_ap': all_surrounding}
+        for ap in aperture:
+            extras['flux_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
+            extras['error_ap{:d}'.format(int(ap))] = all_err[aperture.index(ap), :, :]
+            extras['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
+
+        return timeserie.TimeSeries('flux_ap{}'.format(aperture[0]),
+                                    'error_ap{}'.format(aperture[0]),
                                     labels=self.labels,
                                     epoch=[self.epoch[e] for e in range(len(self.epoch)) if e in self.indexing],
-                                    extras={'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm})
+                                    extras=extras)
 
     def last_coordinates(self, pos=None):
         """
