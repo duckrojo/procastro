@@ -23,7 +23,7 @@ from IPython.core.debugger import Tracer
 
 import dataproc as dp
 import matplotlib.pyplot as plt
-from cycler import cycler
+#from cycler import cycler
 
 
 class TimeSeries:
@@ -197,8 +197,8 @@ Set target channel as group 1, and all other channels as group 2.
                                                   group_by, ratio_error)
 
         for x, y, e, c, lab in zip(epochs, groups, errors, colors, group_labels):
-            ax.set_prop_cycle(cycler('color', colors),
-                              cycler('marker', markers),)
+            # ax.set_prop_cycle(cycler('color', colors),
+            #                   cycler('marker', markers),)
             ax.errorbar(x, y, yerr=e, props={"ls": 'None'}, label=lab)
 
         labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
