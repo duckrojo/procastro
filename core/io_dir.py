@@ -227,7 +227,7 @@ Returns all data from the AstroFiles in a datacube
         :param normalize_region:
         :param normalize:
         :param verbose:
-        :param check_unique: receives a list of headers that need to be checked for uniqueness. Exposure time by default (it makes no sense to merge otherwise)
+        :param check_unique: receives a list of headers that need to be checked for uniqueness.
         :return:
         """
         if verbose:
@@ -267,18 +267,19 @@ Returns all data from the AstroFiles in a datacube
             print("")
         return all_data
 
-
-    def median(self, normalize_region=None, normalize=False, verbose=True, check_unique=None):
+    def median(self, normalize_region=None, normalize=False, verbose=True,
+               check_unique=None, group_by=None):
         """
 
+        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
         :param normalize_region: Subregion to use for normalization
         :param normalize:  Whether to Normalize
         :param verbose:   Output progress indicator
         :param check_unique: Check uniquenes in heaeder
-        :return:
+        :return: if group_by is set, returns (grouped_median, grouping), otherwise returns median
         """
         if check_unique is None:
-            if normalize:
+            if normalize or group_by is not None:
                 check_unique = []
             else:
                 check_unique = ['exptime']
@@ -287,6 +288,25 @@ Returns all data from the AstroFiles in a datacube
                                  normalize=normalize,
                                  verbose=verbose,
                                  check_unique=check_unique)
+        if group_by is not None:
+            groupers = sorted(set(self.getheaderval(group_by)))
+            ret = sp.zeros([len(groupers)] + list(self[0].shape))
+            if verbose:
+                print ("Median combining grouped by '{}':".format(group_by), end='')
+                sys.stdout.flush()
+            for i in range(len(groupers)):
+                if verbose:
+                    print ("{} {}".format(i and "," or "", groupers[i]), end='')
+                    sys.stdout.flush()
+                ret[i] = self.filter(**{group_by: groupers[i]}).median(normalize=normalize,
+                                                                       normalize_region=normalize_region,
+                                                                       verbose=False)
+            if verbose:
+                print(": done.")
+                sys.stdout.flush()
+
+            return ret, sp.array(groupers)
+
         # todo: return AstroFile
 
         if verbose:
@@ -299,14 +319,16 @@ Returns all data from the AstroFiles in a datacube
 
         return ret
 
-    def mean(self, normalize_region=None, normalize=False, verbose=True, check_unique=None):
+    def mean(self, normalize_region=None, normalize=False, verbose=True,
+             check_unique=None, group_by=None):
         """
 
+        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
         :param normalize_region: Subregion to use for normalization
         :param normalize:  Whether to Normalize
-        :param verbose:   Output progress indicator
-        :param check_unique: Check uniquenes in heaeder
-        :return:
+        :param verbose: Output progress indicator
+        :param check_unique: Check uniqueness in header
+        :return: if group_by is set, returns (grouped_mean, grouping), otherwise returns mean
         """
         if check_unique is None:
             if normalize:
@@ -318,9 +340,28 @@ Returns all data from the AstroFiles in a datacube
                                  normalize=normalize,
                                  verbose=verbose,
                                  check_unique=check_unique)
+        if group_by is not None:
+            groupers = sorted(set(self.getheaderval(group_by)))
+            ret = sp.zeros([len(groupers)] + list(self[0].shape))
+            if verbose:
+                print ("Mean combining grouped by '{}':".format(group_by), end='')
+                sys.stdout.flush()
+            for i in range(len(groupers)):
+                if verbose:
+                    print ("{} {}".format(i and "," or "", groupers[i]), end='')
+                    sys.stdout.flush()
+                ret[i] = self.filter(**{group_by: groupers[i]}).mean(normalize=normalize,
+                                                                     normalize_region=normalize_region,
+                                                                     verbose=False)
+            if verbose:
+                print(": done.")
+                sys.stdout.flush()
+
+            return ret, sp.array(groupers)
+
         # todo: return AstroFile
         if verbose:
-            print("Median combining: ", end="")
+            print("Mean combining: ", end="")
             sys.stdout.flush()
         ret = sp.mean(data, axis=0)
         if verbose:
