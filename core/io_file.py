@@ -546,8 +546,9 @@ class AstroFile(object):
     def __getitem__(self, key):
         """Read data and return key"""
 
-        ###TODO: return header
-        if isinstance(key, str):
+        if key is None:
+            return None
+        elif isinstance(key, str):
             return self.getheaderval(key)[0]
         else:
             return self.reader()[key]
