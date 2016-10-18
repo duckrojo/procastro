@@ -17,12 +17,7 @@
 # Boston, MA  02110-1301, USA.
 #
 #
-
 from __future__ import print_function, division
-
-import logging
-
-iologger = logging.getLogger('dataproc.io')
 
 import dataproc as dp
 import scipy as sp
@@ -31,38 +26,66 @@ import copy
 import sys
 from astropy.utils.exceptions import AstropyUserWarning
 
+import logging
+io_logger = logging.getLogger('dataproc.io')
+
 
 class AstroDir(object):
-    """Collection of AstroFile"""
+    """Collection of AstroFile.
 
-    def __init__(self, path, mflat=None, mdark=None, calib_force=False, read_keywords=None,
+    Several recursive methods that are applied to each AstroFile are available
+
+    Parameters
+    ----------
+    path : str or list or AstroFile
+        Contains information from the file list. If str, a directory+wildcard it is assumed,
+        and parsed by `glob.glob`
+    mbias, mflat : see `.add_mbias()` or `.add_mflat()`
+        Master bias and flat to associate to each AstroFile (in one shared AstroCalib object)
+    calib_force : bool
+        If True, then force specified `mbias` and `mflat` to all files, otherwise
+        assign it only if it doesn't have one already.
+    read_keywords : list
+        read all specified keywords at creation time and store it in cache
+    hdu : int
+        default HDU
+    hdud : int
+        default HDU for data
+    hduh : int
+        default HDU for the header
+
+    Attributes
+    ----------
+    files : list
+        Contains the list of all AstroFile that belong to this AstroDir.
+
+    See Also
+    --------
+    AstroCalib : Object that holds calibration information. One of them can be shared
+        by many AstroFile
+    """
+
+    def __init__(self, path, mflat=None, mbias=None, calib_force=False, read_keywords=None,
                  hdu=0, hdud=None, hduh=None):
-        """Create AstroFile container from either a directory path (if given string), or directly from list of string
-        if calib is given, create one calib per directory to avoid using storing calibration files on each AstroFile
 
-"""
         import os
         import glob
         import os.path as pth
         files = []
 
         if hduh is None:
-            hduh=hdu
+            hduh = hdu
         if hdud is None:
-            hdud=hdu
+            hdud = hdu
 
         if isinstance(path, str):
-            filndir = glob.glob(path)
-            if len(filndir)==0:
-                raise ValueError("Invalid path to files given")
+            file_n_dir = glob.glob(path)
         elif isinstance(path, dp.AstroFile):
-            filndir = [path]
+            file_n_dir = [path]
         else:
-            filndir = path
+            file_n_dir = path
 
-        # if len(filndir) == 0:
-        #     raise ValueError("invalid path to files or zero-len list given")
-        for f in filndir:
+        for f in file_n_dir:
             if isinstance(f, dp.AstroFile):
                 nf = copy.deepcopy(f)
             elif pth.isdir(f):
@@ -78,7 +101,7 @@ class AstroDir(object):
 
         self.files = files
         self.props = {}
-        calib = dp.AstroCalib(mdark, mflat)
+        calib = dp.AstroCalib(mbias, mflat)
         for f in files:
             if calib_force or not f.has_calib():  # allows some of the files to keep their calibration
                 # AstroFile are created with an empty calib by default, which is overwritten here.
@@ -88,11 +111,35 @@ class AstroDir(object):
         self.path = path
 
     def add_bias(self, mbias):
+        """Update master bias in all the calibration objects in this AstroDir.
+
+        Parameters
+        ----------
+        mbias : dict or array_like
+            Master Bias to use for all frames.
+
+        See Also
+        --------
+        dataproc.AstroCalib.add_bias : this function is called for
+            each unique AstroCalib object in AstroDir
+        """
         unique_calibs = set([f.calib for f in self])
         for c in unique_calibs:
             c.add_bias(mbias)
 
     def add_flat(self, mflat):
+        """Update Master Flats in all the calibration objects in this AstroDir.
+
+        Parameters
+        ----------
+        mflat : dict or array_like
+            Master Flat to use for all frames.
+
+        See Also
+        --------
+        dataproc.AstroCalib.add_flat : this function is called for
+            each unique AstroCalib object in AstroDir
+        """
         unique_calibs = set([f.calib for f in self])
         for c in unique_calibs:
             c.add_flat(mflat)
@@ -126,7 +173,7 @@ class AstroDir(object):
         if isinstance(other, AstroDir):
             other_af = other.files
         elif isinstance(other, (list, tuple)) and isinstance(other[0], str):
-            iologger.warning("Adding list of files to Astrodir, calib and hdu defaults"
+            io_logger.warning("Adding list of files to Astrodir, calib and hdu defaults"
                              " will be shared from first AstroFile in AstroDir")
             other_af = [dp.AstroFile(filename,
                                      hdud=self[0]._hdud,
@@ -208,6 +255,15 @@ Return stats
 
         warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
         ret = [f.getheaderval(*args, cast=cast, **kwargs) for f in self]
+        try:
+            while True:
+                idx = ret.index(None)
+                logging.warning("Removing file with defective header from AstroDir")
+                self.files.pop(idx)
+                ret.pop(idx)
+        except ValueError:
+            pass
+
         warnings.resetwarnings()
         return ret
 
@@ -432,3 +488,4 @@ Add jd in header's cache to keyword 'target' using ut on keyword 'source'
             af.jd_from_ut(target, source)
 
         return self
+

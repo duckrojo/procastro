@@ -90,7 +90,10 @@ def _fits_verify(filename, ffilter=None, hdu=0):
 def _fits_getheader(_filename, *args, **kwargs):
     import pyfits as pf
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
-    h = pf.getheader(_filename, hdu)
+    try:
+        h = pf.getheader(_filename, hdu)
+    except IOError:
+        return None
     return tuple([(a in h and [h[a]] or [None])[0] for a in args])
 
 
@@ -448,7 +451,10 @@ class AstroFile(object):
 
 # only open fits file if there are non-cached keywords.
         new_keys = [k for k in args_n_def if k not in self.header_cache.keys()]
-        new_values = new_keys and self._geth[tp](self.filename, *new_keys, hdu=hdu) or []
+        new_values = self._geth[tp](self.filename, *new_keys, hdu=hdu) if new_keys else []
+        if new_values is None: #Then it is a deffective header
+            logging.warning("Deffective header in {}, ignoring".format(self))
+            return None
 
         for k, v in zip(new_keys, new_values):
             self.header_cache[k] = v
@@ -674,7 +680,13 @@ Add jd in header's cache to keyword 'target' using ut on keyword 'source'
 
 
 class AstroCalib(object):
-    """Object to hold calibration frames. It is a separate entity than AstroFile, since if is set by AstroDir, there will be no duplication of calibration frames, but just a common object."""
+    """Object to hold calibration frames.
+
+    Since several AstroFiles might use the same calibration frames, one
+    AstroCalib object might be shared by more than one AstroFile.  For instance,
+    all the files initialized through AstroDir share a single calibration objct
+
+    """
     def __init__(self, mbias=None, mflat=None,
                  exptime_keyword='exptime',
                  filter_keyword='filter'):
@@ -690,10 +702,13 @@ class AstroCalib(object):
 
     def add_bias(self, mbias):
         """
-Add Master Bias to Calib object.
+        Add Master Bias to Calib object.
 
-        :param mbias: It can be either a dictionary indexed by exposure
-        time or an array/AstroFile for generic times
+        Parameter
+        ---------
+        mbias : {dict, array}
+        It can be either a dictionary indexed by exposure time or an array/AstroFile for generic times
+
         """
         if mbias is None:
             self.mbias[-1] = 0.0
