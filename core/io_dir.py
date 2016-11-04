@@ -327,14 +327,16 @@ Returns all data from the AstroFiles in a datacube
                 sys.stdout.flush()
 
         if None in grouped_data and len(grouped_data) > 1:
+            #todo check error message
             raise ValueError("Panic. None should have been key of grouped_data only if group_by was None. "
-                              "In such case, it should have been was alone.")
+                            "In such case, it should have been alone.")
 
         for g in grouped_data:
             grouped_data[g] = sp.array(grouped_data[g])
 
         if verbose:
             print("")
+
         return grouped_data
 
     def median(self, normalize_region=None, normalize=False, verbose=True,
@@ -377,7 +379,7 @@ Returns all data from the AstroFiles in a datacube
             print(". done.")
             sys.stdout.flush()
 
-        if len(groupers):
+        if len(groupers) > 1:
             return ret, sp.array(groupers)
         else:
             return ret[0]
@@ -423,7 +425,7 @@ Returns all data from the AstroFiles in a datacube
             print(". done.")
             sys.stdout.flush()
 
-        if len(groupers):
+        if len(groupers > 1):
             return ret, sp.array(groupers)
         else:
             return ret[0]
@@ -470,7 +472,7 @@ Returns all data from the AstroFiles in a datacube
             print(". done.")
             sys.stdout.flush()
 
-        if len(groupers):
+        if len(groupers) > 1:
             return ret, sp.array(groupers)
         else:
             return ret[0]
