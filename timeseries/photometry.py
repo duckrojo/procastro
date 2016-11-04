@@ -699,14 +699,18 @@ Adds more files to photometry
         nt = len(self.coords_new_xy)
         na = len(aperture)
         all_phot = sp.zeros([na, nt, ns])
+        all_peak = sp.zeros([na, nt, ns])
+        all_mom2 = sp.zeros([na, nt, ns])
+        all_mom3 = sp.zeros([na, nt, ns])
+        all_moma = sp.zeros([na, nt, ns])
         all_err = sp.zeros([na, nt, ns])
         all_fwhm = sp.zeros([nt, ns])
         all_surrounding = sp.zeros([na, nt, ns])
 
-
         print("Processing CPU photometry for {0} targets: ".format(len(self.sci_stamps)), end='')
         sys.stdout.flush()
-        for label, target, centers_xy, t in zip(self.labels, self.sci_stamps, self.coords_new_xy, range(nt)):  # For each target
+        for label, target, centers_xy, t in zip(self.labels, self.sci_stamps,
+                                                self.coords_new_xy, range(nt)):  # For each target
 
             for data, center_xy, non_ignore_idx, s in zip(target, centers_xy, self.indexing, range(ns)):
                 cx, cy = center_xy
@@ -765,15 +769,26 @@ Adds more files to photometry
 
                 # now photometry
                 for ap_idx in range(len(aperture)):
-                    psf = res[d < aperture[ap_idx]]
+                    ap = aperture[ap_idx]
+                    psf = res[d < ap]
                     if (psf > self.max_counts).any():
                         logging.warning("Object {} on frame #{} has counts above the "
                                         "threshold ({})".format(label,
                                                                 self.indexing[non_ignore_idx],
                                                                 self.max_counts))
                     all_phot[ap_idx, t, s] = phot = float(psf.sum())
+                    all_peak[ap_idx, t, s] = float(psf.max())
                     all_surrounding[ap_idx, t, s] = float(res[(d < (self.surrounding_ap_limit*aperture[ap_idx])) *
                                                               (d > aperture[ap_idx])].sum())
+                    dx = x-cnt_stamp[1]
+                    dy = y-cnt_stamp[0]
+                    res_pos = res * (res > 0)
+
+                    skew_x = sp.sum(res_pos*(dx**3))
+                    skew_y = sp.sum(res_pos*(dy**3))
+                    all_mom2[ap_idx, t, s] = float(sp.sum(res_pos * (d ** 2)))
+                    all_mom3[ap_idx, t, s] = sp.sqrt(skew_x**2 + skew_y**2)
+                    all_moma[ap_idx, t, s] = sp.arctan2(skew_y, skew_x)
 
                     # now the error
                     if self.gain is None:
@@ -792,6 +807,10 @@ Adds more files to photometry
                   'outer_ap': all_surrounding}
         for ap in aperture:
             extras['flux_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
+            extras['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2
+            extras['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3
+            extras['mom3_ang_ap{:d}'.format(int(ap), )] = all_moma
+            extras['peak_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
             extras['error_ap{:d}'.format(int(ap))] = all_err[aperture.index(ap), :, :]
             extras['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
 
