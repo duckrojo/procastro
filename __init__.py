@@ -46,7 +46,7 @@ del core
 del types
 del v
 
-
+__version__ = "0.07"
 
 #from core import *
 

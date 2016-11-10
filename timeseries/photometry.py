@@ -784,9 +784,9 @@ Adds more files to photometry
                     dy = y-cnt_stamp[0]
                     res_pos = res * (res > 0)
 
-                    skew_x = sp.sum(res_pos*(dx**3))
-                    skew_y = sp.sum(res_pos*(dy**3))
-                    all_mom2[ap_idx, t, s] = float(sp.sum(res_pos * (d ** 2)))
+                    skew_x = sp.sum((res_pos*(dx**3))[d < ap])
+                    skew_y = sp.sum((res_pos*(dy**3))[d < ap])
+                    all_mom2[ap_idx, t, s] = float(sp.sum((res_pos * (d ** 2)))[d < ap])
                     all_mom3[ap_idx, t, s] = sp.sqrt(skew_x**2 + skew_y**2)
                     all_moma[ap_idx, t, s] = sp.arctan2(skew_y, skew_x)
 
@@ -802,9 +802,7 @@ Adds more files to photometry
             sys.stdout.flush()
 
         print('')
-        # todo: make a nicer epoch passing
-        extras = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm,
-                  'outer_ap': all_surrounding}
+        extras = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm}
         for ap in aperture:
             extras['flux_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
             extras['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2
@@ -814,7 +812,8 @@ Adds more files to photometry
             extras['error_ap{:d}'.format(int(ap))] = all_err[aperture.index(ap), :, :]
             extras['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
 
-        return timeserie.TimeSeries('flux_ap{}'.format(aperture[0]),
+        # todo: make a nicer epoch passing
+return timeserie.TimeSeries('flux_ap{}'.format(aperture[0]),
                                     'error_ap{}'.format(aperture[0]),
                                     labels=self.labels,
                                     epoch=[self.epoch[e] for e in range(len(self.epoch)) if e in self.indexing],
