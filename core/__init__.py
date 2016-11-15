@@ -19,6 +19,7 @@
 #
 
 import types
+from importlib import reload
 
 modules = ['astro',
            'io', 'io_dir', 'io_file',

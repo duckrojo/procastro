@@ -24,7 +24,7 @@ from __future__ import division, print_function
 import astropy.time as apt
 import datetime
 import dataproc as dp
-import dataproc.combine as cm
+#import dataproc.combine as cm
 import matplotlib.pyplot as plt
 import matplotlib.dates as md
 import pyfits as pf
@@ -86,8 +86,8 @@ def prep_data_plot(indata, **kwargs):
         data = indata[hdu].data
         error_msg = "for HDU {}.\n".format(hdu)
 
-    elif isinstance(indata, cm.Combine):
-        data = indata.data
+#    elif isinstance(indata, cm.Combine):
+#        data = indata.data
 
     elif isinstance(indata, sp.ndarray):
         data = indata

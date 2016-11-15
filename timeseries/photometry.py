@@ -26,7 +26,7 @@ import scipy as sp
 import scipy.optimize as op
 import sys
 import os.path
-import timeserie
+from .timeserie import TimeSeries
 import matplotlib.pyplot as plt
 
 import logging
@@ -813,8 +813,9 @@ Adds more files to photometry
             extras['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
 
         # todo: make a nicer epoch passing
-return timeserie.TimeSeries('flux_ap{}'.format(aperture[0]),
-                                    'error_ap{}'.format(aperture[0]),
+        return TimeSeries('flux_ap{}'.format(aperture[0]),
+                                    extras['error_ap{:d}'.\
+                                           format(int(aperture[0]))],
                                     labels=self.labels,
                                     epoch=[self.epoch[e] for e in range(len(self.epoch)) if e in self.indexing],
                                     extras=extras)

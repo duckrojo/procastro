@@ -85,7 +85,7 @@ def getfilter(name,
     """get filter transmission
  
     :param name: filter name
-    :param filter_unit: default filter unit that should be in files.  It should be an astropy quantity. Default is nanometers. Can be specified in file as first line with comment 'unit:'
+    :param filter_unit: default filter unit that should be in files.  It should be an astropy quantity. Default is Angstroms. Can be specified in file as first line with comment 'unit:'
     :param nameonly: Return only the filename for the filter
     :param fct: Factor by which the transmission is multiplied in the archive (i.e. 100 if it is written in percentage). Can be specified in file as first line with comment 'fct:'
     :param force_positive: Force positive values for transmission
@@ -95,6 +95,21 @@ def getfilter(name,
     if filterdir is None:
         filterdir = '/home/inv/common/standards/filters/oth/*/'
     filters = glob.glob(filterdir+'/*.dat')
+
+    if filter_unit is None:
+        filter_unit = apu.AA
+
+    #if cut-in and cut-out values were specified
+    if isinstance(name, (list, tuple)) and len(name) == 2:
+        nwavs = 50
+        dflt = name[1] - name[0]
+        fwav = sp.linspace(name[0]-0.1, name[1]+0.1, nwavs)
+        ftrans = sp.zeros(nwavs)
+        ftrans[(fwav<name[1])*(fwav>name[0])] = 1
+        return fwav*filter_unit, ftrans
+    #otherwise, only accept strings
+    elif not isinstance(name, str):
+        raise TypeError("Filter can be a string identiying its name or a two-element tuple identifying cut-in & cut-out")
     found = []
     for f in filters:
         if name in path.basename(f):
@@ -117,24 +132,20 @@ def getfilter(name,
                 filter_unit = getattr(apu, val.lstrip())
             if fld.lstrip()=='fct':
                 fct = float(val.lstrip())
-    if filter_unit is None:
-        filter_unit = apu.AA
 
-    fwav, fflx = sp.loadtxt(found[0], unpack=True)
+    fwav, ftrans = sp.loadtxt(found[0], unpack=True)
     fwav *= filter_unit
-    fflx /= fct
+    ftrans /= fct
     if force_positive:
-        fflx[fflx<0] = 0.0
+        ftrans[ftrans<0] = 0.0
 
     if force_increasing:
-        fwav,fflx = dp.sortmany(fwav, fflx)
+        fwav,ftrans = dp.sortmany(fwav, ftrans)
         fwav = apu.Quantity(fwav)
-        fflx = sp.array(fflx)
+        ftrans = sp.array(ftrans)
 
 
-    return fwav,fflx
-
-
+    return fwav,ftrans
 
 
 def applyfilter(name, spectra,
@@ -168,15 +179,15 @@ def applyfilter(name, spectra,
         if not isinstance(wavfreq, apu.Quantity):
             wavfreq *= filter_unit
 
-        if wavfreq.cgs.unit == u.cm:
+        if wavfreq.cgs.unit == apu.cm:
             if not isinstance(spectra, apu.Quantity):
                 spectra *= apu.erg/apu.cm**2/apu.cm/apu.s/apu.sr
-        elif wavfreq.cgs.unit == 1/u.s:
+        elif wavfreq.cgs.unit == 1/apu.s:
             if not isinstance(spectra, apu.Quantity):
                 spectra *= apu.erg/apu.cm**2/apu.Hz/apu.s/apu.sr
             spectra = spectra.to(apu.erg/apu.cm**2/apu.cm/apu.s/apu.sr, 
                                  equivalencies=apu.spectral_density(wavfreq))[::-1]
-            wavfreq = wavfreq.to(u.nm,
+            wavfreq = wavfreq.to(apu.nm,
                                  equivalencies=apu.spectral())[::-1]
             print("WARNING: frequency domain filtering has not been tested thoroughly!!")
         else:
