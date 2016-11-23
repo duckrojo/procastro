@@ -25,97 +25,115 @@ import dataproc as dp
 import matplotlib.pyplot as plt
 #from cycler import cycler
 
-
 class TimeSeries:
+    """Stores many alternatives of information to show for a series of channels"""
+
     def __repr__(self):
-        return "<timeseries object with {channels} channels of {size} " \
-               "elements (Extras={extras}).>".format(channels=len(self.channels),
+        return "<timeseries object with {n_channels} channels (channels) of {size} " \
+               "elements (Extras={extras}).>".format(n_channels=len(self),
+                                                     channels=self._tss[0].labels,
                                                      size=len(self.channels[0]),
                                                      extras=self.extras.keys(), )
 
-    def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
-                 grouping='mean'):
+    def __len__(self):
+        return len(self._tss[self.default_info])
 
-        self.combine = {}
-        self.grouping_with(grouping)
+    def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
+                 default_info=None, grouping='mean'):
+        """
+Receives a timeseries object with, optionally, several different kinds of information
+(flux, errors, centroid, ...)
+
+        :param data: dict or scipy.array
+        :param errors: dict or scipy.array
+        if dict, then it should have the same keys as data
+        :param labels:
+        :param epoch:
+        :param extras:
+        :param default_info:
+        :param grouping:
+        """
+
+        if isinstance(data, dict):
+            if default_info is None:
+                default_info = data.keys()[0]
+            self._tss = {k: TimeSeriesSingle(v, errors[k] if (k in errors) else None,
+                                             labels=labels, epoch=epoch, group_op=grouping)
+                         for k, v in data.items()}
+            # todo check whether this old style will be implemented.
+            # if False in [isinstance(v, (list, tuple, sp.ndarray)) for v in extras.values()]:
+            #     raise TypeError("Each element of 'extras' dictionary must be a list")
+
+        elif isinstance(data, sp.array):
+            if default_info is None:
+                default_info = "data"
+            self._tss["data"] = TimeSeriesSingle(data, errors,
+                                                 labels=labels, epoch=epoch, group_op=grouping)
+        self.default_info = default_info
+
+    def __call__(self, *args):
+        if len(args) != 1:
+            raise ValueError("Only one argument in the form 'field=target' must be given to index it")
+        info = args[0]
+
+        if info in self._tss:
+            return self._tss[info]
+        else:
+            raise ValueError("Cannot find requested field '{0}'".format(info))
+
+    def _search_channel(self, target):
+        return self._tss[self.default_info]._search_channel(target)
+
+
+
+class TimeSeriesSingle:
+    """Stores a single kind of information"""
+
+    def __repr__(self):
+        return "<single timeseries object with {channels} channels of {size} " \
+               "elements ({err} error channel).>".format(channels=len(self.channels),
+                                                         size=len(self),
+                                                         extras=self.extras.keys(),
+                                                         err = "it has" if len(self.errors)
+                                                         else "has no")
+
+    def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
+                 group_op='mean'):
+
         self.channels = [sp.array(d) for d in
                          data]  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
-
-        # Default grouping: 1st coordinate is 1 group, all other objects are another group
-        self.set_main(0)
 
         self.labels = []
         if labels is not None:
             self.labels = labels
 
-        if extras is None:
-            extras = {}
-        elif not isinstance(extras, dict):
-            raise TypeError("extras must be a dictionary")
-        else:
-            if False in [isinstance(v, (list, tuple, sp.ndarray)) for v in extras.values()]:
-                raise TypeError("Each element of 'extras' dictionary must be a list")
-
-        self.extras = extras
-        self._extra_call = None
-
         if errors is None:
             errors = []
-        self.extras['errors'] = [sp.array(e) for e in errors]
-        # [[error_target1_im1, error_target1_im2, ...], [error_target2_im1, error_target2_im2, ...]]
 
+        self.errors = errors
         self.epoch = epoch
 
-    def __call__(self, **kwargs):
-        if len(kwargs) != 1:
-            raise ValueError("Only one argument in the form 'field=target' must be given to index it")
-        k, v = kwargs.items()[0]
+        self.combine = {}
+        self.grouping_with(group_op)
+        self.groups = sp.zeros(len(self))  # group #0 is ignored
+        # Default group_op: 1st channel is group #1, all other channels are group #2
+        self.set_main(0)
 
-        if k in self.extras:
-            ret_extra = sp.array(self.extras[k])
-        else:
-            raise ValueError("Cannot find requested field '{0}'".format(k))
-
-        if isinstance(v, str):
-            item = self.labels.index(v)
-        else:
-            item = v
-
-        if isinstance(item, int):
-            if item < 0:
-                if k == 'errors':
-                    if not (self.combine['name'] == 'mean' or self.combine['name'] == 'median'):
-                        raise NotImplementedError("Only know how to compute error of median- or mean-combined groups.")
-                    sample = sp.array(self.groups) == abs(item)
-                    sigma = ret_extra[sample]
-                    variance = (sigma ** 2).sum(0)
-                    #Tracer()()
-                    return sp.sqrt(variance) / sample.sum()
-                else:
-                    raise NotImplementedError("Only combined errors have been implemented")
-            else:
-                return ret_extra[item]
-        else:
-            raise TypeError("unrecognized channel specification ({}) for "
-                            "extra '{}'".format(item, k))
-
-#todo: implement ignore channels
+    # todo: implement ignore channels
     def set_main(self, target, ignore=None):
         """
-Set target channel as group 1, and all other channels as group 2.
+Set target channel as group #1, and all other channels as group #2
         :param ignore: Channel, or list of channels, to be placed in group 3
         :param target: Channel to be set to group 1
         :return:
         """
         target = self._search_channel(target)
-        self.groups = sp.ones(len(self.channels)) + 1
+        self.groups[:] = 2
         self.groups[target] = 1
         return self
 
-    def _search_channel(self, target):
-        if isinstance(target, str):
-            target = self.labels.index(target)
-        return target
+    def __len__(self):
+        return len(self.channels[0])
 
     def __getitem__(self, target):
         """To recover errors or any of the other extras try: ts('error')[0] ts['centers_xy']['Target'], etc"""
@@ -127,6 +145,23 @@ Set target channel as group 1, and all other channels as group 2.
                                       **(self.combine['prm']))
 
         return self.channels[target]
+
+    def _search_channel(self, target):
+
+        if isinstance(target, str):
+            target = self.labels.index(target)
+
+        return target
+
+    def grp_errors(self, group):
+        if not (self.combine['name'] == 'mean' or self.combine['name'] == 'median'):
+            raise NotImplementedError("Only know how to compute error of median- or mean-combined groups. "
+                                      "Errors of median computed as errors of mean, actually")
+        sample = sp.array(self.groups) == abs(group)
+        sigma = self.errors[sample]
+        variance = (sigma ** 2).sum(0)
+        # Tracer()()
+        return sp.sqrt(variance) / sample.sum()
 
     def grouping_with(self, op):
         self.combine['name'] = op
@@ -159,7 +194,7 @@ Set target channel as group 1, and all other channels as group 2.
 
         for lab in disp:
             value = self[lab]
-            error = self(errors=lab)
+            error = self.errors[lab]
             if normalize:
                 norm = value.mean()
                 value /= norm
@@ -174,13 +209,13 @@ Set target channel as group 1, and all other channels as group 2.
         ax.legend()
         plt.show()
 
+    # todo grouping not functional
     def plot_ratio(self, label=None, axes=None, fmt='x', grouping=None):
         fig, ax = dp.figaxes(axes)
 
         ratio = self[-1] / self[-2]
-        ratio_error = ratio * sp.sqrt((self(errors=-1) / self[-1]) ** 2 +
-                                      (self(errors=-2) / self[-2]) ** 2)
-
+        ratio_error = ratio * sp.sqrt((self.grp_errors(1) / self[-1]) ** 2 +\
+                                      (self.grp_errors(2) / self[-2]) ** 2)
 
         if grouping is None:
             grouping = {}
@@ -208,10 +243,11 @@ Set target channel as group 1, and all other channels as group 2.
 
         plt.show()
 
-    def save_to_file(self, filename):
-        to_save=sp.zeros([len(self), len(extras)])
-
-        sp.savetxt(header="# {}".format(", ".join(self.epoch, self[-1]/self[-2], err, )))
+    # todo reimplement save_to_file
+    # def save_to_file(self, filename):
+    #     to_save=sp.zeros([len(self), len(extras)])
+    #
+    #     sp.savetxt(header="# {}".format(", ".join(self.epoch, self[-1]/self[-2], err, )))
 
         # def get_error(self, item):
         #     return self(errors=item)
