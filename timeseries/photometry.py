@@ -813,12 +813,11 @@ Adds more files to photometry
             extras['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
 
         # todo: make a nicer epoch passing
-        return TimeSeries('flux_ap{}'.format(aperture[0]),
-                                    extras['error_ap{:d}'.\
-                                           format(int(aperture[0]))],
-                                    labels=self.labels,
-                                    epoch=[self.epoch[e] for e in range(len(self.epoch)) if e in self.indexing],
-                                    extras=extras)
+        return TimeSeries(extras['flux_ap{:d}'.format(aperture[0])],
+                          extras['error_ap{:d}'.format(int(aperture[0]))],
+                          labels=self.labels,
+                          epoch=[self.epoch[e] for e in range(len(self.epoch)) if e in self.indexing],
+                          extras=extras)
 
     def last_coordinates(self, pos=None):
         """
