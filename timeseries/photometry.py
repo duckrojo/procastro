@@ -802,22 +802,24 @@ Adds more files to photometry
             sys.stdout.flush()
 
         print('')
-        extras = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm}
+        errors = {}
+        information = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm}
         for ap in aperture:
-            extras['flux_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
-            extras['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2
-            extras['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3
-            extras['mom3_ang_ap{:d}'.format(int(ap), )] = all_moma
-            extras['peak_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
-            extras['error_ap{:d}'.format(int(ap))] = all_err[aperture.index(ap), :, :]
-            extras['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
+            information['flux_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
+            information['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2
+            information['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3
+            information['mom3_ang_ap{:d}'.format(int(ap), )] = all_moma
+            information['peak_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
+            information['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
+            errors['flux_ap{:d}'.format(int(ap))] = all_err[aperture.index(ap), :, :]
 
         # todo: make a nicer epoch passing
-        return TimeSeries(extras['flux_ap{:d}'.format(aperture[0])],
-                          extras['error_ap{:d}'.format(int(aperture[0]))],
+        return TimeSeries(information,
+                          errors,
                           labels=self.labels,
                           epoch=[self.epoch[e] for e in range(len(self.epoch)) if e in self.indexing],
-                          extras=extras)
+                          default_info='flux_ap{:d}'.format(int(aperture[0])),
+                          )
 
     def last_coordinates(self, pos=None):
         """
