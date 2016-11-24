@@ -30,10 +30,10 @@ class TimeSeries:
 
     def __repr__(self):
         return "<timeseries object with {n_channels} channels (channels) of {size} " \
-               "elements (Extras={extras}).>".format(n_channels=len(self),
-                                                     channels=self._tss[0].labels,
-                                                     size=len(self.channels[0]),
-                                                     extras=self.extras.keys(), )
+               "elements.>".format(n_channels=len(self),
+                                                     channels=self._tss[self.default_info].labels,
+                                                     size=len(self._tss[self.default_info]),
+                                                     )
 
     def __len__(self):
         return len(self._tss[self.default_info])
@@ -72,6 +72,7 @@ Receives a timeseries object with, optionally, several different kinds of inform
         self.default_info = default_info
 
     def plot(self, info=None, **kwargs):
+        """execute .plot() on the default TimeSeriesSingle"""
         if info is None:
             info = self.default_info
         self._tss[info].plot(**kwargs)
@@ -198,6 +199,7 @@ Set target channel as group #1, and all other channels as group #2
             disp = [label]
 
         for lab in disp:
+            lab = self._search_channel(lab)
             value = self[lab]
             error = self.errors[lab]
             if normalize:
