@@ -71,6 +71,11 @@ Receives a timeseries object with, optionally, several different kinds of inform
                                                  labels=labels, epoch=epoch, group_op=grouping)
         self.default_info = default_info
 
+    def plot(self, info=None, **kwargs):
+        if info is None:
+            info = self.default_info
+        self._tss[info].plot(**kwargs)
+
     def __call__(self, *args):
         if len(args) != 1:
             raise ValueError("Only one argument in the form 'field=target' must be given to index it")
