@@ -805,13 +805,14 @@ Adds more files to photometry
         errors = {}
         information = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm}
         for ap in aperture:
-            information['flux_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
-            information['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2
-            information['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3
-            information['mom3_ang_ap{:d}'.format(int(ap), )] = all_moma
-            information['peak_ap{:d}'.format(int(ap))] = all_phot[aperture.index(ap), :, :]
-            information['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[aperture.index(ap), :, :]
-            errors['flux_ap{:d}'.format(int(ap))] = all_err[aperture.index(ap), :, :]
+            ap_idx = aperture.index(ap)
+            information['flux_ap{:d}'.format(int(ap))] = all_phot[ap_idx, :, :]
+            information['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2[ap_idx, :, :]
+            information['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3[ap_idx, :, :]
+            information['mom3_ang_ap{:d}'.format(int(ap), )] = all_moma[ap_idx, :, :]
+            information['peak_ap{:d}'.format(int(ap))] = all_phot[ap_idx, :, :]
+            information['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[ap_idx, :, :]
+            errors['flux_ap{:d}'.format(int(ap))] = all_err[ap_idx, :, :]
 
         # todo: make a nicer epoch passing
         return TimeSeries(information,

@@ -30,10 +30,12 @@ class TimeSeries:
 
     def __repr__(self):
         return "<timeseries object with {n_channels} channels (channels) of {size} " \
-               "elements.>".format(n_channels=len(self),
-                                                     channels=self._tss[self.default_info].labels,
-                                                     size=len(self._tss[self.default_info]),
-                                                     )
+               "elements. " \
+               "Information available: {infos}>".format(n_channels=len(self),
+                                                        channels=self._tss[self.default_info].labels,
+                                                        size=len(self._tss[self.default_info]),
+                                                        infos=self._tss.keys(),
+                                   )
 
     def __len__(self):
         return len(self._tss[self.default_info])
@@ -99,8 +101,7 @@ class TimeSeriesSingle:
         return "<single timeseries object with {channels} channels of {size} " \
                "elements ({err} error channel).>".format(channels=len(self.channels),
                                                          size=len(self),
-                                                         extras=self.extras.keys(),
-                                                         err = "it has" if len(self.errors)
+                                                         err="it has" if len(self.errors)
                                                          else "has no")
 
     def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
