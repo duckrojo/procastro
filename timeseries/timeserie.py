@@ -79,6 +79,12 @@ Receives a timeseries object with, optionally, several different kinds of inform
             info = self.default_info
         self._tss[info].plot(**kwargs)
 
+    def plot_ratio(self, info=None, **kwargs):
+        """execute .plot_ratio() on the default TimeSeriesSingle"""
+        if info is None:
+            info = self.default_info
+        self._tss[info].plot_ratio(**kwargs)
+
     def __call__(self, *args):
         if len(args) != 1:
             raise ValueError("Only one argument in the form 'field=target' must be given to index it")
