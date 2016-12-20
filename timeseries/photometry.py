@@ -705,7 +705,7 @@ Adds more files to photometry
         all_moma = sp.zeros([na, nt, ns])
         all_err = sp.zeros([na, nt, ns])
         all_fwhm = sp.zeros([nt, ns])
-        all_surrounding = sp.zeros([na, nt, ns])
+        all_excess = sp.zeros([na, nt, ns])
 
         print("Processing CPU photometry for {0} targets: ".format(len(self.sci_stamps)), end='')
         sys.stdout.flush()
@@ -778,7 +778,7 @@ Adds more files to photometry
                                                                 self.max_counts))
                     all_phot[ap_idx, t, s] = phot = float(psf.sum())
                     all_peak[ap_idx, t, s] = float(psf.max())
-                    all_surrounding[ap_idx, t, s] = float(res[(d < (self.surrounding_ap_limit*aperture[ap_idx])) *
+                    all_excess[ap_idx, t, s] = float(res[(d < (self.surrounding_ap_limit*aperture[ap_idx])) *
                                                               (d > aperture[ap_idx])].sum())
                     dx = x-cnt_stamp[1]
                     dy = y-cnt_stamp[0]
@@ -811,7 +811,7 @@ Adds more files to photometry
             information['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3[ap_idx, :, :]
             information['mom3_ang_ap{:d}'.format(int(ap), )] = all_moma[ap_idx, :, :]
             information['peak_ap{:d}'.format(int(ap))] = all_phot[ap_idx, :, :]
-            information['surrounding_ap{:d}'.format(int(ap))] = all_surrounding[ap_idx, :, :]
+            information['excess_ap{:d}'.format(int(ap))] = all_excess[ap_idx, :, :]
             errors['flux_ap{:d}'.format(int(ap))] = all_err[ap_idx, :, :]
 
         # todo: make a nicer epoch passing
