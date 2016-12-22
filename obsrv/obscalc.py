@@ -28,6 +28,7 @@ import astropy.units as u
 import os
 import xml.etree.ElementTree as ET, urllib, gzip, io
 import dataproc as dp
+import pdb
 
 
 def _update_airmass(func):
@@ -54,7 +55,7 @@ def _update_transits(func):
 
 class ObsCalc(object):
 
-  def __init__(self, timespan=2015, target=None,
+  def __init__(self, timespan=2017, target=None,
                site='paranal', 
                only_night=True, equinox=2000,
                **kwargs):
@@ -160,17 +161,23 @@ class ObsCalc(object):
         raise ValueError("Timespan needs to be specified")
     else:
       self.params["timespan"] = timespan
-
+    pdb.set_trace()
     if isinstance(timespan, int):   #Year
     #times always at midnight (UT)
       ed0 = ephem.Date('%i/1/1' % (timespan,)) 
       ed1 = ephem.Date('%i/1/1' % (timespan+1,))
-      ed = sp.arange(ed0,ed1,int((ed1-ed0)/samples))
-      xlims = [ed[0]-ed0,ed[-1]-ed0]
+
+    elif isinstance(timespan, str):
+      ed0 = ephem.Date('%i/1/1' % (int(timespan[0:4]),))
+      ed1 = ephem.Date('%i/1/1' % (int(timespan[5:]),))
+
     else:
       raise NotImplementedError( """Requested timespan (%s) not implemented yet. Currently supported:
                  * single integer (year)
 """ % (timespan,))
+
+    ed = sp.arange(ed0, ed1, int((ed1 - ed0) / samples))
+    xlims = [ed[0] - ed0, ed[-1] - ed0]
     
     self.jd0 = ephem.julian_date(ephem.Date(ed[0]))
     self.days = ed
