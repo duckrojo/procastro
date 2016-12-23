@@ -1,4 +1,4 @@
-#
+
 #
 # Copyright (C) 2014 Patricio Rojo
 #
@@ -168,8 +168,11 @@ class ObsCalc(object):
       ed1 = ephem.Date('%i/1/1' % (timespan+1,))
 
     elif isinstance(timespan, str):
-      ed0 = ephem.Date('%i/1/1' % (int(timespan[0:4]),))
-      ed1 = ephem.Date('%i/1/1' % (int(timespan[5:]),))
+      years = timespan.split('-')
+      if len(years) != 2:
+        raise NotImplementedError("Requested timespan (%s) is not valid. Only a string in the format <FROMYEAR-TOYEAR> is accepted (only one dash separating integers)")
+      ed0 = ephem.Date('%i/1/1' % (int(years[0]),))
+      ed1 = ephem.Date('%i/1/1' % (int(years[1])+1,))
 
     else:
       raise NotImplementedError( """Requested timespan (%s) not implemented yet. Currently supported:
