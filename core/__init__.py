@@ -19,7 +19,7 @@
 #
 
 import types
-from importlib import reload
+#from importlib import reload
 
 modules = ['astro',
            'io', 'io_dir', 'io_file',
@@ -30,7 +30,7 @@ modules = ['astro',
 
 for modulename in modules:
     module = __import__(modulename, globals(), locals(), [], 1)
-    module = reload(module)
+#    module = reload(module)
     for v in dir(module):
         if v[0] == '_' or isinstance(getattr(module,v), types.ModuleType):
             continue

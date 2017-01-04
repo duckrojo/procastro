@@ -266,7 +266,7 @@ class AstroFile(object):
 
     # Para ponerle filename a los AstroFile que se inicializaron vacios
     # Para setHeader, puedo querer poner header antes de cargar datos
-    def setFilename(self, filename, exists=False, *args, **kwargs):
+    def set_filename(self, filename, exists=False, *args, **kwargs):
         if self.filename is None:
             self.filename = filename
             import os.path as path

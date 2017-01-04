@@ -161,7 +161,7 @@ class ObsCalc(object):
         raise ValueError("Timespan needs to be specified")
     else:
       self.params["timespan"] = timespan
-    pdb.set_trace()
+#    pdb.set_trace()
     if isinstance(timespan, int):   #Year
     #times always at midnight (UT)
       ed0 = ephem.Date('%i/1/1' % (timespan,)) 
