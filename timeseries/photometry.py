@@ -874,9 +874,10 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                                                             recenter=recenter)
                 ax.plot(distance, value, color,
                         label="%s: (%.1f, %.1f) -> (%.1f, %.1f)" % (lab,
-                                                                    coords_xy[frame][1],
                                                                     coords_xy[frame][0],
-                                                                    center[1], center[0]),
+                                                                    coords_xy[frame][1],
+                                                                    coords_xy[frame][0]-stamp_rad+center[0],
+                                                                    coords_xy[frame][1]-stamp_rad+center[1]),
                         )
         prop = {}
         if legend_size is not None:

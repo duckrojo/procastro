@@ -334,4 +334,4 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
     d = radial(to_show, [cy, cx])
     x, y = sortmanynsp(d.flatten(), to_show.flatten())
 
-    return x, y, (cy, cx)
+    return x, y, (cx, cy)
