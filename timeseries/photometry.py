@@ -838,9 +838,8 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                            legend_size=None, frame=0,
                            recenter=True):
         """Plot Radial Profile from data using radialprofile() function
-        :param targets: Target specification for re-centering. Either an integer for specific target,
-        or a 2-element list for x/y coordinates.
-        :type targets: integer/string or 2-element list
+        :param targets: Target specification for re-centering. Either an integer for specific target.
+        :type targets: integer/string
         :param xlim:
         :param axes:
         :param legend_size:
@@ -874,9 +873,10 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                                                             stamp_rad=self.stamp_rad,
                                                             recenter=recenter)
                 ax.plot(distance, value, color,
-                        label="%s: (%.1f, %.1f)" % (lab,
-                                                    coords_xy[frame][1],
-                                                    coords_xy[frame][0]),
+                        label="%s: (%.1f, %.1f) -> (%.1f, %.1f)" % (lab,
+                                                                    coords_xy[frame][1],
+                                                                    coords_xy[frame][0],
+                                                                    center[1], center[0]),
                         )
         prop = {}
         if legend_size is not None:
