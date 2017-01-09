@@ -425,7 +425,7 @@ Returns all data from the AstroFiles in a datacube
             print(". done.")
             sys.stdout.flush()
 
-        if len(groupers > 1):
+        if len(groupers) > 1:
             return ret, sp.array(groupers)
         else:
             return ret[0]

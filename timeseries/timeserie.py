@@ -56,9 +56,12 @@ Receives a timeseries object with, optionally, several different kinds of inform
         :param grouping:
         """
 
+        # blank definition
+        self.default_info = None
+
         if isinstance(data, dict):
             if default_info is None:
-                default_info = data.keys()[0]
+                self.set_default_info(data.keys()[0])
             self._tss = {k: TimeSeriesSingle(v, errors[k] if (k in errors) else None,
                                              labels=labels, epoch=epoch, group_op=grouping)
                          for k, v in data.items()}
@@ -71,7 +74,10 @@ Receives a timeseries object with, optionally, several different kinds of inform
                 default_info = "data"
             self._tss["data"] = TimeSeriesSingle(data, errors,
                                                  labels=labels, epoch=epoch, group_op=grouping)
-        self.default_info = default_info
+        self.set_default_info(default_info)
+
+    def set_default_info(self, name):
+        self.default_info = name
 
     def plot(self, info=None, **kwargs):
         """execute .plot() on the default TimeSeriesSingle"""

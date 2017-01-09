@@ -786,7 +786,7 @@ Adds more files to photometry
 
                     skew_x = sp.sum((res_pos*(dx**3))[d < ap])
                     skew_y = sp.sum((res_pos*(dy**3))[d < ap])
-                    all_mom2[ap_idx, t, s] = float(sp.sum((res_pos * (d ** 2)))[d < ap])
+                    all_mom2[ap_idx, t, s] = float(sp.sum((res_pos * (d ** 2))[d < ap]))
                     all_mom3[ap_idx, t, s] = sp.sqrt(skew_x**2 + skew_y**2)
                     all_moma[ap_idx, t, s] = sp.arctan2(skew_y, skew_x)
 
@@ -866,17 +866,18 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         stamp_rad = self.sci_stamps.shape[0]
 
         for stamp, coords_xy, color, lab in zip(self.sci_stamps, self.coords_new_xy,
-                                                colors, targets):
-            cx, cy = coords_xy[frame]
-            distance, value, center = dp.radial_profile(stamp[frame],
-                                                        [stamp_rad+cx % 1, stamp_rad+cy % 1],
-                                                        stamp_rad=self.stamp_rad,
-                                                        recenter=recenter)
-            ax.plot(distance, value, color,
-                    label="%s: (%.1f, %.1f)" % (lab,
-                                                coords_xy[frame][1],
-                                                coords_xy[frame][0]),
-                    )
+                                                colors, self.labels):
+            if lab in targets:
+                cx, cy = coords_xy[frame]
+                distance, value, center = dp.radial_profile(stamp[frame],
+                                                            [stamp_rad+cx % 1, stamp_rad+cy % 1],
+                                                            stamp_rad=self.stamp_rad,
+                                                            recenter=recenter)
+                ax.plot(distance, value, color,
+                        label="%s: (%.1f, %.1f)" % (lab,
+                                                    coords_xy[frame][1],
+                                                    coords_xy[frame][0]),
+                        )
         prop = {}
         if legend_size is not None:
             prop['size'] = legend_size
