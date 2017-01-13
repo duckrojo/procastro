@@ -29,6 +29,7 @@ from functools import wraps as _wraps
 import warnings
 import dataproc as dp
 import astropy.time as apt
+import pdb
 
 def _numerize_other(method):
     @_wraps(method)
@@ -74,7 +75,7 @@ def _fits_writer(filename, data, header=None):
 
 def _fits_verify(filename, ffilter=None, hdu=0):
     import pyfits as pf
-    single_extension = filename.lower().split('.')[-1] in ['fits', 'fit', 'ftsc']
+    single_extension = filename.lower().split('.')[-1] in ['fits', 'fit', 'ftsc', 'fts']
     double_extension = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip', 'fitzip']
     if single_extension or double_extension:
         if ffilter is None:
@@ -165,6 +166,7 @@ def _checksortkey(f):
 
 
 def _checkfilename(f):
+    #pdb.set_trace()
     @_wraps(f)
     def isfiledef(inst, *args, **kwargs):
         if hasattr(inst, 'filename'):
@@ -487,6 +489,7 @@ class AstroFile(object):
             :param rawdata: if True return raw instead of calibrated
             TODO: Respond to different exposure times or filters
         """
+        #pdb.set_trace()
         tp = self.type
         hdu = kwargs.pop('hdud', None)
         if hdu is None:

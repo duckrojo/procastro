@@ -24,6 +24,7 @@ import scipy as sp
 import warnings
 import copy
 import sys
+import pdb
 from astropy.utils.exceptions import AstropyUserWarning
 
 import logging
@@ -67,11 +68,10 @@ class AstroDir(object):
 
     def __init__(self, path, mflat=None, mbias=None, calib_force=False, read_keywords=None,
                  hdu=0, hdud=None, hduh=None):
-
         import os
         import glob
         import os.path as pth
-        files = []
+        files = [ ]
 
         if hduh is None:
             hduh = hdu
@@ -84,7 +84,6 @@ class AstroDir(object):
             file_n_dir = [path]
         else:
             file_n_dir = path
-
         for f in file_n_dir:
             if isinstance(f, dp.AstroFile):
                 nf = copy.deepcopy(f)
@@ -96,8 +95,10 @@ class AstroDir(object):
                 nf = False
             else:
                 nf = dp.AstroFile(f, hduh=hduh, hdud=hdud, read_keywords=read_keywords)
+            #pdb.set_trace()
             if nf:
                 files.append(nf)
+            #pdb.set_trace()
 
         self.files = files
         self.props = {}
@@ -287,6 +288,7 @@ Returns all data from the AstroFiles in a datacube
         :param check_unique: receives a list of headers that need to be checked for uniqueness.
         :return:
         """
+        #pdb.set_trace()
         if verbose:
             print("Reading {} good frames{}: ".format(len(self),
                                                       normalize and " and normalizing" or ""),
