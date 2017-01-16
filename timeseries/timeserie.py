@@ -35,7 +35,9 @@ class TimeSeries:
                "{infos}>".format(n_channels=len(self._tss[self.default_info].channels),
                                  channels=self._tss[self.default_info].labels,
                                  size=len(self._tss[self.default_info]),
-                                 infos=", ".join(["{}{}".format(k, self._tss[k].has_errors())
+                                 infos=", ".join(["{}{}".format(k, "*"
+                                                                if self._tss[k].has_errors()
+                                                                else "")
                                                  for k
                                                  in self._tss.keys()])
                                    )
