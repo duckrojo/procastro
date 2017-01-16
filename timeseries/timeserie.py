@@ -29,12 +29,15 @@ class TimeSeries:
     """Stores many alternatives of information to show for a series of channels"""
 
     def __repr__(self):
-        return "<timeseries object with {n_channels} channels (channels) of {size} " \
+        return "<timeseries object with {n_channels} channels of {size} " \
                "elements. " \
-               "Information available: {infos}>".format(n_channels=len(self),
-                                                        channels=self._tss[self.default_info].labels,
-                                                        size=len(self._tss[self.default_info]),
-                                                        infos=self._tss.keys(),
+               "Information available: " \
+               "{infos}>".format(n_channels=len(self._tss[self.default_info].channels),
+                                 channels=self._tss[self.default_info].labels,
+                                 size=len(self._tss[self.default_info]),
+                                 infos=["%s%s".format(k, self._tss[k].has_errors)
+                                        for k
+                                        in self._tss.keys()].join(", "),
                                    )
 
     def __len__(self):
@@ -137,6 +140,9 @@ class TimeSeriesSingle:
         self.groups = sp.zeros(len(self))  # group #0 is ignored
         # Default group_op: 1st channel is group #1, all other channels are group #2
         self.set_main(0)
+
+    def has_errors(self):
+        return self.errors is not None
 
     # todo: implement ignore channels
     def set_main(self, target, ignore=None):
