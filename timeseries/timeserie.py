@@ -144,7 +144,7 @@ class TimeSeriesSingle:
         self.set_main(0)
 
     def has_errors(self):
-        return self.errors is not None
+        return len(self.errors) > 0
 
     # todo: implement ignore channels
     def set_main(self, target, ignore=None):
