@@ -35,9 +35,9 @@ class TimeSeries:
                "{infos}>".format(n_channels=len(self._tss[self.default_info].channels),
                                  channels=self._tss[self.default_info].labels,
                                  size=len(self._tss[self.default_info]),
-                                 infos=["%s%s".format(k, self._tss[k].has_errors)
-                                        for k
-                                        in self._tss.keys()].join(", "),
+                                 infos=", ".join(["%s%s".format(k, self._tss[k].has_errors)
+                                                 for k
+                                                 in self._tss.keys()])
                                    )
 
     def __len__(self):
