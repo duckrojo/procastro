@@ -26,7 +26,7 @@ import scipy as sp
 import scipy.optimize as op
 import sys
 import os.path
-from .timeserie import TimeSeries
+from .timeseries import TimeSeries
 import matplotlib.pyplot as plt
 
 import logging
