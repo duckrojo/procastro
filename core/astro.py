@@ -37,6 +37,53 @@ except ImportError:
     aqs = None
 
 
+import os
+
+
+def get_transit_ephemeris(target):
+
+    transit_filename_locations = [os.path.expanduser("~")+'/.transits',
+                                  os.path.dirname(__file__)+'/transits.txt',]
+
+    for transit_filename in transit_filename_locations:
+        try:
+            open_file = open(transit_filename)
+
+            override = []
+            for line in open_file.readlines():
+                if line[0] == '#' or len(line) < 3:
+                    continue
+                data = line[:-1].split()
+                planet = data.pop(0).replace('_', ' ')
+
+                if planet.lower() == target.lower():
+                    for d in data:
+                        if d[0].lower() == 'p':
+                            override.append('period')
+                            tr_period = float(eval(d[1:]))
+                        elif d[0].lower() == 'e':
+                            override.append("epoch")
+                            tr_epoch  = float(eval(d[1:]))
+                        elif d[0].lower() == 'l':
+                            override.append("length")
+                            tr_length = float(eval(d[1:]))
+                        elif d[0].lower() == 'c':
+                            override.append("comment")
+                        else:
+                            raise ValueError("data field not understood, it must start with L, P, C, or E:\n%s" % (line,))
+                    print ("Overriding for '%s' from file '%s':\n %s" % (planet,
+                                                                         transit_filename,
+                                                                         ', '.join(override),))
+
+                if len(override):
+                  break
+
+        except IOError:
+            pass
+
+    return tr_epoch, tr_period, tr_length
+
+
 def blackbody(T, x, unit=None):
     """Returns blackbody at specified wavelength or frequency
 
