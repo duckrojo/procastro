@@ -133,13 +133,15 @@ def _prep_offset(start, offsets, ignore):
 def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 mdark=None, mflat=None, labels=None, recenter=True,
                 offsets_xy=None, logger=None, ignore=None, brightest=0,
-                max_change_allowed=None, interactive=False, idx0=0):
+                max_change_allowed=None, interactive=False, idx0=0,
+                ccd_lims_xy=None):
     """
 
     :param sci_files:
     :type sci_files: AstroDir
     :param target_coords_xy: [[t1x, t1y], [t2x, t2y], ...]
     :param stamp_rad:
+    :param ccd_lims_xy: [x1, x2, y1, y2] mean [x1:x2, y1:y2]
     :return:
     """
 
@@ -197,6 +199,9 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
               "keep 'g'oing until drift, <- prev frame, -> next frame")
         skip_interactive = False
 
+    if ccd_lims_xy is None:
+        ccd_lims_xy=[0, sci_files[0].shape[1], 0, sci_files[0].shape[0]]
+
     to_store = 0
     stat = 0
     previous_distance = None
@@ -207,6 +212,13 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         astrofile = sci_files[idx]
         off = offsets_xy[idx]
         d = astrofile.reader()
+        d = d[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
+
+        if isinstance(mdark, sp.ndarray):
+            mdark = mdark[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
+
+        if isinstance(mflat, sp.ndarray):
+            mflat = mflat[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
 
         if not skip_calib:
             if astrofile.has_calib():
@@ -439,7 +451,7 @@ class Photometry:
                  epoch='JD', labels=None, brightest=None,
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
-                 interactive=False):
+                 interactive=False, ccd_lims_xy=None):
         """
 
         :param sci_files:
@@ -461,6 +473,7 @@ class Photometry:
         :param ron:
         :param logfile:
         :param ignore:
+        :param ccd_lims_xy:
         """
         if isinstance(epoch, str):
             self.epoch = sci_files.getheaderval(epoch)
@@ -494,6 +507,7 @@ class Photometry:
         self.max_counts = max_counts
         self.recenter = recenter
         self.max_skip = max_skip
+        self.ccd_lims_xy = ccd_lims_xy
 
         if logfile is None:
             tmlogger.propagate = True
@@ -580,7 +594,8 @@ class Photometry:
                                              ignore=ignore,
                                              brightest=brightest,
                                              idx0=idx0,
-                                             interactive=interactive)
+                                             interactive=interactive,
+                                             ccd_lims_xy=ccd_lims_xy)
 
         self.extra_header = extra
         self.mdark = mdark
@@ -629,6 +644,10 @@ class Photometry:
                              "photometry radius or sky annulus were not giving. Please call photometry "
                              "with the following keywords: photometry(aperture=a, sky=s) or define aperture "
                              "and sky when initializing Photometry object.")
+
+        if self.aperture > self.stamp_rad:
+            raise ValueError("aperture photometry ({}) shouldn't be higher than radius of stamps ({})".format(self.aperture,
+                                                                                                              self.stamp_rad))
 
         ts = self.cpu_phot()
         return ts
@@ -862,7 +881,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         elif isinstance(targets, int):
             targets = [self.labels[targets]]
 
-        stamp_rad = self.sci_stamps.shape[0]
+        stamp_rad = self.stamp_rad
 
         for stamp, coords_xy, color, lab in zip(self.sci_stamps, self.coords_new_xy,
                                                 colors, self.labels):
@@ -870,7 +889,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                 cx, cy = coords_xy[frame]
                 distance, value, center = dp.radial_profile(stamp[frame],
                                                             [stamp_rad+cx % 1, stamp_rad+cy % 1],
-                                                            stamp_rad=self.stamp_rad,
+                                                            stamp_rad=stamp_rad,
                                                             recenter=recenter)
                 ax.plot(distance, value, color,
                         label="%s: (%.1f, %.1f) -> (%.1f, %.1f)" % (lab,
