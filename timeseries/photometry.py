@@ -855,7 +855,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None, frame=0,
-                           recenter=True):
+                           recenter=True, save=None):
         """Plot Radial Profile from data using radialprofile() function
         :param targets: Target specification for re-centering. Either an integer for specific target.
         :type targets: integer/string
@@ -909,7 +909,11 @@ Returns a dictionary with latest positions... useful if continued on a separate 
             else:
                 ax.set_xlim(xlim)
 
-        plt.show()
+        if save is not None:
+            plt.savefig(save)
+
+        else:
+            plt.show()
 
     def showstamp(self, target=None, stamp_rad=None, axes=None,
                   first=0, last=-1, n_show=None, ncol=None, annotate=True,

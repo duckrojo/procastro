@@ -45,6 +45,9 @@ class TimeSeries:
     def __len__(self):
         return len(self._tss[self.default_info])
 
+    def __getitem__(self, item):
+        return self._tss[self.default_info][item]
+
     def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
                  default_info=None, grouping='mean'):
         """
@@ -89,6 +92,13 @@ Receives a timeseries object with, optionally, several different kinds of inform
         if info is None:
             info = self.default_info
         self._tss[info].plot(**kwargs)
+
+    def get_ratio(self, info=None, **kwargs):
+
+        if info is None:
+            info = self.default_info
+        ratio, ratio_error, sigma, err_m = self._tss[info].get_ratio(**kwargs)
+        return ratio, ratio_error, sigma, err_m
 
     def plot_ratio(self, info=None, **kwargs):
         """execute .plot_ratio() on the default TimeSeriesSingle"""
@@ -139,7 +149,7 @@ class TimeSeriesSingle:
 
         self.combine = {}
         self.grouping_with(group_op)
-        self.groups = sp.zeros(len(self))  # group #0 is ignored
+        self.groups = sp.zeros(self.n_channels())  # group #0 is ignored
         # Default group_op: 1st channel is group #1, all other channels are group #2
         self.set_main(0)
 
@@ -162,11 +172,16 @@ Set target channel as group #1, and all other channels as group #2
     def __len__(self):
         return len(self.channels[0])
 
+    def n_channels(self):
+        return len(self.channels)
+
     def __getitem__(self, target):
         """To recover errors or any of the other extras try: ts('error')[0] ts['centers_xy']['Target'], etc"""
         # This is so I can do ts[0]/ts[2] and it works directly with the channels!
 
         target = self._search_channel(target)
+
+        # if negative, then group the channels
         if target < 0:
             return self.combine['op'](sp.array(self.channels)[sp.array(self.groups) == abs(target)],
                                       **(self.combine['prm']))
@@ -201,7 +216,7 @@ Set target channel as group #1, and all other channels as group #2
         else:
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
-    def plot(self, label=None, axes=None, normalize=False):
+    def plot(self, label=None, axes=None, normalize=False, save=None):
         """Display the timeseries data: flux (with errors) as function of mjd
 
         :param axes:
@@ -235,41 +250,70 @@ Set target channel as group #1, and all other channels as group #2
         ax.set_ylabel("Flux")
 
         ax.legend()
-        plt.show()
+        if save is not None:
+            plt.savefig(save)
 
-    # todo grouping not functional
-    def plot_ratio(self, label=None, axes=None, fmt='x', grouping=None):
-        fig, ax = dp.figaxes(axes)
+        else:
+            plt.show()
+
+    def get_ratio(self, label=None, axes=None, sector=None):
 
         ratio = self[-1] / self[-2]
+
         ratio_error = ratio * sp.sqrt((self.grp_errors(1) / self[-1]) ** 2 +\
                                       (self.grp_errors(2) / self[-2]) ** 2)
 
-        if grouping is None:
-            grouping = {}
-            group_by = self.epoch*0
-            group_labels = ['']
-        else:
-            group_by = list(set(self.extras[grouping['extra']]))
-            group_labels = group_by
+        x1=0
+        x2=len(ratio)- 1
+        if isinstance(sector, list):
+            x1=sector[0]
+            x2=sector[1]
+        sigma = sp.std(ratio[x1:x2])
+        errbar_media = sp.median(ratio_error[x1:x2])
 
-        colors = grouping.pop('colors', ['c', 'm', 'y', 'k'])
-        markers = grouping.pop('markers', ['^', 'v', 'x'])
+        return ratio, ratio_error, sigma, errbar_media
 
-        epochs, groups, errors = self.make_groups(self.epoch, ratio,
-                                                  group_by, ratio_error)
+    # todo grouping not functional
+    def plot_ratio(self, label=None, axes=None, fmt='x',
+                   grouping=None, sector=None, save=None):
 
-        for x, y, e, c, lab in zip(epochs, groups, errors, colors, group_labels):
-            # ax.set_prop_cycle(cycler('color', colors),
-            #                   cycler('marker', markers),)
-            ax.errorbar(x, y, yerr=e, props={"ls": 'None'}, label=lab)
+        fig, ax = dp.figaxes(axes)
 
-        labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
-        ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
+        ratio, ratio_error, s, erbm = self.get_ratio(sector=sector)
+
+        if label is None:
+            label = self.labels[0]
+        # if grouping is None:
+        #     grouping = {}
+        #     group_by = self.epoch*0
+        #     group_labels = ['']
+        # else:
+        #     group_by = list(set(self.extras[grouping['extra']]))
+        #     group_labels = group_by
+        #
+        # colors = grouping.pop('colors', ['c', 'm', 'y', 'k'])
+        # markers = grouping.pop('markers', ['^', 'v', 'x'])
+        #
+        # epochs, groups, errors = self.make_groups(self.epoch, ratio,
+        #                                           group_by, ratio_error)
+        #
+        # for x, y, e, c, lab in zip(epochs, groups, errors, colors, group_labels):
+        #     # ax.set_prop_cycle(cycler('color', colors),
+        #     #                   cycler('marker', markers),)
+        #     ax.errorbar(x, y, yerr=e, props={"ls": 'None'}, label=lab)
+
+        # labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
+        # ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
+
+        ax.errorbar(self.epoch, ratio, yerr=ratio_error, label=label, fmt='o')
+        ax.set_title("Flux Ratio of {}".format(self.labels[0]))
         ax.set_xlabel("MJD")
         ax.set_ylabel("Flux Ratio")
-
-        plt.show()
+        ax.legend()
+        if save is not None:
+            plt.savefig(save)
+        else:
+            plt.show()
 
     # todo reimplement save_to_file
     # def save_to_file(self, filename):
