@@ -63,7 +63,7 @@ def get_transit_ephemeris(target):
                             tr_period = float(eval(d[1:]))
                         elif d[0].lower() == 'e':
                             override.append("epoch")
-                            tr_epoch  = float(eval(d[1:]))
+                            tr_epoch = float(eval(d[1:]))
                         elif d[0].lower() == 'l':
                             override.append("length")
                             tr_length = float(eval(d[1:]))
@@ -320,12 +320,9 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
 
 
     try:
-        radec = apcoo.ICRS('%s' % target, unit=(apu.hour, apu.degree),
-                         equinox = equinox)
+        ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
+                                equinox=equinox)
     except ValueError:
-        found_in_file=False
-
-
         if not isinstance(coo_files, (list,tuple)):
             coo_files = [coo_files]
 
@@ -365,7 +362,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
             query = custom_simbad.query_object(target)
             if query is None:
                 #todo: make a nicer planet filtering option
-                if target[-2:]==' b':
+                if target[-2]==' ' and target[-1] in 'bcdef':
                     query = custom_simbad.query_object(target[:-2])
 
             if query is None:
@@ -373,14 +370,14 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
             ra, dec = query['RA'][0], query['DEC'][0]
             pmra, pmdec = query['PMRA'][0], query['PMDEC'][0]
             
-        radec = apcoo.ICRS('%s %s' % (ra, dec), 
+        ra_dec = apcoo.SkyCoord('%s %s' % (ra, dec),
                            unit=(apu.hour, apu.degree), 
                            equinox = equinox)
-        print("success! (%s)" % (radec,))
+        print("success! (%s)" % (ra_dec,))
 
     if return_pm:
-        return radec, pmra, pmdec
-    return radec
+        return ra_dec, pmra, pmdec
+    return ra_dec
 
 
 
