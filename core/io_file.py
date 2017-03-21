@@ -326,6 +326,9 @@ class AstroFile(object):
 
         return dp.plot_accross(self.reader(), *args, **kwargs)
 
+    def add_sortkey(self, key):
+        self.sortkey = key
+
     def imshowz(self, *args, **kwargs):
         return dp.imshowz(self.reader(), *args, **kwargs)
 
@@ -335,8 +338,10 @@ class AstroFile(object):
     @_checkfilename
     def filter(self, **kwargs):
         """True if the header given by the keyword argument matches its value in the fits header.
-            Multiple alternatives can be specified with a dict whose keys are casting function (e.g. filter(exptime={'int':300,10})). Multiple keywords are 'or' alternatives.
-            If you want 'and' filtering then filter in chain (e.g. filter(exptime=300).filter(object='star'))
+            Multiple alternatives can be specified with a dict whose keys are casting function
+            (e.g. filter(exptime={'int':300,10})). Multiple keywords are 'or' alternatives.
+            If you want 'and' filtering then filter in chain
+            (e.g. filter(exptime=300).filter(object='star'))
         """
         ret = []
 
@@ -491,7 +496,7 @@ class AstroFile(object):
         """
         #pdb.set_trace()
         tp = self.type
-        
+
         hdu = kwargs.pop('hdud', None)
         if hdu is None:
             hdu = kwargs.pop('hdu', self._hdud)

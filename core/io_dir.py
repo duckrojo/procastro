@@ -163,7 +163,7 @@ class AstroDir(object):
 
         # Sorting is done using python operators __lt__, __gt__, ... who are inquired by .sort() directly.
         for f in self:
-            f.sortkey = hdrfld
+            f.add_sortkey(hdrfld)
         self.files.sort()
         return self
 
