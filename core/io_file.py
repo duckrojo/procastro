@@ -491,6 +491,7 @@ class AstroFile(object):
         """
         #pdb.set_trace()
         tp = self.type
+        
         hdu = kwargs.pop('hdud', None)
         if hdu is None:
             hdu = kwargs.pop('hdu', self._hdud)
@@ -638,7 +639,9 @@ class AstroFile(object):
         verbose_heading = kwargs.pop('verbose_heading', True)
         extra_headers = kwargs.pop('extra_headers', [])
         if kwargs:
-            raise SyntaxError("only the following keyword argument for stats are permitted 'verbose_heading', 'extra_headers'")
+            raise SyntaxError("only the following keyword argument for stats are"
+                              " permitted 'verbose_heading', 'extra_headers'")
+
 
         if not args:
             args = ['min', 'max', 'mean', 'mean3sclip', 'median', 'std']
