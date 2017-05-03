@@ -300,7 +300,7 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
         ax = fig.add_subplot(111)
     elif isinstance(axes, plt.Figure):
         if not overwrite:
-            dummy = [axes.delaxes(a) for a in fig.axes]
+            dummy = [axes.delaxes(a) for a in axes.axes]
         ax = axes.add_subplot(111)
         fig = axes
     elif isinstance(axes, plt.Axes):
