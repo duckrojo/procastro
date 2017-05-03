@@ -272,7 +272,7 @@ Return stats
         """ Sets the header values specified in 'args' from each of the files.
             Returns a simple list if only one value is specified, or a list of tuples otherwise
 """
-        if False in [f.setheaderval(**kwargs) for f in self]:
+        if False in [f.setheader(**kwargs) for f in self]:
             raise ValueError("Setting the header of a file returned error... panicking!")
 
         return self
