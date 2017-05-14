@@ -910,9 +910,9 @@ Returns a dictionary with latest positions... useful if continued on a separate 
             else:
                 ax.set_xlim(xlim)
 
+        plt.tight_layout()
         if save is not None:
             plt.savefig(save)
-
         else:
             plt.show()
 
@@ -987,6 +987,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
             # noinspection PyUnusedLocal
             dummy = ax_stamp.figure.canvas.mpl_connect('button_press_event', onclick)
+        plt.tight_layout()
         if save is not None:
             plt.savefig(save)
         else:
@@ -1163,6 +1164,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         ax.set_ylabel("Frame #{}{}".format(frame, reference != frame
                                            and ", apertures from #{}".format(reference)
                                            or ""))
+        plt.tight_layout()
         if save is not None:
             plt.savefig(save)
         else:

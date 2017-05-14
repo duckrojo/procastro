@@ -3,7 +3,7 @@
 # Copyright (C) 2016 Francisca Concha, Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
 #
@@ -274,10 +274,20 @@ Set target channel as group #1, and all other channels as group #2
             x2=sector[1]
         sigma = sp.std(ratio[x1:x2])
         errbar_media = sp.median(ratio_error[x1:x2])
+        ratio_cut = ratio[x1:x2]
+        ratio_error_cut = ratio_error[x1:x2]
 
-        return ratio, ratio_error, sigma, errbar_media
+        return ratio_cut, ratio_error_cut, sigma, errbar_media
 
     # todo grouping not functional
+    def Epoch(self, sector=None):
+        x1 = 0
+        x2 = len(self.epoch) - 1
+        if isinstance(sector, list):
+            x1 = sector[0]
+            x2 = sector[1]
+        return self.epoch[x1:x2]
+
     def plot_ratio(self, label=None, axes=None, fmt='x',
                    grouping=None, sector=None, save=None,
                    overwrite=False):
@@ -310,11 +320,12 @@ Set target channel as group #1, and all other channels as group #2
         # labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
         # ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
 
-        ax.errorbar(self.epoch, ratio, yerr=ratio_error, label=label, fmt='o')
+        ax.errorbar(self.Epoch(sector=sector), ratio, yerr=ratio_error, label=label, fmt='o')
         ax.set_title("Flux Ratio of {}".format(self.labels[0]))
         ax.set_xlabel("MJD")
         ax.set_ylabel("Flux Ratio")
         ax.legend()
+        plt.tight_layout()
         if save is not None:
             plt.savefig(save)
         else:
