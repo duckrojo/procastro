@@ -216,7 +216,8 @@ Set target channel as group #1, and all other channels as group #2
         else:
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
-    def plot(self, label=None, axes=None, normalize=False, save=None):
+    def plot(self, label=None, axes=None, normalize=False, save=None,
+             title="TimeSeries Data"):
         """Display the timeseries data: flux (with errors) as function of mjd
 
         :param axes:
@@ -245,9 +246,12 @@ Set target channel as group #1, and all other channels as group #2
             ax.errorbar(self.epoch, value, yerr=error,
                         marker="o", label=lab)
 
-        ax.set_title("TimeSeries Data")
+        ax.set_title(title)
         ax.set_xlabel("MJD")
-        ax.set_ylabel("Flux")
+        if normalize:
+            ax.set_ylabel("Normalized flux")
+        else:
+            ax.set_ylabel("Flux")
 
         ax.legend()
         if save is not None:

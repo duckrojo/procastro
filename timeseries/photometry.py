@@ -870,7 +870,8 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         fig, ax = dp.figaxes(axes)
 
         ax.cla()
-        ax.set_xlabel('distance')
+        ax.set_title('Radial profile')
+        ax.set_xlabel('Distance (in pixels)')
         ax.set_ylabel('ADU')
         if targets is None:
             targets = self.labels
@@ -917,7 +918,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
     def showstamp(self, target=None, stamp_rad=None, axes=None,
                   first=0, last=-1, n_show=None, ncol=None, annotate=True,
-                  imshow=None):
+                  imshow=None, save=None):
         """Show the star at the same position for the different frames
 
         :param imshow:
@@ -965,7 +966,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
             array[ypos:ypos+stamp_d, xpos: xpos+stamp_d] = data
 
         f_stamp, ax_stamp = dp.figaxes(axes)
-        dp.imshowz(array, axes=ax_stamp)
+        dp.imshowz(array, axes=ax_stamp, force_show=False)
         if annotate:
             for idx in range(first, last+1):
                 pos_idx = idx - first
@@ -986,6 +987,10 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
             # noinspection PyUnusedLocal
             dummy = ax_stamp.figure.canvas.mpl_connect('button_press_event', onclick)
+        if save is not None:
+            plt.savefig(save)
+        else:
+            plt.show()
 
     def plot_drift(self, target=None, axes=None):
         """
@@ -1033,7 +1038,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                 ap_color='w', sk_color='LightCyan',
                 alpha=0.6, axes=None, reference=None,
                 annotate=True, cnt=None, interactive=True,
-                **kwargs):
+                save=None, **kwargs):
 
         """
 
@@ -1052,9 +1057,8 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         f, ax = dp.figaxes(axes)
         ax.cla()
         d = self._astrodir[frame]
-        dp.imshowz(d,
-                   axes=ax,
-                   **kwargs)
+        dp.imshowz(d, axes=ax,
+                   force_show=False, **kwargs)
 
         if reference is None:
             reference = frame
@@ -1159,3 +1163,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         ax.set_ylabel("Frame #{}{}".format(frame, reference != frame
                                            and ", apertures from #{}".format(reference)
                                            or ""))
+        if save is not None:
+            plt.savefig(save)
+        else:
+            plt.show()
