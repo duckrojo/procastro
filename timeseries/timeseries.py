@@ -404,3 +404,25 @@ Set target channel as group #1, and all other channels as group #2
         #
         #     return self.channels[-group_id]
         #
+   #     return self.channels[-group_id]
+        #
+        # def median(self, group_id):
+        #     if group_id > 2:
+        #         warnings.warn("group_id must be 1 or 2 only. Group 2 will be used as default.")
+        #         group = self.group2()
+        #         g_errors = self.errors_group2()
+        #     elif group_id == 1:
+        #         group = self.group1()
+        #         g_errors = self.errors_group1()
+        #     else:
+        #         group = self.group2()
+        #         g_errors = self.errors_group2()
+        #
+        #     self.channels[-group_id] = sp.median(group, axis=0)
+        #     err = np.zeros((1, len(g_errors[0])))
+        #     for i in range(len(g_errors)):
+        #         err += np.divide(g_errors[i]/group[i])**2
+        #     self.errors[-group_id] = np.sqrt(err)
+        #
+        #     return self.channels[-group_id]
+        #
