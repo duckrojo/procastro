@@ -855,7 +855,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None, frame=0,
-                           recenter=True, save=None):
+                           recenter=True, save=None, overwrite=False):
         """Plot Radial Profile from data using radialprofile() function
         :param targets: Target specification for re-centering. Either an integer for specific target.
         :type targets: integer/string
@@ -867,7 +867,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
     """
 
         colors = ['kx', 'rx', 'bx', 'gx', 'k^', 'r^', 'b^', 'g^', 'ko', 'ro', 'bo', 'go']
-        fig, ax = dp.figaxes(axes)
+        fig, ax = dp.figaxes(axes, overwrite=overwrite)
 
         ax.cla()
         ax.set_title('Radial profile')
@@ -918,7 +918,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
     def showstamp(self, target=None, stamp_rad=None, axes=None,
                   first=0, last=-1, n_show=None, ncol=None, annotate=True,
-                  imshow=None, save=None):
+                  imshow=None, save=None, overwrite=False):
         """Show the star at the same position for the different frames
 
         :param imshow:
@@ -965,7 +965,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
             ypos = 1+(pos_idx//ncol)*(stamp_d+2)
             array[ypos:ypos+stamp_d, xpos: xpos+stamp_d] = data
 
-        f_stamp, ax_stamp = dp.figaxes(axes)
+        f_stamp, ax_stamp = dp.figaxes(axes, overwrite=overwrite)
         dp.imshowz(array, axes=ax_stamp, force_show=False)
         if annotate:
             for idx in range(first, last+1):
@@ -1038,7 +1038,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                 ap_color='w', sk_color='LightCyan',
                 alpha=0.6, axes=None, reference=None,
                 annotate=True, cnt=None, interactive=True,
-                save=None, **kwargs):
+                save=None, overwrite=False, **kwargs):
 
         """
 
@@ -1054,7 +1054,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
           specific target position at the required frame
         :param kwargs:
         """
-        f, ax = dp.figaxes(axes)
+        f, ax = dp.figaxes(axes, overwrite=overwrite)
         ax.cla()
         d = self._astrodir[frame]
         dp.imshowz(d, axes=ax,

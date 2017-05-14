@@ -217,7 +217,7 @@ Set target channel as group #1, and all other channels as group #2
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
     def plot(self, label=None, axes=None, normalize=False, save=None,
-             title="TimeSeries Data"):
+             overwrite=False, title="TimeSeries Data"):
         """Display the timeseries data: flux (with errors) as function of mjd
 
         :param axes:
@@ -228,7 +228,7 @@ Set target channel as group #1, and all other channels as group #2
         :rtype: None (and plot display)
         """
 
-        fig, ax = dp.figaxes(axes)
+        fig, ax = dp.figaxes(axes, overwrite=overwrite)
 
         if label is None:
             disp = self.labels
@@ -279,9 +279,10 @@ Set target channel as group #1, and all other channels as group #2
 
     # todo grouping not functional
     def plot_ratio(self, label=None, axes=None, fmt='x',
-                   grouping=None, sector=None, save=None):
+                   grouping=None, sector=None, save=None,
+                   overwrite=False):
 
-        fig, ax = dp.figaxes(axes)
+        fig, ax = dp.figaxes(axes, overwrite=overwrite)
 
         ratio, ratio_error, s, erbm = self.get_ratio(sector=sector)
 
