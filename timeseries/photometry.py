@@ -129,6 +129,39 @@ def _prep_offset(start, offsets, ignore):
                                 " It can be either an xy-offset or 0 to indicate skipping".format(v))
     return ignore, offset_list
 
+def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
+                     ccd_lims_xy=None, logger=None, skip_calib=False):
+    """
+    If files were not calibrated in AstroFile, then  generate calibrated data
+    from a specified frame
+    :param sci_files:
+    :param frame: frame To calibrate, first frame by default
+    :param mdark:
+    :param mflat:
+    :param ccd_lims_xy: Set limits of the cube of data to calibrate
+    :param logger:
+    :param skip_calib: If this is True, there will be no calibration.
+    :return: Calibrated file
+    """
+    if logger is None:
+        logger = tmlogger
+
+    astrofile = sci_files[frame]
+    d = astrofile.reader()
+    d = d[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
+
+    if isinstance(mdark, sp.ndarray):
+        mdark = mdark[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
+
+    if isinstance(mflat, sp.ndarray):
+        mflat = mflat[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
+
+    if not skip_calib:
+        if astrofile.has_calib():
+            logger.warning("Skipping calibration given to Photometry() because "
+                           "calibration files\nwere included in AstroFile: {}".format(astrofile))
+        d = (d - mdark) / mflat
+    return d
 
 def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 mdark=None, mflat=None, labels=None, recenter=True,
@@ -209,22 +242,12 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     try_dedrift = True
     n_files = len(sci_files)
     while idx < n_files:
+        d = _get_calibration(sci_files, frame=idx, mdark=mdark, mflat=mflat,
+                             ccd_lims_xy=ccd_lims_xy, logger=logger,
+                             skip_calib=skip_calib)
         astrofile = sci_files[idx]
         off = offsets_xy[idx]
-        d = astrofile.reader()
-        d = d[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
 
-        if isinstance(mdark, sp.ndarray):
-            mdark = mdark[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
-
-        if isinstance(mflat, sp.ndarray):
-            mflat = mflat[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
-
-        if not skip_calib:
-            if astrofile.has_calib():
-                logger.warning("Skipping calibration given to Photometry() because "
-                               "calibration files\nwere included in AstroFile: {}".format(astrofile))
-            d = (d - mdark) / mflat
 
         last_frame_coords_xy = []
         indexing[to_store] = idx
@@ -629,6 +652,9 @@ class Photometry:
         :return:
         """
         if aperture is not None:
+            self.aperture = [aperture]
+
+        elif isinstance(aperture, (list, tuple)):
             self.aperture = aperture
         if sky is not None:
             self.sky = sky
@@ -645,10 +671,15 @@ class Photometry:
                              "with the following keywords: photometry(aperture=a, sky=s) or define aperture "
                              "and sky when initializing Photometry object.")
 
-        if self.aperture > self.stamp_rad:
+        if any([self.aperture[i] > self.stamp_rad for i in range(len(self.aperture))]):
             raise ValueError("aperture photometry ({}) shouldn't be higher than radius of stamps ({})".format(self.aperture,
                                                                                                               self.stamp_rad))
-
+        if any([self.sky[0] < self.aperture[i] for i in range(len(self.aperture))]):
+            raise ValueError("aperture photometry ({}) shouldn't be higher than inner sky radius ({})".format(self.aperture,
+                                                                                                              self.sky[0]))
+        if self.stamp_rad < self.sky[1]:
+            raise ValueError("external radius of sky ({}) shouldn't be higher than stamp radius ({})".format(self.sky[1],
+                                                                                                         self.stamp_rad))
         ts = self.cpu_phot()
         return ts
 
@@ -1039,7 +1070,8 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                 ap_color='w', sk_color='LightCyan',
                 alpha=0.6, axes=None, reference=None,
                 annotate=True, cnt=None, interactive=True,
-                save=None, overwrite=False, **kwargs):
+                save=None, overwrite=False, ccd_lims_xy=None, mdark=None,
+                mflat=None, **kwargs):
 
         """
 
@@ -1057,7 +1089,13 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         """
         f, ax = dp.figaxes(axes, overwrite=overwrite)
         ax.cla()
-        d = self._astrodir[frame]
+        if mdark is None:
+            mdark = 0.0
+        if mflat is None:
+            mflat = 1.0
+        d = _get_calibration(self._astrodir, frame=frame, mdark=mdark, mflat=mflat,
+                             ccd_lims_xy=ccd_lims_xy)
+
         dp.imshowz(d, axes=ax,
                    force_show=False, **kwargs)
 

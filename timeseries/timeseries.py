@@ -217,12 +217,16 @@ Set target channel as group #1, and all other channels as group #2
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
     def plot(self, label=None, axes=None, normalize=False, save=None,
-             overwrite=False, title="TimeSeries Data"):
+             overwrite=False, fmt_time="MJD", title="TimeSeries Data"):
         """Display the timeseries data: flux (with errors) as function of mjd
 
         :param axes:
         :param normalize:
         :param label: Specify a single star to plot
+        :param save:
+        :param overwrite:
+        :param fmt_time: Specify a format for epoch time like "JD", by default it's "MJD"
+        :param title:
         :rtype label: basestring
 
         :rtype: None (and plot display)
@@ -236,18 +240,21 @@ Set target channel as group #1, and all other channels as group #2
             disp = [label]
 
         for lab in disp:
-            lab = self._search_channel(lab)
-            value = self[lab]
-            error = self.errors[lab]
+            lab_num = self._search_channel(lab)
+            value = self[lab_num]
+            error = self.errors[lab_num]
             if normalize:
+                norm_0 = self[0].mean()
                 norm = value.mean()
-                value /= norm
-                error /= norm
+                value = value / norm
+                error = error / norm
+                ratio = round(norm / norm_0, 2)
+                lab = lab + " flux ratio " + str(ratio)
             ax.errorbar(self.epoch, value, yerr=error,
                         marker="o", label=lab)
 
         ax.set_title(title)
-        ax.set_xlabel("MJD")
+        ax.set_xlabel(fmt_time)
         if normalize:
             ax.set_ylabel("Normalized flux")
         else:
@@ -268,7 +275,7 @@ Set target channel as group #1, and all other channels as group #2
                                       (self.grp_errors(2) / self[-2]) ** 2)
 
         x1=0
-        x2=len(ratio)- 1
+        x2=len(ratio)
         if isinstance(sector, list):
             x1=sector[0]
             x2=sector[1]
@@ -280,9 +287,9 @@ Set target channel as group #1, and all other channels as group #2
         return ratio_cut, ratio_error_cut, sigma, errbar_media
 
     # todo grouping not functional
-    def Epoch(self, sector=None):
+    def JD(self, sector=None):
         x1 = 0
-        x2 = len(self.epoch) - 1
+        x2 = len(self.epoch)
         if isinstance(sector, list):
             x1 = sector[0]
             x2 = sector[1]
@@ -320,11 +327,10 @@ Set target channel as group #1, and all other channels as group #2
         # labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
         # ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
 
-        ax.errorbar(self.Epoch(sector=sector), ratio, yerr=ratio_error, label=label, fmt='o')
+        ax.errorbar(self.JD(sector=sector), ratio, yerr=ratio_error, label=label, fmt='o-')
         ax.set_title("Flux Ratio of {}".format(self.labels[0]))
-        ax.set_xlabel("MJD")
+        ax.set_xlabel("JD")
         ax.set_ylabel("Flux Ratio")
-        ax.legend()
         plt.tight_layout()
         if save is not None:
             plt.savefig(save)
