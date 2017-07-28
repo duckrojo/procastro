@@ -318,7 +318,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
 :param coo_files: it can be a list or a single file from which to take coordinates
 """
 
-
+    
     try:
         ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
                                 equinox=equinox)

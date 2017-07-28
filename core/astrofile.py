@@ -47,10 +47,11 @@ def _numerize_other(method):
 #
 ##################################
 
+import astropy.io.fits as pf
+
 def _fits_header(filename, hdu=0):
     """Read fits files.
     """
-    import pyfits as pf
     return pf.open(filename)[hdu].header
 
 
@@ -59,7 +60,6 @@ def _fits_reader(filename, hdu=0):
 
     :param hdu: if -1 return all hdus
     """
-    import pyfits as pf
     if hdu < 0:
         return pf.open(filename)
 
@@ -68,13 +68,11 @@ def _fits_reader(filename, hdu=0):
 
 
 def _fits_writer(filename, data, header=None):
-    import pyfits as pf
     raise NotImplemented("Cuek. More work here. header not save, no history. ")
     return pf.writeto(filename, data, header, clobber=True, output_verify='silentfix')
 
 
 def _fits_verify(filename, ffilter=None, hdu=0):
-    import pyfits as pf
     single_extension = filename.lower().split('.')[-1] in ['fits', 'fit', 'ftsc', 'fts']
     double_extension = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip', 'fitzip']
     if single_extension or double_extension:
@@ -89,7 +87,6 @@ def _fits_verify(filename, ffilter=None, hdu=0):
 
 
 def _fits_getheader(_filename, *args, **kwargs):
-    import pyfits as pf
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
     try:
         h = pf.getheader(_filename, hdu)
@@ -99,7 +96,6 @@ def _fits_getheader(_filename, *args, **kwargs):
 
 
 def _fits_setheader(_filename, **kwargs):
-    import pyfits as pf
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
     if 'write' in kwargs and kwargs['write']:
         save = True

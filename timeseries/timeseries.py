@@ -119,6 +119,8 @@ Receives a timeseries object with, optionally, several different kinds of inform
     def _search_channel(self, target):
         return self._tss[self.default_info]._search_channel(target)
 
+    def __getitem__(self, item):
+        return self._tss[self.default_info]
 
 
 class TimeSeriesSingle:

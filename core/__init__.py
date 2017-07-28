@@ -22,7 +22,7 @@ import types
 #from importlib import reload
 
 modules = ['astro',
-           'io', 'io_dir', 'io_file',
+           'io', 'astrodir', 'astrofile',
            'misc_arr', 'misc_lists',
            'misc_graph', 'misc_math', 'misc_process'] #TODO ojo aca!! sacar misc_process
            

@@ -24,13 +24,17 @@ import inspect
 import scipy.signal as sg
 import pyfits as pf
 
-
-
 def gauss(grid, sigma, center=None, norm=False, ndim=None):
     """
     Build a gaussian from a dense multi-dimensional meshgrid
 
-    todo: allow multivariate with symmetric covariance matrix 
+    #todo: allow multivariate with symmetric covariance matrix
+    :param grid: deafult sampling
+    :param sigma: gaussian width
+    :param center:  gaussian center
+    :param norm: True if output should be normalized
+    :param ndim: dimensions of gaussian
+    :return:
 """
 
     grid = sp.array(grid)

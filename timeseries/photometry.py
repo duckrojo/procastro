@@ -338,6 +338,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                     prev_cnt_bright = center_xy[brightest][to_store-1]
                     offsets_xy[idx] = [event.xdata - prev_cnt_bright[0],
                                        event.ydata - prev_cnt_bright[1]]
+                    #print([event.xdata, prev_cnt_bright[0],event.ydata,prev_cnt_bright[1]])
                     on_click_action[0] = 0
                 elif event.key == 'g':
                     on_click_action[0] = 10
@@ -631,7 +632,7 @@ class Photometry:
                        for x, v in zip(extra, zip(*sci_files.getheaderval(*extra,
                                                                           single_in_list=True)))}
         if idx0:
-            raise NotImplementedError("HAving a value of idx0 uses lots of memory on dummy AstroDir "
+            raise NotImplementedError("Having a value of idx0 uses lots of memory on dummy AstroDir "
                                       "to put before sci_files... needs to b investigated.  In the"
                                       "meantime idx0 is disabled.")
         self._astrodir = sci_files
