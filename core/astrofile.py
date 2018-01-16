@@ -202,6 +202,7 @@ class AstroFile(object):
     def __init__(self, filename=None,
                  mbias=None, mflat=None, exists=False,
                  hdu=0, hduh=None, hdud=None, read_keywords=None,
+                 auto_trim = None,
                  *args, **kwargs):
         """
 
@@ -237,6 +238,8 @@ class AstroFile(object):
             hdud = hdu
         self._hduh = hduh
         self._hdud = hdud
+        self._auto_trim = auto_trim
+        
 
         self.calib = AstroCalib(mbias, mflat)
 
@@ -518,7 +521,8 @@ class AstroFile(object):
         if self.has_calib():
             return self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
-                                     filter=self[self.calib.filter_keyword]
+                                     filter=self[self.calib.filter_keyword],
+                                     auto_trim=self._auto_trim,
                                      )
 
         return data
@@ -717,6 +721,7 @@ class AstroCalib(object):
         It can be either a dictionary indexed by exposure time or an array/AstroFile for generic times
 
         """
+        self.mbias_header = None
         if mbias is None:
             self.mbias[-1] = 0.0
             return
@@ -730,6 +735,7 @@ class AstroCalib(object):
         elif isinstance(mbias,
                         dp.AstroFile):
             self.mbias[-1] = mbias.reader()
+            self.mbias_header = mbias.readheader()
         else:
             raise ValueError("Master Bias supplied was not recognized.")
 
@@ -740,6 +746,8 @@ Add master flat to Calib object
         :param mflat: it can be either a dictionary
          indexed by filter name, or an AstroFile/array for generic filter.
         """
+
+        self.mflat_header = None
         if mflat is None:
             self.mflat[''] = 1.0
             return
@@ -750,13 +758,14 @@ Add master flat to Calib object
         elif isinstance(mflat,
                         dp.AstroFile):
             self.mflat[''] = mflat.reader()
+            self.mflat_header = mflat.readheader()
         elif isinstance(mflat,
                         (int, float, sp.ndarray)):
             self.mflat[''] = mflat
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, filter=None):
+    def reduce(self, data, exptime=None, filter=None, auto_trim=None):
         """
 Process flat & bias
         :param data: science sp.array()
@@ -764,6 +773,7 @@ Process flat & bias
         :param afilter: filter for flat
         :return: reduced data
         """
+        
         if exptime is None or exptime not in self.mbias:
             exptime = -1
         if filter is None or filter not in self.mflat:
@@ -777,7 +787,68 @@ Process flat & bias
             raise ValueError("Requested filter ({}) is not available "
                              "for mflat, only: {}".format(filter, ", ".join(self.mflat.keys())))
 
-        debias = data - self.mbias[exptime]
-        deflat = debias / self.mflat[filter]
+        flat = self.mflat[filter]
+        bias = self.mbias[exptime]
+
+        mintrim = sp.array([0, data.shape[0], 0, data.shape[1]])
+        calib_sizes = []
+        calib_arrays = [self.mflat, self.mbias, data]
+        
+        if auto_trim is not None:
+            #TODO: Do not use array size to compare trimsec, but array section instead.
+            for header, tdata, label in zip(calib_arrays,
+                                            [self.mflat_header,
+                                             self.mbias_header,
+                                             header],
+                                            ["master flat",
+                                             "master bias",
+                                             "data"]):
+
+
+                if auto_trim in header:
+                    trim = sp.array(re.split(r'[(\d+):(\d+),(\d+):(\d+)]',
+                                             header[auto_trim]))[::-1]
+                    if len(trim) == 4:
+                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, header[auto_trim]))
+                        trim = tdata.shape
+                else:
+                    trim = tdata.shape
+
+                if trim[0] > tdata.shape[0] or trim[2] > tdata.shape[2]:
+                    raise ValueError("auto_trim header ({}) is specified in a region outside the size of the array. Currently, only subindexing the array is supported")
+
+                calib_size.append(tdata.shape)
+
+                if mintrim[0] > trim[0]:
+                    mintrim[0] = trim[0]
+                if mintrim[2] > trim[2]:
+                    mintrim[2] = trim[2]
+
+                if mintrim[1] < trim[1]:
+                    mintrim[1] = trim[1]
+                if mintrim[3] < trim[3]:
+                    mintrim[3] = trim[3]
+
+
+            out_data = []
+            max_idx = sp.array([1,3])
+            min_idx = sp.array([0,2])
+
+            for shape, tdata in zip(calib_sizes, calib_arrays):
+
+                if (any((mintrim[max_idx]-mintrim[min_idx]) < (shape[max_idx])) or
+                    any(mintrim[min_idx] > sp.zeros(2))):
+                    tdata = tdata[mintrim[0]:mintrim[1], mintrim[2]:mintrim[3]]
+                    
+                out_data.append(tdata)
+
+            data = out_data[0]
+            flat = out_data[1]
+            bias = out_data[2]
+
+
+
+        debias = data - bias
+        deflat = debias / flat
 
         return deflat
