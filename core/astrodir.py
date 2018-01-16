@@ -67,7 +67,7 @@ class AstroDir(object):
     """
 
     def __init__(self, path, mflat=None, mbias=None, calib_force=False, read_keywords=None,
-                 hdu=0, hdud=None, hduh=None):
+                 hdu=0, hdud=None, hduh=None, auto_trim=None):
         import os
         import glob
         import os.path as pth
@@ -102,7 +102,8 @@ class AstroDir(object):
 
         self.files = files
         self.props = {}
-        calib = dp.AstroCalib(mbias, mflat)
+        calib = dp.AstroCalib(mbias, mflat, auto_trim)
+        
         for f in files:
             if calib_force or not f.has_calib():  # allows some of the files to keep their calibration
                 # AstroFile are created with an empty calib by default, which is overwritten here.

@@ -238,10 +238,8 @@ class AstroFile(object):
             hdud = hdu
         self._hduh = hduh
         self._hdud = hdud
-        self._auto_trim = auto_trim
-        
 
-        self.calib = AstroCalib(mbias, mflat)
+        self.calib = AstroCalib(mbias, mflat, auto_trim)
 
         self._read_kw = ['exptime', 'filter', 'date-obs']
         if read_keywords is not None:
@@ -521,8 +519,7 @@ class AstroFile(object):
         if self.has_calib():
             return self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
-                                     filter=self[self.calib.filter_keyword],
-                                     auto_trim=self._auto_trim,
+                                     filter=self[self.calib.filter_keyword]
                                      )
 
         return data
@@ -700,7 +697,8 @@ class AstroCalib(object):
     """
     def __init__(self, mbias=None, mflat=None,
                  exptime_keyword='exptime',
-                 filter_keyword='filter'):
+                 filter_keyword='filter',
+                 auto_trim=None):
         # it is always created false, if the add_*() has something, then it is turned true.
         self.has_bias = self.has_flat = False
 
@@ -710,6 +708,7 @@ class AstroCalib(object):
         self.filter_keyword = filter_keyword
         self.add_bias(mbias)
         self.add_flat(mflat)
+        self.auto_trim = auto_trim
 
     def add_bias(self, mbias):
         """
@@ -765,7 +764,7 @@ Add master flat to Calib object
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, filter=None, auto_trim=None):
+    def reduce(self, data, exptime=None, filter=None):
         """
 Process flat & bias
         :param data: science sp.array()
@@ -794,7 +793,7 @@ Process flat & bias
         calib_sizes = []
         calib_arrays = [self.mflat, self.mbias, data]
         
-        if auto_trim is not None:
+        if self.auto_trim is not None:
             #TODO: Do not use array size to compare trimsec, but array section instead.
             for header, tdata, label in zip(calib_arrays,
                                             [self.mflat_header,
@@ -805,11 +804,11 @@ Process flat & bias
                                              "data"]):
 
 
-                if auto_trim in header:
+                if self.auto_trim in header:
                     trim = sp.array(re.split(r'[(\d+):(\d+),(\d+):(\d+)]',
-                                             header[auto_trim]))[::-1]
+                                             header[self.auto_trim]))[::-1]
                     if len(trim) == 4:
-                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, header[auto_trim]))
+                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, header[self.auto_trim]))
                         trim = tdata.shape
                 else:
                     trim = tdata.shape
