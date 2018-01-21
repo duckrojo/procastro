@@ -835,8 +835,10 @@ Process flat & bias
 
             for shape, tdata in zip(calib_sizes, calib_arrays):
 
+                print ("Forcing size to [{}:{}, {}:{}] from [{}, {}]"
                 if (any((mintrim[max_idx]-mintrim[min_idx]) < (shape[max_idx])) or
                     any(mintrim[min_idx] > sp.zeros(2))):
+                    print(" ... resizing")
                     tdata = tdata[mintrim[0]:mintrim[1], mintrim[2]:mintrim[3]]
                     
                 out_data.append(tdata)
