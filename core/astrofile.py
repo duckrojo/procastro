@@ -520,7 +520,7 @@ class AstroFile(object):
             return self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
                                      filter=self[self.calib.filter_keyword]
-                                     )
+                                     header=self.readheader())
 
         return data
 
@@ -764,7 +764,7 @@ Add master flat to Calib object
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, filter=None):
+    def reduce(self, data, exptime=None, filter=None, header=header):
         """
 Process flat & bias
         :param data: science sp.array()
@@ -795,7 +795,7 @@ Process flat & bias
         
         if self.auto_trim is not None:
             #TODO: Do not use array size to compare trimsec, but array section instead.
-            for header, tdata, label in zip(calib_arrays,
+            for tdata, theader, label in zip(calib_arrays,
                                             [self.mflat_header,
                                              self.mbias_header,
                                              header],
@@ -804,11 +804,11 @@ Process flat & bias
                                              "data"]):
 
 
-                if self.auto_trim in header:
+                if self.auto_trim in theader:
                     trim = sp.array(re.split(r'[(\d+):(\d+),(\d+):(\d+)]',
-                                             header[self.auto_trim]))[::-1]
+                                             theader[self.auto_trim]))[::-1]
                     if len(trim) == 4:
-                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, header[self.auto_trim]))
+                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, theader[self.auto_trim]))
                         trim = tdata.shape
                 else:
                     trim = tdata.shape
