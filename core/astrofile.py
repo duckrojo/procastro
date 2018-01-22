@@ -27,6 +27,7 @@ iologger = logging.getLogger('dataproc.io')
 import scipy as sp
 from functools import wraps as _wraps
 import warnings
+import re
 import dataproc as dp
 import astropy.time as apt
 import pdb
@@ -201,6 +202,7 @@ class AstroFile(object):
 
     def __init__(self, filename=None,
                  mbias=None, mflat=None, exists=False,
+                 mbias_header=None, mflat_header=None,
                  hdu=0, hduh=None, hdud=None, read_keywords=None,
                  auto_trim = None,
                  *args, **kwargs):
@@ -239,7 +241,9 @@ class AstroFile(object):
         self._hduh = hduh
         self._hdud = hdud
 
-        self.calib = AstroCalib(mbias, mflat, auto_trim)
+        self.calib = AstroCalib(mbias, mflat,
+                                mbias_header=mbias_header, mflat_header=mflat_header,
+                                auto_trim=auto_trim)
 
         self._read_kw = ['exptime', 'filter', 'date-obs']
         if read_keywords is not None:
@@ -519,7 +523,7 @@ class AstroFile(object):
         if self.has_calib():
             return self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
-                                     filter=self[self.calib.filter_keyword]
+                                     filter=self[self.calib.filter_keyword],
                                      header=self.readheader())
 
         return data
@@ -697,6 +701,7 @@ class AstroCalib(object):
     """
     def __init__(self, mbias=None, mflat=None,
                  exptime_keyword='exptime',
+                 mbias_header=None, mflat_header=None,
                  filter_keyword='filter',
                  auto_trim=None):
         # it is always created false, if the add_*() has something, then it is turned true.
@@ -706,11 +711,11 @@ class AstroCalib(object):
         self.mflat = {}
         self.exptime_keyword = exptime_keyword
         self.filter_keyword = filter_keyword
-        self.add_bias(mbias)
-        self.add_flat(mflat)
+        self.add_bias(mbias, mbias_header=mbias_header)
+        self.add_flat(mflat, mflat_header=mflat_header)
         self.auto_trim = auto_trim
 
-    def add_bias(self, mbias):
+    def add_bias(self, mbias, mbias_header=None):
         """
         Add Master Bias to Calib object.
 
@@ -720,7 +725,7 @@ class AstroCalib(object):
         It can be either a dictionary indexed by exposure time or an array/AstroFile for generic times
 
         """
-        self.mbias_header = None
+        self.mbias_header = mbias_header
         if mbias is None:
             self.mbias[-1] = 0.0
             return
@@ -738,7 +743,7 @@ class AstroCalib(object):
         else:
             raise ValueError("Master Bias supplied was not recognized.")
 
-    def add_flat(self, mflat):
+    def add_flat(self, mflat, mflat_header=None):
         """
 Add master flat to Calib object
 
@@ -746,7 +751,7 @@ Add master flat to Calib object
          indexed by filter name, or an AstroFile/array for generic filter.
         """
 
-        self.mflat_header = None
+        self.mflat_header = mflat_header
         if mflat is None:
             self.mflat[''] = 1.0
             return
@@ -764,7 +769,7 @@ Add master flat to Calib object
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, filter=None, header=header):
+    def reduce(self, data, exptime=None, filter=None, header=None):
         """
 Process flat & bias
         :param data: science sp.array()
@@ -791,9 +796,11 @@ Process flat & bias
 
         mintrim = sp.array([0, data.shape[0], 0, data.shape[1]])
         calib_sizes = []
-        calib_arrays = [self.mflat, self.mbias, data]
+        calib_arrays = [flat, bias, data]
         
         if self.auto_trim is not None:
+            out_data = []
+
             #TODO: Do not use array size to compare trimsec, but array section instead.
             for tdata, theader, label in zip(calib_arrays,
                                             [self.mflat_header,
@@ -803,46 +810,37 @@ Process flat & bias
                                              "master bias",
                                              "data"]):
 
-
-                if self.auto_trim in theader:
-                    trim = sp.array(re.split(r'[(\d+):(\d+),(\d+):(\d+)]',
-                                             theader[self.auto_trim]))[::-1]
-                    if len(trim) == 4:
-                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, theader[self.auto_trim]))
-                        trim = tdata.shape
-                else:
-                    trim = tdata.shape
-
-                if trim[0] > tdata.shape[0] or trim[2] > tdata.shape[2]:
-                    raise ValueError("auto_trim header ({}) is specified in a region outside the size of the array. Currently, only subindexing the array is supported")
-
-                calib_size.append(tdata.shape)
-
-                if mintrim[0] > trim[0]:
-                    mintrim[0] = trim[0]
-                if mintrim[2] > trim[2]:
-                    mintrim[2] = trim[2]
-
-                if mintrim[1] < trim[1]:
-                    mintrim[1] = trim[1]
-                if mintrim[3] < trim[3]:
-                    mintrim[3] = trim[3]
-
-
-            out_data = []
-            max_idx = sp.array([1,3])
-            min_idx = sp.array([0,2])
-
-            for shape, tdata in zip(calib_sizes, calib_arrays):
-
-                print ("Forcing size to [{}:{}, {}:{}] from [{}, {}]"
-                if (any((mintrim[max_idx]-mintrim[min_idx]) < (shape[max_idx])) or
-                    any(mintrim[min_idx] > sp.zeros(2))):
-                    print(" ... resizing")
+                if isinstance(tdata, (float, int)):
+                    out_data.append(tdata)
+                    continue
+                
+                if theader is not None and self.auto_trim in theader:
+ 
+                    trim = sp.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
+                                              theader[self.auto_trim]).group(1,2,3,4))[sp.array([2,3,0,1])]
+                    trim = [int(t) for t in trim]
+                    #Note the "-1" at the end since fits specifies indices from 1 and not from 0
+                    trim[0] -= 1
+                    trim[2] -= 1
+                    logging.warning("Adjusting size of {} to [{}:{}, {}:{}] " \
+                                    " (from [{}, {}])".format(label,
+                                                              trim[0], trim[1],
+                                                              trim[2], trim[3],
+                                                              tdata.shape[0], tdata.shape[1]))
                     tdata = tdata[mintrim[0]:mintrim[1], mintrim[2]:mintrim[3]]
+                    if len(trim) != 4:
+                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, theader[self.auto_trim]))
+#                        trim = [0, tdata.shape[0], 0, tdata.shape[1]]
+                # else:
+                #     logging.warning("No Auto trim field '{}' in {}. Using full array size.".format(self.auto_trim, label))
+#                    trim =  [0, tdata.shape[0], 0, tdata.shape[1]]
+
                     
                 out_data.append(tdata)
+                
 
+
+            
             data = out_data[0]
             flat = out_data[1]
             bias = out_data[2]

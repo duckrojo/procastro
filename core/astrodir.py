@@ -66,7 +66,9 @@ class AstroDir(object):
         by many AstroFile
     """
 
-    def __init__(self, path, mflat=None, mbias=None, calib_force=False, read_keywords=None,
+    def __init__(self, path, mflat=None, mbias=None,
+                 mbias_header=None, mflat_header=None,
+                 calib_force=False, read_keywords=None,
                  hdu=0, hdud=None, hduh=None, auto_trim=None):
         import os
         import glob
@@ -89,12 +91,12 @@ class AstroDir(object):
                 nf = copy.deepcopy(f)
             elif pth.isdir(f):
                 for sf in os.listdir(f):
-                    nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud, read_keywords=read_keywords)
+                    nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud, read_keywords=read_keywords, auto_trim=auto_trim)
                     if nf:
                         files.append(nf)
                 nf = False
             else:
-                nf = dp.AstroFile(f, hduh=hduh, hdud=hdud, read_keywords=read_keywords)
+                nf = dp.AstroFile(f, hduh=hduh, hdud=hdud, read_keywords=read_keywords, auto_trim=auto_trim)
             #pdb.set_trace()
             if nf:
                 files.append(nf)
@@ -102,7 +104,8 @@ class AstroDir(object):
 
         self.files = files
         self.props = {}
-        calib = dp.AstroCalib(mbias, mflat, auto_trim)
+        calib = dp.AstroCalib(mbias, mflat, auto_trim=auto_trim,
+                              mbias_header=mbias_header, mflat_header=mflat_header)
         
         for f in files:
             if calib_force or not f.has_calib():  # allows some of the files to keep their calibration
