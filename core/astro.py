@@ -1,6 +1,6 @@
 #
 #
-# Copyright (C) 2014 Patricio Rojo
+# Copyright (C) 2014,2018 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of version 2 of the GNU General 
@@ -30,6 +30,9 @@ import scipy.interpolate as it
 import dataproc as dp
 import astropy as ap
 import imp
+from collections import defaultdict
+import re
+
 
 try:
     import astroquery.simbad as aqs
@@ -38,6 +41,54 @@ except ImportError:
 
 
 import os
+
+
+
+def read_horizons_cols(file):
+    """Reads an horizons ephemeris file into a dictionary. It maintain original columns header as dictionary keys.  
+Columns can be automatically recognized as float or int (work in progress the latter) """
+
+    mapping = defaultdict(lambda: str)
+    map_float = ['dRA*cosD', 'd(DEC)/dt', 'a-mass', 'mag_ex', 'APmag', 'S-brt',
+                 'Illu%', 'Ang-diam', 'Obsrv-lon', 'Obsrv-lat', 'Ob-lon', 'Ob-lat',
+                 'SN.ang', 'SN.dist', 'delta', 'deldot', 'S-O-T', 'S-T-O',
+                 'Solar-lon', 'Solar-lat', 'NP.ang', 'NP.dist',
+                 'N.Pole-RA', 'N.Pole_Dec']
+    map_int =   []
+
+    for f in map_float:
+        mapping[f] = float
+    for f in map_int:
+        mapping[f] = int
+
+    with open(file) as infile:
+        data = defaultdict(list)
+        preline=''
+        for line in infile:
+            if line.startswith('$$SOE'):
+                quantities_ws = re.findall(" +\S+", pre2line)
+                quantities_ns = [s.strip() for s in quantities_ws]
+                break
+            pre2line=preline
+            preline=line
+
+        for line in infile:
+            if line.startswith('>') or len(line)<5:
+                continue
+            if line.startswith('$$EOE'):
+                break
+
+            cum = 0
+            for qs, q in zip(quantities_ws, quantities_ns): 
+                item = mapping[q](line[cum:cum+len(qs)].strip())
+                cum += len(qs)
+                data[q].append(item)
+
+        data = {d:sp.array(data[d]) for d in data.keys()}
+
+    return data
+
+
 
 
 def get_transit_ephemeris(target):
