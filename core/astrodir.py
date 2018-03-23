@@ -69,7 +69,8 @@ class AstroDir(object):
     def __init__(self, path, mflat=None, mbias=None,
                  mbias_header=None, mflat_header=None,
                  calib_force=False, read_keywords=None,
-                 hdu=0, hdud=None, hduh=None, auto_trim=None):
+                 hdu=0, hdud=None, hduh=None, auto_trim=None,
+                 jd_from_ut=None):
         import os
         import glob
         import os.path as pth
@@ -114,6 +115,11 @@ class AstroDir(object):
                 f.calib = calib
 
         self.path = path
+
+        if jd_from_ut is not None:
+            if len(jd_from_ut) != 2:
+                raise TypeError("jd_from_ut parameter need to be a 2-element tuple: source, target. See help on method .jd_from_ut()")
+            self.jd_from_ut(*jd_from_ut)
 
     def add_bias(self, mbias):
         """Update master bias in all the calibration objects in this AstroDir.
