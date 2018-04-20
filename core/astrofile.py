@@ -69,7 +69,10 @@ def _fits_reader(filename, hdu=0):
 
 
 def _fits_writer(filename, data, header=None):
-    raise NotImplemented("Cuek. More work here. header not save, no history. ")
+    if header is None:
+        iologger.warning(
+            "No header provided to save on disk, using a default empty header for '{}'".format(filename))
+    header['history'] = "Saved by dataproc v{} on {}".format(dp.__version__, apt.Time.now()
     return pf.writeto(filename, data, header, clobber=True, output_verify='silentfix')
 
 
@@ -98,6 +101,7 @@ def _fits_getheader(_filename, *args, **kwargs):
 
 def _fits_setheader(_filename, **kwargs):
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
+
     if 'write' in kwargs and kwargs['write']:
         save = True
         try:
