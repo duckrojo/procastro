@@ -28,50 +28,18 @@ def sortmanynsp(*arr):
 
 
 def sortmany(*arr, **kwargs):
-    """Sort many lists following the order of the first."""
+    """Sort many lists following the order of the first. Optionally using a key"""
 
     if 'key' not in kwargs:
-        key = lambda x: x        
-    elif  kwargs['key'] is not None:
+        key = lambda x: x
+    else:
         key = kwargs['key']
-    else:
-        raise ValueError("None given as Key argument for sortmany ")
 
-    if 'postrem' not in kwargs:
-        postrem = []
-    elif  kwargs['postrem'] is not None:
-        postrem = kwargs['postrem']
-    else:
-        postrem = []
+    keyed=[key(a) for a in arr[0]]
 
-    if 'prerem' not in kwargs:
-        prerem = []
-    elif  kwargs['prerem'] is not None:
-        prerem = kwargs['prerem']
-    else:
-        prerem = []
-
-    try:
-        keyed=[key(a) for a in arr[0]]
-    except ValueError:
-        keyed = []
-        for a in arr[0]:
-            for p in list(postrem):
-#                print ("removing %s: %s " % (p,a))
-                if a and p==a[-1]:
-                    a=a[:-1]
-            for p in list(prerem):
-                if a and p==a[0]:
-                    a=a[1:]
-            if a=='' and (key==float or key==int):
-                a='0'
-                warnings.warn("using 0 instead of empty when sorting according to key %s" % (key, ))
-            keyed.append(key(a))
-
-
-    tups = zip(keyed,*arr)
+    tups = list(zip(keyed,*arr))
     tups.sort(key=op.itemgetter(0))
-    pret = zip(*tups)
+    pret = list(zip(*tups))
     return pret[1:]
 
 

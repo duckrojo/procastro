@@ -72,7 +72,7 @@ def _fits_writer(filename, data, header=None):
     if header is None:
         iologger.warning(
             "No header provided to save on disk, using a default empty header for '{}'".format(filename))
-    header['history'] = "Saved by dataproc v{} on {}".format(dp.__version__, apt.Time.now()
+    header['history'] = "Saved by dataproc v{} on {}".format(dp.__version__, apt.Time.now())
     return pf.writeto(filename, data, header, clobber=True, output_verify='silentfix')
 
 
@@ -202,7 +202,7 @@ class AstroFile(object):
         if args and isinstance(args[0], AstroFile):
             return args[0]
         else:
-            return super(AstroFile, cls).__new__(cls, *args)
+            return super(AstroFile, cls).__new__(cls)
 
     def __init__(self, filename=None,
                  mbias=None, mflat=None, exists=False,

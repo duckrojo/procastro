@@ -351,6 +351,41 @@ Returns all data from the AstroFiles in a datacube
 
         return grouped_data
 
+
+    def pixel_xy(self, xx, yy, normalize_region=None, normalize=False,
+             check_unique=None, group_by=None):
+        """
+Returns pixel at (xx,yy) position for all frames
+
+        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+        :param normalize_region: Subregion to use for normalization
+        :param normalize:  Whether to Normalize
+        :param check_unique: Check uniqueness in header
+        :return:  mean of frames. If group_by is set, it returns a dictionary keyed by this group
+        """
+        if check_unique is None:
+            check_unique = []
+        if group_by in check_unique:
+            check_unique.pop(check_unique.index(group_by))
+
+        data_dict = self.get_datacube(normalize_region=normalize_region,
+                                      normalize=normalize,
+                                      check_unique=check_unique,
+                                      group_by=group_by)
+
+        groupers = sorted(data_dict.keys())
+        ret = [data_dict[g][:, yy, xx] for g in groupers]
+
+
+        if len(groupers) > 1:
+            return {g: r for r,g in zip(ret, groupers)}
+        else:
+            return ret[0]
+
+
+        # todo: return AstroFile
+
+
     def median(self, normalize_region=None, normalize=False, verbose=True,
                check_unique=None, group_by=None):
         """
@@ -360,7 +395,7 @@ Returns all data from the AstroFiles in a datacube
         :param normalize:  Whether to Normalize
         :param verbose:   Output progress indicator
         :param check_unique: Check uniquenes in heaeder
-        :return: if group_by is set, returns (grouped_median, grouping), otherwise returns median
+        :return:  median of frames. If group_by is set, it returns a dictionary keyed by this group
         """
         if check_unique is None:
             if normalize:
@@ -392,7 +427,7 @@ Returns all data from the AstroFiles in a datacube
             sys.stdout.flush()
 
         if len(groupers) > 1:
-            return ret, sp.array(groupers)
+            return {g: r for r,g in zip(ret, groupers)}
         else:
             return ret[0]
         # todo: return AstroFile
@@ -406,7 +441,7 @@ Returns all data from the AstroFiles in a datacube
         :param normalize:  Whether to Normalize
         :param verbose: Output progress indicator
         :param check_unique: Check uniqueness in header
-        :return: if group_by is set, returns (grouped_mean, grouping), otherwise returns mean
+        :return:  mean of frames. If group_by is set, it returns a dictionary keyed by this group
         """
         if check_unique is None:
             if normalize:
@@ -434,25 +469,176 @@ Returns all data from the AstroFiles in a datacube
                 sys.stdout.flush()
             ret[k, :, :] = sp.mean(data_dict[groupers[k]], axis=0)
         if verbose:
-            print(". done.")
+            print(": done.")
             sys.stdout.flush()
 
         if len(groupers) > 1:
-            return ret, sp.array(groupers)
+            return {g: r for r,g in zip(ret, groupers)}
         else:
             return ret[0]
         # todo: return AstroFile
 
+    # todo: add support for giving variance
+    def lin_interp(self, target=0,
+                   verbose=True, field='EXPTIME',
+                   check_unique=None, group_by=None):
+        """Linear interpolate to given target value of the field 'field'.
+
+        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+        :param verbose: Output progress indicator
+        :param check_unique: Check uniqueness in header
+        :param target: Target value for the interpolation
+        :return:  mean of frames. If group_by is set, it returns a dictionary keyed by this group
+"""
+        if check_unique is None:
+            check_unique = []
+        if group_by in check_unique:
+            check_unique.pop(check_unique.index(group_by))
+
+        data_dict = self.get_datacube(verbose=verbose,
+                                      check_unique=check_unique,
+                                      group_by=group_by)
+
+        if verbose:
+            print("Linear interpolating{}".format(group_by is not None and ' grouped by "{}":'.format(group_by) or ""),
+                  end='')
+            sys.stdout.flush()
+        groupers = sorted(data_dict.keys())
+        ret = sp.zeros([len(groupers)] + list(data_dict[groupers[0]][0].shape))
+        for k in range(len(groupers)):
+            if verbose and group_by is not None:
+                print("{} {}".format(k and "," or "", groupers[k]), end='')
+                sys.stdout.flush()
+
+            data_cube = data_dict[groupers[k]]
+            values = self.getheaderval(field)
+            values, data_cube = dp.sortmanynsp(values, data_cube)
+
+            if not (values[0] <= target <= values[-1]):
+                io_logger.warning("Target value for interpolation ({})\n outside "
+                                  "the range of chosen keyword {}: [{}, {}]."
+                                  "\nCannot interpolate".format(target, field,
+                                                                values[0], values[-1]))
+                return None
+
+            for j in range(data_cube[0].shape[1]):
+                for i in range(data_cube[0].shape[0]):
+                    ret[k,j,i] = sp.interp(target, values, data_cube[:,j,i])
+        if verbose:
+            print(". done.")
+            sys.stdout.flush()
+
+        if len(groupers) > 1:
+            return {g: r for r,g in zip(ret, groupers)}
+        else:
+            return ret[0]
+
+
+
+        #
+        # import scipy as sp
+        # def pvns(pfret,target):
+        #     """Reconstructs polyfit to target value and sigma"""
+        #     p,cov=pfret
+        #     val = p[0]*target + p[1]
+        #     var = cov[0,0]*target**2 + cov[1,1] + 2*target*cov[1,0]
+        #     return val,var
+        #
+        #
+        # def getlinterp(params, pool=None):
+        #     """Evaluate line interpolation """
+        #     ##TD: being called for wgt and nwgt
+        #     dowgt = lambda fv,target,dat,wgt: sp.array([pvns(sp.polyfit(fv, dt, 1,
+        #                                                                 w=w, cov=True),
+        #                                                      target)
+        #                                                 for dt,w in zip(dat,wgt)]
+        #                  )
+        #     donwgt = lambda fv,target,dat: sp.array([pvns(sp.polyfit(fv, dt, 1), target)
+        #                   for dt in dat])
+        #     dofcn = (len(params)==4) and dowgt or donwgt
+        #     if pool is None:  #Can't use ...and...or... or it will execute twice!
+        #         return dofcn(*params)
+        #     else:
+        #         return pool.apply_async(dofcn,params)
+        #
+        # if not target:
+        #     raise ValueError("keyword target=value must be specified for lineinterp(), where value cannot be zero.")
+        #
+        # arr=self.arrays[self.okframes]
+        # if var is None:
+        #     var=self.sigmas[self.okframes]**2
+        # hd = [h for h,o in zip(self.headers,self.okframes) if o]
+        # fv = sp.array([h[field] for h in hd])
+        #
+        # import warnings
+        # from numpy import __version__ as vrs
+        # if float(vrs[0:3])<1.7:
+        #     raise ValueError("numpy version must be at least 1.7.  Otherwise polyfit() cannot handle weights")
+        # if (fv==fv[0]).all():
+        #     raise ValueError("Cannot linear-interpolate since all values of field '%s' are identical in the data" % field)
+        # if len([h for h in hd if (self.flagfield in h)]):
+        #     warnings.warn("Interpolating in a list of frames who did not all had header with the target field")
+        # if target<min(fv) or target>max(fv):
+        #     warnings.warn("Requested interpolation target (%f) is beyond the range of the '%s' field in the frames (%f - %f)" %(target,field,min(fv),max(fv)))
+        #
+        # print ("  sorting data%s"
+        #        % (doerr and  " and weights" or "",))
+        # sh = arr.shape
+        # fldata = arr.reshape(sh[0],sp.array(sh[1:]).prod())
+        # flwgt = 1.0/var.reshape(sh[0],sp.array(sh[1:]).prod())
+        # fv,fldata,flwgt = sortmanynsp(fv,fldata,flwgt)
+        #
+        #
+        # from multiprocessing.pool import ThreadPool
+        # print("  evaluating linear fit to %i pixels"
+        #       % (fldata.shape[1],))
+        # if doerr:
+        #     pool=multi>1 and ThreadPool(processes=multi) or None
+        #     print ("   using %i processors" % (multi,) )
+        #     delta = int(fldata.shape[1]/multi+0.999)
+        #     multistart = [[delta*i,delta*(i+1)] for i in range(multi)]
+        #     multistart[-1][1] = fldata.shape[1]
+        #
+        #     mpool = [getlinterp((fv, target,
+        #                          fldata.T[i0:i1,:],
+        #                          flwgt.T[i0:i1,:]),
+        #                         pool=pool)
+        #              for i0,i1 in multistart]
+        #     if(len(mpool)>1):
+        #         tmp=[]
+        #         for mp in mpool:
+        #             tmp.extend(mp.get())
+        #         tmp=sp.array(tmp)
+        #     else:
+        #         tmp=mpool[0]
+        #
+        #     # else:
+        #     #     tmp = getlinterp((fv,target,fldata.T,flwgt.T))
+        # else:
+        #     print(" - Requested to avoid error estimation")
+        #     tmp = sp.array([sp.polyval(sp.polyfit(fv, dt, 1), target)
+        #                     for dt in zip(fldata.T)])
+        # comb = tmp[:,0].reshape(sh[1:])
+        # sig = tmp[:,1].reshape(sh[1:])
+        # self.data=comb
+        # self.sigma=sig
+        # self.lastmet=('lininterp',target,field,sigma, doerr)
+        # self.ncombine = len(arr)
+        # self._updatehdr(exptime=target)
+        # return self
+
+        
     def std(self, normalize_region=None, normalize=False, verbose=True,
              check_unique=None, group_by=None):
         """
+        Get pixel by pixel standard deviation within files.
 
         :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
         :param normalize_region: Subregion to use for normalization
         :param normalize:  Whether to Normalize
         :param verbose: Output progress indicator
         :param check_unique: Check uniqueness in header
-        :return: if group_by is set, returns (grouped_mean, grouping), otherwise returns mean
+        :return:  standard deviation of frames. If group_by is set, it returns a dictionary keyed by this group
         """
         if check_unique is None:
             if normalize:
@@ -485,7 +671,7 @@ Returns all data from the AstroFiles in a datacube
             sys.stdout.flush()
 
         if len(groupers) > 1:
-            return ret, sp.array(groupers)
+            return {g: r for r,g in zip(ret, groupers)}
         else:
             return ret[0]
         # todo: return AstroFile
