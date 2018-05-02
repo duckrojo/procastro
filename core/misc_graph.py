@@ -27,7 +27,7 @@ import dataproc as dp
 #import dataproc.combine as cm
 import matplotlib.pyplot as plt
 import matplotlib.dates as md
-import pyfits as pf
+import astropy.io.fits as pf
 import scipy as sp
 
 def plot_accross(data,
@@ -75,11 +75,7 @@ def prep_data_plot(indata, **kwargs):
     error_msg = None
 
 
-    af = dp.AstroFile(indata)
-    if af:
-        data = af.reader(**kwargs)
-
-    elif isinstance(indata, pf.hdu.base._BaseHDU):
+    if isinstance(indata, pf.hdu.base._BaseHDU):
         data = indata.data
     elif isinstance(indata, pf.HDUList):
         hdu = kwargs.pop('hdu', 0)
@@ -91,9 +87,12 @@ def prep_data_plot(indata, **kwargs):
 
     elif isinstance(indata, sp.ndarray):
         data = indata
-
     else:
-        raise TypeError("Unrecognized type for input data: %s" % (indata.__class__,))
+        af = dp.AstroFile(indata)
+        if af:
+            data = af.reader(**kwargs)
+        else:
+            raise TypeError("Unrecognized type for input data: %s" % (indata.__class__,))
 
     if data is None:
         if error_msg is None:

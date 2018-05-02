@@ -21,9 +21,6 @@
 from __future__ import print_function, division
 
 import logging
-
-iologger = logging.getLogger('dataproc.io')
-
 import scipy as sp
 from functools import wraps as _wraps
 import warnings
@@ -31,6 +28,12 @@ import re
 import dataproc as dp
 import astropy.time as apt
 import pdb
+import os.path as path
+import astropy.units as u
+import astropy.nddata as ndd
+
+iologger = logging.getLogger('dataproc.io')
+
 
 def _numerize_other(method):
     @_wraps(method)
@@ -53,7 +56,11 @@ import astropy.io.fits as pf
 def _fits_header(filename, hdu=0):
     """Read fits files.
     """
-    return pf.open(filename)[hdu].header
+
+    hdu_list = pf.open(filename)
+    ret = hdu_list[hdu].header
+    hdu_list.close()
+    return ret
 
 
 def _fits_reader(filename, hdu=0):
@@ -64,8 +71,10 @@ def _fits_reader(filename, hdu=0):
     if hdu < 0:
         return pf.open(filename)
 
-    fl = pf.open(filename)[hdu]
-    return fl.data
+    hdu_list = pf.open(filename)
+    fl = hdu_list[hdu].data
+    hdu_list.close()
+    return fl
 
 
 def _fits_writer(filename, data, header=None):
@@ -91,12 +100,14 @@ def _fits_verify(filename, ffilter=None, hdu=0):
 
 
 def _fits_getheader(_filename, *args, **kwargs):
-    hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
-    try:
-        h = pf.getheader(_filename, hdu)
-    except IOError:
-        return None
-    return tuple([(a in h and [h[a]] or [None])[0] for a in args])
+    """Returns a list of dictionaries (one per HDU)"""
+    ret = []
+    hdu_list = pf.open(_filename)
+    for h in hdu_list:
+        ret.append({k.lower():v for k,v in h.header.items()})
+    hdu_list.close()
+
+    return ret
 
 
 def _fits_setheader(_filename, **kwargs):
@@ -209,9 +220,22 @@ class AstroFile(object):
                  mbias_header=None, mflat_header=None,
                  hdu=0, hduh=None, hdud=None, read_keywords=None,
                  auto_trim = None,
+                 ron=None, gain=None, unit=None,
                  *args, **kwargs):
         """
 
+        Parameters
+        ----------
+        filename: str or dataproc.AstroFile
+             If AstroFile, then it does not duplicate the information, but uses that object directly.
+        gain : float, string, astropy quantity
+           Gain value or header keyword. Only consulted if either mbias or mflat are not CCDData. If unit not
+           specified, photon/ADU is used as default unit; if not set at all, uses 1.0 (with warning).
+        ron : float, string, astropy quantity
+           read-out-noise value or header keyword. Only consulted if either mbias or mflat are not CCDData. If
+           unit not specified, photon/ADU is used as default unit; if not set at all, uses 1.0 (with warning).
+        unit: astropy.units
+             Specifies the unit for the data
         :param filename: Filename, magic var
         :param mbias: Default Master bias
         :param mflat:
@@ -223,35 +247,54 @@ class AstroFile(object):
         :param kwargs:
         """
 
-        import os.path as path
-
         if isinstance(filename, AstroFile):
             return
 
         if isinstance(filename, str):
             self.filename = filename
-            self.header_cache = {'basename': path.basename(filename),
-                                 'dirname':  path.dirname(filename),
-                                 }
         else:
             self.filename = None
-            self.header_cache = {}
-        self.type = self.checktype(exists, *args, **kwargs)
 
+        self.type = self.checktype(exists, *args, **kwargs)
         if hduh is None:
             hduh = hdu
         if hdud is None:
             hdud = hdu
         self._hduh = hduh
         self._hdud = hdud
+        self.header_cache = None
+
+        if gain is None:
+            self.gain = 1.0*u.photon/u.adu
+            iologger.warning("Gain not specified, defaulting to 1 photon/ADU")
+        else:
+            if isinstance(gain, str):
+                gain = self[gain]
+            if not isinstance(gain, u.Quantity):
+                iologger.warning("Gain specified without units, defaulting to photon/ADU")
+                self.gain = gain*u.photon/u.adu
+            else:
+                self.gain = gain
+        if ron is None:
+            self.ron = 0.0*u.photon
+            iologger.warning("Read-out-noise not specified, defaulting to 0 photon")
+        else:
+            if isinstance(ron, str):
+                ron = self[ron]
+            if not isinstance(ron, u.Quantity):
+                iologger.warning("Read-out-noise specified without units, defaulting to photon")
+                self.ron = ron*u.photon
+            else:
+                self.ron = ron
+
+        if unit is None:
+            iologger.warning("Astrofile unit not specified, assuming: ADU")
+            gain = 1*u.adu
+        self.unit = unit
 
         self.calib = AstroCalib(mbias, mflat,
                                 mbias_header=mbias_header, mflat_header=mflat_header,
                                 auto_trim=auto_trim)
-
-        self._read_kw = ['exptime', 'filter', 'date-obs']
-        if read_keywords is not None:
-            self._read_kw.extend([k for k in read_keywords if k not in self._read_kw])
 
     def add_bias(self, mbias):
         self.calib.add_bias(mbias)
@@ -401,19 +444,21 @@ class AstroFile(object):
                     header_val = header_val[:len(request[0])]
                 elif f[:3] == 'end':
                     header_val = header_val[-len(request[0]):]
-                if f[:5] == 'icase':
+                elif f[:5] == 'icase':
                     header_val = header_val.lower()
                     request = [a.lower() for a in request]
-                if f[:3] == 'not':
+                elif f[:3] == 'not':
                     exists = False
-                if f[:5] == 'match':
+                elif f[:5] == 'match':
                     match = True
-                if f[:5] == 'equal':
+                elif f[:5] == 'equal':
                     match = False
-                if f[:3] == 'lt':
+                elif f[:3] == 'lt':
                     less_than = True
-                if f[:3] == 'gt':
+                elif f[:3] == 'gt':
                     greater_than = True
+                else:
+                    iologger.warning("Function '{}' not recognized in filtering, ignoring".format(f))
 
             # print("r:%s h:%s m:%i f:%s" %(request, header_val,
             #                               match, functions))
@@ -443,8 +488,25 @@ class AstroFile(object):
 
     @_checkfilename
     def getheaderval(self, *args, **kwargs):
-        """Get header value for each of the fields specified in args.  It can also accept a list
-        as a single argument: getheaderval(field1,field2,...) or getheaderval([field1,field2,...])"""
+        """
+        Get header value for each of the fields specified in args.
+
+        Parameters
+        ----------
+        args : list, tuple
+          One string per argument, or a list as a single argument: getheaderval(field1,field2,...) or
+          getheaderval([field1,field2,...]). In addition to return headers from the file, it can return "basename" and
+          "dirname" from the filename itself if available
+        cast : function
+          Function to use for casting each element of the result
+        hdu :  int
+          HDU to read
+
+        Returns
+        -------
+        list with the results
+        """
+
 
         tp = self.type
 
@@ -454,26 +516,42 @@ class AstroFile(object):
         if len(args) == 1:
             if isinstance(args[0], (list, tuple)):  # if first argument is tuple use those values as searches
                 args = args[0]
-            # if only 1 already-read header is requested, use a shortcut
-            elif args[0].lower() in self.header_cache.keys():
-                return cast([self.header_cache[args[0].lower()]])
+            elif isinstance(args[0], str): #if it is string, separate by commas
+                args = args[0].split(',')
+
+                    # if only 1 already-read header is requested, use a shortcut
+            # elif args[0].lower() in self.header_cache.keys():
+            #     return cast([self.header_cache[args[0].lower()]])
 
 # read some typical keywords on first pass just in case to speed up
-        args_n_def = [a.lower() for a in args] + self._read_kw
+#        args_n_def = [a.lower() for a in args]  + self._read_kw
 
 # only open fits file if there are non-cached keywords.
-        new_keys = [k for k in args_n_def if k not in self.header_cache.keys()]
-        new_values = self._geth[tp](self.filename, *new_keys, hdu=hdu) if new_keys else []
-        if new_values is None: #Then it is a deffective header
-            logging.warning("Deffective header in {}, ignoring".format(self))
-            return None
+        if self.header_cache is None:
+            self.header_cache = self._geth[tp](self.filename)
+        # new_keys = [k for k in args_n_def if k not in self.header_cache.keys()]
+        # new_values = self._geth[tp](self.filename, *new_keys, hdu=hdu) if new_keys else []
+        # if new_values is None: #Then it is a deffective header
+        #     logging.warning("Deffective header in {}, ignoring".format(self))
+        #     return None
 
-        for k, v in zip(new_keys, new_values):
-            self.header_cache[k] = v
+        # for k, v in zip(new_keys, new_values):
+        #     self.header_cache[k] = v
 
-        ret = [self.header_cache[k.lower()] for k in args]
+        hdr = self.header_cache[hdu]
+        ret = []
+        for k in args:
+            k_lc = k.lower().strip()
+            if k_lc in hdr:
+                ret.append(cast(hdr[k_lc]))
+            elif k_lc == "basename":
+                ret.append(path.basename(self.filename))
+            elif k_lc == "dirname":
+                ret.append(path.dirname(self.filename))
+            else:
+                ret.append(None)
 
-        return cast(ret)
+        return ret
 
     # emulating arithmetic
     def __add__(self, other):
@@ -513,27 +591,38 @@ class AstroFile(object):
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
 
         # Just print the HDUs if requested hdu=-1
-        if hdu == -1:
-            return data
+        # if hdu == -1:
+        #     return data
+        #
+        # if data is None:
+        #     raise ValueError("HDU {hdu} empty at file {file}?\n "
+        #                      "available: {hdus}".format(hdu=hdu, file=self.filename,
+        #                                                 hdus=self.reader(hdu=-1)))
 
-        if data is None:
-            raise ValueError("HDU {hdu} empty at file {file}?\n "
+        #
+        if ('hdu' in kwargs and kwargs['hdu'] < 0):
+            raise ValueError("Invalid HDU specification ({hdu}) in file {file}?\n "
                              "available: {hdus}".format(hdu=hdu, file=self.filename,
                                                         hdus=self.reader(hdu=-1)))
-
-        if ('hdu' in kwargs and kwargs['hdu'] < 0) or ('rawdata' in kwargs and kwargs['rawdata']):
+        if ('rawdata' in kwargs and kwargs['rawdata']):
             return data
+
+        #transform into CCDData
+        # ccddata = ndd.CCDData(data, unit=self.unit, meta=self.header_cache,
+        #                       uncertainty=ndd.StdDevUncertainty(sp.sqrt(self.ron*self.ron + data*self.gain)/self.gain))
 
         if self.has_calib():
             return self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
-                                     filter=self[self.calib.filter_keyword],
+                                     ffilter=self[self.calib.filter_keyword],
                                      header=self.readheader())
 
         return data
 
+
+
     def has_calib(self):
-        return self.calib.has_flat or self.calib.has_bias
+        return self.calib.has_mflat or self.calib.has_mbias
 
     @_checkfilename
     def readheader(self, *args, **kwargs):
@@ -564,12 +653,22 @@ class AstroFile(object):
 
     @_checkfilename
     def __getitem__(self, key):
-        """Read data and return key"""
+        """Read data and return key
+
+        Returns
+        -------
+        If key is string, it returns either a one element or a list of headers.
+        Otherwise, it returns an index to its data content
+        """
 
         if key is None:
             return None
         elif isinstance(key, str):
-            return self.getheaderval(key)[0]
+            ret = self.getheaderval(key)
+            if len(ret) == 1:
+                return(ret[0])
+            else:
+                return (ret)
         else:
             return self.reader()[key]
 
@@ -695,6 +794,164 @@ Add jd in header's cache to keyword 'target' using ut on keyword 'source'
         self.setheader(**newhd)
 
 
+# class AstroCalib(object):
+#     """Object to hold calibration frames.
+#
+#     Since several AstroFiles might use the same calibration frames, one
+#     AstroCalib object might be shared by more than one AstroFile.  For instance,
+#     all the files initialized through AstroDir share a single calibration objct
+#
+#     """
+#     def __init__(self, mbias=None, mflat=None,
+#                  exptime_keyword='exptime',
+#                  mbias_header=None, mflat_header=None,
+#                  filter_keyword='filter',
+#                  auto_trim=None):
+#         """Class holding calibration frames.
+#
+#         Astrodir only builds one such object which is shared by the astrofiles. They can be explicitly changed
+#         in an Astrofile
+#
+#         Parameters
+#         ----------
+#         mbias : AstroFile, sp.array, CCDData, or dict
+#            If defined, it is passed to AstroFile(). If not defined, it nevers corrects for bias.
+#            If dict, then it indexes exposure time and it contents should all be one of the other types.
+#         mflat : AstroFile, sp.array, or CCDData
+#            If defined, it is passed to AstroFile(). If not defined, it nevers corrects for flat
+#            If dict, then it indexes exposure time and it contents should all be one of the other types.
+#         """
+#         # it is always created false, if the add_*() has something, then it is turned true.
+#         self.has_mbias = self.has_mflat = False
+#
+#         self.mbias = None
+#         self.mflat = None
+#         self.exptime_keyword = exptime_keyword
+#         self.filter_keyword = filter_keyword
+#         self.add_bias(mbias, header=mbias_header)
+#         self.add_flat(mflat, header=mflat_header)
+#         self.auto_trim = auto_trim
+#
+#
+#     def add_bias(self, mbias, header=None):
+#         self._add_calib(mbias, "mbias", "Master Bias", header)
+#
+#
+#     def add_flat(self, mflat, header=None):
+#         self._add_calib(mflat, "mflat", "Master Flat", header)
+#
+#
+#     def _add_calib(self, calib, var_name, full_name, header):
+#         """
+#         Add Master calibration (either bias or flat) to the Calib object.
+#
+#         Parameter
+#         ---------
+#         mbias : AstroFile, sp.array, CCDData, or dict
+#         It can be either a dictionary indexed by exposure time or an array/AstroFile for generic times
+#
+#         """
+#         if calib is None:
+#             return
+#         setattr(self, "has_{}".format(var_name), True)
+#         calib = {}
+#         if isinstance(calib, dict):
+#             for k in calib.keys():
+#                 calib[k] = calib[k]
+#         else:
+#             calib[-1] = calib
+#
+#         setattr(self, "{}".format(var_name), {})
+#         for k,icalib in calib:
+#             #let astrofile take care of all defaults anbd creating the CCDdata
+#             if isinstance(icalib, (ndd.CCDArray, sp.ndarray)):
+#                 icalib = dp.AstroFile(calib, header=header)
+#
+#             if isinstance(icalib, dp.AstroFile):
+#                 getattr(self, "{}".format(var_name))[k] = icalib.reader()
+#             else:
+#                 raise ValueError("{} supplied was not recognized.".format(full_name))
+#
+#
+#
+#     def reduce(self, data, exptime=None, filter=None):
+#         """
+# Process flat & bias
+#         :param data: science sp.array()
+#         :param exptime: exposure time for master bias
+#         :param afilter: filter for flat
+#         :return: reduced data
+#         """
+#
+#
+#         to_trim = {"data": data}
+#
+#         if self.has_mbias:
+#             if exptime is None:
+#                 bias = self.mbias[-1]
+#             elif exptime not in self.mbias:
+#                 raise ValueError("Requested exposure time ({}) is not available for mbias, "
+#                                  "only: {}".format(exptime, ", ".join(map(str, self.mbias.keys()))))
+#                 bias = self.mbias[exptime]
+#             to_trim["mbias"] = mbias
+#
+#
+#         if self.has_mflat:
+#             if filter is None:
+#                 flat = self.mflat[-1]
+#             elif filter not in self.mflat:
+#                 raise ValueError("Requested filter ({}) is not available "
+#                                  "for mflat, only: {}".format(filter, ", ".join(self.mflat.keys())))
+#                 flat = self.mflat[filter]
+#             to_trim["mflat"] = mflat
+#
+#         mintrim = sp.array([0, data.shape[0], 0, data.shape[1]])
+#         calib_sizes = []
+# #        calib_arrays = [flat, bias, data]
+#
+#         if self.auto_trim is not None:
+#             out_data = []
+#
+#             #TODO: Do not use array size to compare trimsec, but array section instead.
+#             for label, tdata in to_trim.items():
+#
+#                 if self.auto_trim in theader:
+#                     trim = sp.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
+#                                               theader[self.auto_trim]).group(1,2,3,4))[sp.array([2,3,0,1])]
+#                     trim = [int(t) for t in trim]
+#                     #subtract 1 since fits specifies indices from 1 and not from 0
+#                     trim[0] -= 1
+#                     trim[2] -= 1
+#                     logging.warning("Adjusting size of {} to [{}:{}, {}:{}] " \
+#                                     " (from [{}, {}])".format(label,
+#                                                               trim[0], trim[1],
+#                                                               trim[2], trim[3],
+#                                                               tdata.shape[0], tdata.shape[1]))
+#                     tdata = tdata[mintrim[0]:mintrim[1], mintrim[2]:mintrim[3]]
+#                     if len(trim) != 4:
+#                         logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, theader[self.auto_trim]))
+# #                        trim = [0, tdata.shape[0], 0, tdata.shape[1]]
+#                 # else:
+#                 #     logging.warning("No Auto trim field '{}' in {}. Using full array size.".format(self.auto_trim, label))
+# #                    trim =  [0, tdata.shape[0], 0, tdata.shape[1]]
+#
+#
+#                 out_data.append(tdata)
+#
+#
+#
+#
+#             data = out_data[0]
+#             flat = out_data[1]
+#             bias = out_data[2]
+#
+#
+#         debias = data - bias
+#         deflat = debias / flat
+#
+#        return deflat
+
+
 class AstroCalib(object):
     """Object to hold calibration frames.
 
@@ -703,6 +960,7 @@ class AstroCalib(object):
     all the files initialized through AstroDir share a single calibration objct
 
     """
+
     def __init__(self, mbias=None, mflat=None,
                  exptime_keyword='exptime',
                  mbias_header=None, mflat_header=None,
@@ -773,83 +1031,72 @@ Add master flat to Calib object
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, filter=None, header=None):
+    def reduce(self, data, exptime=None, ffilter=None, header=None):
         """
 Process flat & bias
         :param data: science sp.array()
         :param exptime: exposure time for master bias
-        :param afilter: filter for flat
         :return: reduced data
         """
-        
+
         if exptime is None or exptime not in self.mbias:
             exptime = -1
-        if filter is None or filter not in self.mflat:
-            filter = ''
+        if ffilter is None or ffilter not in self.mflat:
+            ffilter = ''
 
         if exptime not in self.mbias:
             raise ValueError("Requested exposure time ({}) is not available "
                              "for mbias, only: {}".format(exptime, ", ".join(map(str,
                                                                                  self.mbias.keys()))))
-        if filter not in self.mflat:
+        if ffilter not in self.mflat:
             raise ValueError("Requested filter ({}) is not available "
-                             "for mflat, only: {}".format(filter, ", ".join(self.mflat.keys())))
+                             "for mflat, only: {}".format(ffilter, ", ".join(self.mflat.keys())))
 
-        flat = self.mflat[filter]
+        flat = self.mflat[ffilter]
         bias = self.mbias[exptime]
 
         mintrim = sp.array([0, data.shape[0], 0, data.shape[1]])
-        calib_sizes = []
         calib_arrays = [flat, bias, data]
-        
+
         if self.auto_trim is not None:
             out_data = []
 
-            #TODO: Do not use array size to compare trimsec, but array section instead.
+            # TODO: Do not use array size to compare trimsec, but array section instead.
             for tdata, theader, label in zip(calib_arrays,
-                                            [self.mflat_header,
-                                             self.mbias_header,
-                                             header],
-                                            ["master flat",
-                                             "master bias",
-                                             "data"]):
+                                             [self.mflat_header,
+                                              self.mbias_header,
+                                              header],
+                                             ["master flat",
+                                              "master bias",
+                                              "data"]):
 
                 if isinstance(tdata, (float, int)):
                     out_data.append(tdata)
                     continue
-                
+
                 if theader is not None and self.auto_trim in theader:
- 
+
                     trim = sp.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
-                                              theader[self.auto_trim]).group(1,2,3,4))[sp.array([2,3,0,1])]
+                                              theader[self.auto_trim]).group(1, 2, 3, 4))[sp.array([2, 3, 0, 1])]
                     trim = [int(t) for t in trim]
-                    #Note the "-1" at the end since fits specifies indices from 1 and not from 0
+                    # Note the "-1" at the end since fits specifies indices from 1 and not from 0
                     trim[0] -= 1
                     trim[2] -= 1
-                    logging.warning("Adjusting size of {} to [{}:{}, {}:{}] " \
+                    logging.warning("Adjusting size of {} to [{}:{}, {}:{}] "
                                     " (from [{}, {}])".format(label,
                                                               trim[0], trim[1],
                                                               trim[2], trim[3],
                                                               tdata.shape[0], tdata.shape[1]))
                     tdata = tdata[mintrim[0]:mintrim[1], mintrim[2]:mintrim[3]]
                     if len(trim) != 4:
-                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, theader[self.auto_trim]))
-#                        trim = [0, tdata.shape[0], 0, tdata.shape[1]]
-                # else:
-                #     logging.warning("No Auto trim field '{}' in {}. Using full array size.".format(self.auto_trim, label))
-#                    trim =  [0, tdata.shape[0], 0, tdata.shape[1]]
+                        logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array"
+                                        " size.".format(self.auto_trim, label, theader[self.auto_trim]))
 
-                    
                 out_data.append(tdata)
-                
 
-
-            
             data = out_data[0]
             flat = out_data[1]
             bias = out_data[2]
-
-
 
         debias = data - bias
         deflat = debias / flat

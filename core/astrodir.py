@@ -197,6 +197,10 @@ class AstroDir(object):
 
         return dp.AstroDir(self.files+other_af)
 
+    # def __eq__(self, other):
+    #     #as in scipy
+    #     if isinstance(other, )
+
     def __getitem__(self, item):
         # imitate indexing on boolean array as in scipy.
         if isinstance(item, sp.ndarray):
@@ -208,9 +212,15 @@ class AstroDir(object):
                 fdir = [f for b, f in zip(item, self) if b]
                 return AstroDir(fdir)
 
+        #if string, return as getheaderval
+        if isinstance(item, str):
+            return self.getheaderval(item)
+
+        #if slice, return a new astrodir
         elif isinstance(item, slice):
             return AstroDir(self.files.__getitem__(item))
 
+        #otherwise, use a list
         return self.files[item]  # .__getitem__(item)
 
     def __len__(self):
@@ -269,6 +279,7 @@ Return stats
         try:
             while True:
                 idx = ret.index(None)
+                pdb.trace()
                 logging.warning("Removing file with defective header from AstroDir")
                 self.files.pop(idx)
                 ret.pop(idx)

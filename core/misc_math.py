@@ -22,7 +22,6 @@ from __future__ import print_function, division
 import scipy as sp
 import inspect
 import scipy.signal as sg
-import pyfits as pf
 
 def gauss(grid, sigma, center=None, norm=False, ndim=None):
     """
