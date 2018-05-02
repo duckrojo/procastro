@@ -98,10 +98,8 @@ class AstroDir(object):
                 nf = False
             else:
                 nf = dp.AstroFile(f, hduh=hduh, hdud=hdud, read_keywords=read_keywords, auto_trim=auto_trim)
-            #pdb.set_trace()
             if nf:
                 files.append(nf)
-            #pdb.set_trace()
 
         self.files = files
         self.props = {}
@@ -259,20 +257,12 @@ Return stats
         """ Gets the header values specified in 'args' from each of the files.
             Returns a simple list if only one value is specified, or a list of tuples otherwise
             :param cast: output function
-            :param single_in_list: default False
             """
-        if 'single_in_list' in kwargs:
-            single_in_list = kwargs['single_in_list']
-        else:
-            single_in_list = False
 
         if 'cast' in kwargs:
             cast = kwargs['cast']
         else:
-            if len(args) == 1 and not single_in_list:
-                cast = lambda x: x[0]
-            else:
-                cast = lambda x: x
+            cast = lambda x: x
 
         warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
         ret = [f.getheaderval(*args, cast=cast, **kwargs) for f in self]
@@ -309,7 +299,6 @@ Returns all data from the AstroFiles in a datacube
         :param check_unique: receives a list of headers that need to be checked for uniqueness.
         :return:
         """
-        #pdb.set_trace()
         if verbose:
             print("Reading {} good frames{}: ".format(len(self),
                                                       normalize and " and normalizing" or ""),

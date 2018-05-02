@@ -172,13 +172,15 @@ def _checksortkey(f):
     def ret(self, *args, **kwargs):
         if not hasattr(self, 'sortkey'):
             raise ValueError("sortkey must be defined before trying to sort AstroFile")
+        if not isinstance(self.sortkey, str) or "," in self.sortkey:
+            raise ValueError("Invalid value for sortkey ({}), it must be a single header specification "
+                             "(without commas)".format(self.sortkey))
         return f(self, *args, **kwargs)
 
     return ret
 
 
 def _checkfilename(f):
-    #pdb.set_trace()
     @_wraps(f)
     def isfiledef(inst, *args, **kwargs):
         if hasattr(inst, 'filename'):
@@ -264,33 +266,33 @@ class AstroFile(object):
         self._hdud = hdud
         self.header_cache = None
 
-        if gain is None:
-            self.gain = 1.0*u.photon/u.adu
-            iologger.warning("Gain not specified, defaulting to 1 photon/ADU")
-        else:
-            if isinstance(gain, str):
-                gain = self[gain]
-            if not isinstance(gain, u.Quantity):
-                iologger.warning("Gain specified without units, defaulting to photon/ADU")
-                self.gain = gain*u.photon/u.adu
-            else:
-                self.gain = gain
-        if ron is None:
-            self.ron = 0.0*u.photon
-            iologger.warning("Read-out-noise not specified, defaulting to 0 photon")
-        else:
-            if isinstance(ron, str):
-                ron = self[ron]
-            if not isinstance(ron, u.Quantity):
-                iologger.warning("Read-out-noise specified without units, defaulting to photon")
-                self.ron = ron*u.photon
-            else:
-                self.ron = ron
-
-        if unit is None:
-            iologger.warning("Astrofile unit not specified, assuming: ADU")
-            gain = 1*u.adu
-        self.unit = unit
+        # if gain is None:
+        #     self.gain = 1.0*u.photon/u.adu
+        #     iologger.warning("Gain not specified, defaulting to 1 photon/ADU")
+        # else:
+        #     if isinstance(gain, str):
+        #         gain = self[gain]
+        #     if not isinstance(gain, u.Quantity):
+        #         iologger.warning("Gain specified without units, defaulting to photon/ADU")
+        #         self.gain = gain*u.photon/u.adu
+        #     else:
+        #         self.gain = gain
+        # if ron is None:
+        #     self.ron = 0.0*u.photon
+        #     iologger.warning("Read-out-noise not specified, defaulting to 0 photon")
+        # else:
+        #     if isinstance(ron, str):
+        #         ron = self[ron]
+        #     if not isinstance(ron, u.Quantity):
+        #         iologger.warning("Read-out-noise specified without units, defaulting to photon")
+        #         self.ron = ron*u.photon
+        #     else:
+        #         self.ron = ron
+        #
+        # if unit is None:
+        #     iologger.warning("Astrofile unit not specified, assuming: ADU")
+        #     gain = 1*u.adu
+        # self.unit = unit
 
         self.calib = AstroCalib(mbias, mflat,
                                 mbias_header=mbias_header, mflat_header=mflat_header,
@@ -406,7 +408,7 @@ class AstroFile(object):
                 tmp = filter_keyword.split('_')
                 filter_keyword = tmp[0]
                 functions.extend(tmp[1:])
-            header_val = self.getheaderval(filter_keyword)[0]
+            header_val = self.getheaderval(filter_keyword)
 
             # treat specially the not-found and list as filter_keyword
             if header_val is None:
@@ -519,24 +521,8 @@ class AstroFile(object):
             elif isinstance(args[0], str): #if it is string, separate by commas
                 args = args[0].split(',')
 
-                    # if only 1 already-read header is requested, use a shortcut
-            # elif args[0].lower() in self.header_cache.keys():
-            #     return cast([self.header_cache[args[0].lower()]])
-
-# read some typical keywords on first pass just in case to speed up
-#        args_n_def = [a.lower() for a in args]  + self._read_kw
-
-# only open fits file if there are non-cached keywords.
         if self.header_cache is None:
             self.header_cache = self._geth[tp](self.filename)
-        # new_keys = [k for k in args_n_def if k not in self.header_cache.keys()]
-        # new_values = self._geth[tp](self.filename, *new_keys, hdu=hdu) if new_keys else []
-        # if new_values is None: #Then it is a deffective header
-        #     logging.warning("Deffective header in {}, ignoring".format(self))
-        #     return None
-
-        # for k, v in zip(new_keys, new_values):
-        #     self.header_cache[k] = v
 
         hdr = self.header_cache[hdu]
         ret = []
@@ -551,7 +537,10 @@ class AstroFile(object):
             else:
                 ret.append(None)
 
-        return ret
+        if len(ret) == 1:
+            return(ret[0])
+        else:
+            return (ret)
 
     # emulating arithmetic
     def __add__(self, other):
@@ -622,7 +611,7 @@ class AstroFile(object):
 
 
     def has_calib(self):
-        return self.calib.has_mflat or self.calib.has_mbias
+        return self.calib.has_flat or self.calib.has_bias
 
     @_checkfilename
     def readheader(self, *args, **kwargs):
@@ -664,38 +653,34 @@ class AstroFile(object):
         if key is None:
             return None
         elif isinstance(key, str):
-            ret = self.getheaderval(key)
-            if len(ret) == 1:
-                return(ret[0])
-            else:
-                return (ret)
+            return self.getheaderval(key)
         else:
             return self.reader()[key]
 
     @_checksortkey
     def __lt__(self, other):
-        return self.getheaderval(self.sortkey)[0] < \
-               other.getheaderval(self.sortkey)[0]
+        return self.getheaderval(self.sortkey) < \
+               other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __le__(self, other):
-        return self.getheaderval(self.sortkey)[0] <= \
-               other.getheaderval(self.sortkey)[0]
+        return self.getheaderval(self.sortkey) <= \
+               other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __gt__(self, other):
-        return self.getheaderval(self.sortkey)[0] > \
-               other.getheaderval(self.sortkey)[0]
+        return self.getheaderval(self.sortkey) > \
+               other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __eq__(self, other):
-        return self.getheaderval(self.sortkey)[0] == \
-               other.getheaderval(self.sortkey)[0]
+        return self.getheaderval(self.sortkey) == \
+               other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __ne__(self, other):
-        return self.getheaderval(self.sortkey)[0] != \
-               other.getheaderval(self.sortkey)[0]
+        return self.getheaderval(self.sortkey) != \
+               other.getheaderval(self.sortkey)
 
     @_numerize_other
     def __add__(self, other):
