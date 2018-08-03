@@ -483,9 +483,9 @@ class AstroFile(object):
         hdu = kwargs.pop('hduh', self._hduh)
         for k, v in kwargs.items():
             if v is None:
-                del self.header_cache[k]
+                del self.header_cache[hdu][k]
             else:
-                self.header_cache[k] = v
+                self.header_cache[hdu][k] = v
         return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
     @_checkfilename
@@ -772,10 +772,14 @@ class AstroFile(object):
         """
 Add jd in header's cache to keyword 'target' using ut on keyword 'source'
         :param target: target keyword for JD storage
-        :param source: input value in UT format
+        :param source: input value in UT format, if its a list it will merge the 
+                       value of both tokens in UT format
         """
         newhd = {}
-        newhd[target] = apt.Time(self[source]).jd
+        if isinstance(source,list) == True:
+            newhd[target] = apt.Time(self[source[0]]+"T"+self[source[1]]).jd
+        else:
+            newhd[target] = apt.Time(self[source]).jd
         self.setheader(**newhd)
 
 

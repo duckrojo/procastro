@@ -28,7 +28,7 @@ import sys
 import os.path
 from .timeseries import TimeSeries
 import matplotlib.pyplot as plt
-
+import pdb
 import logging
 
 
@@ -1107,7 +1107,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
         reference_ignore = self.indexing.index(reference)
 
         def coords_n_cnt(ref, trg):
-            coord = zip(*self.coords_new_xy)[ref]
+            coord = list(zip(*self.coords_new_xy))[ref]
             if trg is None:
                 cnt_label = 'origin'
                 cnt_coord_xy = [0, 0]
