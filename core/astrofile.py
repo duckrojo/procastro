@@ -28,6 +28,7 @@ import re
 import dataproc as dp
 import astropy.time as apt
 import pdb
+import numpy as np
 import os.path as path
 import astropy.units as u
 import astropy.nddata as ndd
@@ -117,14 +118,16 @@ def _fits_setheader(_filename, **kwargs):
         save = True
         try:
             # todo: if file does not exist, create it
-            fits = pf.open(_filename, 'update')[hdu]
+            hdulist = pf.open(_filename, 'update')
+            fits = hdulist[hdu]
         except IOError:
             iologger.warning(
                 "Read-only filesystem or file not found. Header update of '%s' will not remain on disk." % ', '.join(
                     kwargs.keys()))
             return
     else:
-        fits = pf.open(_filename)[hdu]
+        hdulist = pf.open(_filename)
+        fits = hdulist[hdu]
         save = False
     if 'write' in kwargs:
         del kwargs['write']
@@ -138,8 +141,32 @@ def _fits_setheader(_filename, **kwargs):
             h[k] = v
     if save:
         fits.flush()
+    hdulist.close()
+    #pdb.set_trace()
     return True
 
+def merger(filename,nhdu=None):
+    """
+    Merges multiple hdu images into a single composite image,
+    adds the image into the selected hdu space
+    filename: file to be processed
+    nhdu: hdu where the image will be saved
+    """
+    fit = pf.open(filename)
+    if len(fit) == nhdu+1:
+        fit.close()
+        return
+    output = np.zeros((2048,2272))
+    for i in range(1,len(fit)):
+        hdu = fit[i].data
+        length = len(hdu[0])
+        for j in range(len(output)):
+            output[j][(length*(i-1)):(length*i)] = hdu[j]
+
+    composite = pf.ImageHDU(output)
+    fit.append(composite)
+    fit.writeto(filename,overwrite=True)
+    fit.close()
 
 #############################
 #
