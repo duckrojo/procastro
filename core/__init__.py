@@ -24,7 +24,7 @@ import types
 modules = ['astro',
            'io', 'astrodir', 'astrofile',
            'misc_arr', 'misc_lists',
-           'misc_graph', 'misc_math', 'misc_process'] #TODO ojo aca!! sacar misc_process
+           'misc_graph', 'misc_math'] #TODO ojo aca!! sacar misc_process
            
 
 

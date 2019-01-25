@@ -185,8 +185,8 @@ class AstroDir(object):
             io_logger.warning("Adding list of files to Astrodir, calib and hdu defaults"
                              " will be shared from first AstroFile in AstroDir")
             other_af = [dp.AstroFile(filename,
-                                     hdud=self[0]._hdud,
-                                     hduh=self[0]._hduh,
+                                     hdud=self[0].default_hdu_dh()[0],
+                                     hduh=self[0].default_hdu_dh()[1],
                                      mflat=self[0].calib.mflat,
                                      mbias=self[0].calib.mbias)
                         for filename in other]
@@ -534,100 +534,6 @@ Returns pixel at (xx,yy) position for all frames
             return ret[0]
 
 
-
-        #
-        # import scipy as sp
-        # def pvns(pfret,target):
-        #     """Reconstructs polyfit to target value and sigma"""
-        #     p,cov=pfret
-        #     val = p[0]*target + p[1]
-        #     var = cov[0,0]*target**2 + cov[1,1] + 2*target*cov[1,0]
-        #     return val,var
-        #
-        #
-        # def getlinterp(params, pool=None):
-        #     """Evaluate line interpolation """
-        #     ##TD: being called for wgt and nwgt
-        #     dowgt = lambda fv,target,dat,wgt: sp.array([pvns(sp.polyfit(fv, dt, 1,
-        #                                                                 w=w, cov=True),
-        #                                                      target)
-        #                                                 for dt,w in zip(dat,wgt)]
-        #                  )
-        #     donwgt = lambda fv,target,dat: sp.array([pvns(sp.polyfit(fv, dt, 1), target)
-        #                   for dt in dat])
-        #     dofcn = (len(params)==4) and dowgt or donwgt
-        #     if pool is None:  #Can't use ...and...or... or it will execute twice!
-        #         return dofcn(*params)
-        #     else:
-        #         return pool.apply_async(dofcn,params)
-        #
-        # if not target:
-        #     raise ValueError("keyword target=value must be specified for lineinterp(), where value cannot be zero.")
-        #
-        # arr=self.arrays[self.okframes]
-        # if var is None:
-        #     var=self.sigmas[self.okframes]**2
-        # hd = [h for h,o in zip(self.headers,self.okframes) if o]
-        # fv = sp.array([h[field] for h in hd])
-        #
-        # import warnings
-        # from numpy import __version__ as vrs
-        # if float(vrs[0:3])<1.7:
-        #     raise ValueError("numpy version must be at least 1.7.  Otherwise polyfit() cannot handle weights")
-        # if (fv==fv[0]).all():
-        #     raise ValueError("Cannot linear-interpolate since all values of field '%s' are identical in the data" % field)
-        # if len([h for h in hd if (self.flagfield in h)]):
-        #     warnings.warn("Interpolating in a list of frames who did not all had header with the target field")
-        # if target<min(fv) or target>max(fv):
-        #     warnings.warn("Requested interpolation target (%f) is beyond the range of the '%s' field in the frames (%f - %f)" %(target,field,min(fv),max(fv)))
-        #
-        # print ("  sorting data%s"
-        #        % (doerr and  " and weights" or "",))
-        # sh = arr.shape
-        # fldata = arr.reshape(sh[0],sp.array(sh[1:]).prod())
-        # flwgt = 1.0/var.reshape(sh[0],sp.array(sh[1:]).prod())
-        # fv,fldata,flwgt = sortmanynsp(fv,fldata,flwgt)
-        #
-        #
-        # from multiprocessing.pool import ThreadPool
-        # print("  evaluating linear fit to %i pixels"
-        #       % (fldata.shape[1],))
-        # if doerr:
-        #     pool=multi>1 and ThreadPool(processes=multi) or None
-        #     print ("   using %i processors" % (multi,) )
-        #     delta = int(fldata.shape[1]/multi+0.999)
-        #     multistart = [[delta*i,delta*(i+1)] for i in range(multi)]
-        #     multistart[-1][1] = fldata.shape[1]
-        #
-        #     mpool = [getlinterp((fv, target,
-        #                          fldata.T[i0:i1,:],
-        #                          flwgt.T[i0:i1,:]),
-        #                         pool=pool)
-        #              for i0,i1 in multistart]
-        #     if(len(mpool)>1):
-        #         tmp=[]
-        #         for mp in mpool:
-        #             tmp.extend(mp.get())
-        #         tmp=sp.array(tmp)
-        #     else:
-        #         tmp=mpool[0]
-        #
-        #     # else:
-        #     #     tmp = getlinterp((fv,target,fldata.T,flwgt.T))
-        # else:
-        #     print(" - Requested to avoid error estimation")
-        #     tmp = sp.array([sp.polyval(sp.polyfit(fv, dt, 1), target)
-        #                     for dt in zip(fldata.T)])
-        # comb = tmp[:,0].reshape(sh[1:])
-        # sig = tmp[:,1].reshape(sh[1:])
-        # self.data=comb
-        # self.sigma=sig
-        # self.lastmet=('lininterp',target,field,sigma, doerr)
-        # self.ncombine = len(arr)
-        # self._updatehdr(exptime=target)
-        # return self
-
-        
     def std(self, normalize_region=None, normalize=False, verbose=True,
              check_unique=None, group_by=None):
         """
@@ -680,7 +586,7 @@ Returns pixel at (xx,yy) position for all frames
 
     def jd_from_ut(self, target='jd', source='date-obs'):
         """
-Add jd in header's cache to keyword 'target' using ut on keyword 'source'
+        Add jd in header's cache to keyword 'target' using ut on keyword 'source'
         :param target: target keyword for JD storage
         :param source: input value in UT format
         """

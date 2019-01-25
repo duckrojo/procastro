@@ -42,7 +42,7 @@ def plot_accross(data,
                  **kwargs):
     print(ylim)
 
-    data = prep_data_plot(data, hdu)
+    data = prep_data_plot(data, hdu=hdu)
 
     dt = data
     if not isinstance(pos, (list, tuple)):

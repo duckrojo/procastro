@@ -279,6 +279,24 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     return cy, cx
 
 
+def azimuth(data, cyx):
+    """Return a same-dimensional array with the azimuth value of each pixel with respect to cxy
+    :param data: data to get the shape from. It has to be 2D
+    :param cyx:  Center in native Y-X coordinates
+    :return:  Azimuthal values in radians, setting 0 upwards.
+    """
+
+    ndim = data.ndim
+    if ndim != 2:
+        raise ValueError(f"Input array must be 2-D in order to get azimuthal values. Shape: {data.shape}")
+    if len(cyx) != ndim:
+        raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
+
+    yy, xx = sp.mgrid[0:data.shape[0],0:data.shape[1]]
+
+    return sp.arctan2(yy-cyx[0], xx-cyx[0])
+
+
 def radial(data, cyx):
     """Return a same-dimensional array with the pixel distance to cxy
     :param data: data to get the shape from
@@ -290,7 +308,7 @@ def radial(data, cyx):
     if len(cyx) != ndim:
         raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
 
-    grid = sp.meshgrid(*[sp.arange(l) for l in data.shape])
+    grid = sp.meshgrid(*[sp.arange(l) for l in data.shape], indexing='ij')
 
     return sp.sqrt(sp.array([(dgrid-c)**2
                              for dgrid, c

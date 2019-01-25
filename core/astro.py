@@ -29,7 +29,6 @@ import os.path as path
 import scipy.interpolate as it
 import dataproc as dp
 import astropy as ap
-import imp
 from collections import defaultdict
 import re
 

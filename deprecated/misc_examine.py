@@ -55,7 +55,9 @@ class axexamine2d(mp.process2d):
                  showtitle=True,
                  mode='cmap', **kwargs):
         """
-Initializes examine2d by creating figure and then calling the initialization of process2d
+        Initializes examine2d by creating figure and then calling the initialization of process2d
+
+
         :param linked: List of all plots that need to be update together
         :param datapointers: a 2-element tuple indicating the arrays that need to be used as orig and data, respectively. Both need to be of type astropy.nddata.NDdata
         :param mode: Mode to display the data it should be in self._drawmodes dictionary

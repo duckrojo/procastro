@@ -54,6 +54,7 @@ def _numerize_other(method):
 
 import astropy.io.fits as pf
 
+
 def _fits_header(filename, hdu=0):
     """Read fits files.
     """
@@ -330,6 +331,10 @@ class AstroFile(object):
 
     def add_flat(self, mflat):
         self.calib.add_flat(mflat)
+
+    def default_hdu_dh(self):
+        """Returns default HDU for data and header collection"""
+        return [self._hdud, self._hduh]
 
     # To load data to an empty AstroFile
     def load(self, filename, exists=False, *args, **kwargs):
