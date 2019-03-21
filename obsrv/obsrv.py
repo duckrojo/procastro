@@ -26,13 +26,12 @@ import matplotlib.pyplot as plt
 import astropy as ap
 from matplotlib.patches import Polygon
 
-import  obscalc as ocalc
-ocalc = reload(ocalc)
+from . import obscalc as ocalc
 
 
 def _plotpoly(ax, x, up, down, alpha=0.5, facecolor='0.8', edgecolor='k'):
     """ Plot a band  as semi-transparent polygon """
-    verts = zip(x, down*24) + zip(x[::-1], (up*24)[::-1])
+    verts = list(zip(x, down*24)) + list(zip(x[::-1], (up*24)[::-1]))
     poly = Polygon(verts, 
                    facecolor=facecolor, edgecolor=edgecolor, alpha=alpha)
     ax.add_patch(poly)
@@ -167,7 +166,7 @@ class Obsrv(ocalc.ObsCalc):
     cum = mnlen.copy()
     for i in range(len(mnlen))[1:]:
       cum[i:] += mnlen[:-(i)]
-    mcum = sp.array(zip(cum,cum)).flatten()
+    mcum = sp.array(list(zip(cum,cum))).flatten()
     vlims = list(ax.get_ylim())
     vlims = (vlims + vlims[::-1])*6
     # vlims = [-10,20,20,-10]*6
@@ -234,7 +233,7 @@ class Obsrv(ocalc.ObsCalc):
                           + ((ch-htr)/dy)**2))
         dist.append(sp.sqrt(((cd+self.jd0-dtr)*xovery/dx)**2
                           + ((ch-(htr-24))/dy)**2))
-    return sp.array(zip(self.transits,self.transits)).flatten()[sp.argmin(dist)]
+    return sp.array(list(zip(self.transits,self.transits))).flatten()[sp.argmin(dist)]
 
 
    

@@ -278,6 +278,13 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
 
     return cy, cx
 
+def subcentroidxy(arr, cxy, stamprad, medsub=True, iters=1):
+    """Returns the centroid after a number of iterations, order by xy"""
+
+    cy,cx = subcentroid(arr,[cxy[1],cxy[0]], stamprad,
+                        medsub=medsub, iters=iters)
+    return cx,cy
+
 
 def azimuth(data, cyx):
     """Return a same-dimensional array with the azimuth value of each pixel with respect to cxy
