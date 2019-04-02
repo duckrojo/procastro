@@ -567,6 +567,9 @@ class Photometry:
             labels = target_coords_xy.keys()
         elif isinstance(target_coords_xy, (list, tuple)):
             coords_user_xy = list(target_coords_xy)
+        elif target_coords_xy is None:
+            #todo: Implement interactive
+            raise NotImplementedError("Pia will eventually implement interactive coordinate acquisition. Yei!!")
         else:
             raise TypeError("target_coords_xy type is invalid")
 

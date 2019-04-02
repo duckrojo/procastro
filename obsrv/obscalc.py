@@ -57,7 +57,7 @@ class ObsCalc(object):
 
   def __init__(self, timespan=2017, target=None,
                site='paranal', 
-               only_night=True, equinox=2000,
+               only_night=True, equinox="J2000",
                **kwargs):
     """ =Initializes obsrv class.
 

@@ -295,13 +295,13 @@ def azimuth(data, cyx):
 
     ndim = data.ndim
     if ndim != 2:
-        raise ValueError(f"Input array must be 2-D in order to get azimuthal values. Shape: {data.shape}")
+        raise ValueError("Input array must be 2-D in order to get azimuthal values. Shape: {data}".format(data=data.shape))
     if len(cyx) != ndim:
         raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
 
     yy, xx = sp.mgrid[0:data.shape[0],0:data.shape[1]]
 
-    return sp.arctan2(yy-cyx[0], xx-cyx[0])
+    return sp.arctan2(yy-cyx[0], xx-cyx[1])
 
 
 def radial(data, cyx):
