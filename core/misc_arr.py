@@ -121,8 +121,8 @@ def expandlims(xl,yl,offset=0):
         yl[0]-offset*dy, yl[1]+offset*dy
 
 
-def irafwav(h, axis=1):
-    """Returns a wavelength array from the Iraf header keywords
+def axis_from_fits(h, axis=1):
+    """Returns a wavelength array from the standard FITS header keywords
 
 :param h: header or primary HDU
 :param axis: axis along the wavelength dispersion. If positive, then return data with the same size as FITS, otherwise just the desired dimension
@@ -206,7 +206,7 @@ def fluxacross(diameter, seeing,
     return dy*dx*(psf*blk).sum()
 
 
-def subarray(data, cyx, rad, padding=False, return_offset=False):
+def subarray(data, cyx, rad, padding=False, return_origpos=False):
     """Returns a subarray centered on cxy with radius rad
     :param arr: original array
     :type arr: array
@@ -217,12 +217,22 @@ def subarray(data, cyx, rad, padding=False, return_offset=False):
     :param rad: radius
     :type rad: int
     :rtype: array
+    :param padding: returns a zero padded subarray when the requested stamp does not completely fit inside the array.
+    :type padding: boolean
+    :param return_origpos: returns the original position of the subarray in the original array, it could be negative when padding if reached the origin of array
+    :type return_origpos: (2-element tuple)
     """
 
     icy = int(cyx[0])
     icx = int(cyx[1])
-    ret0 = data[(icy-rad>0)*(icy-rad):icy+rad+1,
-                (icx-rad>0)*(icx-rad):icx+rad+1]
+
+    orig_y = (icy-rad>0)*(icy-rad)
+    orig_x = (icx-rad>0)*(icx-rad)
+    
+    ret0 = data[orig_y:icy+rad+1,
+                orig_x:icx+rad+1]
+    if 0 in ret0.shape:
+        print("Warning: subarray with an empty dimension: {ret0.shape}")
     ny, nx = data.shape
     stamp = 2*rad+1
     y1 = (rad - icy > 0) * (rad - icy)
@@ -232,11 +242,14 @@ def subarray(data, cyx, rad, padding=False, return_offset=False):
         y2 = stamp + (ny - icy - rad - 1 < 0) * (ny - icy - rad - 1)
         x2 = stamp + (nx - icx - rad - 1 < 0) * (nx - icx - rad - 1)
         ret[y1:y2, x1:x2] = ret0
+        orig_y -= y1
+        orig_x -= x1
     else:
         ret = ret0
 
-    if return_offset:
-        return ret, (y1, x1)
+
+    if return_origpos:
+        return ret, (orig_y, orig_x)
     else:
         return ret
 
@@ -271,11 +284,12 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
 
     for i in range(iters):
         sub_array, (offy, offx) = subarray(sub_array, [cy, cx], stamprad,
-                                           padding=False, return_offset=True)
+                                           padding=False, return_origpos=True)
+        
         scy, scx = centroid(sub_array, medsub=medsub)
-        cy = int(cy) - stamprad + scy + offy
-        cx = int(cx) - stamprad + scx + offx
-
+        cy = scy + offy
+        cx = scx + offx
+        
     return cy, cx
 
 def subcentroidxy(arr, cxy, stamprad, medsub=True, iters=1):
