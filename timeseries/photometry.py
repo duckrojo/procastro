@@ -752,6 +752,8 @@ Adds more files to photometry
         ns = len(self.indexing)
         nt = len(self.coords_new_xy)
         na = len(aperture)
+        all_sky_poisson = sp.zeros([na, nt, ns])
+        all_sky_std = sp.zeros([na, nt, ns])
         all_phot = sp.zeros([na, nt, ns])
         all_peak = sp.zeros([na, nt, ns])
         all_mom2 = sp.zeros([na, nt, ns])
@@ -807,6 +809,7 @@ Adds more files to photometry
                     raise ValueError("invalid degree '{}' to fit sky".format(self.deg))
 
                 sky_std = (data - sky_fit)[idx].std()
+                sky_poisson = sp.sqrt(sp.mean(data[idx])/self.gain)
                 res = data - sky_fit  # minus sky
 
                 # Following to compute FWHM by fitting gaussian
@@ -830,6 +833,8 @@ Adds more files to photometry
                                         "threshold ({})".format(label,
                                                                 self.indexing[non_ignore_idx],
                                                                 self.max_counts))
+                    all_sky_std[ap_idx, t, s] = float(sky_std)
+                    all_sky_poisson[ap_idx, t, s] = float(sky_poisson)
                     all_phot[ap_idx, t, s] = phot = float(psf.sum())
                     all_peak[ap_idx, t, s] = float(psf.max())
                     all_excess[ap_idx, t, s] = float(res[(d < (self.surrounding_ap_limit*aperture[ap_idx])) *
@@ -860,6 +865,8 @@ Adds more files to photometry
         information = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm}
         for ap in aperture:
             ap_idx = aperture.index(ap)
+            information['sky_poisson_ap{:d}'.format(int(ap))] = all_sky_poisson[ap_idx, :, :]
+            information['sky_std_ap{:d}'.format(int(ap))] = all_sky_std[ap_idx, :, :]
             information['flux_ap{:d}'.format(int(ap))] = all_phot[ap_idx, :, :]
             information['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2[ap_idx, :, :]
             information['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3[ap_idx, :, :]
