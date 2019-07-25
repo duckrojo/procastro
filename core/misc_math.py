@@ -19,6 +19,10 @@
 #
 
 from __future__ import print_function, division
+
+__all__ = ['gauss', 'bipol',
+           ]
+
 import scipy as sp
 import inspect
 import scipy.signal as sg

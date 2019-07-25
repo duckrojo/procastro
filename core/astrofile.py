@@ -20,6 +20,8 @@
 
 from __future__ import print_function, division
 
+__all__ = ['AstroFile', 'AstroCalib']
+
 import logging
 import scipy as sp
 from functools import wraps as _wraps

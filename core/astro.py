@@ -20,6 +20,12 @@
 
 from __future__ import division, print_function
 
+__all__ = ['read_horizons_cols', 'get_transit_ephemeris',
+           'blackbody', 'getfilter', 'applyfilter',
+           'filterconversion', 'planeteff', 'apply_pm',
+           'read_coordinates',
+           ]
+
 import astropy.constants as apc
 import astropy.coordinates as apcoo
 import astropy.units as apu
@@ -31,16 +37,13 @@ import dataproc as dp
 import astropy as ap
 from collections import defaultdict
 import re
-
+import warnings
+import os
 
 try:
     import astroquery.simbad as aqs
 except ImportError:
     aqs = None
-
-
-import os
-
 
 
 def read_horizons_cols(file):
@@ -86,8 +89,6 @@ Columns can be automatically recognized as float or int (work in progress the la
         data = {d:sp.array(data[d]) for d in data.keys()}
 
     return data
-
-
 
 
 def get_transit_ephemeris(target):
@@ -168,7 +169,6 @@ def blackbody(T, x, unit=None):
         B = B.to(apu.erg/apu.cm**2/apu.Hz/apu.s)/apu.sr
 
     return B
-
 
 
 def getfilter(name, 
@@ -292,7 +292,7 @@ def applyfilter(name, spectra,
 
         idx = (wavfreq>wmin)*(wavfreq<wmax)
         if len(idx)<nwav_bb/5:
-            warning.warn("Too little points (%i) from given spectra inside the filter range (%s - %s)" % (len(idx), wmin, wmax))
+            warnings.warn("Too little points (%i) from given spectra inside the filter range (%s - %s)" % (len(idx), wmin, wmax))
         wavfreq = wavfreq[idx]
         spectra = spectra[idx]
     except TypeError: #spectra is scalar (temperature)
@@ -360,9 +360,7 @@ def apply_pm(name,
     pass
 
 
-
-
-def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
+def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
     """When RA is obtained from coo_files then it can have prepended a 'd' to indicate a degree specificateion instead of hour
 
 :param coo_files: it can be a list or a single file from which to take coordinates
@@ -388,11 +386,13 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
             else:
                 with open_file:
                     for line in open_file.readlines():
+                        if len(line)<10 or line[0]=='#':
+                            continue
                         name, ra, dec, note = line.split(None, 4)
                         if ra[-1] == 'd':
                             ra = "%f" % (float(ra[:-1])/15,)
-                        if target.lower() == name.replace('_',' ').lower():
-                            print("Found in coordinate file: %s" %(coo_file,))
+                        if target.lower() == name.replace('_', ' ').lower():
+                            print("Found in coordinate file: %s" % (coo_file,))
                             found_in_file = True
                             break
                         #this is to break out of two for loops
@@ -419,7 +419,8 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox=2000):
                 raise ValueError("Target '%s' not found on Simbad" % (target,))
             ra, dec = query['RA'][0], query['DEC'][0]
             pmra, pmdec = query['PMRA'][0], query['PMDEC'][0]
-            
+
+#        print("Hola {}".format(equinox))
         ra_dec = apcoo.SkyCoord('%s %s' % (ra, dec),
                            unit=(apu.hour, apu.degree), 
                            equinox = equinox)

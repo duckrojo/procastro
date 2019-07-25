@@ -19,6 +19,8 @@
 #
 from __future__ import print_function, division
 
+__all__ = ['AstroDir']
+
 import dataproc as dp
 import scipy as sp
 import warnings

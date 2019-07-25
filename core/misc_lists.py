@@ -18,6 +18,9 @@
 #
 #
 
+__all__ = ['sortmanynsp', 'sortmany',
+           ]
+
 import scipy as sp
 import operator as op
 import warnings

@@ -21,6 +21,8 @@
 
 from __future__ import print_function
 
+__all__ = ['PrintDebug']
+
 class _printdebug():
     def __init__(self, verblevel=0):
         self.setv(verblevel)

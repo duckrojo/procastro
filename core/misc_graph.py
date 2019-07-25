@@ -20,6 +20,11 @@
 
 
 from __future__ import division, print_function
+
+__all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
+           'imshowz', 'figaxes_xdate', 'figaxes',
+           ]
+    
 #import dataproc as dp
 import astropy.time as apt
 import datetime
@@ -316,9 +321,10 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
 
 
 
-def polygonxy(cxy, rad, npoints=20):
-    angles = sp.arange(npoints+1)*2*3.14159/npoints
-    xx = cxy[0] + rad*sp.cos(angles)
-    yy = cxy[1] + rad*sp.sin(angles)
+# def polygonxy(cxy, rad, npoints=20):
+#     angles = sp.arange(npoints+1)*2*3.14159/npoints
+#     xx = cxy[0] + rad*sp.cos(angles)
+#     yy = cxy[1] + rad*sp.sin(angles)
 
-    return xx, yy
+#     return xx, yy
+

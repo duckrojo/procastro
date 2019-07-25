@@ -18,26 +18,53 @@
 #
 #
 
-import types
-#from importlib import reload
+# import types
+# #from importlib import reload
 
-modules = ['astro',
-           'io', 'astrodir', 'astrofile',
-           'misc_arr', 'misc_lists',
-           'misc_graph', 'misc_math'] #TODO ojo aca!! sacar misc_process
+from . import astro
+from .astro import *
+from . import io
+from .io import *
+from . import astrodir
+from .astrodir import *
+from . import astrofile
+from .astrofile import *
+from . import misc_arr
+from .misc_arr import *
+from . import misc_lists
+from .misc_lists import *
+from . import misc_graph
+from .misc_graph import *
+from . import misc_math
+from .misc_math import *
+
+__all__ = []
+__all__ += astro.__all__
+__all__ += io.__all__
+__all__ += astrodir.__all__
+__all__ += astrofile.__all__
+__all__ += misc_arr.__all__
+__all__ += misc_lists.__all__
+__all__ += misc_graph.__all__
+__all__ += misc_math.__all__
+
+# modules = ['astro',
+#            'io', 'astrodir', 'astrofile',
+#            'misc_arr', 'misc_lists',
+#            'misc_graph', 'misc_math'] #TODO ojo aca!! sacar misc_process
            
 
 
-for modulename in modules:
-    module = __import__(modulename, globals(), locals(), [], 1)
-#    module = reload(module)
-    for v in dir(module):
-        if v[0] == '_' or isinstance(getattr(module,v), types.ModuleType):
-            continue
-        globals()[v] = getattr(module, v)
-    del module
+# for modulename in modules:
+#     module = __import__(modulename, globals(), locals(), [], 1)
+# #    module = reload(module)
+#     for v in dir(module):
+#         if v[0] == '_' or isinstance(getattr(module,v), types.ModuleType):
+#             continue
+#         globals()[v] = getattr(module, v)
+#     del module
 
-del modules, modulename, types
+# del modules, modulename, types
 
 
 
@@ -47,4 +74,5 @@ del modules, modulename, types
 
 # from misc_process import *
 # __all__.extend(setall('misc_process'))
+
 
