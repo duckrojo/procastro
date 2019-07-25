@@ -22,29 +22,39 @@
 Data proc docstring
 """
 
-import types
-__import__('core', globals(), locals(), [], 1)
+from . import core
+from .core import *
+from . import timeseries
+from . import obsrv
 
-import logging
-dplogger = logging.getLogger('dataproc')
-ch = logging.StreamHandler()
-formatter = logging.Formatter('%(name)s %(levelname)s: %(message)s')
-ch.setFormatter(formatter)
-dplogger.addHandler(ch)
-del ch
-del formatter
+import logging as _log
+
+__all__ = ['timeseries', 'obsrv', 'dplogger']
+__all__ += core.__all__
+
+
+dplogger = _log.getLogger('dataproc')
+_ch = _log.StreamHandler()
+_formatter = _log.Formatter('%(name)s (%(module)s.%(funcName)) %(levelname)s: %(message)s')
+_ch.setFormatter(_formatter)
+dplogger.addHandler(_ch)
+
+
 
 #causes conflict on pycharms the following
 #core = reload(core)
 
-for v in dir(core):
-    if v[0] == '_' or isinstance(getattr(core,v), types.ModuleType):
-        continue
-    globals()[v] = getattr(core, v)
+# import types
+# __import__('core', globals(), locals(), [], 1)
 
-del core
-del types
-del v
+# for v in dir(core):
+#     if v[0] == '_' or isinstance(getattr(core,v), types.ModuleType):
+#         continue
+#     globals()[v] = getattr(core, v)
+
+# del core
+# del types
+# del v
 
 __version__ = "0.07"
 

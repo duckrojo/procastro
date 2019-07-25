@@ -21,19 +21,11 @@
 
 import types
 
-modules = ['obsrv']
-           
-for modulename in modules:
-    module = __import__(modulename, globals(), locals(), [], 1)
-#    module = reload(module)
-    for v in dir(module):
-        if v[0] == '_' or isinstance(getattr(module,v), types.ModuleType):
-            continue
-        globals()[v] = getattr(module, v)
-    del module
+from . import obsrv
+from .obsrv import *
 
-del modules, modulename, types
+__all__ = obsrv.__all__
 
-__obsrv_version = '3.02'
+
 
 
