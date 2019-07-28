@@ -22,7 +22,7 @@ from __future__ import division, print_function
 
 __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'blackbody', 'getfilter', 'applyfilter',
-           'filterconversion', 'planeteff', 'apply_pm',
+           'filter_conversion', 'planeteff',
            'read_coordinates',
            ]
 
@@ -34,7 +34,6 @@ import glob
 import os.path as path
 import scipy.interpolate as it
 import dataproc as dp
-import astropy as ap
 from collections import defaultdict
 import re
 import warnings
@@ -56,7 +55,7 @@ Columns can be automatically recognized as float or int (work in progress the la
                  'SN.ang', 'SN.dist', 'delta', 'deldot', 'S-O-T', 'S-T-O',
                  'Solar-lon', 'Solar-lat', 'NP.ang', 'NP.dist',
                  'N.Pole-RA', 'N.Pole_Dec']
-    map_int =   []
+    map_int = []
 
     for f in map_float:
         mapping[f] = float
@@ -65,36 +64,40 @@ Columns can be automatically recognized as float or int (work in progress the la
 
     with open(file) as infile:
         data = defaultdict(list)
-        preline=''
+        pre_line = ''
         for line in infile:
             if line.startswith('$$SOE'):
-                quantities_ws = re.findall(" +\S+", pre2line)
+                quantities_ws = re.findall(r" +\S+", pre2_line)
                 quantities_ns = [s.strip() for s in quantities_ws]
                 break
-            pre2line=preline
-            preline=line
+            pre2_line = pre_line
+            pre_line = line
 
         for line in infile:
-            if line.startswith('>') or len(line)<5:
+            if line.startswith('>') or len(line) < 5:
                 continue
             if line.startswith('$$EOE'):
                 break
 
             cum = 0
-            for qs, q in zip(quantities_ws, quantities_ns): 
-                item = mapping[q](line[cum:cum+len(qs)].strip())
+            for qs, q in zip(quantities_ws, quantities_ns):
+                item = mapping[q](line[cum:cum + len(qs)].strip())
                 cum += len(qs)
                 data[q].append(item)
 
-        data = {d:sp.array(data[d]) for d in data.keys()}
+        data = {d: sp.array(data[d]) for d in data.keys()}
 
     return data
 
 
 def get_transit_ephemeris(target):
+    transit_filename_locations = [os.path.expanduser("~") + '/.transits',
+                                  os.path.dirname(__file__) + '/transits.txt',
+                                  ]
 
-    transit_filename_locations = [os.path.expanduser("~")+'/.transits',
-                                  os.path.dirname(__file__)+'/transits.txt',]
+    tr_epoch = None
+    tr_period = None
+    tr_length = None
 
     for transit_filename in transit_filename_locations:
         try:
@@ -121,13 +124,14 @@ def get_transit_ephemeris(target):
                         elif d[0].lower() == 'c':
                             override.append("comment")
                         else:
-                            raise ValueError("data field not understood, it must start with L, P, C, or E:\n%s" % (line,))
-                    print ("Overriding for '%s' from file '%s':\n %s" % (planet,
-                                                                         transit_filename,
-                                                                         ', '.join(override),))
+                            raise ValueError("data field not understood, it must start with L, P, C, "
+                                             "or E:\n%s" % (line,))
+                    print("Overriding for '%s' from file '%s':\n %s" % (planet,
+                                                                        transit_filename,
+                                                                        ', '.join(override),))
 
                 if len(override):
-                  break
+                    break
 
         except IOError:
             pass
@@ -135,229 +139,283 @@ def get_transit_ephemeris(target):
     return tr_epoch, tr_period, tr_length
 
 
-def blackbody(T, x, unit=None):
-    """Returns blackbody at specified wavelength or frequency
+def blackbody(temperature, wav_freq, unit=None):
+    """
 
-    :param unit: unit for x from astropy.unit. If None then assume microns"""
-    
-    if not isinstance(T, apu.Quantity):
-        T = T*apu.K
-    if not isinstance(x, apu.Quantity):
+    Parameters
+    ----------
+    temperature
+        Assumes kelvin if unit is not specified
+    wav_freq
+        Wavelength or frequency
+    unit
+        unit for wav_freq from astropy.unit. If None and wav_freq is not a astropy.quantity,
+        then assume microns
+
+    Returns
+    -------
+     Blackbody curve at specified wavelength or frequency
+    """
+
+    if not isinstance(temperature, apu.Quantity):
+        temperature = temperature * apu.K
+    if not isinstance(wav_freq, apu.Quantity):
         if unit is None:
-            x = x*apu.micron
-        elif isinstance (unit, apu.Unit):
-            x = x*unit
+            wav_freq = wav_freq * apu.micron
+        elif isinstance(unit, apu.Unit):
+            wav_freq = wav_freq * unit
         else:
-            raise ValueError("Specified unit (%s) is not a valid astropy.unit" 
+            raise ValueError("Specified unit (%s) is not a valid astropy.unit"
                              % (unit,))
-    if x.cgs.unit == apu.cm:
+    if wav_freq.cgs.unit == apu.cm:
         use_length = True
-    elif x.cgs.unit == 1/apu.s:
+    elif wav_freq.cgs.unit == 1 / apu.s:
         use_length = False
     else:
-        raise ValueError("Units for x must be either length or frequency, not %s" 
-                         % (x.unit,))
+        raise ValueError("Units for x must be either length or frequency, not %s"
+                         % (wav_freq.unit,))
 
-
-    h_kb_t = apc.h/apc.k_B/T
+    h_kb_t = apc.h / apc.k_B / temperature
 
     if use_length:
-        B = 2*apc.h*apc.c**2 / (x**5) / (sp.exp(h_kb_t*apc.c/x) - 1)
-        B = B.to(apu.erg/apu.cm**2/apu.cm/apu.s)/apu.sr
+        blackbody_return = 2 * apc.h * apc.c ** 2 / (wav_freq ** 5) / (sp.exp(h_kb_t * apc.c / wav_freq) - 1)
+        blackbody_return = blackbody_return.to(apu.erg / apu.cm ** 2 / apu.cm / apu.s) / apu.sr
     else:
-        B = 2*apc.h*x**3 / (apc.c**2) / (sp.exp(h_kb_t*x ) - 1)
-        B = B.to(apu.erg/apu.cm**2/apu.Hz/apu.s)/apu.sr
+        blackbody_return = 2 * apc.h * wav_freq ** 3 / (apc.c ** 2) / (sp.exp(h_kb_t * wav_freq) - 1)
+        blackbody_return = blackbody_return.to(apu.erg / apu.cm ** 2 / apu.Hz / apu.s) / apu.sr
 
-    return B
+    return blackbody_return
 
 
-def getfilter(name, 
-              nameonly=False,
+def getfilter(name,
+              name_only=False,
               filter_unit=None,
-              fct = 1,
-              filterdir=None,
+              fct=1,
+              filter_dir='/home/inv/common/standards/filters/oth/*/',
               force_positive=True,
               force_increasing=True,
               ):
-    """get filter transmission
- 
-    :param name: filter name
-    :param filter_unit: default filter unit that should be in files.  It should be an astropy quantity. Default is Angstroms. Can be specified in file as first line with comment 'unit:'
-    :param nameonly: Return only the filename for the filter
-    :param fct: Factor by which the transmission is multiplied in the archive (i.e. 100 if it is written in percentage). Can be specified in file as first line with comment 'fct:'
-    :param force_positive: Force positive values for transmission
-    :param force_increasing: sort so that wavelegngth is always increasing
+    """Get transmission curve for particular filter
+
+    Parameters
+    ----------
+    name: string or array_like
+      Name of the filter (filenames in directory). If array_like, then it needs to have two elements
+       to define a uniform filter within the specified cut-in and cut-out values with value 1.0 and
+       in a range 10% beyond with value 0.0, for a total of 50 pixels.
+    name_only
+      If True returns the name of the file only
+    filter_unit
+      default filter unit that should be in files.  It should be an astropy quantity.
+      Default is Angstroms. Can be specified in file as first line with comment 'unit:'
+    fct
+      Factor by which the transmission is divided in the archive (i.e. 100 if it is
+      written in percentage). Can be specified in file as first line with comment 'fct:'.
+      Default is 1
+    filter_dir
+      Directory that hold the filters, it accepts wildcards that will be used by glob.
+      Default is '/home/inv/common/standards/filters/oth/*/
+    force_positive
+       Force positive values for transmission
+    force_increasing
+       Sort such that wavelength is always increasing
+
+    Returns
+    -------
+    wavelength, transmission
+      Transmission curve
     """
 
-    if filterdir is None:
-        filterdir = '/home/inv/common/standards/filters/oth/*/'
-    filters = glob.glob(filterdir+'/*.dat')
+    filters = glob.glob(filter_dir + '/*.dat')
 
     if filter_unit is None:
         filter_unit = apu.AA
 
-    #if cut-in and cut-out values were specified
+    # if cut-in and cut-out values were specified
     if isinstance(name, (list, tuple)) and len(name) == 2:
-        nwavs = 50
-        dflt = name[1] - name[0]
-        fwav = sp.linspace(name[0]-0.1, name[1]+0.1, nwavs)
-        ftrans = sp.zeros(nwavs)
-        ftrans[(fwav<name[1])*(fwav>name[0])] = 1
-        return fwav*filter_unit, ftrans
-    #otherwise, only accept strings
+        n_wavs = 50
+        delta_filter = name[1] - name[0]
+        axis = sp.linspace(name[0] - 0.1*delta_filter, name[1] + 0.1*delta_filter, n_wavs)
+        transmission = sp.zeros(n_wavs)
+        transmission[(axis < name[1]) * (axis > name[0])] = 1
+        return axis * filter_unit, transmission
+    # otherwise, only accept strings
     elif not isinstance(name, str):
-        raise TypeError("Filter can be a string identiying its name or a two-element tuple identifying cut-in & cut-out")
+        raise TypeError("Filter can be a string identifying its name or a two-element tuple"
+                        " identifying cut-in & cut-out values for an uniform filter")
+
     found = []
     for f in filters:
         if name in path.basename(f):
             found.append(f)
 
-    if len(found)!=1:
+    if not len(found):
+        raise ValueError(f"No filter matches '{name}'")
+    if len(found) > 2:
         raise ValueError(("Only one of the available filters should match '%s'." +
                           " Be more specific between:\n %s")
-              % (name, '\n '.join(found)))
+                         % (name, '\n '.join(found)))
 
-    if nameonly:
+    if name_only:
         return path.basename(found[0])
 
     line1 = open(found[0]).readline()
     if line1[0].lower() == '#':
         items = line1[1:-1].split(',')
         for item in items:
-            fld,val = item.split(':')
-            if fld.lstrip()=='units':
+            fld, val = item.split(':')
+            if fld.lstrip() == 'units':
                 filter_unit = getattr(apu, val.lstrip())
-            if fld.lstrip()=='fct':
+            if fld.lstrip() == 'fct':
                 fct = float(val.lstrip())
 
-    fwav, ftrans = sp.loadtxt(found[0], unpack=True)
-    fwav *= filter_unit
-    ftrans /= fct
+    axis, transmission = sp.loadtxt(found[0], unpack=True)
+    axis *= filter_unit
+    transmission /= fct
     if force_positive:
-        ftrans[ftrans<0] = 0.0
+        transmission[transmission < 0] = 0.0
 
     if force_increasing:
-        fwav,ftrans = dp.sortmany(fwav, ftrans)
-        fwav = apu.Quantity(fwav)
-        ftrans = sp.array(ftrans)
+        axis, transmission = dp.sortmany(axis, transmission)
+        axis = apu.Quantity(axis)
+        transmission = sp.array(transmission)
 
-
-    return fwav,ftrans
+    return axis, transmission
 
 
 def applyfilter(name, spectra,
-                wavfreq=None, nwav_bb=100,
-                filter_unit=None, output_unit=None,
-                filterdir=None,
+                wav_freq=None, n_wav_bb=100,
+                output_unit=None,
+                filter_dir=None,
                 full=False):
     """Apply filter to spectra. It can be given or blackbody
- 
-    :param name: filter name
-    :param spectra: either flux (if iterable) or temperature (if scalar) for blackbody
-    :param wavfreq: wavelength or frequency for the spectra. Only necessary when flux is given as spectra
-    :param nwav_bb: Number of wavelengths when blackbody sampling
-    :param filter_unit: default filter unit that should be in files.  It should be an astropy quantity. Default is nanometers
-    :param filterdir: if None use getfilter's default
-    :param full: if True, then return (filtered value, central weighted wavelength, equivalent width)
+
+    Parameters
+    ----------
+    name
+      filter name
+    spectra: array_like or float
+      either flux (if iterable) or temperature (if scalar) for blackbody
+    wav_freq: array_like
+      Wavelength or frequency. Only necessary when flux is given as spectra
+    n_wav_bb: int
+      Number of wavelength points for blackbody. Default is 100
+    filter_unit: astropy.unit
+      if None use getfilter's default
+    output_unit
+      default unit for output.  It should be an astropy quantity.
+      Default is nanometers
+    filter_dir
+      If None use getfilter's default
+    full
+      If True, then return (filtered value, central weighted wavelength, equivalent width)
+
+    Returns
+    -------
+
     """
 
-    fwav, fflx = getfilter(name, filterdir)
-    filter_unit = fwav.unit
+    filter_wav, filter_transmission = getfilter(name, filter_dir)
+    filter_unit = filter_wav.unit
     if output_unit is None:
         output_unit = apu.micron
-    wmin,wmax = fwav[0], fwav[-1]
-    us = it.UnivariateSpline(fwav, fflx, s=0.0)
-
+    wav_min, wav_max = filter_wav[0], filter_wav[-1]
+    us = it.UnivariateSpline(filter_wav, filter_transmission, s=0.0)
 
     try:
-        itr = iter(spectra)
-        if wavfreq is None:
-            raise ValueError("wavfreq needs to be specified if spectra is given")
-        if not isinstance(wavfreq, apu.Quantity):
-            wavfreq *= filter_unit
+        if wav_freq is None:
+            raise ValueError("wav_freq needs to be specified if spectra is given")
+        if not isinstance(wav_freq, apu.Quantity):
+            wav_freq *= filter_unit
 
-        if wavfreq.cgs.unit == apu.cm:
+        if wav_freq.cgs.unit == apu.cm:
             if not isinstance(spectra, apu.Quantity):
-                spectra *= apu.erg/apu.cm**2/apu.cm/apu.s/apu.sr
-        elif wavfreq.cgs.unit == 1/apu.s:
+                spectra *= apu.erg / apu.cm ** 2 / apu.cm / apu.s / apu.sr
+        elif wav_freq.cgs.unit == 1 / apu.s:
             if not isinstance(spectra, apu.Quantity):
-                spectra *= apu.erg/apu.cm**2/apu.Hz/apu.s/apu.sr
-            spectra = spectra.to(apu.erg/apu.cm**2/apu.cm/apu.s/apu.sr, 
-                                 equivalencies=apu.spectral_density(wavfreq))[::-1]
-            wavfreq = wavfreq.to(apu.nm,
-                                 equivalencies=apu.spectral())[::-1]
+                spectra *= apu.erg / apu.cm ** 2 / apu.Hz / apu.s / apu.sr
+            spectra = spectra.to(apu.erg / apu.cm ** 2 / apu.cm / apu.s / apu.sr,
+                                 equivalencies=apu.spectral_density(wav_freq))[::-1]
+            wav_freq = wav_freq.to(apu.nm,
+                                   equivalencies=apu.spectral())[::-1]
             print("WARNING: frequency domain filtering has not been tested thoroughly!!")
         else:
-            raise ValueError("Invalid unit (%s) for wavfreq. Currently supported: length and frequency" % (wavfreq.unit,))
+            raise ValueError(
+                "Invalid unit (%s) for wav_freq. Currently supported: length and frequency" % (wav_freq.unit,))
 
-        idx = (wavfreq>wmin)*(wavfreq<wmax)
-        if len(idx)<nwav_bb/5:
-            warnings.warn("Too little points (%i) from given spectra inside the filter range (%s - %s)" % (len(idx), wmin, wmax))
-        wavfreq = wavfreq[idx]
+        idx = (wav_freq > wav_min) * (wav_freq < wav_max)
+        if len(idx) < n_wav_bb / 5:
+            warnings.warn(f"Too little points ({len(idx)}) from given spectra inside the "
+                          f"filter range ({wav_min} - {wav_max})")
+        wav_freq = wav_freq[idx]
         spectra = spectra[idx]
-    except TypeError: #spectra is scalar (temperature)
-        wavfreq = sp.linspace(wmin,wmax,nwav_bb)
-        spectra = blackbody(spectra, wavfreq)
+    except TypeError:  # spectra is scalar (temperature)
+        wav_freq = sp.linspace(wav_min, wav_max, n_wav_bb)
+        spectra = blackbody(spectra, wav_freq)
 
-    spec_flt_tot = it.UnivariateSpline(wavfreq, (spectra*us(wavfreq)).value,
-                                       s=0.0).integral(wavfreq[0].value,
-                                                       wavfreq[-1].value)
-    wav_flt_tot = it.UnivariateSpline(wavfreq, (wavfreq*us(wavfreq)).value,
-                                       s=0.0).integral(wavfreq[0].value,
-                                                       wavfreq[-1].value)
-    flt_tot = us.integral(wavfreq[0].value,
-                          wavfreq[-1].value)
-    cwav = wav_flt_tot*filter_unit/flt_tot
-    dwav = flt_tot*filter_unit / 2
+    spec_flt_tot = it.UnivariateSpline(wav_freq, (spectra * us(wav_freq)).value,
+                                       s=0.0).integral(wav_freq[0].value,
+                                                       wav_freq[-1].value)
+    wav_flt_tot = it.UnivariateSpline(wav_freq, (wav_freq * us(wav_freq)).value,
+                                      s=0.0).integral(wav_freq[0].value,
+                                                      wav_freq[-1].value)
+    flt_tot = us.integral(wav_freq[0].value,
+                          wav_freq[-1].value)
+    cwav = wav_flt_tot * filter_unit / flt_tot
+    dwav = flt_tot * filter_unit / 2
 
     if full:
-        return spec_flt_tot/flt_tot, cwav.to(output_unit), dwav.to(output_unit)
+        return spec_flt_tot / flt_tot, cwav.to(output_unit), dwav.to(output_unit)
     else:
-        return spec_flt_tot/flt_tot
+        return spec_flt_tot / flt_tot
 
 
-def filterconversion(target_filter, temp,
-                     temp_ref=9700, quiet=False, **kwargs):
+def filter_conversion(target_filter, temperature,
+                      temperature_ref=9700, verbose=True, **kwargs):
     """Convert from one given filter (in kwargs) to a target_filter
 
-    :param temp_ref: Temperature of zero_point in magnitudes
+    Parameters
+    ----------
+    target_filter
+       Target filter for the conversion
+    temperature
+       Temperature of star
+    temperature_ref
+       Temperature of magnitude' zero-point
+    verbose: boolean
+       Write out the conversion
+    kwargs: dict
+       it has to have one element: filter=value, as the original filter. Any dot (.) in filter will be
+       converted to '_' before passing it to get_filter
+
+    Returns
+    -------
+    float
+       Converted value assuming a blackbody
+
     """
 
     if len(kwargs) != 1:
-        raise ValueError("One, and only one reference filter needs to be specified as kwargs (%s)" % (kwargs,))
+        raise ValueError("One, and only one reference filter needs to "
+                         "be specified as kwargs (%s)" % (kwargs,))
 
     orig_filter, orig_value = kwargs.items()[0]
     orig_filter = getfilter(orig_filter.replace('_', '.'), True)
     target_filter = getfilter(target_filter.replace('_', '.'), True)
 
-    if not quiet:
+    if verbose:
         print("Converting from '%s'=%f to '%s'\n(T=%s object)" %
-              (orig_filter, orig_value, target_filter, temp))
+              (orig_filter, orig_value, target_filter, temperature))
 
-    ref0 = orig_value + 2.5*sp.log(applyfilter(orig_filter, temp) /
-                                   applyfilter(orig_filter, temp_ref)) / sp.log(10)
+    ref0 = orig_value + 2.5 * sp.log(applyfilter(orig_filter, temperature) /
+                                     applyfilter(orig_filter, temperature_ref)) / sp.log(10)
 
-    return -2.5*sp.log(applyfilter(target_filter, temp) / 
-                       applyfilter(target_filter, temp_ref))/sp.log(10) + ref0
-
+    return -2.5 * sp.log(applyfilter(target_filter, temperature) /
+                         applyfilter(target_filter, temperature_ref)) / sp.log(10) + ref0
 
 
 def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
-    return tstar*sp.sqrt((rstar*apc.R_sun/au/apc.au) * sp.sqrt(1-albedo)/2.0)
-
-
-
-def apply_pm(name,
-             target_epoch=None,
-             proper_motion=None,
-             ):
-    """Propagate proper motion to specified epoch.  
-
-    :param name: RA/DEC specification or queryable from simbad
-    :param target_epoch: Target epoch for correction of proper motion. If None use today
-    :param proper_motion: [dra,ddec] proper motion. If None, tries to query simbad
-"""
-    pass
+    return tstar * sp.sqrt((rstar * apc.R_sun / au / apc.au) * sp.sqrt(1 - albedo) / 2.0)
 
 
 def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
@@ -366,12 +424,11 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
 :param coo_files: it can be a list or a single file from which to take coordinates
 """
 
-    
     try:
         ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
                                 equinox=equinox)
     except ValueError:
-        if not isinstance(coo_files, (list,tuple)):
+        if not isinstance(coo_files, (list, tuple)):
             coo_files = [coo_files]
 
         for coo_file in coo_files:
@@ -386,20 +443,19 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
             else:
                 with open_file:
                     for line in open_file.readlines():
-                        if len(line)<10 or line[0]=='#':
+                        if len(line) < 10 or line[0] == '#':
                             continue
                         name, ra, dec, note = line.split(None, 4)
                         if ra[-1] == 'd':
-                            ra = "%f" % (float(ra[:-1])/15,)
+                            ra = "%f" % (float(ra[:-1]) / 15,)
                         if target.lower() == name.replace('_', ' ').lower():
                             print("Found in coordinate file: %s" % (coo_file,))
-                            found_in_file = True
                             break
-                        #this is to break out of two for loops
-                    else:                        
+                        # this is to break out of two for loops
+                    else:
                         continue
                     break
-        #if coordinate not in file
+        # if coordinate not in file
         else:
             print(" '%s' not understood as coordinates, attempting query as name... " %
                   (target,), end='')
@@ -408,11 +464,11 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
 
             custom_simbad = aqs.Simbad()
             custom_simbad.add_votable_fields('propermotions')
-            
+
             query = custom_simbad.query_object(target)
             if query is None:
-                #todo: make a nicer planet filtering option
-                if target[-2]==' ' and target[-1] in 'bcdef':
+                # todo: make a nicer planet filtering option
+                if target[-2] == ' ' and target[-1] in 'bcdef':
                     query = custom_simbad.query_object(target[:-2])
 
             if query is None:
@@ -420,15 +476,12 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
             ra, dec = query['RA'][0], query['DEC'][0]
             pmra, pmdec = query['PMRA'][0], query['PMDEC'][0]
 
-#        print("Hola {}".format(equinox))
+        #        print("Hola {}".format(equinox))
         ra_dec = apcoo.SkyCoord('%s %s' % (ra, dec),
-                           unit=(apu.hour, apu.degree), 
-                           equinox = equinox)
+                                unit=(apu.hour, apu.degree),
+                                equinox=equinox)
         print("success! (%s)" % (ra_dec,))
 
     if return_pm:
         return ra_dec, pmra, pmdec
     return ra_dec
-
-
-
