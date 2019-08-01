@@ -87,7 +87,7 @@ class Obsrv(ocalc.ObsCalc):
     def __init__(self,
                  target=None, show_twilight=True, show_months=True,
                  show_colorbar=True, show_transits=True,
-                 interact=True, savedir='fig/',
+                 interact=True, savedir='fig/', altitude_limit=30,
                  **kwargs):
         """ Initializes obsrv class.
 
@@ -102,6 +102,7 @@ class Obsrv(ocalc.ObsCalc):
         self.params["show_transits"] = show_transits
         self.params["show_colorbar"] = show_colorbar
         self.params["savedir"] = savedir
+        self.params["altitude_limit"] = altitude_limit
 
         super(Obsrv, self).__init__(target=target, **kwargs)
 
@@ -210,6 +211,7 @@ class Obsrv(ocalc.ObsCalc):
 
         moon = ephem.Moon()
         obs = self._obs
+        altitude_limit = self.params['altitude_limit']
         obs.date = jd - self.jd0 + self.days[0]
         midday = obs.previous_transit(self._sun)
         obs.date = midday
@@ -244,6 +246,7 @@ class Obsrv(ocalc.ObsCalc):
         risev = sp.array([sr, sr, tr, tr])
         ax.plot((setev - et_out)*24, [0, 90, 90, 0], 'k:')
         ax.plot((risev - et_out)*24, [0, 90, 90, 0], 'k:')
+        ax.plot([ut_hours[0], ut_hours[-1]], [altitude_limit]*2, 'k:')
         ax.set_ylim([10, 90])
         ax.set_xlim([(ss-et_out)*24-0.5, (sr-et_out)*24+0.5])
         datetime = ephem.date(jd-self.jd0+self.days[0])
@@ -256,10 +259,11 @@ class Obsrv(ocalc.ObsCalc):
         ax2.set_yticklabels(sam)
         self.params['current_transit'] = str(datetime).replace(' ', '_')
         self.params['current_moon_distance'], self.params['current_moon_phase'] = self._moon_distance(datetime)
-        ax.set_ylabel('Elevation')
+        percent = 0  # todo: ts<sp.array(ut_hours)<tr
+        ax.set_ylabel(f'Elevation ({percent}% inside twilight and {altitude_limit}${{^\\degree}}$)')
         ax.set_xlabel(f'UT time. Moon distance and phase: '
                       f'{int(self.params["current_moon_distance"].degree)}${{^\\degree}}$ '
-                      f'{float(self.params["current_moon_phase"])}%')
+                      f'{float(self.params["current_moon_phase"]):.0f}%')
 
         if hasattr(self, 'transits'):
             enter_transit = (jd-self.jd0+self.days[0]-et_out)*24 - self.transit_info['length']/2
