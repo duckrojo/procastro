@@ -285,9 +285,8 @@ class ObsCalc(object):
                     if line[0] == '#' or len(line) < 3:
                         continue
                     data = line[:-1].split()
-                    planet = data.pop(0).replace('_', ' ')
-
-                    if planet.lower() == target.lower():
+                    planet = data.pop(0)
+                    if dp.accept_object_name(planet, target):
                         for d in data:
                             if d[0].lower() == 'p':
                                 override.append('period')

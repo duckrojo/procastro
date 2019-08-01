@@ -485,19 +485,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                         name, ra, dec, note = line.split(None, 4)
                         if ra[-1] == 'd':
                             ra = "%f" % (float(ra[:-1]) / 15,)
-                        name = name.replace(r'\\', '\\\\')
-                        name = name.replace('+', r'\+')
-                        name = name.replace('{', r'\{')
-                        name = name.replace('}', r'\}')
-                        name = name.replace('[', r'\[')
-                        name = name.replace(']', r'\]')
-                        name = name.replace('*', r'\*')
-                        name = name.replace('?', r'\?')
-                        if '__' in name:
-                            mandatory, optional = name.split('__')
-                            name = f"{mandatory}(?:{optional})?"
-                        name = name.replace('_', '[- ]?').lower()
-                        if re.search(name,target.lower()) is not None:
+                        if dp.accept_object_name(name, target):
                             print("Found in coordinate file: %s" % (coo_file,))
                             break
                     # this is to break out of two for loops as it should

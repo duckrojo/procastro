@@ -31,8 +31,8 @@ from . import astrofile
 from .astrofile import *
 from . import misc_arr
 from .misc_arr import *
-from . import misc_lists
-from .misc_lists import *
+from . import misc_general
+from .misc_general import *
 from . import misc_graph
 from .misc_graph import *
 from . import misc_math
@@ -47,32 +47,5 @@ __all__ += misc_arr.__all__
 __all__ += misc_lists.__all__
 __all__ += misc_graph.__all__
 __all__ += misc_math.__all__
-
-# modules = ['astro',
-#            'io', 'astrodir', 'astrofile',
-#            'misc_arr', 'misc_lists',
-#            'misc_graph', 'misc_math'] #TODO ojo aca!! sacar misc_process
-           
-
-
-# for modulename in modules:
-#     module = __import__(modulename, globals(), locals(), [], 1)
-# #    module = reload(module)
-#     for v in dir(module):
-#         if v[0] == '_' or isinstance(getattr(module,v), types.ModuleType):
-#             continue
-#         globals()[v] = getattr(module, v)
-#     del module
-
-# del modules, modulename, types
-
-
-
-
-# from misc_examine import *
-# __all__.extend(setall('misc_examine'))
-
-# from misc_process import *
-# __all__.extend(setall('misc_process'))
 
 

@@ -18,12 +18,29 @@
 #
 #
 
-__all__ = ['sortmanynsp', 'sortmany',
+__all__ = ['sortmanynsp', 'sortmany', 'accept_object_name'
            ]
 
 import scipy as sp
 import operator as op
 import warnings
+import re
+
+def accept_object_name(name, target):
+    name = name.replace(r'\\', '\\\\')
+    name = name.replace('+', r'\+')
+    name = name.replace('{', r'\{')
+    name = name.replace('}', r'\}')
+    name = name.replace('[', r'\[')
+    name = name.replace(']', r'\]')
+    name = name.replace('*', r'\*')
+    name = name.replace('?', r'\?')
+    if '__' in name:
+        mandatory, optional = name.split('__')
+        name = f"{mandatory}(?:{optional})?"
+    name = name.replace('_', '[- ]?').lower()
+    return re.search(name,target.lower()) is not None
+
 
 def sortmanynsp(*arr):
     """Sort many lists following the order of the first. Returns a tuple of sorted np.ndarray"""
