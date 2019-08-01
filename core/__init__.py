@@ -44,7 +44,7 @@ __all__ += io.__all__
 __all__ += astrodir.__all__
 __all__ += astrofile.__all__
 __all__ += misc_arr.__all__
-__all__ += misc_lists.__all__
+__all__ += misc_general.__all__
 __all__ += misc_graph.__all__
 __all__ += misc_math.__all__
 

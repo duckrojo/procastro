@@ -33,7 +33,7 @@ import astropy.io.fits as pf
 import copy
 from IPython.core.debugger import Tracer
 
-from .misc_lists import sortmanynsp
+from .misc_general import sortmanynsp
 
 
 def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=None, full=False):
