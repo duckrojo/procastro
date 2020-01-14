@@ -228,13 +228,15 @@ class AstroDir(object):
 
     def stats(self, *args, **kwargs):
         """
-Return stats
+        Return stats
+        :param extra_headers:
+        :param verbose_heading:
         :param args: Specify the stats that want to be returned
-        :param kwargs: verbose_headings is the only keyword accepted to print a heading
+        :param kwargs: verbose_headings is the only keyword accepted to print a heading1
         :return: the stat as returned by each of the AstroFiles
         """
         verbose_heading = kwargs.pop('verbose_heading', True)
-        extra_headers = kwargs.pop('extra_headers', True)
+        extra_headers = kwargs.pop('extra_headers', [])
         if kwargs:
             raise SyntaxError("only the following keyword arguments for stats are accepted 'verbose_heading', 'extra_headers'")
         ret = []

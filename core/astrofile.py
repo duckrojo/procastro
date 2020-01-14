@@ -612,6 +612,7 @@ class AstroFile(object):
             return False
 
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
+        # TODO: exception when corrupt
 
         # Just print the HDUs if requested hdu=-1
         # if hdu == -1:

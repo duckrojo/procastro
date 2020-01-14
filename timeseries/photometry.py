@@ -765,10 +765,10 @@ Adds more files to photometry
 
         print("Processing CPU photometry for {0} targets: ".format(len(self.sci_stamps)), end='')
         sys.stdout.flush()
-        for label, target, centers_xy, t in zip(self.labels, self.sci_stamps,
+        for label, target, centers_xy, target_idx in zip(self.labels, self.sci_stamps,
                                                 self.coords_new_xy, range(nt)):  # For each target
 
-            for data, center_xy, non_ignore_idx, s in zip(target, centers_xy, self.indexing, range(ns)):
+            for data, center_xy, non_ignore_idx, epochs_idx in zip(target, centers_xy, self.indexing, range(ns)):
                 cx, cy = center_xy
 
                 # Stamps are already centered, only decimals could be different
@@ -822,7 +822,7 @@ Adds more files to photometry
                 except RuntimeError:
                     sig = sp.array([0, 0, 0])
                 fwhm_g = 2.355 * sig[1]
-                all_fwhm[t, s] = fwhm_g
+                all_fwhm[target_idx, epochs_idx] = fwhm_g
 
                 # now photometry
                 for ap_idx in range(len(aperture)):
@@ -833,21 +833,21 @@ Adds more files to photometry
                                         "threshold ({})".format(label,
                                                                 self.indexing[non_ignore_idx],
                                                                 self.max_counts))
-                    all_sky_std[ap_idx, t, s] = float(sky_std)
-                    all_sky_poisson[ap_idx, t, s] = float(sky_poisson)
-                    all_phot[ap_idx, t, s] = phot = float(psf.sum())
-                    all_peak[ap_idx, t, s] = float(psf.max())
-                    all_excess[ap_idx, t, s] = float(res[(d < (self.surrounding_ap_limit*aperture[ap_idx])) *
-                                                              (d > aperture[ap_idx])].sum())
+                    all_sky_std[ap_idx, target_idx, epochs_idx] = float(sky_std)
+                    all_sky_poisson[ap_idx, target_idx, epochs_idx] = float(sky_poisson)
+                    all_phot[ap_idx, target_idx, epochs_idx] = phot = float(psf.sum())
+                    all_peak[ap_idx, target_idx, epochs_idx] = float(psf.max())
+                    all_excess[ap_idx, target_idx, epochs_idx] = float(res[(d < (self.surrounding_ap_limit * aperture[ap_idx])) *
+                                                                  (d > aperture[ap_idx])].sum())
                     dx = x-cnt_stamp[1]
                     dy = y-cnt_stamp[0]
                     res_pos = res * (res > 0)
 
                     skew_x = sp.sum((res_pos*(dx**3))[d < ap])
                     skew_y = sp.sum((res_pos*(dy**3))[d < ap])
-                    all_mom2[ap_idx, t, s] = float(sp.sum((res_pos * (d ** 2))[d < ap]))
-                    all_mom3[ap_idx, t, s] = sp.sqrt(skew_x**2 + skew_y**2)
-                    all_moma[ap_idx, t, s] = sp.arctan2(skew_y, skew_x)
+                    all_mom2[ap_idx, target_idx, epochs_idx] = float(sp.sum((res_pos * (d ** 2))[d < ap]))
+                    all_mom3[ap_idx, target_idx, epochs_idx] = sp.sqrt(skew_x ** 2 + skew_y ** 2)
+                    all_moma[ap_idx, target_idx, epochs_idx] = sp.arctan2(skew_y, skew_x)
 
                     # now the error
                     if self.gain is None:
@@ -855,7 +855,7 @@ Adds more files to photometry
                     else:
                         n_pix_ap = (d < aperture[ap_idx]).sum()
                         error = _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, self.gain, ron=self.ron)
-                    all_err[ap_idx, t, s] = error
+                    all_err[ap_idx, target_idx, epochs_idx] = error
 
             print('X', end='')
             sys.stdout.flush()
