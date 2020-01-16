@@ -83,6 +83,7 @@ def _fits_reader(filename, hdu=0):
 
 def _fits_writer(filename, data, header=None):
     if header is None:
+        header = pf.header()                                     
         iologger.warning(
             "No header provided to save on disk, using a default empty header for '{}'".format(filename))
     header['history'] = "Saved by dataproc v{} on {}".format(dp.__version__, apt.Time.now())
@@ -664,6 +665,7 @@ class AstroFile(object):
         """Write astro data"""
         tp = self.type
         # todo: save itself if data exists. Now it only saves explicit array given by user
+        # FIXME: Solve issue where *args are not read properly by _fits_writer (different method signarture)
         data = args[0]
         return tp and self._writes[tp](self.filename, data, *args, **kwargs)
 
@@ -787,7 +789,7 @@ class AstroFile(object):
             elif stat == 'mean':
                 ret.append(data.mean())
             elif stat == 'mean3sclip':
-                clip = data.copy()
+                clip = data.copy().astype("float64")   ### Included casting
                 clip -= data.mean()
                 std = data.std()
                 ret.append(clip[sp.absolute(clip) < 3 * std].mean())
