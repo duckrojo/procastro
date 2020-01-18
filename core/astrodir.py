@@ -273,7 +273,7 @@ class AstroDir(object):
         try:
             while True:
                 idx = ret.index(None)
-                pdb.trace()
+                #pdb.set_trace()
                 logging.warning("Removing file with defective header from AstroDir")
                 self.files.pop(idx)
                 ret.pop(idx)
