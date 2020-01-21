@@ -45,6 +45,102 @@ except ImportError:
     aqs = None
 
 
+def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
+    """Obtain coordinates from a target, that can be specified in various formats.
+
+    Parameters
+    ----------
+    target: str
+       Either a coordinate understandable by astropy.coordinates, a name in coo_files, or a name
+       resolvable by Simbad. Tests strictly in the previous order, returns as soon as it finds a match.
+    coo_files: array_like
+       List of files that are searched for a match in target name.  File should have at least three
+       columns: Target_name RA Dec; optionally, a fourth column for comments. Target_name can have underscores
+       that will be matched against spaces, dash, or no-character. Two underscores will additionally consider
+       optional anything that follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a). RA and Dec
+       can be any mathematical expression that eval() can handle. RA is hms by default, unless 'd' is appended,
+       Dec is always dms.
+    return_pm:
+      if True return proper motions. Only as provided by Simbad for now, otherwise returns None for each
+    equinox
+       Which astronomy equinox the coordinates refer. Default is J2000
+
+    Returns
+    -------
+    (float, float) or ((float, float), float, float)
+       RA and Dec in hours and degrees, respectively.  The second version is when return_pm is True
+
+    """
+
+    pm_ra = None
+    pm_dec = None
+
+    try:
+        ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
+                                equinox=equinox)
+    except ValueError:
+        if not isinstance(coo_files, (list, tuple)):
+            coo_files = [coo_files]
+
+        for coo_file in coo_files:
+            # try:
+            #     open_file = open(coo_file)
+            # except TypeError:
+            #     open_file=False
+            try:
+                open_file = open(coo_file)
+            except IOError:
+                pass
+            else:
+                with open_file:
+                    for line in open_file.readlines():
+                        if len(line) < 10 or line[0] == '#':
+                            continue
+                        name, ra, dec, note = line.split(None, 4)
+                        if ra[-1] == 'd':
+                            ra = "%f" % (float(ra[:-1]) / 15,)
+                        if dp.accept_object_name(name, target):
+                            print("Found in coordinate file: %s" % (coo_file,))
+                            break
+                    # this is to break out of two for loops as it should
+                    # stop looking in other files
+                    else:
+                        continue
+                    break
+        # if coordinate not in file
+        else:
+            print(" '%s' not understood as coordinates, attempting query as name... " %
+                  (target,), end='')
+            if aqs is None:
+                raise ValueError("Sorry, AstroQuery not available for coordinate querying")
+
+            custom_simbad = aqs.Simbad()
+            custom_simbad.add_votable_fields('propermotions')
+
+            query = custom_simbad.query_object(target)
+            if query is None:
+                # todo: make a nicer planet filtering option
+                if target[-2] == ' ' and target[-1] in 'bcdef':
+                    query = custom_simbad.query_object(target[:-2])
+
+            if query is None:
+                raise ValueError("Target '%s' not found on Simbad" % (target,))
+            ra, dec = query['RA'][0], query['DEC'][0]
+            pm_ra, pm_dec = query['PMRA'][0], query['PMDEC'][0]
+
+        ra_dec = apcoo.SkyCoord('%s %s' % (ra, dec),
+                                unit=(apu.hour, apu.degree),
+                                equinox=equinox)
+        print("success! (%s)" % (ra_dec,))
+
+    if return_pm:
+        return ra_dec, pm_ra, pm_dec
+    return ra_dec
+
+###################################################################################
+# Unused methods
+######
+
 def read_horizons_cols(file):
     """Reads an horizons ephemeris file into a dictionary. It maintain original columns header as dictionary keys.  
 Columns can be automatically recognized as float or int (work in progress the latter) """
@@ -429,96 +525,3 @@ def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
 
     """
     return tstar * sp.sqrt((rstar * apc.R_sun / au / apc.au) * sp.sqrt(1 - albedo) / 2.0)
-
-
-def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
-    """Obtain coordinates from a target, that can be specified in various formats.
-
-    Parameters
-    ----------
-    target: str
-       Either a coordinate understandable by astropy.coordinates, a name in coo_files, or a name
-       resolvable by Simbad. Tests strictly in the previous order, returns as soon as it finds a match.
-    coo_files: array_like
-       List of files that are searched for a match in target name.  File should have at least three
-       columns: Target_name RA Dec; optionally, a fourth column for comments. Target_name can have underscores
-       that will be matched against spaces, dash, or no-character. Two underscores will additionally consider
-       optional anything that follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a). RA and Dec
-       can be any mathematical expression that eval() can handle. RA is hms by default, unless 'd' is appended,
-       Dec is always dms.
-    return_pm:
-      if True return proper motions. Only as provided by Simbad for now, otherwise returns None for each
-    equinox
-       Which astronomy equinox the coordinates refer. Default is J2000
-
-    Returns
-    -------
-    (float, float) or ((float, float), float, float)
-       RA and Dec in hours and degrees, respectively.  The second version is when return_pm is True
-
-    """
-
-    pm_ra = None
-    pm_dec = None
-
-    try:
-        ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
-                                equinox=equinox)
-    except ValueError:
-        if not isinstance(coo_files, (list, tuple)):
-            coo_files = [coo_files]
-
-        for coo_file in coo_files:
-            # try:
-            #     open_file = open(coo_file)
-            # except TypeError:
-            #     open_file=False
-            try:
-                open_file = open(coo_file)
-            except IOError:
-                pass
-            else:
-                with open_file:
-                    for line in open_file.readlines():
-                        if len(line) < 10 or line[0] == '#':
-                            continue
-                        name, ra, dec, note = line.split(None, 4)
-                        if ra[-1] == 'd':
-                            ra = "%f" % (float(ra[:-1]) / 15,)
-                        if dp.accept_object_name(name, target):
-                            print("Found in coordinate file: %s" % (coo_file,))
-                            break
-                    # this is to break out of two for loops as it should
-                    # stop looking in other files
-                    else:
-                        continue
-                    break
-        # if coordinate not in file
-        else:
-            print(" '%s' not understood as coordinates, attempting query as name... " %
-                  (target,), end='')
-            if aqs is None:
-                raise ValueError("Sorry, AstroQuery not available for coordinate querying")
-
-            custom_simbad = aqs.Simbad()
-            custom_simbad.add_votable_fields('propermotions')
-
-            query = custom_simbad.query_object(target)
-            if query is None:
-                # todo: make a nicer planet filtering option
-                if target[-2] == ' ' and target[-1] in 'bcdef':
-                    query = custom_simbad.query_object(target[:-2])
-
-            if query is None:
-                raise ValueError("Target '%s' not found on Simbad" % (target,))
-            ra, dec = query['RA'][0], query['DEC'][0]
-            pm_ra, pm_dec = query['PMRA'][0], query['PMDEC'][0]
-
-        ra_dec = apcoo.SkyCoord('%s %s' % (ra, dec),
-                                unit=(apu.hour, apu.degree),
-                                equinox=equinox)
-        print("success! (%s)" % (ra_dec,))
-
-    if return_pm:
-        return ra_dec, pm_ra, pm_dec
-    return ra_dec
