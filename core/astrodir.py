@@ -348,7 +348,7 @@ Returns all data from the AstroFiles in a datacube
                             "In such case, it should have been alone.")
 
         for g in grouped_data:
-            grouped_data[g] = sp.array(grouped_data[g])
+            grouped_data[g] = sp.dstack(grouped_data[g])
 
         if verbose:
             print("")
