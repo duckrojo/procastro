@@ -377,27 +377,7 @@ class AstroFile(object):
                 return k
         return None
 
-    def spplot(self,
-               axes=None, title=None, xtitle=None, ytitle=None,
-               *args, **kwargs):
-        fig, ax = dp.prep_canvas(axes, title, xtitle, ytitle)
 
-        data = self.reader()
-        dim = len(data.shape)
-
-        if dim == 2:
-            if data.shape[0] < data.shape[1]:
-                wav = data[0, :]
-                flx = data[1, :]
-            else:
-                wav = data[:, 0]
-                flx = data[:, 1]
-        elif dim == 1:
-            raise NotImplemented("Needs to add reading of wavelength from headers")
-        else:
-            raise NotImplemented("Spectra not understood")
-
-        ax.plot(wav, flx)
 
     def plot(self, *args, **kwargs):
         """ Calls plot_accross(data, axes=None, title=None,
@@ -819,163 +799,35 @@ Add jd in header's cache to keyword 'target' using ut on keyword 'source'
             newhd[target] = apt.Time(self[source]).jd
         self.setheader(**newhd)
 
+    #################
+    ####
+    #### WISHLIST FROM HERE. BASIC IMPLEMENTATION of METHODS
+    #### TODO : Improve
+    ####
+    #############################
 
-# class AstroCalib(object):
-#     """Object to hold calibration frames.
-#
-#     Since several AstroFiles might use the same calibration frames, one
-#     AstroCalib object might be shared by more than one AstroFile.  For instance,
-#     all the files initialized through AstroDir share a single calibration objct
-#
-#     """
-#     def __init__(self, mbias=None, mflat=None,
-#                  exptime_keyword='exptime',
-#                  mbias_header=None, mflat_header=None,
-#                  filter_keyword='filter',
-#                  auto_trim=None):
-#         """Class holding calibration frames.
-#
-#         Astrodir only builds one such object which is shared by the astrofiles. They can be explicitly changed
-#         in an Astrofile
-#
-#         Parameters
-#         ----------
-#         mbias : AstroFile, sp.array, CCDData, or dict
-#            If defined, it is passed to AstroFile(). If not defined, it nevers corrects for bias.
-#            If dict, then it indexes exposure time and it contents should all be one of the other types.
-#         mflat : AstroFile, sp.array, or CCDData
-#            If defined, it is passed to AstroFile(). If not defined, it nevers corrects for flat
-#            If dict, then it indexes exposure time and it contents should all be one of the other types.
-#         """
-#         # it is always created false, if the add_*() has something, then it is turned true.
-#         self.has_mbias = self.has_mflat = False
-#
-#         self.mbias = None
-#         self.mflat = None
-#         self.exptime_keyword = exptime_keyword
-#         self.filter_keyword = filter_keyword
-#         self.add_bias(mbias, header=mbias_header)
-#         self.add_flat(mflat, header=mflat_header)
-#         self.auto_trim = auto_trim
-#
-#
-#     def add_bias(self, mbias, header=None):
-#         self._add_calib(mbias, "mbias", "Master Bias", header)
-#
-#
-#     def add_flat(self, mflat, header=None):
-#         self._add_calib(mflat, "mflat", "Master Flat", header)
-#
-#
-#     def _add_calib(self, calib, var_name, full_name, header):
-#         """
-#         Add Master calibration (either bias or flat) to the Calib object.
-#
-#         Parameter
-#         ---------
-#         mbias : AstroFile, sp.array, CCDData, or dict
-#         It can be either a dictionary indexed by exposure time or an array/AstroFile for generic times
-#
-#         """
-#         if calib is None:
-#             return
-#         setattr(self, "has_{}".format(var_name), True)
-#         calib = {}
-#         if isinstance(calib, dict):
-#             for k in calib.keys():
-#                 calib[k] = calib[k]
-#         else:
-#             calib[-1] = calib
-#
-#         setattr(self, "{}".format(var_name), {})
-#         for k,icalib in calib:
-#             #let astrofile take care of all defaults anbd creating the CCDdata
-#             if isinstance(icalib, (ndd.CCDArray, sp.ndarray)):
-#                 icalib = dp.AstroFile(calib, header=header)
-#
-#             if isinstance(icalib, dp.AstroFile):
-#                 getattr(self, "{}".format(var_name))[k] = icalib.reader()
-#             else:
-#                 raise ValueError("{} supplied was not recognized.".format(full_name))
-#
-#
-#
-#     def reduce(self, data, exptime=None, filter=None):
-#         """
-# Process flat & bias
-#         :param data: science sp.array()
-#         :param exptime: exposure time for master bias
-#         :param afilter: filter for flat
-#         :return: reduced data
-#         """
-#
-#
-#         to_trim = {"data": data}
-#
-#         if self.has_mbias:
-#             if exptime is None:
-#                 bias = self.mbias[-1]
-#             elif exptime not in self.mbias:
-#                 raise ValueError("Requested exposure time ({}) is not available for mbias, "
-#                                  "only: {}".format(exptime, ", ".join(map(str, self.mbias.keys()))))
-#                 bias = self.mbias[exptime]
-#             to_trim["mbias"] = mbias
-#
-#
-#         if self.has_mflat:
-#             if filter is None:
-#                 flat = self.mflat[-1]
-#             elif filter not in self.mflat:
-#                 raise ValueError("Requested filter ({}) is not available "
-#                                  "for mflat, only: {}".format(filter, ", ".join(self.mflat.keys())))
-#                 flat = self.mflat[filter]
-#             to_trim["mflat"] = mflat
-#
-#         mintrim = sp.array([0, data.shape[0], 0, data.shape[1]])
-#         calib_sizes = []
-# #        calib_arrays = [flat, bias, data]
-#
-#         if self.auto_trim is not None:
-#             out_data = []
-#
-#             #TODO: Do not use array size to compare trimsec, but array section instead.
-#             for label, tdata in to_trim.items():
-#
-#                 if self.auto_trim in theader:
-#                     trim = sp.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
-#                                               theader[self.auto_trim]).group(1,2,3,4))[sp.array([2,3,0,1])]
-#                     trim = [int(t) for t in trim]
-#                     #subtract 1 since fits specifies indices from 1 and not from 0
-#                     trim[0] -= 1
-#                     trim[2] -= 1
-#                     logging.warning("Adjusting size of {} to [{}:{}, {}:{}] " \
-#                                     " (from [{}, {}])".format(label,
-#                                                               trim[0], trim[1],
-#                                                               trim[2], trim[3],
-#                                                               tdata.shape[0], tdata.shape[1]))
-#                     tdata = tdata[mintrim[0]:mintrim[1], mintrim[2]:mintrim[3]]
-#                     if len(trim) != 4:
-#                         logging.warning("Auto trim field '{}' with invalid format in {} ({}). Using full array size.".format(self.auto_trim, label, theader[self.auto_trim]))
-# #                        trim = [0, tdata.shape[0], 0, tdata.shape[1]]
-#                 # else:
-#                 #     logging.warning("No Auto trim field '{}' in {}. Using full array size.".format(self.auto_trim, label))
-# #                    trim =  [0, tdata.shape[0], 0, tdata.shape[1]]
-#
-#
-#                 out_data.append(tdata)
-#
-#
-#
-#
-#             data = out_data[0]
-#             flat = out_data[1]
-#             bias = out_data[2]
-#
-#
-#         debias = data - bias
-#         deflat = debias / flat
-#
-#        return deflat
+    def spplot(self,
+               axes=None, title=None, xtitle=None, ytitle=None,
+               *args, **kwargs):
+        fig, ax = dp.prep_canvas(axes, title, xtitle, ytitle)
+
+        data = self.reader()
+        dim = len(data.shape)
+
+        if dim == 2:
+            if data.shape[0] < data.shape[1]:
+                wav = data[0, :]
+                flx = data[1, :]
+            else:
+                wav = data[:, 0]
+                flx = data[:, 1]
+        elif dim == 1:
+            raise NotImplemented("Needs to add reading of wavelength from headers")
+        else:
+            raise NotImplemented("Spectra not understood")
+
+        ax.plot(wav, flx)
+
 
 
 class AstroCalib(object):
