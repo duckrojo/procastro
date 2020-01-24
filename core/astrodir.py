@@ -34,38 +34,21 @@ io_logger = logging.getLogger('dataproc.io')
 
 
 class AstroDir(object):
-    """Collection of AstroFile.
+    """
+    Collection of AstroFile objects.
 
     Several recursive methods that are applied to each AstroFile are available
-
-    Parameters
-    ----------
-    path : str or list or AstroFile
-        Contains information from the file list. If str, a directory+wildcard it is assumed,
-        and parsed by `glob.glob`
-    mbias, mflat : see `.add_mbias()` or `.add_mflat()`
-        Master bias and flat to associate to each AstroFile (in one shared AstroCalib object)
-    calib_force : bool
-        If True, then force specified `mbias` and `mflat` to all files, otherwise
-        assign it only if it doesn't have one already.
-    read_keywords : list
-        read all specified keywords at creation time and store it in cache
-    hdu : int
-        default HDU
-    hdud : int
-        default HDU for data
-    hduh : int
-        default HDU for the header
 
     Attributes
     ----------
     files : list
         Contains the list of all AstroFile that belong to this AstroDir.
+    props : dict
 
     See Also
     --------
     AstroCalib : Object that holds calibration information. One of them can be shared
-        by many AstroFile
+                 by many AstroFiles
     """
 
     def __init__(self, path, mflat=None, mbias=None,
@@ -73,6 +56,27 @@ class AstroDir(object):
                  calib_force=False, read_keywords=None,
                  hdu=0, hdud=None, hduh=None, auto_trim=None,
                  jd_from_ut=None):
+        """         
+        Parameters
+        ----------
+        path : str or list or AstroFile
+            Contains information from the file list. If str, a directory+wildcard format is assumed,
+            and parsed by `glob.glob`
+        mbias, mflat : see `.add_mbias()` or `.add_mflat()`
+            Master bias and flat to associate to each AstroFile (in one shared AstroCalib object)
+        calib_force : bool
+            If True, then force specified `mbias` and `mflat` to all files, otherwise
+            assign it only if it doesn't have one already.
+        read_keywords : list
+            read all specified keywords at creation time and store it in cache
+        hdu : int
+            default HDU
+        hdud : int
+            default HDU for data
+        hduh : int
+            default HDU for the header
+        """
+        
         import os
         import glob
         import os.path as pth
@@ -122,7 +126,8 @@ class AstroDir(object):
             self.jd_from_ut(*jd_from_ut)
 
     def add_bias(self, mbias):
-        """Update master bias in all the calibration objects in this AstroDir.
+        """
+        Update master bias in all the calibration objects contained in this AstroDir.
 
         Parameters
         ----------
@@ -139,7 +144,8 @@ class AstroDir(object):
             c.add_bias(mbias)
 
     def add_flat(self, mflat):
-        """Update Master Flats in all the calibration objects in this AstroDir.
+        """
+        Update Master Flats in all the calibration objects contained in this AstroDir.
 
         Parameters
         ----------
@@ -148,16 +154,18 @@ class AstroDir(object):
 
         See Also
         --------
-        dataproc.AstroCalib.add_flat : this function is called for
-            each unique AstroCalib object in AstroDir
+        dataproc.AstroCalib.add_flat : 
+            this function is called for each unique AstroCalib object in AstroDir
         """
         unique_calibs = set([f.calib for f in self])
         for c in unique_calibs:
             c.add_flat(mflat)
 
     def sort(self, *args, **kwargs):
-        """ Return sorted list of files according to specified header field, use first match.
-            It uses in situ sorting, but returns itself"""
+        """ 
+        Return sorted list of files according to specified header field, use first match.
+        It uses in situ sorting, but returns itself
+        """
         if len(args) == 0:
             raise ValueError("At least one valid header field must be specified to sort")
         hdrfld = False
@@ -228,12 +236,22 @@ class AstroDir(object):
 
     def stats(self, *args, **kwargs):
         """
-        Return stats
-        :param extra_headers:
-        :param verbose_heading:
-        :param args: Specify the stats that want to be returned
-        :param kwargs: verbose_headings is the only keyword accepted to print a heading1
-        :return: the stat as returned by each of the AstroFiles
+        Obtains statistical data from each Astrofile in this instance
+        
+        Parameters
+        ----------
+        extra_headers:
+        verbose_heading: 
+        args: Specify the stats that want to be returned
+        
+        Returns
+        -------
+        array-like :
+            the stat as returned by each of the AstroFiles
+            
+        See Also
+        --------
+        AstroFile.stats for the available statistics
         """
         verbose_heading = kwargs.pop('verbose_heading', True)
         extra_headers = kwargs.pop('extra_headers', [])
@@ -246,22 +264,58 @@ class AstroDir(object):
         return ret
 
     def filter(self, *args, **kwargs):
-        """ Filter files according to those whose filter return True to the given arguments.
-            What the filter does is type-dependent in each file. Check docstring of a single element."""
+        """ 
+        Filter files according to those whose filter return True to the given arguments.
+        What the filter does is type-dependent for each file. 
+        
+        Logical and statements can be simulated by chaining this method multiple times.
+        
+        Parameters
+        ----------
+        **kwargs: 
+            Keyword arguments containing the name of the item and the expected value
+            
+        See Also
+        --------
+        AstroFile.filter, docstring contains syntax used by the arguments recieved
+        """
         from copy import copy
         new = copy(self)
         new.files = [f for f in self if f.filter(*args, **kwargs)]
         return new
 
     def basename(self, joinchr=', '):
-        """Returns the basename of the files in object"""
+        """
+        Obtains the basename of the files on this object
+        
+        Parameters
+        ----------
+        joinchar: str
+            Charachter used to separate the name of each file
+        
+        Returns
+        -------
+        str:
+            Each file basename separated by the specified 'joinchar'
+        
+        """
         return joinchr.join([b.basename() for b in self])
 
     def getheaderval(self, *args, **kwargs):
-        """ Gets the header values specified in 'args' from each of the files.
-            Returns a simple list if only one value is specified, or a list of tuples otherwise
-            :param cast: output function
-            """
+        """ 
+        Gets the header values specified in 'args' from each of the files.
+        
+        Parameters
+        ----------
+        cast: function, optional
+            Output function
+            
+        Returns
+        -------
+        List of integers of tuples
+            Type depends if a single value or multiple tuples were given
+            
+        """
 
         if 'cast' in kwargs:
             cast = kwargs['cast']
@@ -284,9 +338,9 @@ class AstroDir(object):
         return ret
 
     def setheader(self, **kwargs):
-        """ Sets the header values specified in 'args' from each of the files.
-            Returns a simple list if only one value is specified, or a list of tuples otherwise
-"""
+        """ 
+        Sets the header values specified in 'args' from each of the files.
+        """
         if False in [f.setheader(**kwargs) for f in self]:
             raise ValueError("Setting the header of a file returned error... panicking!")
 
@@ -295,13 +349,22 @@ class AstroDir(object):
     def get_datacube(self, normalize_region=None, normalize=False, verbose=False,
                      check_unique=None, group_by=None):
         """
-Returns all data from the AstroFiles in a datacube
-        :param group_by:
-        :param normalize_region:
-        :param normalize:
-        :param verbose:
-        :param check_unique: receives a list of headers that need to be checked for uniqueness.
-        :return:
+        Returns all data from the AstroFiles in a datacube
+        
+        Parameters
+        ----------
+        normalize_region:
+        normalize: bool
+            If True, will normalize the data inside the data cube
+        verbose: bool
+        check_unique: array-like
+            Receives a list of headers that need to be checked for uniqueness.
+        group_by: str
+            Datacube will be organized based on the header item given
+        Returns
+        -------
+        Dictionary containing a data cube grouped by the given parameters, otherwise
+        the data will be indexed to None as key
         """
         if verbose:
             print("Reading {} good frames{}: ".format(len(self),
@@ -359,13 +422,24 @@ Returns all data from the AstroFiles in a datacube
     def pixel_xy(self, xx, yy, normalize_region=None, normalize=False,
              check_unique=None, group_by=None):
         """
-Returns pixel at (xx,yy) position for all frames
-
-        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
-        :param normalize_region: Subregion to use for normalization
-        :param normalize:  Whether to Normalize
-        :param check_unique: Check uniqueness in header
-        :return:  mean of frames. If group_by is set, it returns a dictionary keyed by this group
+        Obtains pixel value at (xx,yy) position for all frames
+        
+        Parameters
+        ----------
+        xx, yy: int, int
+        group_by: 
+            If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+        normalize_region: 
+            Subregion to use for normalization
+        normalize:  
+            Whether to Normalize
+        check_unique: 
+            Check uniqueness in header
+        
+        Returns
+        -------
+        scipy array
+            Values of the pixel on each frame
         """
         if check_unique is None:
             check_unique = []
@@ -393,13 +467,27 @@ Returns pixel at (xx,yy) position for all frames
     def median(self, normalize_region=None, normalize=False, verbose=True,
                check_unique=None, group_by=None):
         """
-
-        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
-        :param normalize_region: Subregion to use for normalization
-        :param normalize:  Whether to Normalize
-        :param verbose:   Output progress indicator
-        :param check_unique: Check uniquenes in heaeder
-        :return:  median of frames. If group_by is set, it returns a dictionary keyed by this group
+        Calculates the median of the contained files
+        
+        Parameters
+        ----------
+        group_by: 
+            If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+        normalize_region: 
+            Subregion to use for normalization
+        normalize: bool 
+            Whether to Normalize
+        verbose: bool
+            Output progress indicator
+        check_unique: 
+            Check uniqueness in header
+        
+        Returns
+        -------
+        scipy ndarray
+            Median between frames
+        dict
+            If group_by is set, a dictionary keyed by this group will be returned
         """
         if check_unique is None:
             if normalize:
@@ -439,13 +527,28 @@ Returns pixel at (xx,yy) position for all frames
     def mean(self, normalize_region=None, normalize=False, verbose=True,
              check_unique=None, group_by=None):
         """
-
-        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
-        :param normalize_region: Subregion to use for normalization
-        :param normalize:  Whether to Normalize
-        :param verbose: Output progress indicator
-        :param check_unique: Check uniqueness in header
-        :return:  mean of frames. If group_by is set, it returns a dictionary keyed by this group
+        Calculates the mean of the contained files
+        
+        Parameters
+        ----------
+        group_by: 
+            If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+        normalize_region: 
+            Subregion to use for normalization
+        normalize:  bool
+            Whether to Normalize
+        verbose: bool 
+            Output progress indicator
+        check_unique: 
+            Check uniqueness in header
+        
+        Returns
+        -------
+        scipy ndarray
+            Mean between frames
+        dict
+            If group_by is set, a dictionary keyed by this group will be returned
+        
         """
         if check_unique is None:
             if normalize:
@@ -486,14 +589,30 @@ Returns pixel at (xx,yy) position for all frames
     def lin_interp(self, target=0,
                    verbose=True, field='EXPTIME',
                    check_unique=None, group_by=None):
-        """Linear interpolate to given target value of the field 'field'.
-
-        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
-        :param verbose: Output progress indicator
-        :param check_unique: Check uniqueness in header
-        :param target: Target value for the interpolation
-        :return:  mean of frames. If group_by is set, it returns a dictionary keyed by this group
-"""
+        """
+        Linear interpolate to given target value of the field 'field'.
+        
+        Parameters:
+        -----------
+        target: int
+            Target value for the interpolation
+        verbose: bool 
+            Output progress indicator
+        field: str
+            Name of the header item which will be used to interpolate the frames
+        group_by: 
+            If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+        check_unique: 
+            Check uniqueness in header
+        
+        Returns:
+        -------
+        scipy ndarray
+            Linear Interpolation between frames with the specified target
+        dict
+            If group_by is set, a dictionary keyed by this group will be returned
+        
+        """
         if check_unique is None:
             check_unique = []
         if group_by in check_unique:
@@ -543,12 +662,26 @@ Returns pixel at (xx,yy) position for all frames
         """
         Get pixel by pixel standard deviation within files.
 
-        :param group_by: If set, then group by the specified header returning an [n_unique, n_y, n_x] array
-        :param normalize_region: Subregion to use for normalization
-        :param normalize:  Whether to Normalize
-        :param verbose: Output progress indicator
-        :param check_unique: Check uniqueness in header
-        :return:  standard deviation of frames. If group_by is set, it returns a dictionary keyed by this group
+        Parameters
+        ----------
+        group_by: 
+            If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+        normalize_region: 
+            Subregion to use for normalization
+        normalize: bool
+            Whether to Normalize
+        verbose: bool
+            Output progress indicator
+        check_unique: 
+            Check uniqueness in header
+        
+        Returns
+        -------
+        scipy ndarray
+            Mean between frames
+        dict
+            If group_by is set, a dictionary keyed by this group will be returned
+        
         """
         if check_unique is None:
             if normalize:
@@ -591,8 +724,8 @@ Returns pixel at (xx,yy) position for all frames
     def jd_from_ut(self, target='jd', source='date-obs'):
         """
         Add jd in header's cache to keyword 'target' using ut on keyword 'source'
-        :param target: target keyword for JD storage
-        :param source: input value in UT format
+        target: target keyword for JD storage
+        source: input value in UT format
         """
         for af in self:
             af.jd_from_ut(target, source)
