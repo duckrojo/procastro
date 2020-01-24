@@ -38,6 +38,7 @@ from collections import defaultdict
 import re
 import warnings
 import os
+import pdb
 
 try:
     import astroquery.simbad as aqs
@@ -51,7 +52,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
     Parameters
     ----------
     target: str
-       Either a coordinate understandable by astropy.coordinates, a name in coo_files, or a name
+       Either a coordinate understandable by astropy.coordinates (RA in hours, Dec in degrees), a name in coo_files, or a name
        resolvable by Simbad. Tests strictly in the previous order, returns as soon as it finds a match.
     coo_files: array_like
        List of files that are searched for a match in target name.  File should have at least three
@@ -67,15 +68,16 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
 
     Returns
     -------
-    (float, float) or ((float, float), float, float)
+    (float, float) or ((float, float), float, float)  <= Outdated, returns SkyCoord object
        RA and Dec in hours and degrees, respectively.  The second version is when return_pm is True
 
     """
 
     pm_ra = None
     pm_dec = None
-
     try:
+        #TODO: Investigate value error caused by string formatting issue ("Passed literaly" to angle)
+        #pdb.set_trace()
         ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
                                 equinox=equinox)
     except ValueError:
@@ -137,6 +139,65 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
         return ra_dec, pm_ra, pm_dec
     return ra_dec
 
+def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
+    """
+    Recovers epoch, period and length of a target transit if said transit has been 
+    specified in one of the provided paths
+    
+    Parameters
+    ----------
+    target: str
+        Target requested
+    dir: str, optional
+        Directory containing the files to be inspected
+    
+    """
+    paths = [os.path.expanduser("~")+'/.transits',
+             dir+'/transits.txt',
+             ]
+             
+    tr_epoch = None
+    tr_period = None
+    tr_length = None
+    for transit_filename in paths:
+        try:
+            open_file = open(transit_filename)
+
+            override = []
+            for line in open_file.readlines():
+                if line[0] == '#' or len(line) < 3:
+                    continue
+                data = line[:-1].split()
+                planet = data.pop(0)
+
+                if dp.accept_object_name(planet, target):
+                    for d in data:
+                        if d[0].lower() == 'p':
+                            override.append('period')
+                            tr_period = float(eval(d[1:]))
+                        elif d[0].lower() == 'e':
+                            override.append("epoch")
+                            tr_epoch = float(eval(d[1:]))
+                        elif d[0].lower() == 'l':
+                            override.append("length")
+                            tr_length = float(eval(d[1:]))
+                        elif d[0].lower() == 'c':
+                            override.append("comment")
+                        else:
+                            raise ValueError("data field not understood, it must start with L, P, C, "
+                                             "or E:\n%s" % (line,))
+                    print("Overriding for '%s' from file '%s':\n %s" % (planet,
+                                                                        transit_filename,
+                                                                        ', '.join(override),))
+
+                if len(override):
+                    break
+
+        except IOError:
+            pass
+            
+    return tr_epoch, tr_period, tr_length
+
 ###################################################################################
 # Unused methods
 ######
@@ -184,55 +245,6 @@ Columns can be automatically recognized as float or int (work in progress the la
         data = {d: sp.array(data[d]) for d in data.keys()}
 
     return data
-
-
-def get_transit_ephemeris(target):
-    transit_filename_locations = [os.path.expanduser("~") + '/.transits',
-                                  os.path.dirname(__file__) + '/transits.txt',
-                                  ]
-
-    tr_epoch = None
-    tr_period = None
-    tr_length = None
-
-    for transit_filename in transit_filename_locations:
-        try:
-            open_file = open(transit_filename)
-
-            override = []
-            for line in open_file.readlines():
-                if line[0] == '#' or len(line) < 3:
-                    continue
-                data = line[:-1].split()
-                planet = data.pop(0).replace('_', ' ')
-
-                if planet.lower() == target.lower():
-                    for d in data:
-                        if d[0].lower() == 'p':
-                            override.append('period')
-                            tr_period = float(eval(d[1:]))
-                        elif d[0].lower() == 'e':
-                            override.append("epoch")
-                            tr_epoch = float(eval(d[1:]))
-                        elif d[0].lower() == 'l':
-                            override.append("length")
-                            tr_length = float(eval(d[1:]))
-                        elif d[0].lower() == 'c':
-                            override.append("comment")
-                        else:
-                            raise ValueError("data field not understood, it must start with L, P, C, "
-                                             "or E:\n%s" % (line,))
-                    print("Overriding for '%s' from file '%s':\n %s" % (planet,
-                                                                        transit_filename,
-                                                                        ', '.join(override),))
-
-                if len(override):
-                    break
-
-        except IOError:
-            pass
-
-    return tr_epoch, tr_period, tr_length
 
 
 def blackbody(temperature, wav_freq, unit=None):

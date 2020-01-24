@@ -3,13 +3,16 @@ from ..astrodir import AstroDir
 from ..astrofile import AstroFile
 from numpy.testing import assert_equal
 import numpy as np
+import os
+import pdb
 
 class TestAstroDir(object):
     #TODO: Craft fit files during execution to reduce space, 
     #      when testing pixel_xy the tested pixel should have a different value 
     #      per file
     def setup_class(self):
-        self.dataset = AstroDir(".\\test_dir\\astrodir\\")
+        self.path = os.path.dirname(__file__)
+        self.dataset = AstroDir(os.path.join(self.path,"test_dir","astrodir"))
         
     def test_get_datacube(self):
         #TODO Add parameters for testing
@@ -24,9 +27,9 @@ class TestAstroDir(object):
     
     # TODO: Include group by and check unique parametes
     def test_stats(self):
-        mean = AstroFile(".\\test_dir\\results\\mean.fits").reader()
-        std = AstroFile(".\\test_dir\\results\\std.fits").reader()
-        median = AstroFile(".\\test_dir\\results\\median.fits").reader()
+        mean = AstroFile(os.path.join(self.path,"test_dir","results","mean.fits")).reader()
+        std = AstroFile(os.path.join(self.path,"test_dir","results","std.fits")).reader()
+        median = AstroFile(os.path.join(self.path,"test_dir","results","median.fits")).reader()
         
         assert_equal(self.dataset.mean(), mean)
         assert_equal(self.dataset.std(), std)
@@ -34,8 +37,8 @@ class TestAstroDir(object):
         
     # TODO: Include group by and check unique parametes
     def test_lin_interp(self):
-        data = AstroDir(".\\test_dir\\linterp")
-        linterp = AstroFile(".\\test_dir\\results\\linterp.fits")
+        data = AstroDir(os.path.join(self.path,"test_dir","linterp"))
+        linterp = AstroFile(os.path.join(self.path,"test_dir","results","linterp.fits"))
         
         assert_equal(data.lin_interp(target = 3), linterp)
     

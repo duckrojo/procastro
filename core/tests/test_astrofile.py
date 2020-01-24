@@ -2,33 +2,37 @@ from ..astrofile import AstroFile, AstroCalib, merger
 from numpy.testing import assert_equal
 import astropy.io.fits as pf
 import numpy as np
-import fit_factory as ff
+from .fit_factory import create_merge_example
 import pytest
 import os
 import pdb
+
 class TestAstroCalib(object):
     
     def test_reduce(self):
+        #pdb.set_trace()
+        self.path = os.path.dirname(__file__)
         calib = AstroCalib()
-        bias = AstroFile(".\\test_dir\\astrofile\\bias.fits") 
+        bias = AstroFile(os.path.join(self.path,"test_dir","astrofile","bias.fits"))
         calib.add_bias(bias)
-        assert_equal(calib.mbias[-1], AstroFile(".\\test_dir\\astrofile\\bias.fits").reader())
+        assert_equal(calib.mbias[-1], AstroFile(os.path.join(self.path,"test_dir","astrofile","bias.fits")).reader())
         
-        flat = AstroFile(".\\test_dir\\astrofile\\flat.fits")
+        flat = AstroFile(os.path.join(self.path,"test_dir","astrofile","flat.fits"))
         calib.add_flat(flat)
-        assert_equal(calib.mflat[''], AstroFile(".\\test_dir\\astrofile\\flat.fits").reader())
+        assert_equal(calib.mflat[''], AstroFile(os.path.join(self.path,"test_dir","astrofile","flat.fits")).reader())
 
         #TODO: Test different settings
-        data = AstroFile(".\\test_dir\\astrofile\\file.fits").reader()
+        data = AstroFile(os.path.join(self.path,"test_dir","astrofile","file.fits")).reader()
         
         result = calib.reduce(data)
-        assert_equal(result, AstroFile(".\\test_dir\\results\\reduced.fits").reader())
+        assert_equal(result, AstroFile(os.path.join(self.path,"test_dir","results","reduced.fits")).reader())
         
 
 class TestAstroFile(object):
     
     def setup_method(self):
-        self.file = AstroFile(".\\test_dir\\astrofile\\file.fits")
+        self.path = os.path.dirname(__file__)
+        self.file = AstroFile(os.path.join(self.path,"test_dir","astrofile","file.fits"))
         
     @pytest.mark.parametrize(("current, edition"), 
                             [("2016-04-09T03:02:30.817", ("date", "01/14/2020")),
@@ -47,20 +51,20 @@ class TestAstroFile(object):
         
     def test_reader(self): 
         #Raw data
-        f = pf.open(".\\test_dir\\astrofile\\file.fits")
+        f = pf.open(os.path.join(self.path,"test_dir","astrofile","file.fits"))
         expected = f[0].data
         assert_equal(self.file.reader(), expected)
         f.close()
         
         #Corrupt files return None
-        corrupt = AstroFile(".\\test_dir\\astrofile\\corrupt.fits")
+        corrupt = AstroFile(os.path.join(self.path,"test_dir","astrofile","corrupt.fits"))
         assert corrupt.reader() == None
         
     
     def test_load(self):
         #Load to empty file
         empty = AstroFile()
-        filename = ".\\test_dir\\astrofile\\file.fits"
+        filename = os.path.join(self.path,"test_dir","astrofile","file.fits")
         data = pf.getheader(filename)
         empty.load(filename, data)
         assert empty.readheader() == self.file.readheader()
@@ -127,7 +131,7 @@ class TestAstroFile(object):
             os.mkdir("data")
             src = ".\\data\\merge_example.fits"
             
-            ff.create_merge_example(2048, 568, 4, src)
+            create_merge_example(2048, 568, 4, src)
             
             #Creates a symbolic link to the file
             os.symlink(".\\data\\merge_example.fits", ".\\merge_example.fits")
@@ -143,7 +147,7 @@ class TestAstroFile(object):
             
             #Merge ImageHDU's of image, saves data on current folder
             src = "merge_example.fits"
-            merger(src, prev)
+            merger(src)
             
             #Compare result with expected data
             mod = pf.open(src)
@@ -152,7 +156,12 @@ class TestAstroFile(object):
             assert_equal(result, expected)
             mod.close()
         
+            #Merger wont execute if a file already has a composite image
+            merger(src)
+            again = pf.open(src)
+            assert len(again) == prev+1
+            again.close()
+            
         
     def teardown_method(self):
-        del self.file
-        
+        del self.file   

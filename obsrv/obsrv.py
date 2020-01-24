@@ -24,6 +24,7 @@ import scipy as sp
 import ephem
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
+import pdb
 
 from . import obscalc as ocalc
 
@@ -74,6 +75,7 @@ def _update_plot(func):
         ax_airmass.set_ylim(self.ylims)
         ax_airmass.set_xlim(self.xlims)
 
+        #pdb.set_trace()
         fig.show()
 
         return ret

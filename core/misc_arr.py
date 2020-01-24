@@ -185,6 +185,28 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
 
     return x, y, (cx, cy)
 
+def zscale(img,  trim = 0.05, contr=1, mask=None):
+    """Returns lower and upper limits found by zscale algorithm for improved contrast in astronomical images.
+
+:param mask: bool ndarray
+    True are good pixels, pixels marked as False are ignored
+:rtype: (min, max)
+    Minimum and maximum values recommended by zscale
+"""
+
+    if not isinstance(img, sp.ndarray):
+        img = sp.array(img)
+    if mask is None:
+        mask = (sp.isnan(img) == False)
+
+    itrim = int(img.size*trim)
+    x = sp.arange(mask.sum()-2*itrim)+itrim
+
+    sy = sp.sort(img[mask].flatten())[itrim:img[mask].size-itrim]
+    a, b = sp.polyfit(x, sy, 1)
+
+    return b, a*img.size/contr+b
+    
 ###################################################################################
 # Unused methods
 ######
@@ -361,28 +383,3 @@ def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=
     if full:
         return mask, std, residuals
     return mask            
-
-
-
-
-def zscale(img,  trim = 0.05, contr=1, mask=None):
-    """Returns lower and upper limits found by zscale algorithm for improved contrast in astronomical images.
-
-:param mask: bool ndarray
-    True are good pixels, pixels marked as False are ignored
-:rtype: (min, max)
-    Minimum and maximum values recommended by zscale
-"""
-
-    if not isinstance(img, sp.ndarray):
-        img = sp.array(img)
-    if mask is None:
-        mask = (sp.isnan(img) == False)
-
-    itrim = int(img.size*trim)
-    x = sp.arange(mask.sum()-2*itrim)+itrim
-
-    sy = sp.sort(img[mask].flatten())[itrim:img[mask].size-itrim]
-    a, b = sp.polyfit(x, sy, 1)
-
-    return b, a*img.size/contr+b

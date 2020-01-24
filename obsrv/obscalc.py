@@ -28,7 +28,7 @@ import os
 import dataproc as dp
 from urllib.error import URLError
 from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
-
+import pdb
 
 def _update_airmass(func):
     def wrapper_airmass(self, *args, **kwargs):
@@ -253,7 +253,7 @@ class ObsCalc(object):
         :param star_name:
         :param target: either RA and Dec in hours and degrees, or target name to be queried
         """
-
+        
         self.params['target'] = target
         if 'current_transit' in self.params:
             del self.params['current_transit']
@@ -272,54 +272,21 @@ class ObsCalc(object):
                                   ra_dec.dec.to_string(sep=':'),
                                   magnitude, epoch))
 
-        transit_filename_locations = [os.path.expanduser("~")+'/.transits',
-                                      os.path.dirname(__file__)+'/transits.txt',
-                                      ]
-
-        for transit_filename in transit_filename_locations:
-            try:
-                open_file = open(transit_filename)
-
-                override = []
-                for line in open_file.readlines():
-                    if line[0] == '#' or len(line) < 3:
-                        continue
-                    data = line[:-1].split()
-                    planet = data.pop(0)
-                    if dp.accept_object_name(planet, target):
-                        for d in data:
-                            if d[0].lower() == 'p':
-                                override.append('period')
-                                transit_period = float(eval(d[1:]))
-                            elif d[0].lower() == 'e':
-                                override.append("epoch")
-                                transit_epoch = float(eval(d[1:]))
-                            elif d[0].lower() == 'l':
-                                override.append("length")
-                                transit_length = float(eval(d[1:]))
-                            elif d[0].lower() == 'c':
-                                override.append("comment")
-                            else:
-                                raise ValueError("data field not understood, it must "
-                                                 "start with L, P, C, or E:\n%s" % (line,))
-                        print("Overriding for '%s' from file '%s':\n %s" % (planet,
-                                                                            transit_filename,
-                                                                            ', '.join(override),))
-
-                if len(override):
-                    break
-
-            except IOError:
-                pass
-
+        
+        
+        transit_epoch, transit_period, transit_length = dp.get_transit_ephemeris(target, os.path.dirname(__file__))
+        
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
             try:
-                planet = NasaExoplanetArchive.query_planet(target)
+                planet = NasaExoplanetArchive.query_planet(target, all_columns=True) ### Included all_columns tags
             except URLError as mesg:
-                raise NotImplementedError(f"NASA has not yet fixed the SSL validation error ({mesg}). Info has to be input "
+                raise NotImplementedError(f"NASA has not yet fixed the SSL validation error ({mesg}). Info has to be isput "
                        "manually in ~/.transits")
-            transit_period = planet['pl_orbper']
+            #TODO: Raise exception when some of this columns are missing
+            #TODO: Find a way to correctly handle returned data types (QType, Column, float, etc)
+            #      Find which errors show when failing to recover pl_orbper and pl_tranmid
+            transit_period = planet['pl_orbper'].value
             transit_epoch = planet['pl_tranmid']
             transit_length = planet['pl_trandur'] * 24
             print("  Found ephemeris: %f + E*%f (length: %f)" % (transit_epoch, transit_period, transit_length))
