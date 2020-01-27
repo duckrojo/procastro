@@ -18,31 +18,10 @@
 #
 #
 
-# import types
-# #from importlib import reload
-
-from . import io
-from .io import *
-from . import astrodir
-from .astrodir import *
-from . import astrofile
-from .astrofile import *
-from . import misc_arr
-from .misc_arr import *
-from . import misc_general
-from .misc_general import *
-from . import misc_graph
-from .misc_graph import *
-from . import misc_math
-from .misc_math import *
+from . import astro
+from .astro import *
 
 __all__ = []
-__all__ += io.__all__
-__all__ += astrodir.__all__
-__all__ += astrofile.__all__
-__all__ += misc_arr.__all__
-__all__ += misc_general.__all__
-__all__ += misc_graph.__all__
-__all__ += misc_math.__all__
+__all__ += astro.__all__
 
 

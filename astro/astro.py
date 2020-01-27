@@ -47,37 +47,42 @@ except ImportError:
 
 
 def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
-    """Obtain coordinates from a target, that can be specified in various formats.
+    """
+    Obtain coordinates from a target, that can be specified in various formats.
 
     Parameters
     ----------
     target: str
-       Either a coordinate understandable by astropy.coordinates (RA in hours, Dec in degrees), a name in coo_files, or a name
-       resolvable by Simbad. Tests strictly in the previous order, returns as soon as it finds a match.
+       Either a coordinate understandable by astropy.coordinates 
+       (RA in hours, Dec in degrees), a name in coo_files, or a name
+       resolvable by Simbad. 
+       Tests strictly in the previous order, returns as soon as it 
+       finds a match.
     coo_files: array_like
-       List of files that are searched for a match in target name.  File should have at least three
-       columns: Target_name RA Dec; optionally, a fourth column for comments. Target_name can have underscores
-       that will be matched against spaces, dash, or no-character. Two underscores will additionally consider
-       optional anything that follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a). RA and Dec
-       can be any mathematical expression that eval() can handle. RA is hms by default, unless 'd' is appended,
-       Dec is always dms.
+       List of files that are searched for a match in target name.  
+       File should have at least three columns: Target_name RA Dec; 
+       optionally, a fourth column for comments. Target_name can have 
+       underscores that will be matched against spaces, dash, or no-character. 
+       Two underscores will additionally consider optional anything that 
+       follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a). 
+       RA and Dec can be any mathematical expression that eval() can handle. 
+       RA is hms by default, unless 'd' is appended, Dec is always dms.
     return_pm:
-      if True return proper motions. Only as provided by Simbad for now, otherwise returns None for each
+      if True return proper motions. Only as provided by Simbad for now, 
+      otherwise returns None for each
     equinox
        Which astronomy equinox the coordinates refer. Default is J2000
 
     Returns
     -------
-    (float, float) or ((float, float), float, float)  <= Outdated, returns SkyCoord object
-       RA and Dec in hours and degrees, respectively.  The second version is when return_pm is True
-
+    SkyCoord object
+       RA and Dec in hours and degrees, respectively.  
     """
 
     pm_ra = None
     pm_dec = None
     try:
         #TODO: Investigate value error caused by string formatting issue ("Passed literaly" to angle)
-        #pdb.set_trace()
         ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
                                 equinox=equinox)
     except ValueError:
@@ -141,8 +146,8 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
 
 def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
     """
-    Recovers epoch, period and length of a target transit if said transit has been 
-    specified in one of the provided paths
+    Recovers epoch, period and length of a target transit if said transit has 
+    been specified in one of the provided paths
     
     Parameters
     ----------
@@ -198,20 +203,32 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
             
     return tr_epoch, tr_period, tr_length
 
-###################################################################################
+###############################################################################
 # Unused methods
 ######
 
 def read_horizons_cols(file):
-    """Reads an horizons ephemeris file into a dictionary. It maintain original columns header as dictionary keys.  
-Columns can be automatically recognized as float or int (work in progress the latter) """
+    """
+    Reads an horizons ephemeris file into a dictionary. It maintains the
+    original column's header as dictionary keys.  
+    Columns can be automatically recognized as float or int (work in progress 
+    the latter) 
+    
+    Parameters
+    ----------
+    file : str
+    
+    Returns
+    -------
+    dict
+    """
 
     mapping = defaultdict(lambda: str)
-    map_float = ['dRA*cosD', 'd(DEC)/dt', 'a-mass', 'mag_ex', 'APmag', 'S-brt',
-                 'Illu%', 'Ang-diam', 'Obsrv-lon', 'Obsrv-lat', 'Ob-lon', 'Ob-lat',
-                 'SN.ang', 'SN.dist', 'delta', 'deldot', 'S-O-T', 'S-T-O',
-                 'Solar-lon', 'Solar-lat', 'NP.ang', 'NP.dist',
-                 'N.Pole-RA', 'N.Pole_Dec']
+    map_float = ['dRA*cosD', 'd(DEC)/dt', 'a-mass', 'mag_ex', 'APmag', 
+                 'S-brt', 'Illu%', 'Ang-diam', 'Obsrv-lon', 'Obsrv-lat', 
+                 'Ob-lon', 'Ob-lat', 'SN.ang', 'SN.dist', 'delta', 'deldot', 
+                 'S-O-T', 'S-T-O', 'Solar-lon', 'Solar-lat', 'NP.ang', 
+                 'NP.dist', 'N.Pole-RA', 'N.Pole_Dec']
     map_int = []
 
     for f in map_float:
@@ -249,20 +266,21 @@ Columns can be automatically recognized as float or int (work in progress the la
 
 def blackbody(temperature, wav_freq, unit=None):
     """
-
+    Computes a blackbody curve for the parameters given
+    
     Parameters
     ----------
-    temperature
+    temperature : astropy.unit
         Assumes kelvin if unit is not specified
-    wav_freq
+    wav_freq : astropy.unit
         Wavelength or frequency
-    unit
-        unit for wav_freq from astropy.unit. If None and wav_freq is not a astropy.quantity,
-        then assume microns
+    unit : astropy.unit, optional
+        unit for wav_freq from astropy.unit. If None and wav_freq is not an 
+        astropy.quantity, then assume microns
 
     Returns
     -------
-     Blackbody curve at specified wavelength or frequency
+    Blackbody curve at specified wavelength or frequency
     """
 
     if not isinstance(temperature, apu.Quantity):
@@ -303,29 +321,32 @@ def getfilter(name,
               force_positive=True,
               force_increasing=True,
               ):
-    """Get transmission curve for particular filter
+    """
+    Get transmission curve for a particular filter
 
     Parameters
     ----------
-    name: string or array_like
-      Name of the filter (filenames in directory). If array_like, then it needs to have two elements
-       to define a uniform filter within the specified cut-in and cut-out values with value 1.0 and
-       in a range 10% beyond with value 0.0, for a total of 50 pixels.
-    name_only
+    name: str or array_like
+      Name of the filter (filenames in directory). If array_like, then it needs
+      to have two elements to define a uniform filter within the specified 
+      cut-in and cut-out values with value 1.0 and in a range 10% beyond with 
+      value 0.0, for a total of 50 pixels.
+    name_only : bool, optional
       If True returns the name of the file only
-    filter_unit
-      default filter unit that should be in files.  It should be an astropy quantity.
-      Default is Angstroms. Can be specified in file as first line with comment 'unit:'
-    fct
-      Factor by which the transmission is divided in the archive (i.e. 100 if it is
-      written in percentage). Can be specified in file as first line with comment 'fct:'.
+    filter_unit : astropy quantity, optional
+      Default filter unit that should be in files. Default is Angstroms. 
+      Can be specified in file as first line with comment 'unit:'
+    fct : int, optional
+      Factor by which the transmission is divided in the archive 
+      (i.e. 100 if it is written in percentage). 
+      Can be specified in file as first line with comment 'fct:'.
       Default is 1
-    filter_dir
-      Directory that hold the filters, it accepts wildcards that will be used by glob.
-      Default is '/home/inv/common/standards/filters/oth/*/
-    force_positive
+    filter_dir : str, optional
+      Directory that hold the filters, it accepts wildcards that will be used 
+      by glob. Default is '/home/inv/common/standards/filters/oth/*/
+    force_positive : bool, optional
        Force positive values for transmission
-    force_increasing
+    force_increasing : bool, optional
        Sort such that wavelength is always increasing
 
     Returns
@@ -396,31 +417,32 @@ def applyfilter(name, spectra,
                 output_unit=None,
                 filter_dir=None,
                 full=False):
-    """Apply filter to spectra. It can be given or blackbody
+    """
+    Apply filter to spectra. It can be given or blackbody
 
     Parameters
     ----------
-    name
-      filter name
+    name : str
+      Filter name
     spectra: array_like or float
-      either flux (if iterable) or temperature (if scalar) for blackbody
-    wav_freq: array_like
+      Either flux (if iterable) or temperature (if scalar) for blackbody
+    wav_freq: array_like, optional
       Wavelength or frequency. Only necessary when flux is given as spectra
-    n_wav_bb: int
+    n_wav_bb: int, optional
       Number of wavelength points for blackbody. Default is 100
-    filter_unit: astropy.unit
-      if None use getfilter's default
-    output_unit
-      default unit for output.  It should be an astropy quantity.
-      Default is nanometers
-    filter_dir
+    filter_unit: astropy.unit, optional
       If None use getfilter's default
-    full
-      If True, then return (filtered value, central weighted wavelength, equivalent width)
+    output_unit : astropy.unit, optional
+      Default unit for output. Default is nanometers
+    filter_dir : str, optional
+      If None use getfilter's default
+    full : bool, optional
+      If True, then return (filtered value, central weighted wavelength, 
+                                            equivalent width)
 
     Returns
     -------
-
+    float
     """
 
     filter_wav, filter_transmission = getfilter(name, filter_dir)
@@ -480,21 +502,23 @@ def applyfilter(name, spectra,
 
 def filter_conversion(target_filter, temperature,
                       temperature_ref=9700, verbose=True, **kwargs):
-    """Convert from one given filter (in kwargs) to a target_filter
+    """
+    Convert from one given filter (in kwargs) to a target_filter
 
     Parameters
     ----------
-    target_filter
+    target_filter : 
        Target filter for the conversion
-    temperature
+    temperature :
        Temperature of star
-    temperature_ref
-       Temperature of magnitude' zero-point
-    verbose: boolean
+    temperature_ref :
+       Temperature of magnitude's zero-point
+    verbose: boolean, optional
        Write out the conversion
     kwargs: dict
-       it has to have one element: filter=value, as the original filter. Any dot (.) in filter will be
-       converted to '_' before passing it to get_filter
+       It has to have one element: filter=value, as the original filter. 
+       Any dot (.) in filter will be converted to '_' before passing it to 
+       get_filter.
 
     Returns
     -------
@@ -524,16 +548,17 @@ def filter_conversion(target_filter, temperature,
 
 def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
     """
-
+    ...
+    
     Parameters
     ----------
-    au
-    tstar
-    rstar
-    albedo
+    au : float, optional
+    tstar : int, optional
+    rstar : float, optional
+    albedo : float, optional
 
     Returns
     -------
-
+    float
     """
     return tstar * sp.sqrt((rstar * apc.R_sun / au / apc.au) * sp.sqrt(1 - albedo) / 2.0)

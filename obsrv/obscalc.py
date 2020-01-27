@@ -25,7 +25,7 @@ import scipy as sp
 import astropy.coordinates as apc
 import astropy.units as u
 import os
-import dataproc as dp
+import dataproc.astro as dpa
 from urllib.error import URLError
 from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
 import pdb
@@ -54,15 +54,40 @@ def _update_transits(func):
 
 # noinspection PyCompatibility
 class ObsCalc(object):
-
+    """
+    
+    Attributes
+    ----------
+    _obs : ephem.Observer instance
+    _sun : ephem.Sun instance
+    params : dict
+    daily :
+    jd0 :
+    star :
+    transit_info :
+    airmass :
+    transits :
+    days :
+    xlims :
+    ylims :
+    hours :
+    transit_hours :
+    
+    Parameters
+    ----------
+    timespan : int, optional
+    target :
+    site : string, optional
+    equinox : string, optional
+    central_time: int, optional
+        Central time of y-axis.  If outside the [-12,24] range, then 
+        only shows nighttime
+    
+    """
     def __init__(self, timespan=2017, target=None,
                  site='paranal',
                  equinox="J2000",
                  **kwargs):
-        """ =Initializes obsrv class.
-
-        :param central_time: Central time of y-axis.  If outside the [-12,24] range, then only shows nighttime
-        """
 
         self._obs = ephem.Observer()
         self._sun = ephem.Sun()
@@ -91,10 +116,17 @@ class ObsCalc(object):
 
     def set_site(self, site,
                  site_filename=None, **kwargs):
-        """Checks whether name's coordinate are known from a list or whether it is a (lat, lon) tuple
+        """
+        Checks whether name's coordinate are known from a list or whether it 
+        is a (lat, lon) tuple
 
-        :param site_filename: Filename storing site coordinates
-        :param site: identifies the observatory as a name, or (lat, lon) tuple,
+        
+        Parameters
+        ----------
+        site_filename: string, optional
+            Filename storing site coordinates
+        site: string ,optional
+            Identifies the observatory as a name, or (lat, lon) tuple,
         """
 
         obs = self._obs
@@ -142,6 +174,18 @@ class ObsCalc(object):
         return self
 
     def _moon_distance(self, date):
+        """
+        Computes moon distance
+        
+        Parameters
+        ----------
+        date :
+        
+        Returns
+        -------
+        int, float :
+            Distance and moon phase represented as percentage
+        """ 
         obs = self._obs
         obs.date = date
         self.star.compute(obs)
@@ -161,7 +205,15 @@ class ObsCalc(object):
     def set_timespan(self, timespan, samples=60,
                      central_time=25,
                      **kwargs):
-        """Set time span"""
+        """
+        Set time span
+        
+        Parameters
+        ----------
+        timespan : str, int
+        samples : int, optional
+        central_time : int
+        """
         if timespan is None:
             if 'timespan' in self.params:
                 timespan = self.params["timespan"]
@@ -170,7 +222,7 @@ class ObsCalc(object):
                 raise ValueError("Timespan needs to be specified")
         else:
             self.params["timespan"] = timespan
-        # pdb.set_trace()
+        
         if isinstance(timespan, int):   # Year
             # times always at midnight (UT)
             ed0 = ephem.Date('%i/1/1' % (timespan,))
@@ -203,7 +255,10 @@ class ObsCalc(object):
         return self
 
     def _get_sun_set_rise(self, **kwargs):
-        """Compute sunsets and sunrises"""
+        """
+        Compute sunsets and sunrises
+        
+        """
         sunset = []
         sunrise = []
         twilight_set = []
@@ -227,6 +282,15 @@ class ObsCalc(object):
 
     @_update_airmass
     def set_vertical(self, central_time, hour_step=0.2, **kwargs):
+        """
+        ...
+        
+        Parameters
+        ----------
+        central_time : int
+        hour_step : float, optional
+
+        """
         if central_time>24 or central_time<-12:
             ylims = [min(self.daily["sunset"])*24-0.5, max(self.daily["sunrise"])*24+0.5]
             self.hours = sp.arange(ylims[0], ylims[1], hour_step)
@@ -243,22 +307,28 @@ class ObsCalc(object):
                    transit_epoch=None, transit_period=None, transit_length=1,
                    phase_offset=0.0,
                    **kwargs):
-        """Set star and site into pyephem
+        """
+        Set star and site into pyephem
 
-        :param phase_offset: Set to 0.5 to show occultations instead of transits
-        :param transit_length:
-        :param transit_period:
-        :param transit_epoch:
-        :param magnitude:
-        :param star_name:
-        :param target: either RA and Dec in hours and degrees, or target name to be queried
+        Parameters
+        ----------
+        target: 
+            Either RA and Dec in hours and degrees, or target name to be queried
+        magnitude:
+        star_name: string, optional
+            Name of host star
+        transit_length:
+        transit_period:
+        transit_epoch:
+        phase_offset: float, optional
+            Set to 0.5 to show occultations instead of transits
         """
         
         self.params['target'] = target
         if 'current_transit' in self.params:
             del self.params['current_transit']
 
-        ra_dec = dp.read_coordinates(target,
+        ra_dec = dpa.read_coordinates(target,
                                      coo_files=[os.path.dirname(__file__)+'/coo.txt',
                                                 os.path.expanduser("~")+'/.coostars'],
                                      equinox=self.params["equinox"])
@@ -274,7 +344,7 @@ class ObsCalc(object):
 
         
         
-        transit_epoch, transit_period, transit_length = dp.get_transit_ephemeris(target, os.path.dirname(__file__))
+        transit_epoch, transit_period, transit_length = dpa.get_transit_ephemeris(target, os.path.dirname(__file__))
         
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
@@ -305,7 +375,15 @@ class ObsCalc(object):
     def set_transits(self,
                      tr_period=None, tr_epoch=None,
                      **kwargs):
-        """ Calculate the transits.  It assumes that the decorator has already checked transit_info existence """
+        """ 
+        Calculate the transits.  It assumes that the decorator has already 
+        checked transit_info existence 
+        
+        Parameters
+        ----------
+        tr_period :
+        tr_epoch :
+        """
         if tr_period == 0:
             if hasattr(self, 'transits'):
                 del self.transits
@@ -331,7 +409,13 @@ class ObsCalc(object):
         return self
 
     def _get_airmass(self, max_airmass=3.0, **kwargs):
-        """Get airmass"""
+        """
+        Get airmass
+        
+        Parameters
+        ----------
+        max_airmass : float, optional
+        """
         obs = self._obs
         hours = self.hours
 
