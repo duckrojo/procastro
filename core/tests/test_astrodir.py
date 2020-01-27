@@ -1,18 +1,28 @@
 import pytest
 from ..astrodir import AstroDir
 from ..astrofile import AstroFile
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_almost_equal
+from .fit_factory import create_random_fit
+import astropy.io.fits as pf
 import numpy as np
 import os
-import pdb
 
 class TestAstroDir(object):
-    #TODO: Craft fit files during execution to reduce space, 
-    #      when testing pixel_xy the tested pixel should have a different value 
-    #      per file
-    def setup_class(self):
-        self.path = os.path.dirname(__file__)
-        self.dataset = AstroDir(os.path.join(self.path,"test_dir","astrodir"))
+
+    @pytest.fixture(autouse=True)
+    def setup_class(self, tmpdir):
+        np.random.seed(42)
+        with tmpdir.as_cwd():
+            self.path = os.getcwd()
+            os.mkdir("sci_files")
+            for i in range(5):
+                header = pf.Header({'JD': 2457487.62537037+i, 
+                                    'EXPTIME': 20+i*10,
+                                    })
+                create_random_fit((8,8),os.path.join(self.path,"sci_files","file"+str(i)+".fit"),
+                                  header = header)
+                                  
+            self.dataset = AstroDir(os.path.join(self.path,"sci_files"))
         
     def test_get_datacube(self):
         #TODO Add parameters for testing
@@ -21,31 +31,23 @@ class TestAstroDir(object):
             assert_equal(cube[None][i], self.dataset[i].reader())
 
     def test_pixel_xy(self):    
-        arr = self.dataset.pixel_xy(10,10)
-        expected = np.asarray([13775, 13351, 13749])
-        assert_equal(arr, expected)
+        arr = self.dataset.pixel_xy(4,4)
+        expected = np.array([0.30461377, 0.03142919, 0.09028977, 0.89204656, 0.82260056])
+        assert_almost_equal(arr, expected)
     
-    # TODO: Include group by and check unique parametes
     def test_stats(self):
-        mean = AstroFile(os.path.join(self.path,"test_dir","results","mean.fits")).reader()
-        std = AstroFile(os.path.join(self.path,"test_dir","results","std.fits")).reader()
-        median = AstroFile(os.path.join(self.path,"test_dir","results","median.fits")).reader()
+        res_path = os.path.dirname(__file__)
+        mean = np.loadtxt(os.path.join(res_path,'results','mean.txt'))
+        std = np.loadtxt(os.path.join(res_path,'results','std.txt'))
+        median = np.loadtxt(os.path.join(res_path,'results','median.txt'))
+        linterp = np.loadtxt(os.path.join(res_path,'results','linterp.txt'))
         
-        assert_equal(self.dataset.mean(), mean)
-        assert_equal(self.dataset.std(), std)
-        assert_equal(self.dataset.median(), median)
+        assert_equal(self.dataset.mean(check_unique=['NAXIS1']), mean)
+        assert_equal(self.dataset.std(check_unique=['NAXIS1']), std)
+        assert_equal(self.dataset.median(check_unique=['NAXIS1']), median)
+        assert_equal(self.dataset.lin_interp(45), linterp)
         
-    # TODO: Include group by and check unique parametes
-    def test_lin_interp(self):
-        data = AstroDir(os.path.join(self.path,"test_dir","linterp"))
-        linterp = AstroFile(os.path.join(self.path,"test_dir","results","linterp.fits"))
-        
-        assert_equal(data.lin_interp(target = 3), linterp)
-    
     def test_filter_chained(self):
-        assert len(self.dataset.filter(naxis1=20).filter(naxis2=20)) == 3
-        assert len(self.dataset.filter(naxis1=20).filter(naxis2=30)) == 0
+        assert len(self.dataset.filter(naxis1=8).filter(naxis2=8)) == 5
+        assert len(self.dataset.filter(naxis1=8).filter(naxis2=20)) == 0
         
-    def teardown_class(self):
-        del self.dataset
-    

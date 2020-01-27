@@ -25,3 +25,12 @@ def create_merge_example(x, y, hdus, path):
         hdul.append(hdu)
         
     hdul.writeto(path)
+    
+def create_random_fit(xy, path, header=pf.Header()):
+    """
+    Generates normal fit with random data
+    """
+    data = np.random.rand(xy[0],xy[1])
+    primer = pf.PrimaryHDU(data = data, header = header)
+    hdul = pf.HDUList([primer])
+    hdul.writeto(path)
