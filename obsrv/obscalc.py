@@ -3,7 +3,7 @@
 # Copyright (C) 2014 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
 #
@@ -55,14 +55,14 @@ def _update_transits(func):
 # noinspection PyCompatibility
 class ObsCalc(object):
     """Object used to compute exoplanet transits
-    
+
     Attributes
     ----------
     _obs : ephem.Observer instance
     _sun : ephem.Sun instance
     params : dict
         General parameter values.
-        Available keys: 'target', 'current transit', 'equinox', 'lat_lon', 
+        Available keys: 'target', 'current transit', 'equinox', 'lat_lon',
                         'site', 'to_local_midday', 'timespan'
     daily : dict
         Sunset, sunrise and twilight information
@@ -72,7 +72,7 @@ class ObsCalc(object):
         Host star
     transit_info : dict
         Data relevant to the current transit being observed
-        Current keys include: 
+        Current keys include:
     airmass : array_like
     transits : array_like
         Available transits for the current target
@@ -83,7 +83,7 @@ class ObsCalc(object):
     hours : array_like
     xlims, ylims : array_like
        Dimensions of grid used to create the main figures
-    
+
     Parameters
     ----------
     timespan : int, optional
@@ -91,9 +91,9 @@ class ObsCalc(object):
     site : string, optional
     equinox : string, optional
     central_time: int, optional
-        Central time of y-axis.  If outside the [-12,24] range, then 
+        Central time of y-axis.  If outside the [-12,24] range, then
         only shows nighttime
-    
+
     """
     def __init__(self, timespan=2017, target=None,
                  site='paranal',
@@ -128,7 +128,7 @@ class ObsCalc(object):
     def set_site(self, site,
                  site_filename=None, **kwargs):
         """
-        Checks whether name's coordinate are known from a list or whether it 
+        Checks whether name's coordinate are known from a list or whether it
         is a (lat, lon) tuple
 
         Parameters
@@ -186,16 +186,16 @@ class ObsCalc(object):
     def _moon_distance(self, date):
         """
         Computes moon distance
-        
+
         Parameters
         ----------
         date : str (YYYY/MM/DD HH:MM:SS.mm)
-        
+
         Returns
         -------
         int, float :
             Distance and moon phase represented as percentage
-        """ 
+        """
         obs = self._obs
         obs.date = date
         self.star.compute(obs)
@@ -217,7 +217,7 @@ class ObsCalc(object):
                      **kwargs):
         """
         Set time span
-        
+
         Parameters
         ----------
         timespan : str, int
@@ -232,7 +232,7 @@ class ObsCalc(object):
                 raise ValueError("Timespan needs to be specified")
         else:
             self.params["timespan"] = timespan
-        
+
         if isinstance(timespan, int):   # Year
             # times always at midnight (UT)
             ed0 = ephem.Date('%i/1/1' % (timespan,))
@@ -267,7 +267,7 @@ class ObsCalc(object):
     def _get_sun_set_rise(self, **kwargs):
         """
         Compute sunsets and sunrises
-        
+
         """
         sunset = []
         sunrise = []
@@ -294,7 +294,7 @@ class ObsCalc(object):
     def set_vertical(self, central_time, hour_step=0.2, **kwargs):
         """
         Sets values for the Y-axis
-        
+
         Parameters
         ----------
         central_time : int
@@ -323,7 +323,7 @@ class ObsCalc(object):
 
         Parameters
         ----------
-        target: 
+        target:
             Either RA and Dec in hours and degrees, or target name to be queried
         magnitude:
         star_name: string, optional
@@ -334,7 +334,7 @@ class ObsCalc(object):
         phase_offset: float, optional
             Set to 0.5 to show occultations instead of transits
         """
-        
+
         self.params['target'] = target
         if 'current_transit' in self.params:
             del self.params['current_transit']
@@ -353,10 +353,10 @@ class ObsCalc(object):
                                   ra_dec.dec.to_string(sep=':'),
                                   magnitude, epoch))
 
-        
-        
+
+
         transit_epoch, transit_period, transit_length = dpa.get_transit_ephemeris(target, os.path.dirname(__file__))
-        
+
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
             try:
@@ -386,10 +386,10 @@ class ObsCalc(object):
     def set_transits(self,
                      tr_period=None, tr_epoch=None,
                      **kwargs):
-        """ 
-        Calculate the transits.  It assumes that the decorator has already 
-        checked transit_info existence 
-        
+        """
+        Calculate the transits.  It assumes that the decorator has already
+        checked transit_info existence
+
         Parameters
         ----------
         tr_period : float, optional
@@ -424,7 +424,7 @@ class ObsCalc(object):
     def _get_airmass(self, max_airmass=3.0, **kwargs):
         """
         Get airmass
-        
+
         Parameters
         ----------
         max_airmass : float, optional
