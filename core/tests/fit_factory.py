@@ -1,7 +1,7 @@
 import astropy.io.fits as pf
 import numpy as np
 import sys
-
+import pdb
 
 def create_merge_example(x, y, hdus, path, empty = []):
     """
@@ -14,16 +14,21 @@ def create_merge_example(x, y, hdus, path, empty = []):
     hdus : int
         Number of hdus to fill
     empty : list of int
-        Indeces of hdu's which have no data
+        Indeces of hdu's which will be generated without data
         
     """
-    ##Create primary hdu
+    # Create primary hdu
     data = np.random.rand(x,y)
     primer = pf.PrimaryHDU(data = data, header = pf.Header())
     hdul = pf.HDUList([primer])
+    
+    # Include the rest
     for i in range(hdus):
-        data = np.random.rand(x,y)
-        hdu = pf.ImageHDU(data = data, header = pf.Header())
+        if i in empty:
+            hdu = pf.ImageHDU(header = pf.Header())
+        else:
+            data = np.random.rand(x,y)
+            hdu = pf.ImageHDU(data = data, header = pf.Header())
         hdul.append(hdu)
         
     hdul.writeto(path)

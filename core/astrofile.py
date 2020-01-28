@@ -1067,9 +1067,17 @@ class AstroFile(object):
             Last HDU to be merged, if None will continue until the end of the 
             HDUList
         """
+        
+        #######
+        # NOTE: This method is causing a deprecation warning somewhere caused
+        #       by a recent numpy change (only for windows).
+        #       To obtain information about the warning see
+        #       https://github.com/astropy/astropy/issues/5797
+        
         with pf.open(self.filename, mode='update') as fit:
+            
+            # This file already has a composite image
             if fit[-1].header.get('COMP') != None:
-                # This file already has a composite image
                 fit.close()
                 return self
                 
@@ -1081,7 +1089,7 @@ class AstroFile(object):
                 if isinstance(fit[i], (pf.ImageHDU, pf.PrimaryHDU)):
                     mat = fit[i].data
                     if mat is None:
-                        warn.warnings("Warning: {} contains empty data at hdu = {}, skipping hdu".format(self.basename, i))
+                        warnings.warn("Warning: {} contains empty data at hdu = {}, skipping hdu".format(self.basename, i))
                     else:
                         dataset.append(mat)
                 else:

@@ -212,3 +212,24 @@ class TestAstroFile(object):
         assert len(again) == prev+1
         again.close()
         
+    def test_merge_empty(self):
+        # Theres the chance that some hdu units are empty but the rest of the
+        # file is still usable. merger should rise a warning in that case
+        # and exclude said hdu from the process while merging the rest.
+        file_path = os.path.join(self.path, "semi-corrupt.fits")
+        create_merge_example(30, 
+                             30, 
+                             5, 
+                             os.path.join(self.path, "semi-corrupt.fits"),
+                             empty = [2, 4])
+                             
+        af = AstroFile(file_path)
+        with pytest.warns(UserWarning):
+            af.merger()
+        
+        file = pf.open(file_path)
+        width = file[0].shape[1]
+        assert file[-1].shape[1] == width * 3
+        file.close()
+        
+        
