@@ -3,7 +3,7 @@ import numpy as np
 import sys
 
 
-def create_merge_example(x, y, hdus, path):
+def create_merge_example(x, y, hdus, path, empty = []):
     """
     Creates a fit file which will store random data inside a number of hdus
     
@@ -13,6 +13,8 @@ def create_merge_example(x, y, hdus, path):
         Size of the example
     hdus : int
         Number of hdus to fill
+    empty : list of int
+        Indeces of hdu's which have no data
         
     """
     ##Create primary hdu
@@ -26,11 +28,22 @@ def create_merge_example(x, y, hdus, path):
         
     hdul.writeto(path)
     
-def create_random_fit(xy, path, header=pf.Header()):
+def create_random_fit(xy, path, header=pf.Header(), min_val = None, max_val = None):
     """
     Generates normal fit with random data
     """
-    data = np.random.rand(xy[0],xy[1])
+    if min_val is None and max_val is None:
+        data = np.random.rand(xy[0],xy[1])
+    else:
+        data = np.random.randint(min_val, max_val, size=(xy[0],xy[1]))
     primer = pf.PrimaryHDU(data = data, header = header)
     hdul = pf.HDUList([primer])
     hdul.writeto(path)
+    
+def create_empty_fit(name = "blank.fits"):
+    """
+    Creates fit with no data, astrofile._read_fit should return None
+    """
+    blank = pf.PrimaryHDU()
+    hdul = pf.HDUList([blank])
+    hdul.writeto(name)

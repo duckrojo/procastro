@@ -1072,24 +1072,29 @@ class AstroFile(object):
                 # This file already has a composite image
                 fit.close()
                 return self
-            
+                
             if end is None:
                 end = len(fit)
                 
-            data = []
+            dataset = []
             for i in range(start, end):
                 if isinstance(fit[i], (pf.ImageHDU, pf.PrimaryHDU)):
-                    data.append(fit[i].data)
+                    mat = fit[i].data
+                    if mat is None:
+                        warn.warnings("Warning: {} contains empty data at hdu = {}, skipping hdu".format(self.basename, i))
+                    else:
+                        dataset.append(mat)
                 else:
                     raise(TypeError, "Unable to merge hdu of type: "+type(fit[i]))
-                    
-            comp = np.concatenate(data, axis = 1)
+                
+            comp = np.concatenate(dataset, axis = 1)
             
             composite = pf.ImageHDU(comp)
             composite.header.set('COMP', True)
             fit.append(composite)
             fit.flush()
-            
+        
+        return self
     
     #################
     ####
