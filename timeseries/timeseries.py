@@ -18,15 +18,45 @@
 #
 #
 
-import scipy as sp
+import numpy as np
 from IPython.core.debugger import Tracer
 
 import dataproc as dp
 import matplotlib.pyplot as plt
-#from cycler import cycler
+import pdb
 
 class TimeSeries:
-    """Stores many alternatives of information to show for a series of channels"""
+    """
+    Stores different data channels using multiple TimSeriesSingle instances.
+    Each channel represents a column on a timeseries table, this object selects
+    one channel as a default for all related methods, to display different
+    channels the user must set this default to the desired channel.
+    
+    Receives a timeseries object with, optionally, several different kinds of
+    information (flux, errors, centroid, ...)
+    
+    Attributes
+    ----------
+    _tss: dict
+        Name to TSS dictionary for all channels
+    
+    Parameters
+    ----------
+    data : dict or scipy.array
+        Contains the data used by each channel for all targets
+    errors : dict or scipy.array, then it should have the same keys as data
+        Errors for some or all channels for al targets
+    labels : str list
+        List of names for the targets
+    epoch : array_like
+        Contains the time axis to be used for all channels
+    extras :
+        No use as of yet
+    default_info :
+        Channel used when plotting graphs
+    grouping : {'mean', 'median'}
+        Mathematical Operation used when grouping the data channels
+    """
 
     def __repr__(self):
         return "<timeseries object with {n_channels} channels of {size} " \
@@ -50,34 +80,20 @@ class TimeSeries:
 
     def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
                  default_info=None, grouping='mean'):
-        """
-Receives a timeseries object with, optionally, several different kinds of information
-(flux, errors, centroid, ...)
-
-        :param data: dict or scipy.array
-        :param errors: dict or scipy.array
-        if dict, then it should have the same keys as data
-        :param labels:
-        :param epoch:
-        :param extras:
-        :param default_info:
-        :param grouping:
-        """
-
+        
         # blank definition
         self.default_info = None
-
         if isinstance(data, dict):
             if default_info is None:
-                self.set_default_info(data.keys()[0])
+                self.set_default_info(data.keys()[0])   ##Posible error here keys[0] invalid
             self._tss = {k: TimeSeriesSingle(v, errors[k] if (k in errors) else None,
                                              labels=labels, epoch=epoch, group_op=grouping)
                          for k, v in data.items()}
             # todo check whether this old style will be implemented.
-            # if False in [isinstance(v, (list, tuple, sp.ndarray)) for v in extras.values()]:
+            # if False in [isinstance(v, (list, tuple, np.ndarray)) for v in extras.values()]:
             #     raise TypeError("Each element of 'extras' dictionary must be a list")
 
-        elif isinstance(data, sp.array):
+        elif isinstance(data, np.array):
             if default_info is None:
                 default_info = "data"
             self._tss["data"] = TimeSeriesSingle(data, errors,
@@ -88,12 +104,31 @@ Receives a timeseries object with, optionally, several different kinds of inform
         self.default_info = name
 
     def plot(self, info=None, **kwargs):
-        """execute .plot() on the default TimeSeriesSingle"""
+        """
+        Executes .plot() on the default TimeSeriesSingle
+        
+        Parameters
+        ----------
+        info : str, optional
+            Data channel to be plotted, default is the current default channel
+        """
         if info is None:
             info = self.default_info
         self._tss[info].plot(**kwargs)
 
     def get_ratio(self, info=None, **kwargs):
+        """
+        Recovers ratio
+        
+        Parameters
+        ----------
+        info : str, optional
+            Data channel, default is the current default channel
+        
+        Returns
+        -------
+        
+        """
 
         if info is None:
             info = self.default_info
@@ -101,7 +136,15 @@ Receives a timeseries object with, optionally, several different kinds of inform
         return ratio, ratio_error, sigma, err_m
 
     def plot_ratio(self, info=None, **kwargs):
-        """execute .plot_ratio() on the default TimeSeriesSingle"""
+        """
+        Execute .plot_ratio() on the default TimeSeriesSingle
+        
+        Parameters
+        ----------
+        info : str, optional
+            Data channel, default is the current default channel
+        
+        """
         if info is None:
             info = self.default_info
         self._tss[info].plot_ratio(**kwargs)
@@ -124,7 +167,32 @@ Receives a timeseries object with, optionally, several different kinds of inform
 
 
 class TimeSeriesSingle:
-    """Stores a single kind of information"""
+    """
+    Stores a single kind of information for all targets
+    
+    Attributes
+    ----------
+    channels : array_like
+        Data contained in the default channel
+    combine : dict
+        Contains the function used for grouping
+    groups : array_like
+        Groups generated after gropuing
+    
+    Parameters
+    ----------
+    data : array_like, optional
+        Data contained in this channel
+    errors : array_like, optional
+    labels : array_like, optional
+        Name for each target
+    epoch : array_like, optional
+    extras :
+        Aditional header items
+    group_op : str, optional
+        Operation used to group the targets
+    
+    """
 
     def __repr__(self):
         return "<single timeseries object with {channels} channels of {size} " \
@@ -135,8 +203,8 @@ class TimeSeriesSingle:
 
     def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
                  group_op='mean'):
-
-        self.channels = [sp.array(d) for d in
+        
+        self.channels = [np.array(d) for d in
                          data]  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
 
         self.labels = []
@@ -151,7 +219,7 @@ class TimeSeriesSingle:
 
         self.combine = {}
         self.grouping_with(group_op)
-        self.groups = sp.zeros(self.n_channels())  # group #0 is ignored
+        self.groups = np.zeros(self.n_channels())  # group #0 is ignored
         # Default group_op: 1st channel is group #1, all other channels are group #2
         self.set_main(0)
 
@@ -161,10 +229,14 @@ class TimeSeriesSingle:
     # todo: implement ignore channels
     def set_main(self, target, ignore=None):
         """
-Set target channel as group #1, and all other channels as group #2
-        :param ignore: Channel, or list of channels, to be placed in group 3
-        :param target: Channel to be set to group 1
-        :return:
+        Set target channel as group #1, and all other channels as group #2
+        
+        Parameters
+        ----------
+        target: str
+            Channel which will be set to group 1
+        ignore: Channel, or list of channels.
+            Channels to be ignored (placed in group 3)
         """
         target = self._search_channel(target)
         self.groups[:] = 2
@@ -178,14 +250,17 @@ Set target channel as group #1, and all other channels as group #2
         return len(self.channels)
 
     def __getitem__(self, target):
-        """To recover errors or any of the other extras try: ts('error')[0] ts['centers_xy']['Target'], etc"""
+        """
+        To recover errors or any of the other extras try: 
+            ts('error')[0] ts['centers_xy']['Target'], etc
+        """
         # This is so I can do ts[0]/ts[2] and it works directly with the channels!
 
         target = self._search_channel(target)
 
         # if negative, then group the channels
         if target < 0:
-            return self.combine['op'](sp.array(self.channels)[sp.array(self.groups) == abs(target)],
+            return self.combine['op'](np.array(self.channels)[np.array(self.groups) == abs(target)],
                                       **(self.combine['prm']))
 
         return self.channels[target]
@@ -201,37 +276,54 @@ Set target channel as group #1, and all other channels as group #2
         if not (self.combine['name'] == 'mean' or self.combine['name'] == 'median'):
             raise NotImplementedError("Only know how to compute error of median- or mean-combined groups. "
                                       "Errors of median computed as errors of mean, actually")
-        sample = sp.array(self.groups) == abs(group)
+        sample = np.array(self.groups) == abs(group)
         sigma = self.errors[sample]
         variance = (sigma ** 2).sum(0)
         # Tracer()()
-        return sp.sqrt(variance) / sample.sum()
+        return np.sqrt(variance) / sample.sum()
 
     def grouping_with(self, op):
+        """
+        Sets grouping method used to group the channels
+        
+        Parameters
+        ----------
+        op : str
+            Operation to be applied, possible operations are 'mean' and 'median'
+        """
         self.combine['name'] = op
         if op == 'mean':
-            self.combine['op'] = sp.mean
+            self.combine['op'] = np.mean
             self.combine['prm'] = {'axis': 0}
         elif op == 'median':
-            self.combine['op'] = sp.median
+            self.combine['op'] = np.median
             self.combine['prm'] = {'axis': 0}
         else:
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
     def plot(self, label=None, axes=None, normalize=False, save=None,
              overwrite=False, fmt_time="MJD", title="TimeSeries Data"):
-        """Display the timeseries data: flux (with errors) as function of mjd
-
-        :param axes:
-        :param normalize:
-        :param label: Specify a single star to plot
-        :param save:
-        :param overwrite:
-        :param fmt_time: Specify a format for epoch time like "JD", by default it's "MJD"
-        :param title:
-        :rtype label: basestring
-
-        :rtype: None (and plot display)
+        """
+        Display the timeseries data: flux (with errors) as function of mjd
+        
+        Parameters:
+        -----------
+        label : str, optional 
+            Specify a single star to plot
+        normalize: bool, optional
+            If set, normalizes the data before plotting
+        axes : int, plt.Figure, plt.Axes
+        save : str, optional
+            Filename where the plot will be saved
+        overwrite : bool, optional
+        fmt_time : str, optional
+            Specify a format for epoch time like "JD", by default it's "MJD"
+        title : str, optional
+        
+        Returns
+        -------
+        None
+            Displays plot if 'save' set to None
         """
 
         fig, ax = dp.figaxes(axes, overwrite=overwrite)
@@ -270,10 +362,24 @@ Set target channel as group #1, and all other channels as group #2
             plt.show()
 
     def get_ratio(self, label=None, axes=None, sector=None):
-
+        """
+        Calculates the ratio of the stored data
+        
+        Parameters
+        ----------
+        label : str, optional
+            Name of the target
+        axes : matplotlib.pyplot axes object, optional
+        sector : tuple, optional
+            Range from self.epoch to be used
+            
+        Returns
+        -------
+        
+        """
         ratio = self[-1] / self[-2]
 
-        ratio_error = ratio * sp.sqrt((self.grp_errors(1) / self[-1]) ** 2 +\
+        ratio_error = ratio * np.sqrt((self.grp_errors(1) / self[-1]) ** 2 +\
                                       (self.grp_errors(2) / self[-2]) ** 2)
 
         x1=0
@@ -281,8 +387,8 @@ Set target channel as group #1, and all other channels as group #2
         if isinstance(sector, list):
             x1=sector[0]
             x2=sector[1]
-        sigma = sp.std(ratio[x1:x2])
-        errbar_media = sp.median(ratio_error[x1:x2])
+        sigma = np.std(ratio[x1:x2])
+        errbar_media = np.median(ratio_error[x1:x2])
         ratio_cut = ratio[x1:x2]
         ratio_error_cut = ratio_error[x1:x2]
 
@@ -290,6 +396,18 @@ Set target channel as group #1, and all other channels as group #2
 
     # todo grouping not functional
     def JD(self, sector=None):
+        """
+        Recovers the epoch values from the x-axis
+        
+        Parameters
+        ----------
+        sector : List or tuple, optional
+            Range to be retrieved from self.epoch
+         
+        Returns
+        -------
+        array_like
+        """
         x1 = 0
         x2 = len(self.epoch)
         if isinstance(sector, list):
@@ -300,6 +418,21 @@ Set target channel as group #1, and all other channels as group #2
     def plot_ratio(self, label=None, axes=None, fmt='x',
                    grouping=None, sector=None, save=None,
                    overwrite=False):
+        """
+        Plots data ratio
+        
+        Parameters
+        ----------
+        label : str, optional
+            Target name
+        axes : int, matplotlib.pyplot Axes, optional
+        fmt : string, optional
+        grouping :
+        sector :
+        save : str, optional
+            Filename of image file where the plot will be saved
+        overwrite : bool, optional
+        """
 
         fig, ax = dp.figaxes(axes, overwrite=overwrite)
 
@@ -326,7 +459,7 @@ Set target channel as group #1, and all other channels as group #2
         #     #                   cycler('marker', markers),)
         #     ax.errorbar(x, y, yerr=e, props={"ls": 'None'}, label=lab)
 
-        # labs = [', '.join(sp.array(self.labels)[sp.array(self.groups) == grp]) for grp in [1, 2]]
+        # labs = [', '.join(np.array(self.labels)[np.array(self.groups) == grp]) for grp in [1, 2]]
         # ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
 
         ax.errorbar(self.JD(sector=sector), ratio, yerr=ratio_error, label=label, fmt='o-')
@@ -341,18 +474,18 @@ Set target channel as group #1, and all other channels as group #2
 
     # todo reimplement save_to_file
     # def save_to_file(self, filename):
-    #     to_save=sp.zeros([len(self), len(extras)])
+    #     to_save=np.zeros([len(self), len(extras)])
     #
-    #     sp.savetxt(header="# {}".format(", ".join(self.epoch, self[-1]/self[-2], err, )))
+    #     np.savetxt(header="# {}".format(", ".join(self.epoch, self[-1]/self[-2], err, )))
 
         # def get_error(self, item):
         #     return self(errors=item)
         #
         # def group1(self):
-        #     return sp.array(self.channels[:-2])[sp.array(self.group)]
+        #     return np.array(self.channels[:-2])[np.array(self.group)]
         #
         # def group2(self):
-        #     return sp.array(self.channels[:-2])[sp.array(self.group)==False]
+        #     return np.array(self.channels[:-2])[np.array(self.group)==False]
         #
         # def set_group(self, new_group):  # Receives pe [0 1 0 0 1 0] and that is used to define 2 groups
         #     self.group = new_group
@@ -384,7 +517,7 @@ Set target channel as group #1, and all other channels as group #2
         #         group = self.group2()
         #         g_errors = self.errors_group2()
         #
-        #     self.channels[-group_id] = sp.mean(group, axis=0)
+        #     self.channels[-group_id] = np.mean(group, axis=0)
         #     err = np.zeros((1, len(g_errors[0])))
         #     for i in range(len(g_errors)):
         #         err += np.divide(g_errors[i]/group[i])**2
@@ -404,7 +537,7 @@ Set target channel as group #1, and all other channels as group #2
         #         group = self.group2()
         #         g_errors = self.errors_group2()
         #
-        #     self.channels[-group_id] = sp.median(group, axis=0)
+        #     self.channels[-group_id] = np.median(group, axis=0)
         #     err = np.zeros((1, len(g_errors[0])))
         #     for i in range(len(g_errors)):
         #         err += np.divide(g_errors[i]/group[i])**2
@@ -426,7 +559,7 @@ Set target channel as group #1, and all other channels as group #2
         #         group = self.group2()
         #         g_errors = self.errors_group2()
         #
-        #     self.channels[-group_id] = sp.median(group, axis=0)
+        #     self.channels[-group_id] = np.median(group, axis=0)
         #     err = np.zeros((1, len(g_errors[0])))
         #     for i in range(len(g_errors)):
         #         err += np.divide(g_errors[i]/group[i])**2

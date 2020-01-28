@@ -26,7 +26,7 @@ __all__ = ['sigmask', 'zscale', 'expandlims', 'axis_from_fits',
            'azimuth', 'radial', 'radial_profile',
            ]
 
-import scipy as sp
+import numpy as np
 import inspect
 import scipy.signal as sg
 import astropy.io.fits as pf
@@ -36,20 +36,26 @@ from IPython.core.debugger import Tracer
 from .misc_general import sortmanynsp
 
 def subarray(data, cyx, rad, padding=False, return_origpos=False):
-    """Returns a subarray centered on cxy with radius rad
-    :param arr: original array
-    :type arr: array
-    :param y: vertical center
-    :type y: int
-    :param x: horizontal center
-    :type x: int
-    :param rad: radius
-    :type rad: int
-    :rtype: array
-    :param padding: returns a zero padded subarray when the requested stamp does not completely fit inside the array.
-    :type padding: boolean
-    :param return_origpos: returns the original position of the subarray in the original array, it could be negative when padding if reached the origin of array
-    :type return_origpos: (2-element tuple)
+    """
+    Returns a subarray centered on 'cxy' with radius 'rad'
+    
+    Parameters
+    ----------
+    arr : array_like
+        Original array
+    cxy : tuple
+        Center coordinates
+    rad : int 
+        radius
+    padding: bool, optional
+        Returns a zero padded subarray when the requested stamp does not 
+        completely fit inside the array.
+    
+    Returns
+    -------
+    origpos: tuple
+        Returns the original position of the subarray in the original array, 
+        it could be negative when padding if reached the origin of array
     """
 
     icy = int(cyx[0])
@@ -67,7 +73,7 @@ def subarray(data, cyx, rad, padding=False, return_origpos=False):
     y1 = (rad - icy > 0) * (rad - icy)
     x1 = (rad - icx > 0) * (rad - icx)
     if padding and (ret0.shape[0] < stamp or ret0.shape[1] < stamp):
-        ret = sp.zeros([2*rad+1, 2*rad+1])
+        ret = np.zeros([2*rad+1, 2*rad+1])
         y2 = stamp + (ny - icy - rad - 1 < 0) * (ny - icy - rad - 1)
         x2 = stamp + (nx - icx - rad - 1 < 0) * (nx - icx - rad - 1)
         ret[y1:y2, x1:x2] = ret0
@@ -84,29 +90,56 @@ def subarray(data, cyx, rad, padding=False, return_origpos=False):
 
 
 def centroid(orig_arr, medsub=True):
-    """Find centroid of small array
+    """
+    Find centroid of small array
     
-    :param arr: array
-    :type arr: array
-    :rtype: [float,float]
+    Parameters
+    ----------
+    orig_arr : array_like
+    med_sub : bool, optional
+        If set, substracts the median from the array
+    
+    Returns
+    -------
+    float, float :
+        Center coordinates
     """
 
     arr = copy.copy(orig_arr)
     if medsub:
-        med = sp.median(arr)
+        med = np.median(arr)
         arr = arr - med
     arr = arr * (arr > 0)
 
-    iy, ix = sp.mgrid[0:arr.shape[0], 0:arr.shape[1]]
+    iy, ix = np.mgrid[0:arr.shape[0], 0:arr.shape[1]]
 
-    cy = sp.sum(iy * arr) / sp.sum(arr)
-    cx = sp.sum(ix * arr) / sp.sum(arr)
+    cy = np.sum(iy * arr) / np.sum(arr)
+    cx = np.sum(ix * arr) / np.sum(arr)
 
     return cy, cx
 
 
 def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
-    """Returns the centroid after a number of iterations"""
+    """
+    Returns the centroid after a number of iterations
+    
+    Parameters
+    ----------
+    arr : array_like
+    cyx : tuple
+        Center coordinates
+    stamprad : int
+        Stamp radius
+    medsub : bool, optional
+        If True, substracts median from array
+    iters : int, optional
+        Number of times this procedure is repeated
+        
+    Returns
+    -------
+    float, float
+        Subcentroid coordinates
+    """
 
     sub_array = arr
     cy, cx = cyx
@@ -122,26 +155,54 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     return cy, cx
 
 def subcentroidxy(arr, cxy, stamprad, medsub=True, iters=1):
-    """Returns the centroid after a number of iterations, order by xy"""
-
+    """
+    Returns the centroid after a number of iterations, order by xy
+    
+    Parameters
+    ----------
+    arr : array_like
+    cyx : tuple
+        Center coordinates
+    stamprad : int
+        Stamp radius
+    medsub : bool, optional
+        If True, substracts median from array
+    iters : int, optional
+        Number of times this procedure is repeated
+        
+    Returns
+    -------
+    float, float
+        Subcentroid coordinates
+    
+    """
     cy,cx = subcentroid(arr,[cxy[1],cxy[0]], stamprad,
                         medsub=medsub, iters=iters)
     return cx,cy
 
 def radial(data, cyx):
-    """Return a same-dimensional array with the pixel distance to cxy
-    :param data: data to get the shape from
-    :param cyx:  Center in native Y-X coordinates
-    :return:
+    """
+    Return a same-dimensional array with the pixel distance to cxy
+    
+    Parameters
+    ----------
+    data : array_like 
+        Data to get the shape from
+    cyx: tuple  
+        Center in native Y-X coordinates
+    
+    Returns
+    -------
+    array_like
     """
 
     ndim = data.ndim
     if len(cyx) != ndim:
         raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
 
-    grid = sp.meshgrid(*[sp.arange(l) for l in data.shape], indexing='ij')
+    grid = np.meshgrid(*[np.arange(l) for l in data.shape], indexing='ij')
 
-    return sp.sqrt(sp.array([(dgrid-c)**2
+    return np.sqrt(np.array([(dgrid-c)**2
                              for dgrid, c
                              in zip(grid, cyx)]
                             ).sum(0)
@@ -149,16 +210,24 @@ def radial(data, cyx):
 
 
 def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
-    """Returns the x&y arrays for radial profile
+    """
+    Returns the x&y arrays for radial profile
 
-    :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
-    :type target: integer/string or 2-element list
-    :param frame: which frame to show
-    :type frame: integer
-    :param recenter: whether to recenter
-    :type recenter: bool
-    :rtype: (x-array,y-array, [x,y] center)
-"""
+    Parameters
+    ----------
+    data : array_like
+    cnt_xy : tuple
+        Center coordinates
+    stamp_rad : int, optional
+        Stamp radius
+    recenter: bool, optional
+        Whether to recenter
+    
+    Returns
+    -------
+    array_like :
+        (x-array,y-array, [x,y] center)
+    """
 
     ny, nx = data.shape
 
@@ -186,33 +255,54 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
     return x, y, (cx, cy)
 
 def zscale(img,  trim = 0.05, contr=1, mask=None):
-    """Returns lower and upper limits found by zscale algorithm for improved contrast in astronomical images.
+    """
+    Returns lower and upper limits found by zscale algorithm for improved 
+    contrast in astronomical images.
 
-:param mask: bool ndarray
-    True are good pixels, pixels marked as False are ignored
-:rtype: (min, max)
-    Minimum and maximum values recommended by zscale
-"""
+    Parameters
+    ----------
+    img : array_like
+        Image to scale
+    trim : float, optional
+    contr : int, optional
+    mask: bool ndarray
+        True are good pixels, pixels marked as False are ignored
 
-    if not isinstance(img, sp.ndarray):
-        img = sp.array(img)
+    Returns
+    -------
+    tuple :
+        Minimum and maximum values recommended by zscale
+    """
+
+    if not isinstance(img, np.ndarray):
+        img = np.array(img)
     if mask is None:
-        mask = (sp.isnan(img) == False)
+        mask = (np.isnan(img) == False)
 
     itrim = int(img.size*trim)
-    x = sp.arange(mask.sum()-2*itrim)+itrim
+    x = np.arange(mask.sum()-2*itrim)+itrim
 
-    sy = sp.sort(img[mask].flatten())[itrim:img[mask].size-itrim]
-    a, b = sp.polyfit(x, sy, 1)
+    sy = np.sort(img[mask].flatten())[itrim:img[mask].size-itrim]
+    a, b = np.polyfit(x, sy, 1)
 
     return b, a*img.size/contr+b
     
-###################################################################################
+###############################################################################
 # Unused methods
 ######
 
 def expandlims(xl,yl,offset=0):
-    """Find x1,x2,y1,and y2 from the 2-item pairs xl and yl including some offset (negative is inwards, positive outwards)"""
+    """
+    Find x1,x2,y1,and y2 from the 2-item pairs xl and yl including some offset 
+    (negative is inwards, positive outwards)
+    
+    Parameters
+    ----------
+    xl, yl : int or tuples, optional
+    
+    Returns
+    -------
+    """
     if (not isinstance(xl,(list,tuple))) or (not isinstance(xl,(list,tuple))) or len(xl)!=2 or len(yl)!=2:
         raise ValueError("xl and yl must each be 2-element list or tuple")
     dx = xl[1]-xl[0]
@@ -222,11 +312,21 @@ def expandlims(xl,yl,offset=0):
 
 
 def axis_from_fits(h, axis=1):
-    """Returns a wavelength array from the standard FITS header keywords
+    """
+    Returns a wavelength array from the standard FITS header keywords
 
-:param h: header or primary HDU
-:param axis: axis along the wavelength dispersion. If positive, then return data with the same size as FITS, otherwise just the desired dimension
-"""
+    Parameters
+    ----------
+    h : int 
+        Header or primary HDU
+    axis : int, optional
+        Axis along the wavelength dispersion. If positive, then return data 
+        with the same size as FITS, otherwise just the desired dimension
+    
+    Returns
+    -------
+    array_like
+    """
 
     if isinstance(h, pf.PrimaryHDU):
         header = h.header
@@ -238,13 +338,13 @@ def axis_from_fits(h, axis=1):
 
     if axis<0:
         axis = -axis
-        grid = sp.arange(dims[axis-1])
+        grid = np.arange(dims[axis-1])
     elif nax == 1:
-        grid = sp.arange(dims[0])
+        grid = np.arange(dims[0])
     elif nax == 2:
-        grid = sp.mgrid[0:dims[0], 0:dims[1]][axis-1]
+        grid = np.mgrid[0:dims[0], 0:dims[1]][axis-1]
     elif nax == 3:
-        grid = sp.mgrid[0:dims[0], 0:dims[1], 0:dims[2]][axis-1]
+        grid = np.mgrid[0:dims[0], 0:dims[1], 0:dims[2]][axis-1]
 
     wav_offset = header["crval%i" % (axis,)]
     wav_reference = header["crpix%i" % (axis,)]
@@ -263,24 +363,38 @@ def fluxacross(diameter, seeing,
                shape='slit', psf='gauss', 
                nseeing=10, nsamp=300,
                show=False):
-    """Return the fraction of flux that passes considering a particular block
+    """
+    Return the fraction of flux that passes considering a particular block
 
-    :param diameter: Diameter of the block
-    :param seeing: seeing
-    :param shape: shape of the block. Currently slit, square, circle 
-    :param psf: PSF shape. Currently gauss, cube
-    :param nseeing: how many times the seeing is the considered stamp size
-    :param nsamp: divide the stamp in this many samples
-    :param show: show a plot
-"""
+    Parameters
+    ----------
+    diameter : 
+        Diameter of the block
+    seeing : 
+        Seeing
+    shape : str, optional
+        Shape of the block. Currently slit, square, circle 
+    psf: str, optional
+        PSF shape. Currently gauss, cube
+    nseeing : int, optional
+        How many times the seeing is the considered stamp size
+    nsamp : int, optional 
+        Divide the stamp in this many samples
+    show : bool, optional 
+        Show a plot
+        
+    Returns
+    -------
+    
+    """
     import scipy as sp
 
     hseeing=seeing/2.0
 
-    gtof=(sp.sqrt(2.0*sp.log(2.0)))
+    gtof=(np.sqrt(2.0*np.log(2.0)))
     gaussigma = hseeing/gtof
     
-    psfshape={'gauss': lambda hseeing, ygrid, xgrid: (gtof/hseeing)**2/(2.0*sp.pi)*sp.exp(-(xgrid**2 + ygrid**2)/2.0/(hseeing/gtof)**2),
+    psfshape={'gauss': lambda hseeing, ygrid, xgrid: (gtof/hseeing)**2/(2.0*np.pi)*np.exp(-(xgrid**2 + ygrid**2)/2.0/(hseeing/gtof)**2),
               'cube': lambda hseeing, ygrid, xgrid: (-hseeing<ygrid<hseeing)*(-hseeing<xgrid<hseeing)/4.0/hseeing**2,
               }
 
@@ -291,7 +405,7 @@ def fluxacross(diameter, seeing,
              }
 
     dy = dx = nseeing*seeing/2.0/nsamp
-    y,x = sp.mgrid[-nsamp/2.0:nsamp/2.0,-nsamp/2.0:nsamp/2.0]
+    y,x = np.mgrid[-nsamp/2.0:nsamp/2.0,-nsamp/2.0:nsamp/2.0]
     y*=dy
     x*=dx
 
@@ -309,10 +423,19 @@ def fluxacross(diameter, seeing,
 
 
 def azimuth(data, cyx):
-    """Return a same-dimensional array with the azimuth value of each pixel with respect to cxy
-    :param data: data to get the shape from. It has to be 2D
-    :param cyx:  Center in native Y-X coordinates
-    :return:  Azimuthal values in radians, setting 0 upwards.
+    """
+    Return a same-dimensional array with the azimuth value of each pixel with 
+    respect to 'cxy'
+    
+    Parameters
+    ----------
+    data: data to get the shape from. It has to be 2D
+    cyx:  Center in native Y-X coordinates
+    
+    Returns
+    -------
+    float
+        Azimuthal values in radians, setting 0 upwards.
     """
 
     ndim = data.ndim
@@ -321,40 +444,56 @@ def azimuth(data, cyx):
     if len(cyx) != ndim:
         raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
 
-    yy, xx = sp.mgrid[0:data.shape[0],0:data.shape[1]]
+    yy, xx = np.mgrid[0:data.shape[0],0:data.shape[1]]
 
-    return sp.arctan2(yy-cyx[0], xx-cyx[1])
+    return np.arctan2(yy-cyx[0], xx-cyx[1])
 
-###################################################################################
+###############################################################################
 # Deprecated methods
 ######
 
 
 def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=None, full=False):
-    """Returns a mask with those values that are 'sigmas'-sigmas beyond the mean value of arr.
+    """
+    Returns a mask with those values that are 'sigmas'-sigmas beyond the mean 
+    value of arr.
 
-:param sigmas: int
-    Variation beyond this number of sigmas will be masked.
-:param axis: int, optional
-    Look for the condition along an axis, mark those. None is the full array.
-:param kernel: int, optional (some algorithms accepts ndarray)
-    Size of the kernel to build the comparison. If 0, then obtain just an scalar from the whole array for comparison. Note that the borders are likely to contain useless data.
-:param algorithm: str, optional
-    Algorithm to build the comparison. 
-    If kernel==0, then any scipy function that receives a single  array argument and returns an scalar works.  
-    Otherwise, the following kernels are implemented: 'median' filter, or convolution with a 'gaussian' (total size equals 5 times the specified sigma),  'boxcar'.
-:param mask: ndarray, optional
-    Initial mask
-:param npass: int, optional
-    Number of passes this function is run, the mask-out pixels are cumulative.  However, only the standard deviation to find sigmas is recomputed, the comparison is not.
-:param full: bool, optional
-    Return full statistics
-:rtype: boolean ndarray
-    A boolean sp.array with True on good pixels and False otherwise.
-    If full==True, then it also return standard deviation and residuals
-"""
-    if not isinstance(arr,sp.ndarray):
-        arr = sp.array(arr)
+    Parameters
+    ----------
+    arr : array_like
+    sigmas: int
+        Variation beyond this number of sigmas will be masked.
+    axis : int, optional
+        Look for the condition along an axis, mark those. 
+        None is the full array.
+    kernel : int, optional (some algorithms accepts ndarray)
+        Size of the kernel to build the comparison. If 0, then obtain just 
+        an scalar from the whole array for comparison. 
+        Note that the borders are likely to contain useless data.
+    algorithm : str, optional
+        Algorithm to build the comparison. 
+        If kernel==0, then any scipy function that receives a single array 
+        argument and returns an scalar works.  
+        Otherwise, the following kernels are implemented: 'median' filter, 
+        or convolution with a 'gaussian' (total size equals 5 times the 
+        specified sigma),  'boxcar'.
+    mask : ndarray, optional
+        Initial mask
+    npass : int, optional
+        Number of passes this function is run, the mask-out pixels are 
+        cumulative. However, only the standard deviation to find sigmas is 
+        recomputed, the comparison is not.
+    full : bool, optional
+        Return full statistics
+        
+    Returns
+    -------
+    bool ndarray
+        A boolean np.array with True on good pixels and False otherwise.
+        If full==True, then it also return standard deviation and residuals
+    """
+    if not isinstance(arr,np.ndarray):
+        arr = np.array(arr)
 
     krnfcn = {'mean': lambda n: sg.boxcar(n)/n,
               'gaussian': lambda n: sg.gaussian(n*5, n)}
@@ -378,7 +517,7 @@ def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=
         mask = (arr*0 == 0)
     for i in range(npass):
         std = (residuals*mask).std(axis)
-        mask *= sp.absolute(residuals) < sigmas*std
+        mask *= np.absolute(residuals) < sigmas*std
 
     if full:
         return mask, std, residuals

@@ -5,7 +5,8 @@ from astropy.modeling.functional_models import Gaussian2D
 
 def create_targeted_fit(path, size_xy, target_xy, header=pf.Header()):
     """
-    Creates a fit file which contains a simulated source on the specified coordinates
+    Creates a fit file which contains a simulated source on the specified 
+    coordinates
     TODO: Allow multiple sources
     TODO: Allow different intensities
     
@@ -23,6 +24,9 @@ def create_targeted_fit(path, size_xy, target_xy, header=pf.Header()):
     data = model(x,y)
     save_fit(data, header, path)
     
+def create_bias(path, size_xy, header=pf.Header()):
+    data = np.random.random(size_xy) / 30
+    save_fit(data, header, path)
     
 def save_fit(data, header , name):
     """
@@ -37,3 +41,5 @@ def save_fit(data, header , name):
     hdu = pf.PrimaryHDU(data = data, header = header)
     hdul = pf.HDUList([hdu])
     hdul.writeto(name)
+    
+    

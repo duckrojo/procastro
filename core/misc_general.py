@@ -21,12 +21,27 @@
 __all__ = ['sortmanynsp', 'sortmany', 'accept_object_name'
            ]
 
-import scipy as sp
+import numpy as np
 import operator as op
 import warnings
 import re
 
 def accept_object_name(name, target):
+    """
+    Parses an astronomical object's name and checks if its similar to a
+    specific 'target'
+    
+    Parameters
+    ----------
+    name : str
+        Name of object
+    target : str
+        Name of object to be compared with
+    
+    Returns
+    -------
+    bool
+    """
     name = name.replace(r'\\', '\\\\')
     name = name.replace('+', r'\+')
     name = name.replace('{', r'\{')
@@ -43,12 +58,38 @@ def accept_object_name(name, target):
 
 
 def sortmanynsp(*arr):
-    """Sort many lists following the order of the first. Returns a tuple of sorted np.ndarray"""
-    return [sp.array(r) for r in sortmany(*arr)]
+    """
+    Sort many lists following the order of the first. 
+    
+    Parameters
+    ----------
+    arr : list
+        Lists to sort
+    
+    Returns
+    -------
+    tuple 
+        Sorted numpy.ndarray
+    """
+    return [np.array(r) for r in sortmany(*arr)]
 
 
 def sortmany(*arr, **kwargs):
-    """Sort many lists following the order of the first. Optionally using a key"""
+    """
+    Sort many lists following the order of the first. Optionally using a key
+    
+    Parameters
+    ----------
+    arr : list
+        Lists to sort
+    key : string, optional
+        Key used for sorting
+        
+    Returns
+    -------
+    list
+        Sorted list 
+    """
 
     if 'key' not in kwargs:
         key = lambda x: x

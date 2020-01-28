@@ -23,7 +23,7 @@ from __future__ import print_function, division
 __all__ = ['gauss', 'bipol',
            ]
 
-import scipy as sp
+import numpy as np
 import inspect
 import scipy.signal as sg
 
@@ -31,16 +31,27 @@ def gauss(grid, sigma, center=None, norm=False, ndim=None):
     """
     Build a gaussian from a dense multi-dimensional meshgrid
 
-    #todo: allow multivariate with symmetric covariance matrix
-    :param grid: deafult sampling
-    :param sigma: gaussian width
-    :param center:  gaussian center
-    :param norm: True if output should be normalized
-    :param ndim: dimensions of gaussian
-    :return:
-"""
+    #TODO: allow multivariate with symmetric covariance matrix
+    
+    Parameters
+    ----------
+    grid: array_like 
+        Deafult sampling
+    sigma: float
+        Gaussian width
+    center:  
+        Gaussian center
+    norm: bool, optional 
+        True if output should be normalized
+    ndim : int, optional
+        Dimensions of gaussian
+    
+    Returns
+    -------
+    array_like
+    """
 
-    grid = sp.array(grid)
+    grid = np.array(grid)
 
     if ndim is None:
         ndim = len(grid.shape)
@@ -51,42 +62,45 @@ def gauss(grid, sigma, center=None, norm=False, ndim=None):
         sigma = [sigma]*ndim
 
     if center is None:
-        center = sp.zeros(ndim)
+        center = np.zeros(ndim)
     
-    gaexpo = sp.sum([((dgrid-c)/dsigma)**2 
+    gaexpo = np.sum([((dgrid-c)/dsigma)**2 
                      for dsigma, dgrid, c
                      in zip(sigma, grid, center)
                      ], axis=0)
 
-    gauss = sp.exp(-gaexpo/2)
+    gauss = np.exp(-gaexpo/2)
 
     if norm:
-        norm = sp.product(sigma) * sp.sqrt(2*sp.pi)**len(sigma)
+        norm = np.product(sigma) * np.sqrt(2*np.pi)**len(sigma)
         gauss *= norm
 
     return gauss
 
 
 def bipol(coef, x, y):
-    """Polynomial fit for sky subtraction
-
-    :param coef: sky fit polynomial coefficients
-    :type coef: sp.ndarray
-    :param x: horizontal coordinates
-    :type x: sp.ndarray
-    :param y: vertical coordinates
-    :type y: sp.ndarray
-    :rtype: sp.ndarray
     """
-    plane = sp.zeros(x.shape)
-    deg = sp.sqrt(coef.size).astype(int)
+    Polynomial fit for sky subtraction
+
+    coef : scipy ndarray
+        Sky fit polynomial coefficients
+    x : scipy ndarray
+        Horizontal coordinates
+    y : vertical coordinates
+    
+    Returns
+    -------
+    scipy ndarray
+    """
+    plane = np.zeros(x.shape)
+    deg = np.sqrt(coef.size).astype(int)
     coef = coef.reshape((deg, deg))
 
     if deg * deg != coef.size:
         print("Malformed coefficient: " + str(coef.size) + "(size) != " + str(deg) + "(dim)^2")
 
-    for i in sp.arange(coef.shape[0]):
-        for j in sp.arange(i + 1):
+    for i in np.arange(coef.shape[0]):
+        for j in np.arange(i + 1):
             plane += coef[i, j] * (x ** j) * (y ** (i - j))
 
     return plane

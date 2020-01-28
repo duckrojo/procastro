@@ -20,10 +20,9 @@
 
 from __future__ import print_function, division
 
-__all__ = ['AstroFile', 'AstroCalib', 'merger']
+__all__ = ['AstroFile', 'AstroCalib']
 
 import logging
-import scipy as sp
 from functools import wraps as _wraps
 import warnings
 import re
@@ -40,7 +39,7 @@ iologger = logging.getLogger('dataproc.io')
 
 def _numerize_other(method):
     """
-    When operating between two AstroFile objects, this decorator will try tobytes
+    When operating between two AstroFile objects, this decorator will try to
     first read the second AstroFile first.
     """
     @_wraps(method)
@@ -110,8 +109,8 @@ def _fits_writer(filename, data, header=None):
     Parameters
     ----------
     filename : str
-    data : array-like
-    header : Header Object
+    data : array_like
+    header : Header Object, optional
     """
     if header is None:
         header = pf.header()                                     
@@ -124,17 +123,21 @@ def _fits_writer(filename, data, header=None):
 def _fits_verify(filename, ffilter=None, hdu=0):
     """
     Verifies that the given file has the expected extensions of fit files
-    Accepted extensions: 'fits', 'fit', 'ftsc', 'fts', 'fitsgz', 'fitgz', 'fitszip', 'fitzip'
+    Accepted extensions: 'fits', 'fit', 'ftsc', 'fts', 'fitsgz', 
+                         'fitgz', 'fitszip', 'fitzip'
     
     Parameters
     ----------
     filename : str
-    ffilter :
-    hdu : int
+    ffilter : dict, list, optional
+        If given, the method checks if the file also has the specified values
+        on their header
+    hdu : int, optional
+        HDU to be checked
     
     Returns
     -------
-    
+    bool
     """
     single_extension = filename.lower().split('.')[-1] in ['fits', 'fit', 'ftsc', 'fts']
     double_extension = ''.join(filename.lower().split('.')[-2:]) in ['fitsgz', 'fitgz', 'fitszip', 'fitzip']
@@ -155,11 +158,13 @@ def _fits_getheader(_filename, *args, **kwargs):
     
     Parameters
     ----------
-    _filename: str
+    _filename : str
     
     Returns
     -------
-    List of dictionaries which contain data from the headers, one per hdu
+    list of dicts
+        Each dictionary contains the header data from a hdu unit inside 
+        the file
     """
     ret = []
     hdu_list = pf.open(_filename)
@@ -177,14 +182,15 @@ def _fits_setheader(_filename, **kwargs):
     Parameters
     ----------
     _filename : str
-    hdu: int, optional
-    write: bool, optional
-    **kwargs: 
+    hdu : int, optional
+    write : bool, optional
+    **kwargs : 
         Set of key value pairs containing the data to be read
         
     Returns
     -------
-    True if succesfull
+    bool
+        True if succesfull
     """
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
 
@@ -218,32 +224,6 @@ def _fits_setheader(_filename, **kwargs):
     hdulist.close()
     return True
 
-def merger(filename):
-    """
-    Merges multiple HDUImage objects into a single composite HDUImage
-    , saves the new ImageHDU into a new hdu slot in the same file.
-    
-    Parameters
-    ----------
-    filename: str
-        Name of the file to be processed
-    """
-    fit = pf.open(filename)
-    if fit[-1].header.get('COMP') != None:
-        # This file already has a composite image
-        fit.close()
-        return
-    
-    comp = fit[1].data
-    for i in range(2, len(fit)):
-        comp = np.concatenate((comp, fit[i].data), axis = 1)
-    
-    composite = pf.ImageHDU(comp)
-    composite.header.set('COMP', True)
-    fit.append(composite)
-    fit.writeto(filename, overwrite=True)
-    fit.close()
-
 #############################
 #
 # Start sparray type
@@ -255,7 +235,7 @@ def array_reader(filename, **kwargs):
 
 
 def array_verify(filename, **kwargs):
-    if isinstance(filename, sp.ndarray):
+    if isinstance(filename, np.ndarray):
         return True
     return False
 
@@ -306,12 +286,10 @@ def _checkfilename(f):
 class AstroFile(object):
     """
     Representation of an astronomical data file, containing information related
-    to the data contained. Currently supports usage of arrays and .fit files
+    to the file's data. Currently supports usage of arrays and .fit files
     
-    Attributes:
-    -----------
-    filename : str
-        Path to file
+    Attributes
+    ----------
     shape : tuple
         Shape of the data contained on the file
     header_cache : dict
@@ -320,6 +298,41 @@ class AstroFile(object):
         Header Item used when sorting this object
     type : str
         File extension
+        
+    Parameters
+    ----------
+    filename : str or dataproc.AstroFile
+        If AstroFile, then it does not duplicate the information, 
+        but uses that object directly.
+    mbias : dict indexed by exposure time, array or AstroFile, optional
+        Default Master bias
+    mflat : dict indexed by filter name, array or AstroFile, optional
+        Default Master flat
+    exists: boolean, optional
+        Represents if the given pathname has an existing file
+    mbias_header :
+    mflat_header :
+    hdu : int, optional
+        Default hdu slot usedfor collection, if "hduh" or "hdud" are not 
+        specified, this parameter will override them.
+    hduh : int, optional
+        hdu slot containing the header information to be collected
+    hdud : int, optional
+        hdu slot containing astronomical data to be collected
+    read_keywords : list, optional
+        Read all specified keywords at creation time and store them in 
+        the header cache
+    ron : float, str, astropy quantity, optional
+        Read-out-noise value or header keyword. Only consulted if either 
+        mbias or mflat are not CCDData. If unit not specified, photon/ADU 
+        is used as default unit; if not set at all, uses 1.0 (with warning)
+    gain : float, str, astropy quantity, optional
+        Gain value or header keyword. Only consulted if either 
+        mbias or mflat are not CCDData. If unit not specified, photon/ADU 
+        is used as default unit; if not set at all, uses 1.0 (with warning)
+    unit : astropy.units, optional
+        Specifies the unit for the data
+        
     """
     
     # Interface between public and private methods for each supported type
@@ -338,7 +351,8 @@ class AstroFile(object):
 
     def __new__(cls, *args, **kwargs):
         """
-        If passed an AstroFile, then do not create a new instance, just pass that one
+        If passed an AstroFile, then do not create a new instance, just pass 
+        that one
         """
         if args and isinstance(args[0], AstroFile):
             return args[0]
@@ -352,36 +366,6 @@ class AstroFile(object):
                  auto_trim = None,
                  ron=None, gain=None, unit=None,
                  *args, **kwargs):
-        """
-        Parameters
-        ----------
-        filename: str or dataproc.AstroFile
-            If AstroFile, then it does not duplicate the information, but uses that object directly.
-        gain : float, string, astropy quantity
-            Gain value or header keyword. Only consulted if either mbias or mflat are not CCDData. If unit not
-            specified, photon/ADU is used as default unit; if not set at all, uses 1.0 (with warning).
-        ron : float, string, astropy quantity
-            read-out-noise value or header keyword. Only consulted if either mbias or mflat are not CCDData. If
-            unit not specified, photon/ADU is used as default unit; if not set at all, uses 1.0 (with warning).
-        unit: astropy.units
-            Specifies the unit for the data
-        mbias: AstroFile
-            Default Master bias
-        mflat: AstroFile 
-            Default Master flat
-        exists: boolean
-            Represents if the given pathname has an existing file
-        hdu: int
-            Default hdu slot usedfor collection, if "hduh" or "hdud" are not specified
-            this parameter will override them.
-        hduh: int
-            hdu slot containing the header information to be collected
-        hdud:
-            hdu slot containing astronomical data to be collected
-        
-        args:
-        kwargs:
-        """
 
         if isinstance(filename, AstroFile):
             return
@@ -438,7 +422,7 @@ class AstroFile(object):
         
         Parameters
         ----------
-        mbias: AstroFile
+        mbias: dict indexed by exposure time, array or AstroFile
         """
         self.calib.add_bias(mbias)
 
@@ -448,7 +432,7 @@ class AstroFile(object):
         
         Parameters
         ----------
-        mflat: AstroFile
+        mflat: dict indexed by filter name time, array or AstroFile
         """
         
         self.calib.add_flat(mflat)
@@ -517,7 +501,7 @@ class AstroFile(object):
         
         Returns
         -------
-        str :
+        str
             "array" : If AstroFile represents a scipy array
             "fits" : If AstroFile points to an existing .fits file
             None : Otherwise
@@ -544,7 +528,8 @@ class AstroFile(object):
         
         See Also
         --------
-        misc_graph.plot_accross for details on what keyword arguments are available
+        misc_graph.plot_accross : For details on what keyword arguments are 
+                                  available
         """
 
         return dp.plot_accross(self.reader(), *args, **kwargs)
@@ -563,9 +548,9 @@ class AstroFile(object):
         """
         Plots frame after being processed using a zscale algorithm
         
-        See Also:
-        ---------
-        misc_graph.imshowz for details on what keyword arguments are available
+        See Also
+        --------
+        misc_graph.imshowz : for details on what keyword arguments are available
         """
         return dp.imshowz(self.reader(), *args, **kwargs)
 
@@ -575,11 +560,11 @@ class AstroFile(object):
     @_checkfilename
     def filter(self, **kwargs):
         """
-        Compares if the expected value of the given header item matches the value
-        stored in this file.
+        Compares if the expected value of the given header item matches 
+        the value stored in this file.
         
-        Filtering can be customized by including one of the following options after
-        the item name, separated by an underscore.
+        Filtering can be customized by including one of the following options 
+        after the item name, separated by an underscore.
         
         When querying strings:
             * BEGIN:    True if value starts with the given string
@@ -590,26 +575,29 @@ class AstroFile(object):
         When querying numeric values:
             * LT:       True if current value is lower than the given number
             * GT:       True if current value is greater than the given number
-            * EQUAL:    True if both values are the same, can be used in conjunction with
-                        LT or GT                       
+            * EQUAL:    True if both values are the same, can be used in 
+                        conjunction with LT or GT                       
         Other:
             NOT:        Logical Not
             
-        Its possible to include multiple options, this statements count as or statements
+        Its possible to include multiple options, this statements count as 
+        logical or statements.
         
         Notes
         -----
-        If a header item has a "-" character on its name, use two underscores to represent it 
+        If a header item has a "-" character on its name, use two underscores 
+        to represent it.
         
         Examples
         --------
-            NAME_BEGIN_ICASE_NOT = "WASP"   (False if string starts with wasp ignoring uppercases)
-            NAXIS1_GT = 20  (True if NAXIS1 > 20)
+        NAME_BEGIN_ICASE_NOT = "WASP"   (False if string starts with wasp 
+                                         ignores uppercase)
+        NAXIS1_GT = 20                  (True if NAXIS1 > 20)
             
         Parameters
         ----------
-        kwargs: Keyword Arguments or unpacked dictionary
-            item_name_option = value
+        kwargs : Keyword Arguments or unpacked dictionary
+            item_name_option : value
             
         Returns
         -------
@@ -735,17 +723,19 @@ class AstroFile(object):
         Parameters
         ----------
         args : list, tuple
-          One string per argument, or a list as a single argument: getheaderval(field1,field2,...) or
-          getheaderval([field1,field2,...]). In addition to return headers from the file, it can return "basename" and
-          "dirname" from the filename itself if available
+          One string per argument, or a list as a single argument: 
+          getheaderval(field1,field2,...) or
+          getheaderval([field1,field2,...]). 
+          In addition to return headers from the file, it can return "basename" 
+          and "dirname" from the filename itself if available.
         cast : function, optional
-          Function to use for casting each element of the result
+          Function to use for casting each element of the result.
         hdu :  int, optional
-          HDU to read
+          HDU to read.
 
         Returns
         -------
-        List containing the results
+        list
         """
 
         tp = self.type
@@ -788,8 +778,8 @@ class AstroFile(object):
         
         TODO: Respond to different exposure times or filters
         
-        Parameters:
-        -----------
+        Parameters
+        ----------
         hdu, hdud: int, optional
             hdu slot to be read
         rawdata : bool, optional
@@ -828,7 +818,7 @@ class AstroFile(object):
 
         #transform into CCDData
         # ccddata = ndd.CCDData(data, unit=self.unit, meta=self.header_cache,
-        #                       uncertainty=ndd.StdDevUncertainty(sp.sqrt(self.ron*self.ron + data*self.gain)/self.gain))
+        #                       uncertainty=ndd.StdDevUncertainty(np.sqrt(self.ron*self.ron + data*self.gain)/self.gain))
 
         if self.has_calib():
             return self.calib.reduce(data,
@@ -846,7 +836,7 @@ class AstroFile(object):
         
         Returns
         -------
-        boolean
+        bool
         """
         return self.calib.has_flat or self.calib.has_bias
 
@@ -991,16 +981,17 @@ class AstroFile(object):
         
         Parameters
         ----------
-        *args : string
+        *args : str
             Statistic to be extracted, Possible values are: min, max, mean,
             mean3sclip, std and median
             
-        **kwargs : string
+        **kwargs : str
             Options available: verbose_heading and extra_headers
             
         Returns
         -------
-        List with the requested data
+        list
+            List containing the requested data
         
         """
         verbose_heading = kwargs.pop('verbose_heading', True)
@@ -1028,11 +1019,11 @@ class AstroFile(object):
                 clip = data.copy().astype("float64")   ### Included casting
                 clip -= data.mean()
                 std = data.std()
-                ret.append(clip[sp.absolute(clip) < 3 * std].mean())
+                ret.append(clip[np.absolute(clip) < 3 * std].mean())
             elif stat == 'std':
                 ret.append(data.std())
             elif stat == 'median':
-                ret.append(sp.median(data))
+                ret.append(np.median(data))
             else:
                 raise ValueError("Unknown stat '{}' was requested for "
                                  "file {}".format(stat, self.filename))
@@ -1043,15 +1034,17 @@ class AstroFile(object):
 
     def jd_from_ut(self, target='jd', source='date-obs'):
         """
-        Add jd in header's cache to keyword 'target' using ut on keyword 'source'
+        Add jd in header's cache to keyword 'target' using ut on keyword 
+        'source'
         
         Parameters
         ----------
-        target : string
+        target : str
             Target keyword for JD storage
-        source : string or list
-            Input value in UT format, if a tuple is given it will join the values obtained
-            from both keywords following the UT format (day+T+time)
+        source : str or list
+            Input value in UT format, if a tuple is given it will join the 
+            values obtained from both keywords following the UT format 
+            (day+T+time)
             
         """
         newhd = {}
@@ -1060,7 +1053,44 @@ class AstroFile(object):
         else:
             newhd[target] = apt.Time(self[source]).jd
         self.setheader(**newhd)
-
+    
+    def merger(self, start = 1, end = None):
+        """
+        Merges multiple ImageHDU objects into a single composite image
+        , saves the new ImageHDU into a new hdu slot.
+        
+        Parameters
+        ----------
+        start: int, optional
+            HDU slot from which the algorithm starts concatenating images
+        end: int, optional
+            Last HDU to be merged, if None will continue until the end of the 
+            HDUList
+        """
+        with pf.open(self.filename, mode='update') as fit:
+            if fit[-1].header.get('COMP') != None:
+                # This file already has a composite image
+                fit.close()
+                return self
+            
+            if end is None:
+                end = len(fit)
+                
+            data = []
+            for i in range(start, end):
+                if isinstance(fit[i], (pf.ImageHDU, pf.PrimaryHDU)):
+                    data.append(fit[i].data)
+                else:
+                    raise(TypeError, "Unable to merge hdu of type: "+type(fit[i]))
+                    
+            comp = np.concatenate(data, axis = 1)
+            
+            composite = pf.ImageHDU(comp)
+            composite.header.set('COMP', True)
+            fit.append(composite)
+            fit.flush()
+            
+    
     #################
     ####
     #### WISHLIST FROM HERE. BASIC IMPLEMENTATION of METHODS
@@ -1107,7 +1137,22 @@ class AstroCalib(object):
     ----------
     has_bias : bool
     has_flat : bool
-
+    
+    Parameters
+    ----------
+    mbias : dict indexed by exposure time, array or AstroFile
+        Master Bias 
+    mflat : dict indexed by filter name, array or AstroFile
+        Master Flat
+    exptime_keyword : str, optional
+        Header item name containing the exposure time of te frames
+    mbias_header : astropy.io.fits.Header
+        Header of the master bias
+    mflat_header : astropy.io.fits.Header
+        Header of the master bias
+    filter_keyword : str, optional
+    auto_trim : 
+    
     """
 
     def __init__(self, mbias=None, mflat=None,
@@ -1115,23 +1160,8 @@ class AstroCalib(object):
                  mbias_header=None, mflat_header=None,
                  filter_keyword='filter',
                  auto_trim=None):
+        
         # it is always created false, if the add_*() has something, then it is turned true.
-        """
-        Parameters
-        ----------
-        mbias : 
-            Master Bias 
-        mflat : 
-            Master Flat
-        exptime_keyword : str
-            Header item name containing the exposure time of te frames
-        mbias_header :
-            Header of the master bias
-        mflat_header :
-            Header of the master bias
-        filter_keyword :
-        auto_trim : 
-        """
         self.has_bias = self.has_flat = False
 
         self.mbias = {}
@@ -1148,10 +1178,9 @@ class AstroCalib(object):
 
         Parameters
         ----------
-        mbias : {dict, array}
-            It can be either a dictionary indexed by exposure time 
-            or an array/AstroFile for generic times
-        mbias_header:
+        mbias : dict indexed by exposure time, array_like or AstroFile
+            Master bias to be included
+        mbias_header: astropy.io.fits.Header
             Header to be included
         """
         self.mbias_header = mbias_header
@@ -1163,7 +1192,7 @@ class AstroCalib(object):
             for k in mbias.keys():
                 self.mbias[k] = mbias[k]
         elif isinstance(mbias,
-                        (int, float, sp.ndarray)):
+                        (int, float, np.ndarray)):
             self.mbias[-1] = mbias
         elif isinstance(mbias,
                         dp.AstroFile):
@@ -1178,11 +1207,10 @@ class AstroCalib(object):
         
         Parameters
         ----------
-        mflat: 
-            It can be either a dictionary  indexed by filter name, or an 
-            AstroFile/array for generic filter.
-        mflat_header:
-            Header to be included
+        mflat: dict indexed by filter name, array_like, AstroFile
+            Master flat to be included
+        mflat_header: astropy.io.fits.Header, optional
+            Master flat header
         """
 
         self.mflat_header = mflat_header
@@ -1198,7 +1226,7 @@ class AstroCalib(object):
             self.mflat[''] = mflat.reader()
             self.mflat_header = mflat.readheader()
         elif isinstance(mflat,
-                        (int, float, sp.ndarray)):
+                        (int, float, np.ndarray)):
             self.mflat[''] = mflat
         else:
             raise ValueError("Master Flat supplied was not recognized.")
@@ -1207,19 +1235,19 @@ class AstroCalib(object):
         """
         Process given "data" using the bias and flat contained in this instance
         
-        Parameters:
-        -----------
-        data : scipy array
+        Parameters
+        ----------
+        data : array_like
             Data to be reduced
-        exptime : int
+        exptime : int, optional
             Exposure time for bias
-        ffilter : str
+        ffilter : str, optional
             Filter used by the flat
-        header :
+        header : astropy.io.fits.Header, optional
         
-        Returns:
-        --------
-        scipy array
+        Returns
+        -------
+        array_like
             Reduced data
         """
         
@@ -1239,7 +1267,7 @@ class AstroCalib(object):
         flat = self.mflat[ffilter]
         bias = self.mbias[exptime]
 
-        mintrim = sp.array([0, data.shape[0], 0, data.shape[1]])
+        mintrim = np.array([0, data.shape[0], 0, data.shape[1]])
         calib_arrays = [flat, bias, data]
 
         if self.auto_trim is not None:
@@ -1260,8 +1288,8 @@ class AstroCalib(object):
 
                 if theader is not None and self.auto_trim in theader:
 
-                    trim = sp.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
-                                              theader[self.auto_trim]).group(1, 2, 3, 4))[sp.array([2, 3, 0, 1])]
+                    trim = np.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
+                                              theader[self.auto_trim]).group(1, 2, 3, 4))[np.array([2, 3, 0, 1])]
                     trim = [int(t) for t in trim]
                     # Note the "-1" at the end since fits specifies indices from 1 and not from 0
                     trim[0] -= 1

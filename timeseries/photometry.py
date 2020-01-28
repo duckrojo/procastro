@@ -17,13 +17,13 @@
 #
 #
 
-from __future__ import print_function
+#from __future__ import print_function
 # noinspection PyUnresolvedReferences
 
 from IPython.core.debugger import Tracer
 import dataproc as dp
-import scipy as sp
 import scipy.optimize as op
+import numpy as np
 import sys
 import os.path
 from .timeseries import TimeSeries
@@ -86,18 +86,18 @@ def _show_apertures(coords, aperture=None, sky=None,
 
     for coo_xy, lab in zip(coords, labels):
         cx, cy = coo_xy
-        theta = sp.linspace(0, 2 * sp.pi, n_points, endpoint=True)
-        xs = cx + aperture * sp.cos(theta)
-        ys = cy + aperture * sp.sin(theta)
+        theta = np.linspace(0, 2 * np.pi, n_points, endpoint=True)
+        xs = cx + aperture * np.cos(theta)
+        ys = cy + aperture * np.sin(theta)
         ax.fill(xs, ys,
                 edgecolor=ap_color, color=ap_color,
                 alpha=alpha)
 
-        xs = cx + sp.outer(sky, sp.cos(theta))
-        ys = cy + sp.outer(sky, sp.sin(theta))
+        xs = cx + np.outer(sky, np.cos(theta))
+        ys = cy + np.outer(sky, np.sin(theta))
         xs[1, :] = xs[1, ::-1]
         ys[1, :] = ys[1, ::-1]
-        ax.fill(sp.ravel(xs), sp.ravel(ys),
+        ax.fill(np.ravel(xs), np.ravel(ys),
                 edgecolor=sk_color, color=sk_color,
                 alpha=alpha)
 
@@ -113,15 +113,15 @@ def _prep_offset(start, offsets, ignore):
     if ignore is None:
         ignore = []
     if offsets is None:
-        offset_list = sp.zeros([1, 2])
+        offset_list = np.zeros([1, 2])
     else:
-        offset_list = sp.zeros([max(offsets.keys()) + 1, 2])
+        offset_list = np.zeros([max(offsets.keys()) + 1, 2])
         for k, v in offsets.items():
             k -= start
             if k < 0:
                 continue
             elif isinstance(v, (list, tuple)) and len(v) == 2:
-                offset_list[k, :] = sp.array(v)
+                offset_list[k, :] = np.array(v)
             elif isinstance(k, int) and v == 0:
                 ignore.append(k)
             else:
@@ -134,14 +134,25 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
     """
     If files were not calibrated in AstroFile, then  generate calibrated data
     from a specified frame
-    :param sci_files:
-    :param frame: frame To calibrate, first frame by default
-    :param mdark:
-    :param mflat:
-    :param ccd_lims_xy: Set limits of the cube of data to calibrate
-    :param logger:
-    :param skip_calib: If this is True, there will be no calibration.
-    :return: Calibrated file
+    
+    Parameters
+    ----------
+    sci_files: dataproc.AstroDir
+    frame: frame To calibrate, first frame by default
+    mdark: array_like, dict or AstroFile, optional
+        Master dark/bias
+    mflat: array_like, dict or AstroFile, optional
+        Master flat
+    ccd_lims_xy: List
+        Set limits of the cube of data to calibrate
+    logger: bool
+        Toggles logging
+    skip_calib: If this is True, there will be no calibration.
+    
+    Returns
+    -------
+    array_like :
+        Calibrated file data
     """
     if logger is None:
         logger = tmlogger
@@ -150,10 +161,10 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
     d = astrofile.reader()
     d = d[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
 
-    if isinstance(mdark, sp.ndarray):
+    if isinstance(mdark, np.ndarray):
         mdark = mdark[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
 
-    if isinstance(mflat, sp.ndarray):
+    if isinstance(mflat, np.ndarray):
         mflat = mflat[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
 
     if not skip_calib:
@@ -169,13 +180,61 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 max_change_allowed=None, interactive=False, idx0=0,
                 ccd_lims_xy=None):
     """
+    ...
 
-    :param sci_files:
-    :type sci_files: AstroDir
-    :param target_coords_xy: [[t1x, t1y], [t2x, t2y], ...]
-    :param stamp_rad:
-    :param ccd_lims_xy: [x1, x2, y1, y2] mean [x1:x2, y1:y2]
-    :return:
+    Parameters
+    ----------
+    sci_files : dataproc.AstroDir
+    target_coords_xy: List
+        List containing each target coordinates. 
+        ([[t1x, t1y], [t2x, t2y], ...])
+    stamp_rad : int
+        Radius of the stamp used
+    maxskip : int
+        Maximum distance allowed between target and stamp center, a longer
+        skip will toggle a warning.
+    mdark : 
+        Master dark/bias to be used
+    mflat :
+        Master Flat to be used
+    labels : String list, optional
+        List containing the names of each target
+    recenter : bool, optional
+        If True, the stamp will readjust its position each frame, following
+        the target's movement
+    offset_xy : List, optional
+        
+    logger : bool
+        If True, enables logger output
+    ignore : int list, optional
+        List with the indeces of frames to be ignored
+    brightest : int, optional
+        Index of the brightest target
+    max_change_allowed :
+    interactive : bool, optional
+        Enables interactive mode. See Notes below.
+    idx0 : int, optional
+        Index of the first frame
+    ccd_lims_xy : List, optional
+        Limit of the section being analysed.
+        ([x1, x2, y1, y2] means [x1:x2, y1:y2])
+    
+    Notes
+    -----
+    Interactive Mode:
+    Enbling this setting gives manual control over the reduction process, 
+    the following commands are available:
+        * Left and Right keys : Change to previous/next frame
+        * c : Recenter stamps based on mouse position
+        * d : Ignore current frame
+        * g : Keep going until a major drift occurs
+        * q : Exit interactive mode and stop the process
+        
+    Frames can be flagged by pressing 1-9
+    
+    Returns
+    -------
+    
     """
 
     if ignore is None:
@@ -191,7 +250,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     if labels is None:
         labels = range(len(target_coords_xy))
 
-    tmp = sp.zeros([len(sci_files), 2])
+    tmp = np.zeros([len(sci_files), 2])
     if offsets_xy is None:
         offsets_xy = tmp
     elif len(offsets_xy) < len(sci_files):
@@ -210,10 +269,10 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     if mflat is None:
         mflat = 1.0
 
-    all_cubes = sp.zeros([len(target_coords_xy), ngood,
+    all_cubes = np.zeros([len(target_coords_xy), ngood,
                           stamp_rad*2+1, stamp_rad*2+1])
     indexing = [0]*ngood
-    center_xy = sp.zeros([len(target_coords_xy), ngood, 2])
+    center_xy = np.zeros([len(target_coords_xy), ngood, 2])
 
     center_user_xy = [[xx, yy] for xx, yy in target_coords_xy]
     logger.log(PROGRESS,
@@ -275,7 +334,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
             if off.sum() > 0:
                 stat |= 2
 
-            skip = sp.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
+            skip = np.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
             if skip > maxskip:
                 stat |= 1
                 if idx == 0:
@@ -290,12 +349,12 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
 
             last_frame_coords_xy.append([ncx, ncy])
 
-        distance_to_brightest_vector = sp.array(last_frame_coords_xy) - sp.array(last_frame_coords_xy[brightest])
-        distance_to_brightest = sp.sqrt((distance_to_brightest_vector*distance_to_brightest_vector).sum(1))
+        distance_to_brightest_vector = np.array(last_frame_coords_xy) - np.array(last_frame_coords_xy[brightest])
+        distance_to_brightest = np.sqrt((distance_to_brightest_vector*distance_to_brightest_vector).sum(1))
         if previous_distance is None:
             previous_distance = distance_to_brightest
         else:
-            change = sp.absolute(distance_to_brightest - previous_distance)
+            change = np.absolute(distance_to_brightest - previous_distance)
             max_change = max(change)
             if max_change > max_change_allowed and idx not in ignore:
                 if try_dedrift:
@@ -338,7 +397,6 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                     prev_cnt_bright = center_xy[brightest][to_store-1]
                     offsets_xy[idx] = [event.xdata - prev_cnt_bright[0],
                                        event.ydata - prev_cnt_bright[1]]
-                    #print([event.xdata, prev_cnt_bright[0],event.ydata,prev_cnt_bright[1]])
                     on_click_action[0] = 0
                 elif event.key == 'g':
                     on_click_action[0] = 10
@@ -428,7 +486,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         print ("flags = {")
         for i in range(1, 10):
             if str(i) in flag:
-                print ("{:d}: {},".format(i, list(sp.array(list(set(flag[str(i)]))) + idx0)))
+                print ("{:d}: {},".format(i, list(np.array(list(set(flag[str(i)]))) + idx0)))
         print("}")
         logger.removeFilter(msg_filter)
 
@@ -436,19 +494,25 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
 
 
 def _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain=None, ron=None):
-    """Calculates the photometry error
+    """
+    Calculates the photometry error
 
-    :param phot: star flux
-    :type phot: float
-    :param n_pix_ap: number of pixels in the aperture
-    :type n_pix_ap: int
-    :param n_pix_sky: number of pixels in the sky annulus
-    :type n_pix_sky: int
-    :param gain: gain
-    :type gain: float
-    :param ron: read-out-noise
-    :type ron: float (default value: None)
-    :rtype: float
+    Parameters
+    ----------
+    phot : float
+        Star flux
+    n_pix_ap : int
+        Number of pixels in the aperture
+    n_pix_sky: int
+        Number of pixels in the sky annulus
+    gain: float, optional
+        Telescope gain
+    ron: float, optional
+        Read-out-noise
+    
+    Returns
+    -------
+    float
     """
 
     if ron is None:
@@ -464,10 +528,85 @@ def _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain=None, ron=None):
 
     var_total = var_sky + var_flux + ron * ron * n_pix_ap
 
-    return sp.sqrt(var_total)
+    return np.sqrt(var_total)
 
 
 class Photometry:
+    """
+    Applies photometry to a target from the data stored in multiple
+    fit frames.
+    
+    Fit frames must be stored in a dataproc.AstroDir object, the user gives the
+    coordinates of the target to be analysed and if possible the positions of
+    other stars for reference. The process starts from the first frame with
+    the coordinates given and tracks their position as frames are read.
+    
+    This process can be controlled by the user by enabling interactive mode
+    during initialization. This mode can be used to correct the position of the
+    target after a jump or to verify the integrity of the files visually.
+    
+    Attributes
+    ----------
+    surrounding_ap_limit :
+    coord_user_xy :
+    extra_header :
+    extras :
+    
+    Parameters
+    ----------
+    sci_files : dataproc.AstroDir
+    target_coords_xy : List
+        List containing each target coordinates.
+        ([[t1x, t1y], [t2x, t2y], ...])
+    offsets_xy : List, optional
+    idx0 : int, optional
+        Index of the first frame
+    aperture :
+    sky :
+    mdark : dict indexed by exposure time, array or AstroFile
+        Master dark/bias to be used
+    mflat : dict indexed by filter name, array or AstroFile
+        Master Flat to be used
+    stamp_rad : int, optional
+        Radius of the stamp used
+    max_skip : int, optional
+        Maximum distance allowed between target and stamp center, 
+        a longer skip will toggle a warning.
+    max_counts : int, optional
+        Maximum value permitted per pixel
+    recenter : bool, optional
+        If True, the stamp will readjust its position each frame, following
+        the target's movement
+    epoch : String, optional
+        Header item containing the epoch value
+    labels : String list, optional
+        Name of each target
+    brightest : int, optional
+        Index of star to use as position reference
+    deg : 
+    gain : float, optional
+        Gain of the telescope
+    ron : float, optional
+        Read-out-noise
+    logfile : String, optional
+        If set, logger will save its output on this file
+    ignore : List, optional
+        Indeces of frames to be ignored
+    extra :
+    interactive : bool, optional
+        Enables interactive mode
+    ccd_lims_xy : List, optional
+        CCD dimensions
+        
+    See Also
+    --------
+    dataproc.AstroFile
+    dataproc.AstroDir
+    photometry
+    datproc.TimeSeries.timeseries
+    
+    """
+
     def __init__(self, sci_files, target_coords_xy, offsets_xy=None, idx0=0,
                  aperture=None, sky=None, mdark=None, mflat=None,
                  stamp_rad=30, outer_ap=1.2,
@@ -476,29 +615,7 @@ class Photometry:
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
                  interactive=False, ccd_lims_xy=None):
-        """
-
-        :param sci_files:
-        :param target_coords_xy:
-        :param aperture:
-        :param sky:
-        :param mdark:
-        :param mflat:
-        :param stamp_rad:
-        :param offsets_xy:
-        :param max_skip:
-        :param max_counts:
-        :param recenter:
-        :param epoch:
-        :param labels:
-        :param brightest: index of star to use as position reference
-        :param deg:
-        :param gain:
-        :param ron:
-        :param logfile:
-        :param ignore:
-        :param ccd_lims_xy:
-        """
+        
         if isinstance(epoch, str):
             self.epoch = sci_files.getheaderval(epoch)
         elif hasattr(epoch, '__iter__'):
@@ -580,7 +697,7 @@ class Photometry:
             if len(labels) > nstars:
                 labels = labels[:nstars]
             elif len(labels) < nstars:
-                labels = list(labels) + list(sp.arange(len(labels),
+                labels = list(labels) + list(np.arange(len(labels),
                                                        nstars).astype(str))
         except:
             raise ValueError("Coordinates of target stars need to be " +
@@ -597,9 +714,9 @@ class Photometry:
                 data = sci_files[0].reader()
                 stamp = dp.subarray(data, dp.subcentroid(data, (trg[1], trg[0]), stamp_rad), stamp_rad)
                 d = dp.radial(stamp, (stamp_rad, stamp_rad))
-                sky_val = sp.median(stamp[(d < sky[1])*(d > sky[0])])
+                sky_val = np.median(stamp[(d < sky[1])*(d > sky[0])])
                 flxs.append((stamp[d < aperture] - sky_val).sum())
-            brightest = sp.argmax(flxs)
+            brightest = np.argmax(flxs)
         self.brightest = brightest
 
         self._logger.log(PROGRESS,
@@ -647,13 +764,17 @@ class Photometry:
                    deg=None, max_counts=None,
                    outer_ap=None):
         """
-
-        :param aperture:
-        :param sky:
-        :param deg:
-        :param max_counts:
-        :param outer_ap:  Outer ring as a fraction of aperture, to report surrounding region
-        :return:
+        Verifies parameters given and applies photometry through cpu_phot
+        
+        Parameters
+        ----------
+        aperture:
+        sky:
+        deg:
+        max_counts: int, optional
+            Maximum value allowed per pixel, raises a warning if a target does
+        outer_ap:  
+            Outer ring as a fraction of aperture, to report surrounding region
         """
         if aperture is not None:
             self.aperture = [aperture]
@@ -688,6 +809,11 @@ class Photometry:
         return ts
 
     def remove_from(self, idx):
+        """
+        Removes file of index 'idx' from the list of frames to be processed
+        
+        idx : int
+        """
         if not isinstance(idx, int):
             raise TypeError("idx can only be indexing")
         idx_skipping = self.indexing.index(idx)
@@ -701,10 +827,16 @@ class Photometry:
 
     def append(self, sci_files, offsets_xy=None, ignore=None):
         """
-Adds more files to photometry
-        :param offsets_xy:
-        :param sci_files:
-        :param ignore: Keeps the same zero from original serie
+        Adds more files to photometry
+        
+        Parameters
+        ----------
+        offsets_xy:
+        sci_files: str, optional
+            Path ton directory where the data is located
+        ignore:
+            Keeps the same zero from original serie
+        
         """
 
         sci_files = dp.AstroDir(sci_files)
@@ -728,8 +860,8 @@ Adds more files to photometry
                                                     logger=self._logger,
                                                     ignore=ignore,
                                                     brightest=brightest)
-        self.sci_stamps = sp.concatenate((self.sci_stamps, sci_stamps), axis=1)
-        self.coords_new_xy = sp.concatenate((self.coords_new_xy, coords_new_xy), axis=1)
+        self.sci_stamps = np.concatenate((self.sci_stamps, sci_stamps), axis=1)
+        self.coords_new_xy = np.concatenate((self.coords_new_xy, coords_new_xy), axis=1)
 
         last_idx = self.indexing[-1]+1
         self.indexing += [idx + last_idx for idx in indexing]
@@ -741,8 +873,16 @@ Adds more files to photometry
 
     def cpu_phot(self):
         """
-
-        :return:
+        Calculates the CPU photometry for all frames
+        
+        Returns
+        -------
+        dataproc.TimeSeries :
+            TimeSeries object containing the resulting data
+            
+        See Also
+        --------
+        dataproc.TimeSeries : Object used to store the output
         """
         if isinstance(self.aperture, (list, tuple)):
             aperture = self.aperture
@@ -752,16 +892,16 @@ Adds more files to photometry
         ns = len(self.indexing)
         nt = len(self.coords_new_xy)
         na = len(aperture)
-        all_sky_poisson = sp.zeros([na, nt, ns])
-        all_sky_std = sp.zeros([na, nt, ns])
-        all_phot = sp.zeros([na, nt, ns])
-        all_peak = sp.zeros([na, nt, ns])
-        all_mom2 = sp.zeros([na, nt, ns])
-        all_mom3 = sp.zeros([na, nt, ns])
-        all_moma = sp.zeros([na, nt, ns])
-        all_err = sp.zeros([na, nt, ns])
-        all_fwhm = sp.zeros([nt, ns])
-        all_excess = sp.zeros([na, nt, ns])
+        all_sky_poisson = np.zeros([na, nt, ns])
+        all_sky_std = np.zeros([na, nt, ns])
+        all_phot = np.zeros([na, nt, ns])
+        all_peak = np.zeros([na, nt, ns])
+        all_mom2 = np.zeros([na, nt, ns])
+        all_mom3 = np.zeros([na, nt, ns])
+        all_moma = np.zeros([na, nt, ns])
+        all_err = np.zeros([na, nt, ns])
+        all_fwhm = np.zeros([nt, ns])
+        all_excess = np.zeros([na, nt, ns])
 
         print("Processing CPU photometry for {0} targets: ".format(len(self.sci_stamps)), end='')
         sys.stdout.flush()
@@ -777,11 +917,11 @@ Adds more files to photometry
                 # Preparing arrays for photometry
                 d = dp.radial(data, cnt_stamp)
                 dy, dx = data.shape
-                y, x = sp.mgrid[-cnt_stamp[0]:dy - cnt_stamp[0], -cnt_stamp[1]:dx - cnt_stamp[1]]
+                y, x = np.mgrid[-cnt_stamp[0]:dy - cnt_stamp[0], -cnt_stamp[1]:dx - cnt_stamp[1]]
 
                 # Compute sky correction
                 # Case 1: sky = [fit, map_of_sky_pixels]
-                if isinstance(self.sky[0], sp.ndarray):
+                if isinstance(self.sky[0], np.ndarray):
                     fit = self.sky[0]
                     idx = self.sky[1]
 
@@ -789,10 +929,10 @@ Adds more files to photometry
                 else:
                     idx = (d > self.sky[0]) * (d < self.sky[1])
                     if self.deg == -1:
-                        fit = sp.median(data[idx])
+                        fit = np.median(data[idx])
                     elif self.deg >= 0:
                         err_func = lambda coef, xx, yy, zz: (dp.bipol(coef, xx, yy) - zz).flatten()
-                        coef0 = sp.zeros((self.deg, self.deg))
+                        coef0 = np.zeros((self.deg, self.deg))
                         coef0[0, 0] = data[idx].mean()
                         fit, cov, info, mesg, success = op.leastsq(err_func, coef0.flatten(),
                                                                    args=(x[idx], y[idx], data[idx]), full_output=True)
@@ -809,7 +949,7 @@ Adds more files to photometry
                     raise ValueError("invalid degree '{}' to fit sky".format(self.deg))
 
                 sky_std = (data - sky_fit)[idx].std()
-                sky_poisson = sp.sqrt(sp.mean(data[idx])/self.gain)
+                sky_poisson = np.sqrt(np.mean(data[idx])/self.gain)
                 res = data - sky_fit  # minus sky
 
                 # Following to compute FWHM by fitting gaussian
@@ -817,10 +957,10 @@ Adds more files to photometry
                 d2 = d[d < self.sky[1]].ravel()
                 to_fit = lambda dd, h, sigma: h * dp.gauss(dd, sigma, ndim=1)
                 try:
-                    sig, cov = op.curve_fit(to_fit, d2, res2, sigma=1 / sp.sqrt(sp.absolute(res2)),
+                    sig, cov = op.curve_fit(to_fit, d2, res2, sigma=1 / np.sqrt(np.absolute(res2)),
                                             p0=[max(res2), 3])
                 except RuntimeError:
-                    sig = sp.array([0, 0, 0])
+                    sig = np.array([0, 0, 0])
                 fwhm_g = 2.355 * sig[1]
                 all_fwhm[target_idx, epochs_idx] = fwhm_g
 
@@ -843,11 +983,11 @@ Adds more files to photometry
                     dy = y-cnt_stamp[0]
                     res_pos = res * (res > 0)
 
-                    skew_x = sp.sum((res_pos*(dx**3))[d < ap])
-                    skew_y = sp.sum((res_pos*(dy**3))[d < ap])
-                    all_mom2[ap_idx, target_idx, epochs_idx] = float(sp.sum((res_pos * (d ** 2))[d < ap]))
-                    all_mom3[ap_idx, target_idx, epochs_idx] = sp.sqrt(skew_x ** 2 + skew_y ** 2)
-                    all_moma[ap_idx, target_idx, epochs_idx] = sp.arctan2(skew_y, skew_x)
+                    skew_x = np.sum((res_pos*(dx**3))[d < ap])
+                    skew_y = np.sum((res_pos*(dy**3))[d < ap])
+                    all_mom2[ap_idx, target_idx, epochs_idx] = float(np.sum((res_pos * (d ** 2))[d < ap]))
+                    all_mom3[ap_idx, target_idx, epochs_idx] = np.sqrt(skew_x ** 2 + skew_y ** 2)
+                    all_moma[ap_idx, target_idx, epochs_idx] = np.arctan2(skew_y, skew_x)
 
                     # now the error
                     if self.gain is None:
@@ -885,8 +1025,13 @@ Adds more files to photometry
 
     def last_coordinates(self, pos=None):
         """
-Returns a dictionary with latest positions... useful if continued on a separate object
-        :return:
+        Returns a dictionary with each target's position from the last frame.
+        Useful if continued on a separate object
+        
+        Returns
+        -------
+        dict :
+            Dictionary contianing each targets coordinates
         """
         if pos is None:
             ret_idx = -1
@@ -898,15 +1043,24 @@ Returns a dictionary with latest positions... useful if continued on a separate 
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None, frame=0,
                            recenter=True, save=None, overwrite=False):
-        """Plot Radial Profile from data using radialprofile() function
-        :param targets: Target specification for re-centering. Either an integer for specific target.
-        :type targets: integer/string
-        :param xlim:
-        :param axes:
-        :param legend_size:
-        :param frame:
-        :param recenter:
-    """
+        """
+        Plots a Radial Profile from the data using dataproc.radialprofile
+        
+        Parameters
+        ----------
+        targets: int/str 
+            Target specification for re-centering. Either an integer for 
+            specific target.
+        xlim :
+        axes : int, plt.Figure, plt.Axes
+        legend_size : int, optional
+        frame : int, optional
+        recenter : bool, optional
+            If True, tragets will be tracked as they move
+        save : str, optional
+            Path where the plot will be saved
+        overwrite : bool, True
+        """
 
         colors = ['kx', 'rx', 'bx', 'gx', 'k^', 'r^', 'b^', 'g^', 'ko', 'ro', 'bo', 'go']
         fig, ax = dp.figaxes(axes, overwrite=overwrite)
@@ -961,18 +1115,31 @@ Returns a dictionary with latest positions... useful if continued on a separate 
     def showstamp(self, target=None, stamp_rad=None, axes=None,
                   first=0, last=-1, n_show=None, ncol=None, annotate=True,
                   imshow=None, save=None, overwrite=False):
-        """Show the star at the same position for the different frames
-
-        :param imshow:
-        :param axes:
-        :param n_show: indicates the number of figures to present. It overwrites the value of last
-        :param stamp_rad:
-        :param annotate:
-        :param target: None for the first key()
-        :param first: First frame to show
-        :param last: Last frame to show. It can be onPython negative format
-        :param ncol: Number of columns
-"""
+        """
+        Show the star at the same position for the different frames
+        
+        Parameters
+        ----------
+        target : None for the first key() 
+        stamp_rad : int, optional
+            Stamp radius
+        axes : int, matplotlib.pyplot Axes, optional
+        first : int, optional
+            First frame to show
+        last : int, optional
+            Last frame to show. -1 will show all stamps
+        n_show : int, optional
+            Indicates the number of figures to present. It overwrites the 
+            value of last
+        ncol : int, optional
+            Number of columns
+        annotate : bool, optional
+            If True, it will include the frame number with each stamp
+        imshow :
+        save : str, optional
+            Filename where the plot will be saved
+        overwrite : bool, optional
+        """
         if target is None:
             target = 0
         elif isinstance(target, str):
@@ -982,11 +1149,11 @@ Returns a dictionary with latest positions... useful if continued on a separate 
             last = first + n_show
 
         # change first and last to skipped indexing
-        first = list(sp.array(self.indexing) >= first).index(True)
+        first = list(np.array(self.indexing) >= first).index(True)
         if last < 0:
             last += len(self._astrodir)
         try:
-            last = list(sp.array(self.indexing) >= last).index(True)
+            last = list(np.array(self.indexing) >= last).index(True)
         except ValueError:
             last = len(self.indexing)-1
         n_images = last - first + 1
@@ -995,11 +1162,11 @@ Returns a dictionary with latest positions... useful if continued on a separate 
             stamp_rad = self.stamp_rad
 
         if ncol is None:
-            ncol = int(sp.sqrt(n_images)*1.3)
-        nrow = int(sp.ceil(float(n_images) / ncol))
+            ncol = int(np.sqrt(n_images)*1.3)
+        nrow = int(np.ceil(float(n_images) / ncol))
 
         stamp_d = 2*stamp_rad+1
-        array = sp.zeros([nrow*(stamp_d+2), ncol*(stamp_rad*2+3)])
+        array = np.zeros([nrow*(stamp_d+2), ncol*(stamp_rad*2+3)])
         for data, idx in zip(self.sci_stamps[target][first:last+1],
                              range(first, last+1)):
             pos_idx = idx - first
@@ -1037,9 +1204,13 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
     def plot_drift(self, target=None, axes=None):
         """
-
-        :param target:
-        :param axes:
+        Plots a target movement between frames
+        
+        Parameters
+        ----------
+        target : str, optional
+            Name of the target
+        axes : int, matplotlib.pyplot Axes, optional
         """
         colors = ['k-', 'r-', 'b-', 'g-', 'k--', 'r--', 'b--', 'g--', 'k:', 'r:', 'b:', 'g:']
         fig, ax = dp.figaxes(axes)
@@ -1067,9 +1238,11 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
     def plot_extra(self, x_id=None, axes=None):
         """
-
-        :param x_id:
-        :param axes:
+        
+        Parameters
+        ----------
+        x_id:
+        axes:
         """
         fig, ax, x = dp.figaxes_xdate(self.epoch, axes=axes)
 
@@ -1085,18 +1258,31 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                 mflat=None, **kwargs):
 
         """
-
-        :param interactive:
-        :param reference:
-        :param frame:
-        :param ap_color:
-        :param sk_color:
-        :param alpha:
-        :param axes:
-        :param annotate:
-        :param cnt:  It can be an XY tuple or a str to identify an
-          specific target position at the required frame
-        :param kwargs:
+        Plots the image from the fits file, after being processed using the
+        zscale Algorithm
+        
+        Parameters
+        ----------
+        frame:
+        ap_color: string, optional
+        sk_color: string, optional
+        alpha : float, optional
+        axes : int, matplotlib.pyplot Axes, optional
+        reference:
+        annotate: bool, optional
+            Displays target's name
+        cnt: tuple, string, optional
+            It can be an XY tuple or a str to identify a specific target 
+            position at the required frame
+        interactive: bool, optional
+            Enables interactive mode
+        save : str, optional
+            Filename of image where the plot will be saved to.
+        overwrite: bool, optional
+        ccd_lims_xy : list
+            List containing the ccd limits
+        mdark :
+        mflat :
         """
         f, ax = dp.figaxes(axes, overwrite=overwrite)
         ax.cla()
@@ -1135,6 +1321,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
 
         # noinspection PyDefaultArgument
         def _onkey(event, store=[], ref_input=[]):
+            #Handles keyboard input
             if event.inaxes != ax:
                 return
             xx, yy = event.xdata, event.ydata
@@ -1166,8 +1353,8 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                     return
                 event.inaxes.figure.show()
             elif event.key == 'c':
-                dist = sp.sqrt(((sp.array(coords)-sp.array([xx, yy])[None, :])**2).sum(1))
-                cnt_tmp = self.labels[sp.argmin(dist)]
+                dist = np.sqrt(((np.array(coords)-np.array([xx, yy])[None, :])**2).sum(1))
+                cnt_tmp = self.labels[np.argmin(dist)]
             elif event.key == 'o':
                 print(store)
                 print("Offset to {}: {}, {}".format(store[0], xx-store[1][0], yy-store[1][1]))
@@ -1190,6 +1377,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                                                or ""))
 
         def _onclick(event):
+            # Handles mouse input
             if event.inaxes != ax:
                 return
             xx, yy = event.xdata - ref_xy[0], event.ydata - ref_xy[1]
@@ -1201,7 +1389,7 @@ Returns a dictionary with latest positions... useful if continued on a separate 
                                                                                    and " on frame #{}".format(reference)
                                                                                    or "",
                                                                                    xx, yy,
-                                                                                   sp.sqrt(xx*xx+yy*yy),
+                                                                                   np.sqrt(xx*xx+yy*yy),
                                                                                    ))
         if interactive:
             f.canvas.mpl_connect('button_press_event', _onclick)

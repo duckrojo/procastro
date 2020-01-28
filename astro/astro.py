@@ -58,7 +58,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
        resolvable by Simbad. 
        Tests strictly in the previous order, returns as soon as it 
        finds a match.
-    coo_files: array_like
+    coo_files: array_like, optional
        List of files that are searched for a match in target name.  
        File should have at least three columns: Target_name RA Dec; 
        optionally, a fourth column for comments. Target_name can have 
@@ -67,10 +67,10 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
        follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a). 
        RA and Dec can be any mathematical expression that eval() can handle. 
        RA is hms by default, unless 'd' is appended, Dec is always dms.
-    return_pm:
+    return_pm : bool, optional
       if True return proper motions. Only as provided by Simbad for now, 
       otherwise returns None for each
-    equinox
+    equinox : str, optional
        Which astronomy equinox the coordinates refer. Default is J2000
 
     Returns
@@ -259,7 +259,7 @@ def read_horizons_cols(file):
                 cum += len(qs)
                 data[q].append(item)
 
-        data = {d: sp.array(data[d]) for d in data.keys()}
+        data = {d: np.array(data[d]) for d in data.keys()}
 
     return data
 
@@ -304,10 +304,10 @@ def blackbody(temperature, wav_freq, unit=None):
     h_kb_t = apc.h / apc.k_B / temperature
 
     if use_length:
-        blackbody_return = 2 * apc.h * apc.c ** 2 / (wav_freq ** 5) / (sp.exp(h_kb_t * apc.c / wav_freq) - 1)
+        blackbody_return = 2 * apc.h * apc.c ** 2 / (wav_freq ** 5) / (np.exp(h_kb_t * apc.c / wav_freq) - 1)
         blackbody_return = blackbody_return.to(apu.erg / apu.cm ** 2 / apu.cm / apu.s) / apu.sr
     else:
-        blackbody_return = 2 * apc.h * wav_freq ** 3 / (apc.c ** 2) / (sp.exp(h_kb_t * wav_freq) - 1)
+        blackbody_return = 2 * apc.h * wav_freq ** 3 / (apc.c ** 2) / (np.exp(h_kb_t * wav_freq) - 1)
         blackbody_return = blackbody_return.to(apu.erg / apu.cm ** 2 / apu.Hz / apu.s) / apu.sr
 
     return blackbody_return
@@ -364,8 +364,8 @@ def getfilter(name,
     if isinstance(name, (list, tuple)) and len(name) == 2:
         n_wavs = 50
         delta_filter = name[1] - name[0]
-        axis = sp.linspace(name[0] - 0.1*delta_filter, name[1] + 0.1*delta_filter, n_wavs)
-        transmission = sp.zeros(n_wavs)
+        axis = np.linspace(name[0] - 0.1*delta_filter, name[1] + 0.1*delta_filter, n_wavs)
+        transmission = np.zeros(n_wavs)
         transmission[(axis < name[1]) * (axis > name[0])] = 1
         return axis * filter_unit, transmission
     # otherwise, only accept strings
@@ -398,7 +398,7 @@ def getfilter(name,
             if fld.lstrip() == 'fct':
                 fct = float(val.lstrip())
 
-    axis, transmission = sp.loadtxt(found[0], unpack=True)
+    axis, transmission = np.loadtxt(found[0], unpack=True)
     axis *= filter_unit
     transmission /= fct
     if force_positive:
@@ -407,7 +407,7 @@ def getfilter(name,
     if force_increasing:
         axis, transmission = dp.sortmany(axis, transmission)
         axis = apu.Quantity(axis)
-        transmission = sp.array(transmission)
+        transmission = np.array(transmission)
 
     return axis, transmission
 
@@ -480,7 +480,7 @@ def applyfilter(name, spectra,
         wav_freq = wav_freq[idx]
         spectra = spectra[idx]
     except TypeError:  # spectra is scalar (temperature)
-        wav_freq = sp.linspace(wav_min, wav_max, n_wav_bb)
+        wav_freq = np.linspace(wav_min, wav_max, n_wav_bb)
         spectra = blackbody(spectra, wav_freq)
 
     spec_flt_tot = it.UnivariateSpline(wav_freq, (spectra * us(wav_freq)).value,
@@ -507,16 +507,16 @@ def filter_conversion(target_filter, temperature,
 
     Parameters
     ----------
-    target_filter : 
+    target_filter : str
        Target filter for the conversion
-    temperature :
+    temperature : int
        Temperature of star
-    temperature_ref :
+    temperature_ref : int, optional
        Temperature of magnitude's zero-point
     verbose: boolean, optional
        Write out the conversion
     kwargs: dict
-       It has to have one element: filter=value, as the original filter. 
+       It should have one element: filter=value, as the original filter. 
        Any dot (.) in filter will be converted to '_' before passing it to 
        get_filter.
 
@@ -539,16 +539,16 @@ def filter_conversion(target_filter, temperature,
         print("Converting from '%s'=%f to '%s'\n(T=%s object)" %
               (orig_filter, orig_value, target_filter, temperature))
 
-    ref0 = orig_value + 2.5 * sp.log(applyfilter(orig_filter, temperature) /
-                                     applyfilter(orig_filter, temperature_ref)) / sp.log(10)
+    ref0 = orig_value + 2.5 * np.log(applyfilter(orig_filter, temperature) /
+                                     applyfilter(orig_filter, temperature_ref)) / np.log(10)
 
-    return -2.5 * sp.log(applyfilter(target_filter, temperature) /
-                         applyfilter(target_filter, temperature_ref)) / sp.log(10) + ref0
+    return -2.5 * np.log(applyfilter(target_filter, temperature) /
+                         applyfilter(target_filter, temperature_ref)) / np.log(10) + ref0
 
 
 def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
     """
-    ...
+    ---
     
     Parameters
     ----------
@@ -561,4 +561,4 @@ def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
     -------
     float
     """
-    return tstar * sp.sqrt((rstar * apc.R_sun / au / apc.au) * sp.sqrt(1 - albedo) / 2.0)
+    return tstar * np.sqrt((rstar * apc.R_sun / au / apc.au) * np.sqrt(1 - albedo) / 2.0)

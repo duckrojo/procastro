@@ -25,15 +25,13 @@ __all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
            'imshowz', 'figaxes_xdate', 'figaxes',
            ]
     
-#import dataproc as dp
 import astropy.time as apt
 import datetime
 import dataproc as dp
-#import dataproc.combine as cm
 import matplotlib.pyplot as plt
 import matplotlib.dates as md
 import astropy.io.fits as pf
-import scipy as sp
+import numpy as np
 
 def plot_accross(data,
                  axes=None, title=None,
@@ -44,7 +42,29 @@ def plot_accross(data,
                  rotate=0,
                  pos=0,
                  forcenew=False,
-                 **kwargs):
+                 **kwargs):    
+    """
+    
+    Parameters
+    ----------
+    data : array_like
+    axes: int, plt.Figure, plt.Axes, optional
+    title: str, optional
+    xlim : tuple, optional
+        Section of the x-axis to plot
+    ylim : tuple, optional
+        Section of the y-axis to plot
+    ticks : bool, optional
+        Whether to display the ticks
+    colorbar: bool, optional
+        Wheteher to use a colorbar
+    hdu : int, optional
+        HDU to plot
+    rotate : int, optional
+    pos : int, optional
+    forcenew : bool, optional
+        Whether to create a new plot if no axis has been specified
+    """
     print(ylim)
 
     data = prep_data_plot(data, hdu=hdu)
@@ -73,10 +93,21 @@ def plot_accross(data,
 
 
 def prep_data_plot(indata, **kwargs):
-    """Extract from data the array to plot, currently accepts:
-    dataproc.Astrofile, dataproc.combine.Combine, pyfits.HDUlist,
-    string (assumed AstroFile-compatible file), or scipy.array"""
-    #set the data to plot
+    """
+    Extract from data the array to plot.
+    
+    Parameters
+    ----------
+    indata : str, HDUList, dataproc.AstroFile or scipy array
+    hdu : int, optional
+        If indata is a HDUList, it will prepare the data for this specific hdu
+
+    Returns
+    -------
+    array_like :
+        Data ready to be plotted
+    """
+    
     error_msg = None
 
 
@@ -87,10 +118,7 @@ def prep_data_plot(indata, **kwargs):
         data = indata[hdu].data
         error_msg = "for HDU {}.\n".format(hdu)
 
-#    elif isinstance(indata, cm.Combine):
-#        data = indata.data
-
-    elif isinstance(indata, sp.ndarray):
+    elif isinstance(indata, np.ndarray):
         data = indata
     else:
         af = dp.AstroFile(indata)
@@ -112,9 +140,22 @@ def prep_canvas(axes=None, title=None,
                 ytitle=None, xtitle=None,
                 force_new=False,
                 ):
-
-
-    #set the canvas
+    """
+    Sets the canvas for plotting
+    
+    Parameters
+    ----------
+    axes : int, plt.Figure, plt.Axes, optional
+    title : str, optional
+    xtitle : str, optional
+    ytitle : str, optional
+    force_new : bool, optional
+        Whether to create a new plot if no axis has been specified
+    
+    Returns
+    -------
+    Matplotlib figure and axes
+    """
     fig, ax = figaxes(axes, force_new)
 
     if title is not None:
@@ -139,42 +180,61 @@ def imshowz(data,
             trim_data=False, force_show=True,
             extent=None,
             **kwargs):
-    """Plots data using zscale algorithm to fix the min and max values
-
-    :param extent:  Use this for limits to the drawing... no subarraying
-    :param inverty:
-    :param invertx:
-    :param rotate:
-    :param trim_data:
-    :param force_show:
-:param data: Data to  be plotted
-:type data: string, HDU, HDUList, sp.array
-:param axes: Where to plot
-:type axes: Figure, Axes, integer (figure in which to plot)
-:param title: Figure Title
-:type title: string
-:param ytitle: Figure YTitle
-:type ytitle: string
-:param xtitle: Figure XTitle
-:type xtitle: string
-:param minmax: Force this value of contrast
-:type minmax: 2-element list or tuple
-:param ticks: whether to display the ticks
-:type ticks: boolean
-:param colorbar: whether to use a colorbar
-:type colorbar: boolean 
-:param hdu: Which hdu to plot (only relevant if data is string or HDUList
-:type hdu: int
-:param origin: Option of the same name given to imshow
-:type origin: string
-:param force_new: whether to create a new plot if no axis has been specified
-:type force_new: boolean
-:param cxy: Center at this coordinate and use plot_rad as radius.  If both xlim and cxy are specified, then only cxy is considered.
-:type cxy: 2-element tuple or list
-:param plot_rad: Radius of plotting area. Only relevant if cxy is not None. If None then it is the minimum distance to an image border.
-:type plot_rad: integer
-:param kwargs: passed to matplotlib.pyplot.imshow()
-"""
+    """
+    Plots data using zscale algorithm to fix the min and max contrast values
+    
+    Parameters
+    ----------
+    data : string, HDU, HDUList, scipy array
+        Data to  be plotted
+    axes : int, plt.Figure, plt.Axes, optional
+        Where to plot
+    extent : optional
+        Use this for limits to the drawing... no subarraying
+    title : string, optional
+        Figure Title
+    xtitle : string, optional
+    ytitle : string, optional
+    minmax : 2 element list or tuple
+        Force this values of contrast
+    xlim : tuple, optional
+        Section of the x-axis to plot
+    ylim : tuple, optional
+        Section of the y-axis to plot
+    cxy : tuple, optional
+        Center at this coordinate and use plot_rad as radius.  
+        If both xlim and cxy are specified, then only cxy is considered.
+    plot_rad : int, optional
+        Radius of plotting area. Only relevant if cxy is not None. 
+        If None then it is the minimum distance to an image border.
+    ticks : bool, optional
+        Whether to display the ticks
+    colorbar : bool, optional
+        Whether to use a colorbar
+    rotate : int, optional
+        Rotates data, must be a multiple of 90
+    invertx : bool, optional
+        Invert data along the x axis
+    inverty : bool, optional
+        Invert data along the y axis
+    origin : string, optional
+        Option of the same name given to imshow
+    force_new : bool, optional
+        Whether to create a new plot if no axis has been specified
+    trim_data : bool, optional
+        If true, it will plot the area delimited by xlim and ylim
+    force_show : bool, optional
+        If true, it will call plt.show at  the end
+    hdu : int, optional
+        Which hdu to plot (Only if data is string or HDUList)
+    
+    kwargs: passed to matplotlib.pyplot.imshow()
+    
+    Returns
+    -------
+    int, int :
+        Min and max contrast values
+    """
 
     data = prep_data_plot(data, **kwargs)
 
@@ -193,7 +253,7 @@ def imshowz(data,
         times = rotate/90
         if times % 1 != 0:
             raise ValueError("rotate must be a multiple of 90")
-        data = sp.rot90(data, int(times))
+        data = np.rot90(data, int(times))
         #todo: update x0, x1, y0, y1
 
     if cxy is not None:
@@ -249,11 +309,16 @@ def imshowz(data,
 
 
 def figaxes_xdate(x, axes=None, overwrite=False):
-    """Returns the figure and axes with a properly formatted date X-axis.
-    :param axes:
-    :param x: It can be astropy Time, datetime.datetime, or float. If the latter, then assumes JD
-    :param overwrite:
-    :return:
+    """
+    Returns the figure and axes with a properly formatted date X-axis.
+    x : astropy.Time, datetime.datetime, float
+        Time data used for the x axis. If its a float, then assumes JD
+    axes : int, plt.Figure, plt.Axes, optional
+    overwrite : bool, optional
+    
+    Returns
+    -------
+    Matplotlib figure, axes and x-axis data
     """
 
     f, ax = dp.figaxes(axes, overwrite=overwrite)
@@ -284,13 +349,21 @@ def figaxes_xdate(x, axes=None, overwrite=False):
 
 
 def figaxes(axes=None, forcenew=True, overwrite=False):
-    """Function that accepts a variety of canvas formats and returns the output ready for use with matplotlib 
-    :param axes:
-    :type axes: int, plt.Figure, plt.Axes
-    :param forcenew: If true starts a new axes when axes=None instead of using last figure
-    :type forcenew: boolean
-    :rtype: figure, axes
-"""
+    """
+    Function that accepts a variety of canvas formats and returns the output
+    ready for use with matplotlib 
+    
+    Parameters
+    ----------
+    axes : int, plt.Figure, plt.Axes
+    forcenew : bool, optional
+        If true starts a new axes when axes=None instead of using last figure
+    overwrite : bool, optional
+    
+    Returns
+    -------
+    Matplotlib.pyplot figure and axes
+    """
     if axes is None:
         if forcenew:
             fig, ax = plt.subplots()
@@ -322,9 +395,9 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
 
 
 # def polygonxy(cxy, rad, npoints=20):
-#     angles = sp.arange(npoints+1)*2*3.14159/npoints
-#     xx = cxy[0] + rad*sp.cos(angles)
-#     yy = cxy[1] + rad*sp.sin(angles)
+#     angles = np.arange(npoints+1)*2*3.14159/npoints
+#     xx = cxy[0] + rad*np.cos(angles)
+#     yy = cxy[1] + rad*np.sin(angles)
 
 #     return xx, yy
 

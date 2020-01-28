@@ -1,16 +1,15 @@
-from ..astrofile import AstroFile, AstroCalib, merger
+from ..astrofile import AstroFile, AstroCalib
 from numpy.testing import assert_equal
 import astropy.io.fits as pf
 import numpy as np
-from .fit_factory import create_merge_example
+from .fit_factory import create_merge_example, create_random_fit
 import pytest
 import os
 import pdb
 
 class TestAstroCalib(object):
-    
-    def test_reduce(self):
-        #pdb.set_trace()
+    #Ping,Ping
+    def test_reduce(self, tmpdir):
         self.path = os.path.dirname(__file__)
         calib = AstroCalib()
         bias = AstroFile(os.path.join(self.path,"test_dir","astrofile","bias.fits"))
@@ -113,7 +112,8 @@ class TestAstroFile(object):
                                                     ({"DATE_END": "817"}, True)]))
     def test_filter(self, kwargs, result):
         assert self.file.filter(**kwargs) == result
-        
+    
+    #Ping
     @pytest.mark.parametrize(("stats, output"), ([("min",[12718]),
                                                    ("max",[14024]),
                                                    ("mean3sclip",[-2.10239348370971]),
@@ -121,7 +121,7 @@ class TestAstroFile(object):
                                                    ("median",[13130.0])]))
     def test_stats(self, stats, output):
         assert self.file.stats(stats) == output
-    
+    #Ping
     def test_stats_extra(self):
         assert self.file.stats("min", extra_headers = ["simple", "naxis"]) == [12718, True, 2] 
     
@@ -145,9 +145,12 @@ class TestAstroFile(object):
                 expected = np.concatenate((expected, target[i].data), axis=1)
             target.close()
             
-            #Merge ImageHDU's of image, saves data on current folder
+            #Create AstroFile pointing to file
             src = "merge_example.fits"
-            merger(src)
+            af = AstroFile(src)
+            
+            #Merge ImageHDU's of image, saves data on current folder
+            af.merger()
             
             #Compare result with expected data
             mod = pf.open(src)
@@ -157,11 +160,11 @@ class TestAstroFile(object):
             mod.close()
         
             #Merger wont execute if a file already has a composite image
-            merger(src)
+            af.merger()
             again = pf.open(src)
             assert len(again) == prev+1
             again.close()
             
         
     def teardown_method(self):
-        del self.file   
+        del self.file       

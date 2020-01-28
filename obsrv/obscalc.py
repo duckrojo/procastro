@@ -21,7 +21,7 @@
 from __future__ import print_function, division
 
 import ephem
-import scipy as sp
+import numpy as np
 import astropy.coordinates as apc
 import astropy.units as u
 import os
@@ -54,29 +54,40 @@ def _update_transits(func):
 
 # noinspection PyCompatibility
 class ObsCalc(object):
-    """
+    """Object used to compute exoplanet transits
     
     Attributes
     ----------
     _obs : ephem.Observer instance
     _sun : ephem.Sun instance
     params : dict
-    daily :
-    jd0 :
-    star :
-    transit_info :
-    airmass :
-    transits :
-    days :
-    xlims :
-    ylims :
-    hours :
-    transit_hours :
+        General parameter values.
+        Available keys: 'target', 'current transit', 'equinox', 'lat_lon', 
+                        'site', 'to_local_midday', 'timespan'
+    daily : dict
+        Sunset, sunrise and twilight information
+    jd0 : float
+        Initial transit timespan value in JD
+    star : SkyCoord instance
+        Host star
+    transit_info : dict
+        Data relevant to the current transit being observed
+        Current keys include: 
+    airmass : array_like
+    transits : array_like
+        Available transits for the current target
+    transit_hours : array_like
+        Hours in which the exoplanet transit is detectable
+    days : array_like
+        Days in which the current transit is visible
+    hours : array_like
+    xlims, ylims : array_like
+       Dimensions of grid used to create the main figures
     
     Parameters
     ----------
     timespan : int, optional
-    target :
+    target : str, optional
     site : string, optional
     equinox : string, optional
     central_time: int, optional
@@ -120,7 +131,6 @@ class ObsCalc(object):
         Checks whether name's coordinate are known from a list or whether it 
         is a (lat, lon) tuple
 
-        
         Parameters
         ----------
         site_filename: string, optional
@@ -179,7 +189,7 @@ class ObsCalc(object):
         
         Parameters
         ----------
-        date :
+        date : str (YYYY/MM/DD HH:MM:SS.mm)
         
         Returns
         -------
@@ -197,8 +207,8 @@ class ObsCalc(object):
                           frame='icrs')
         dist = st.separation(mn)
         return dist, moon.phase
-        # return sp.cos(self.star.dec)*sp.cos(moon.dec)*sp.cos(self.star.ra-moon.ra) \
-        #     + sp.sin(self.star.dec)*sp.sin(self.star.dec)
+        # return np.cos(self.star.dec)*np.cos(moon.dec)*np.cos(self.star.ra-moon.ra) \
+        #     + np.sin(self.star.dec)*np.sin(self.star.dec)
 
     @_update_airmass
     @_update_transits
@@ -242,7 +252,7 @@ class ObsCalc(object):
             * single integer (year)
             """ % (timespan,))
 
-        ed = sp.arange(ed0, ed1, int((ed1 - ed0) / samples))
+        ed = np.arange(ed0, ed1, int((ed1 - ed0) / samples))
         xlims = [ed[0] - ed0, ed[-1] - ed0]
 
         self.jd0 = ephem.julian_date(ephem.Date(ed[0]))
@@ -273,27 +283,28 @@ class ObsCalc(object):
             twilight_set.append(obs.next_setting(self._sun)-day)
             twilight_rise.append(obs.next_rising(self._sun)-day)
             obs.horizon = '0:00'
-        self.daily["sunrise"] = sp.array(sunrise)
-        self.daily["twilight_rise"] = sp.array(twilight_rise)
-        self.daily["sunset"] = sp.array(sunset)
-        self.daily["twilight_set"] = sp.array(twilight_set)
+        self.daily["sunrise"] = np.array(sunrise)
+        self.daily["twilight_rise"] = np.array(twilight_rise)
+        self.daily["sunset"] = np.array(sunset)
+        self.daily["twilight_set"] = np.array(twilight_set)
 
         return self
 
     @_update_airmass
     def set_vertical(self, central_time, hour_step=0.2, **kwargs):
         """
-        ...
+        Sets values for the Y-axis
         
         Parameters
         ----------
         central_time : int
         hour_step : float, optional
+            Time interval between ibservations
 
         """
         if central_time>24 or central_time<-12:
             ylims = [min(self.daily["sunset"])*24-0.5, max(self.daily["sunrise"])*24+0.5]
-            self.hours = sp.arange(ylims[0], ylims[1], hour_step)
+            self.hours = np.arange(ylims[0], ylims[1], hour_step)
             self.ylims = ylims
         else:
             raise NotImplementedError("centering at times different than middle of night is"
@@ -381,8 +392,10 @@ class ObsCalc(object):
         
         Parameters
         ----------
-        tr_period :
-        tr_epoch :
+        tr_period : float, optional
+            Transit period
+        tr_epoch : float, optional
+            Transit epoch
         """
         if tr_period == 0:
             if hasattr(self, 'transits'):
@@ -400,8 +413,8 @@ class ObsCalc(object):
         jd1 = ephem.julian_date(ephem.Date(self.days[-1]))
         n_transits = int((jd1-jd0)/tr_period)+2
         tr1 = tr_epoch+tr_period*int((jd0-tr_epoch)/tr_period+0.9)
-        self.transits = tr1+sp.arange(n_transits)*tr_period
-        self.transit_hours = (self.transits-(sp.fix(self.transits-0.5)+0.5))*24
+        self.transits = tr1+np.arange(n_transits)*tr_period
+        self.transit_hours = (self.transits-(np.fix(self.transits-0.5)+0.5))*24
 
         if jd0 < tr_epoch:
             print("WARNING: Reference transit epoch is in the future. Are you certain that you are using JD?")
@@ -427,10 +440,10 @@ class ObsCalc(object):
                 self.star.compute(obs)
                 alts.append(self.star.alt)
 
-            cosz = sp.sin(sp.array(alts))
+            cosz = np.sin(np.array(alts))
             cosz[cosz < (1.0 / max_airmass)] = 1.0 / max_airmass
             airmass.append(1.0/cosz)
 
-        self.airmass = sp.array(airmass).transpose()
+        self.airmass = np.array(airmass).transpose()
 
         return self
