@@ -3,7 +3,7 @@
 # Copyright (C) 2014 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
 #
@@ -24,7 +24,7 @@ from __future__ import division, print_function
 __all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
            'imshowz', 'figaxes_xdate', 'figaxes',
            ]
-    
+
 import astropy.time as apt
 import datetime
 import dataproc as dp
@@ -33,18 +33,20 @@ import matplotlib.dates as md
 import astropy.io.fits as pf
 import numpy as np
 
+
 def plot_accross(data,
                  axes=None, title=None,
                  ytitle=None, xtitle=None,
                  xlim=None, ylim=None,
                  ticks=True, colorbar=False,
-                 hdu=0, 
+                 hdu=0,
                  rotate=0,
                  pos=0,
                  forcenew=False,
-                 **kwargs):    
+                 **kwargs):
     """
-    
+    Plots along a cut across a particular axis of an n-dimensional data array
+
     Parameters
     ----------
     data : array_like
@@ -64,6 +66,17 @@ def plot_accross(data,
     pos : int, optional
     forcenew : bool, optional
         Whether to create a new plot if no axis has been specified
+
+    Returns
+    -------
+    accross : array_like
+        Data used for the plot
+    data : array_like
+        A copy of the prepared data
+
+    See Also
+    --------
+    prep_data_plot
     """
     print(ylim)
 
@@ -71,7 +84,7 @@ def plot_accross(data,
 
     dt = data
     if not isinstance(pos, (list, tuple)):
-        pos = [None] + [0]*(len(data.shape)-2) + [pos] 
+        pos = [None] + [0]*(len(data.shape)-2) + [pos]
     if len(pos) != len(data.shape):
         raise TypeError("pos (size: %i) must have the same size as data array dimension (%i)" % (len(pos), len(data.shape)))
     pos = tuple([p is None and slice(None, None) or p for p in pos])
@@ -94,8 +107,8 @@ def plot_accross(data,
 
 def prep_data_plot(indata, **kwargs):
     """
-    Extract from data the array to plot.
-    
+    Extracts the data used on a plot, accepts multiple formats.
+
     Parameters
     ----------
     indata : str, HDUList, dataproc.AstroFile or scipy array
@@ -104,12 +117,11 @@ def prep_data_plot(indata, **kwargs):
 
     Returns
     -------
-    array_like :
-        Data ready to be plotted
+    array_like
+        Extracted data
     """
-    
-    error_msg = None
 
+    error_msg = None
 
     if isinstance(indata, pf.hdu.base._BaseHDU):
         data = indata.data
@@ -135,14 +147,13 @@ def prep_data_plot(indata, **kwargs):
     return data
 
 
-
 def prep_canvas(axes=None, title=None,
                 ytitle=None, xtitle=None,
                 force_new=False,
                 ):
     """
     Sets the canvas for plotting
-    
+
     Parameters
     ----------
     axes : int, plt.Figure, plt.Axes, optional
@@ -151,7 +162,7 @@ def prep_canvas(axes=None, title=None,
     ytitle : str, optional
     force_new : bool, optional
         Whether to create a new plot if no axis has been specified
-    
+
     Returns
     -------
     Matplotlib figure and axes
@@ -168,7 +179,6 @@ def prep_canvas(axes=None, title=None,
     return fig, ax
 
 
-
 def imshowz(data,
             axes=None, title=None,
             ytitle=None, xtitle=None,
@@ -181,8 +191,9 @@ def imshowz(data,
             extent=None,
             **kwargs):
     """
-    Plots data using zscale algorithm to fix the min and max contrast values
-    
+    Plots data using the zscale algorithm to fix the min and max contrast
+    values.
+
     Parameters
     ----------
     data : string, HDU, HDUList, scipy array
@@ -202,10 +213,10 @@ def imshowz(data,
     ylim : tuple, optional
         Section of the y-axis to plot
     cxy : tuple, optional
-        Center at this coordinate and use plot_rad as radius.  
+        Center at this coordinate and use plot_rad as radius.
         If both xlim and cxy are specified, then only cxy is considered.
     plot_rad : int, optional
-        Radius of plotting area. Only relevant if cxy is not None. 
+        Radius of plotting area. Only relevant if cxy is not None.
         If None then it is the minimum distance to an image border.
     ticks : bool, optional
         Whether to display the ticks
@@ -227,9 +238,9 @@ def imshowz(data,
         If true, it will call plt.show at  the end
     hdu : int, optional
         Which hdu to plot (Only if data is string or HDUList)
-    
+
     kwargs: passed to matplotlib.pyplot.imshow()
-    
+
     Returns
     -------
     int, int :
@@ -315,7 +326,7 @@ def figaxes_xdate(x, axes=None, overwrite=False):
         Time data used for the x axis. If its a float, then assumes JD
     axes : int, plt.Figure, plt.Axes, optional
     overwrite : bool, optional
-    
+
     Returns
     -------
     Matplotlib figure, axes and x-axis data
@@ -351,15 +362,15 @@ def figaxes_xdate(x, axes=None, overwrite=False):
 def figaxes(axes=None, forcenew=True, overwrite=False):
     """
     Function that accepts a variety of canvas formats and returns the output
-    ready for use with matplotlib 
-    
+    ready for use with matplotlib
+
     Parameters
     ----------
     axes : int, plt.Figure, plt.Axes
     forcenew : bool, optional
         If true starts a new axes when axes=None instead of using last figure
     overwrite : bool, optional
-    
+
     Returns
     -------
     Matplotlib.pyplot figure and axes
@@ -384,7 +395,7 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
         ax = axes
         fig = axes.figure
     else:
-        raise ValueError("Given value for axes (%s) is not recognized" 
+        raise ValueError("Given value for axes (%s) is not recognized"
                          % (axes,))
 
     if not overwrite:
@@ -393,11 +404,9 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
     return fig, ax
 
 
-
 # def polygonxy(cxy, rad, npoints=20):
 #     angles = np.arange(npoints+1)*2*3.14159/npoints
 #     xx = cxy[0] + rad*np.cos(angles)
 #     yy = cxy[1] + rad*np.sin(angles)
 
 #     return xx, yy
-

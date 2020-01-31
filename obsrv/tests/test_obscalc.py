@@ -5,25 +5,26 @@ import numpy as np
 import pytest
 import os
 
+
 class TestObsCalc(object):
     ### TODO: Check if decorators are updating related parameters for each setter
     def setup_method(self):
         self.obs = ObsCalc()
-        
+
     def test_set_site(self):
-        filename = os.path.join(os.path.dirname(__file__),"observatories.coo")
+        filename = os.path.join(os.path.dirname(__file__), "observatories.coo")
         # Recieves String
         self.obs.set_site('paranal', site_filename=filename)
         assert self.obs.params["lat_lon"] == (-24.6272, 289.5958)
-        
+
         # Recieves tuple
         self.obs.set_site((-33.8688, 151.2093), site_filename=filename)
         assert self.obs.params["site"] == (-33.8688, 151.2093)
-        
+
         # Unknown observatory
         with pytest.raises(KeyError):
             self.obs.set_site('test', site_filename=filename)
-        
+
     def test_set_timespan(self):
         ed1 = np.asarray([42734.5, 42740.5, 42746.5, 42752.5, 42758.5, 42764.5, 42770.5,
                         42776.5, 42782.5, 42788.5, 42794.5, 42800.5, 42806.5, 42812.5,
@@ -48,37 +49,35 @@ class TestObsCalc(object):
         assert_equal(self.obs.days, ed1)
         assert_equal(self.obs.xlims, np.asarray([0.0, 360.0]))
         assert self.obs.jd0 == 2457754.5
-        
+
         # Recieves string
         self.obs.set_timespan("2010-2015")
         assert_equal(self.obs.days, ed2)
         assert_equal(self.obs.xlims, [0.0, 2160.0])
         assert self.obs.jd0 == 2455197.5
-        
+
         ### TODO patch obscalc for cases where years are reversed (Ex: 2019-2000)
-        
+
     @pytest.mark.parametrize(('target', 'expected'),
                             [("WASP-8 b", {'length': 24*0.11536,  # All data is available
-                                           'epoch': 2454679.33486,        
+                                           'epoch': 2454679.33486,
                                            'period': 8.158719,
                                            'offset': 0.0}),
                              ("CoRoT-6 b", {'length': 4.08,    #Period is missing
                                               'epoch': 2454595.6144,
                                               'period': 8.886593,
                                               'offset': 0.0}),
-                            ("Kepler-150 d", {'length': 3.763200,   #Transit is not known           
+                            ("Kepler-150 d", {'length': 3.763200,   #Transit is not known
                                              'epoch': 2454999.795880,
                                              'period': 12.56093,
                                              'offset': 0.0})])
     def test_set_target(self, target, expected):
         self.obs.set_target(target)
         assert self.obs.transit_info == expected
-    
+
     @pytest.mark.skip(reason="Need to know which exceptions are raised")
     def test_set_target_error(self):
         self.obs.set_target("WASP-3 b")   #No Data in txt, NASA returns None
-        
-        
+
     def teardown_method(self):
         del self.obs
-        

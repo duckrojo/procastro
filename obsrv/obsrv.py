@@ -3,7 +3,7 @@
 # Copyright (C) 2012 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
 #
@@ -32,15 +32,15 @@ __all__ = ['Obsrv']
 
 
 def _plot_poly(ax, x, up, down, alpha=0.5, facecolor='0.8', edgecolor='k'):
-    """ 
-    Plot a band as a semi-transparent polygon 
-    
+    """
+    Plot a band as a semi-transparent polygon
+
     Parameters
     ----------
-    ax :
-    x :
-    up :
-    down :
+    ax : matplotlib.pyplot.axes
+    x : list
+    up : list of booleans
+    down : list of booleans
     alpha : float, optional
     facecolor : string, optional
     edgecolor : string, optional
@@ -100,11 +100,29 @@ def _update_plot(func):
 
 # noinspection PyCompatibility,PyUnresolvedReferences
 class Obsrv(ocalc.ObsCalc):
-    """Class used to schedule day/hour of an exoplanet transit
-    
-    This object generates two graphs during initialization. 
-    (TODO: Describe plots in detail here).
-    
+    """
+    Class used to schedule day/hour of an exoplanet transit
+
+    During initialization this object will generate two images which can
+    be interacted with.
+
+    Right Image:
+        Displays an exoplanet eclipsing transits across a specific timeframe
+        where the x-axis shows the day of occurrence while the y-axis
+        corresponds to the hour of the event.
+        Each transit is shown as a white dot which can be clicked to display
+        a plot image specific to that transit located to the left.
+        Yellow lines are used to delimit months, the background color is used
+        to plot the expected airmass on that date and the grey bands shown
+        above and below represent the sun and twilight set and rise.
+
+    Left Image:
+        Elevation vs time graph, showing the elevation of the transit in blue
+        vs the moon distance in yellow.
+
+    On each click, the object will print the datetime of the transit in
+    standard format and JD format.
+
     Attributes
     ----------
     params : dict
@@ -113,7 +131,7 @@ class Obsrv(ocalc.ObsCalc):
         Stores interactive mode pyplot variables and methods
     airmass : array_like
     xlims, ylims : array_Like
-    
+
     Parameters
     ----------
     target : string, optional
@@ -126,10 +144,10 @@ class Obsrv(ocalc.ObsCalc):
     savedir : str, optional
         Directory where the plotted figures will be stored
     altitude_limit : int, optional
-    central_time: 
-        Central time of y-axis.  If outside the [-12,24] range, then 
+    central_time:
+        Central time of y-axis.  If outside the [-12,24] range, then
         only shows nighttime
-        
+
     See Also
     --------
     dataproc.obsrv.ObsCalc : Parent class which computes transit data
@@ -152,7 +170,7 @@ class Obsrv(ocalc.ObsCalc):
         self.params["altitude_limit"] = altitude_limit
 
         super(Obsrv, self).__init__(target=target, **kwargs)
-    
+
     @_update_plot
     def set_target(self, *args, **kwargs):
         super(Obsrv, self).set_target(*args, **kwargs)
@@ -173,6 +191,13 @@ class Obsrv(ocalc.ObsCalc):
                                                   cmap=plt.cm.jet_r)
 
     def _plot_twilight(self, ax):
+        """
+        Plots sunrise and twilight limits for the transit display (First image)
+
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axes
+        """
         sx = self.days-self.days[0]
         _plot_poly(ax, sx, self.daily["twilight_set"], self.daily["sunset"])
         _plot_poly(ax, sx, self.daily["sunrise"], self.daily["twilight_rise"])
@@ -180,6 +205,10 @@ class Obsrv(ocalc.ObsCalc):
     def _plot_months(self, ax):
         """
         Plot month separator
+
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axes
         """
 
         month_length = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
@@ -200,6 +229,11 @@ class Obsrv(ocalc.ObsCalc):
         return self
 
     def _plot_transits(self, ax):
+        """
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axes
+        """
         x = self.transits-self.jd0
         y = self.transit_hours
         half_length = self.transit_info['length']/2
@@ -208,6 +242,11 @@ class Obsrv(ocalc.ObsCalc):
         ax.errorbar(x, y-24, yerr=half_length, fmt='o', color="w")
 
     def _plot_labels(self, ax, title=''):
+        """
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axes
+        """
         ax.set_title(title)
         ax.set_xlabel(f"Days from {ephem.Date(self.days[0]).datetime().strftime('%Y.%m.%d')}"
                       f" (Site: {self.params['site']})")
@@ -239,12 +278,12 @@ class Obsrv(ocalc.ObsCalc):
     def get_closer_transit(self, cd, ch):
         """
         Obtains the closest transit of the target from the given day and hour
-        
+
         Parameters
         ----------
         cd, ch : float (JD format)
-            Current day and hour 
-        
+            Current day and hour
+
         Returns
         -------
         array_like
@@ -396,4 +435,3 @@ class Obsrv(ocalc.ObsCalc):
 #                          tr_epoch=test_target[3],
 #                          title=test_target[0])
 #
-

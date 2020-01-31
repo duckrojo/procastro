@@ -3,7 +3,7 @@
 # Copyright (C) 2014 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
 #
@@ -27,25 +27,26 @@ import numpy as np
 import inspect
 import scipy.signal as sg
 
+
 def gauss(grid, sigma, center=None, norm=False, ndim=None):
     """
     Build a gaussian from a dense multi-dimensional meshgrid
 
     #TODO: allow multivariate with symmetric covariance matrix
-    
+
     Parameters
     ----------
-    grid: array_like 
+    grid: array_like
         Deafult sampling
     sigma: float
         Gaussian width
-    center:  
+    center:
         Gaussian center
-    norm: bool, optional 
+    norm: bool, optional
         True if output should be normalized
     ndim : int, optional
         Dimensions of gaussian
-    
+
     Returns
     -------
     array_like
@@ -58,13 +59,13 @@ def gauss(grid, sigma, center=None, norm=False, ndim=None):
     if ndim==1:
         grid = [grid.ravel()]
 
-    if isinstance(sigma, (int,float)):
+    if isinstance(sigma, (int, float)):
         sigma = [sigma]*ndim
 
     if center is None:
         center = np.zeros(ndim)
-    
-    gaexpo = np.sum([((dgrid-c)/dsigma)**2 
+
+    gaexpo = np.sum([((dgrid-c)/dsigma)**2
                      for dsigma, dgrid, c
                      in zip(sigma, grid, center)
                      ], axis=0)
@@ -87,7 +88,7 @@ def bipol(coef, x, y):
     x : scipy ndarray
         Horizontal coordinates
     y : vertical coordinates
-    
+
     Returns
     -------
     scipy ndarray

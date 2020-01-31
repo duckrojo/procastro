@@ -3,7 +3,7 @@
 # Copyright (C) 2013 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
 #
@@ -44,22 +44,22 @@ class AstroDir(object):
         Contains the list of all AstroFile that belong to this AstroDir.
     props : dict
         Properties related to this object
-    
+
     Parameters
     ----------
     path : str or list or AstroFile
-        Contains information from the file list. If str, a 
+        Contains information from the file list. If str, a
         directory+wildcard format is assumed and parsed by `glob.glob`
     mbias, mflat : array_like, dict or AstroFile, optional
-        Master bias and flat to associate to each AstroFile 
+        Master bias and flat to associate to each AstroFile
         (in one shared AstroCalib object)
     mbias_header, mflat_header : astropy.io.fits.Header
         Headers for bias and flat
     calib_force : bool, optional
-        If True, then force specified `mbias` and `mflat` to all files, 
+        If True, then force specified `mbias` and `mflat` to all files,
         otherwise assign it only if it doesn't have one already.
     read_keywords : list, optional
-        Read all specified keywords at creation time and store them in 
+        Read all specified keywords at creation time and store them in
         the header cache
     hdu : int, optional
         default HDU
@@ -67,14 +67,14 @@ class AstroDir(object):
         default HDU for data
     hduh : int, optional
         default HDU for the header
-    
+
     See Also
     --------
-    dataproc.AstroCalib : Object that holds calibration information. 
+    dataproc.AstroCalib : Object that holds calibration information.
                           One of them can be shared by many AstroFile instances
-                 
+
     dataproc.AstroCalib.add_mbias()
-    dataproc.AstroCalib.add_mflat()`
+    dataproc.AstroCalib.add_mflat()
     """
 
     def __init__(self, path, mflat=None, mbias=None,
@@ -82,11 +82,11 @@ class AstroDir(object):
                  calib_force=False, read_keywords=None,
                  hdu=0, hdud=None, hduh=None, auto_trim=None,
                  jd_from_ut=None):
-        
+
         import os
         import glob
         import os.path as pth
-        files = [ ]
+        files = []
 
         if hduh is None:
             hduh = hdu
@@ -117,11 +117,11 @@ class AstroDir(object):
         self.props = {}
         calib = dp.AstroCalib(mbias, mflat, auto_trim=auto_trim,
                               mbias_header=mbias_header, mflat_header=mflat_header)
-        
+
         for f in files:
             if calib_force or not f.has_calib():  # allows some of the files to keep their calibration
                 # AstroFile are created with an empty calib by default, which is overwritten here.
-                #  Hoping that garbage collection works:D
+                # Hoping that garbage collection works:D
                 f.calib = calib
 
         self.path = path
@@ -133,8 +133,8 @@ class AstroDir(object):
 
     def add_bias(self, mbias):
         """
-        Update master bias in all the calibration objects contained in 
-        this AstroDir.
+        Updates the master bias of all AstroCalib instances included on
+        the contained AstroFile instances
 
         Parameters
         ----------
@@ -152,8 +152,8 @@ class AstroDir(object):
 
     def add_flat(self, mflat):
         """
-        Update Master Flats in all the calibration objects contained in 
-        this AstroDir.
+        Update Master Flats of all AstroCalib instances included on
+        the contained AstroFile instances.
 
         Parameters
         ----------
@@ -162,7 +162,7 @@ class AstroDir(object):
 
         See Also
         --------
-        dataproc.AstroCalib.add_flat : This function is called for each unique 
+        dataproc.AstroCalib.add_flat : This function is called for each unique
                                        AstroCalib object in AstroDir
         """
         unique_calibs = set([f.calib for f in self])
@@ -170,9 +170,22 @@ class AstroDir(object):
             c.add_flat(mflat)
 
     def sort(self, *args, **kwargs):
-        """ 
-        Return sorted list of files according to specified header field, 
-        use first match. It uses in situ sorting, but returns itself.
+        """
+        Sorts AstroFile instances depending on the given header fields.
+        After sorting the contents the method will return a pointer to this
+        AstroDir.
+
+        Parameters
+        ----------
+        args : str
+            A header field name to be used as comparison key
+
+        Raises
+        ------
+        ValueError
+            If the field given cannot be used to compare each AstroFile or
+            if no header field was specified.
+
         """
         if len(args) == 0:
             raise ValueError("At least one valid header field must be specified to sort")
@@ -244,20 +257,20 @@ class AstroDir(object):
 
     def stats(self, *args, **kwargs):
         """
-        Obtains statistical data from each Astrofile in this instance
-        
+        Obtains statistical data from each AstroFile stored in this instance
+
         Parameters
         ----------
         extra_headers : list, optional
             List of header items to include on the output
         verbose_heading : bool, optional
         args : Specify the stats that want to be returned
-        
+
         Returns
         -------
         array_like
             The stat as returned by each of the AstroFiles
-            
+
         See Also
         --------
         AstroFile.stats : for the available statistics
@@ -273,24 +286,28 @@ class AstroDir(object):
         return ret
 
     def filter(self, *args, **kwargs):
-        """ 
-        Filter files according to those whose filter return True to 
-        the given arguments.
-        What the filter does is type-dependent for each file. 
-        
-        Logical 'and' statements can be simulated by chaining this method 
+        """
+        Filter files according to those whose filter return True to the given
+        arguments.
+        What the filter does is type-dependent for each file.
+
+        Logical 'and' statements can be simulated by chaining this method
         multiple times.
-        
+
         Parameters
         ----------
-        **kwargs : 
+        **kwargs :
             Keyword arguments containing the name of the item and the expected
-            value
-            
+            value.
+
+        Returns
+        -------
+        dataproc.AstroDir
+            Copy containing the files which were not discarded.
+
         See Also
         --------
-        AstroFile.filter : docstring contains syntax used by the arguments
-                           recieved
+        AstroFile.filter : Specifies the syntax used by the recieved arguments.
         """
         from copy import copy
         new = copy(self)
@@ -299,35 +316,37 @@ class AstroDir(object):
 
     def basename(self, joinchr=', '):
         """
-        Obtains the basename of the files on this object
-        
+        Obtains the basename each file contained.
+
         Parameters
         ----------
         joinchar : str, optional
             Character used to separate the name of each file
-        
+
         Returns
         -------
         str
             Each file basename separated by the specified 'joinchar'
-        
+
         """
         return joinchr.join([b.basename() for b in self])
 
     def getheaderval(self, *args, **kwargs):
-        """ 
+        """
         Gets the header values specified in 'args' from each file.
-        
-        Parameters  
+        A function can be specified to be used over the returned values for
+        casting purposes.
+
+        Parameters
         ----------
         cast : function, optional
-            Output function
-            
+            Function output used to cas the output
+
         Returns
         -------
         List of integers or tuples
             Type depends if a single value or multiple tuples were given
-            
+
         """
 
         if 'cast' in kwargs:
@@ -340,7 +359,6 @@ class AstroDir(object):
         try:
             while True:
                 idx = ret.index(None)
-                #pdb.set_trace()
                 logging.warning("Removing file with defective header from AstroDir")
                 self.files.pop(idx)
                 ret.pop(idx)
@@ -351,7 +369,7 @@ class AstroDir(object):
         return ret
 
     def setheader(self, **kwargs):
-        """ 
+        """
         Sets the header values specified in 'args' from each of the files.
         """
         if False in [f.setheader(**kwargs) for f in self]:
@@ -362,8 +380,8 @@ class AstroDir(object):
     def get_datacube(self, normalize_region=None, normalize=False, verbose=False,
                      check_unique=None, group_by=None):
         """
-        Returns all data from the AstroFiles inside a datacube
-        
+        Generates a data cube containing the data of each AstroFile contained.
+
         Parameters
         ----------
         normalize_region :
@@ -375,11 +393,11 @@ class AstroDir(object):
             Receives a list of headers that need to be checked for uniqueness.
         group_by : str, optional
             Datacube will be organized based on the header item given
-            
+
         Returns
         -------
         dict
-            Dictionary containing a data cube grouped by the given parameters, 
+            Dictionary containing a data cube grouped by the given parameters,
             otherwise the data will be indexed to None as key
         """
         if verbose:
@@ -422,7 +440,7 @@ class AstroDir(object):
                 sys.stdout.flush()
 
         if None in grouped_data and len(grouped_data) > 1:
-            #todo check error message
+            # TODO: check error message
             raise ValueError("Panic. None should have been key of grouped_data only if group_by was None. "
                             "In such case, it should have been alone.")
 
@@ -434,25 +452,24 @@ class AstroDir(object):
 
         return grouped_data
 
-
     def pixel_xy(self, xx, yy, normalize_region=None, normalize=False,
              check_unique=None, group_by=None):
         """
-        Obtains pixel value at (xx,yy) position for all frames
-        
+        Obtains the pixel value at the ('xx','yy') position for all frames.
+
         Parameters
         ----------
         xx, yy: int, int
-        normalize_region: 
+        normalize_region :
             Subregion to use for normalization
-        group_by: 
-            If set, then group by the specified header returning an 
+        group_by :
+            If set, then group by the specified header returning an
             [n_unique, n_y, n_x] array
-        normalize : bool, optional  
+        normalize : bool, optional
             Whether to Normalize
-        check_unique : str, optional 
+        check_unique : str, optional
             Check uniqueness in header
-        
+
         Returns
         -------
         array_like
@@ -471,24 +488,20 @@ class AstroDir(object):
         groupers = sorted(data_dict.keys())
         ret = [data_dict[g][:, yy, xx] for g in groupers]
 
-
         if len(groupers) > 1:
-            return {g: r for r,g in zip(ret, groupers)}
+            return {g: r for r, g in zip(ret, groupers)}
         else:
             return ret[0]
-
-
         # todo: return AstroFile
-
 
     def median(self, normalize_region=None, normalize=False, verbose=True,
                check_unique=None, group_by=None):
         """
         Calculates the median of the contained files
-        
+
         Parameters
         ----------
-        normalize_region : 
+        normalize_region :
             Subregion to use for normalization
         normalize : bool, optional
             Whether to Normalize
@@ -496,10 +509,10 @@ class AstroDir(object):
             Output progress indicator
         check_unique : str, optional
             Check uniqueness in header
-        group_by : 
-            If set, then group by the specified header returning 
+        group_by :
+            If set, then group by the specified header returning
             an [n_unique, n_y, n_x] array
-        
+
         Returns
         -------
         array_like
@@ -537,7 +550,7 @@ class AstroDir(object):
             sys.stdout.flush()
 
         if len(groupers) > 1:
-            return {g: r for r,g in zip(ret, groupers)}
+            return {g: r for r, g in zip(ret, groupers)}
         else:
             return ret[0]
         # todo: return AstroFile
@@ -546,28 +559,28 @@ class AstroDir(object):
              check_unique=None, group_by=None):
         """
         Calculates the mean of the contained files
-        
+
         Parameters
         ----------
-        normalize_region : 
+        normalize_region :
             Subregion to use for normalization
         normalize : bool, optional
             Whether to Normalize
         verbose : bool, optional
             Output progress indicator
-        check_unique : str, optional 
+        check_unique : str, optional
             Check uniqueness in header
-        group_by : 
-            If set, then group by the specified header returning an 
+        group_by :
+            If set, then group by the specified header returning an
             [n_unique, n_y, n_x] array
-        
+
         Returns
         -------
         ndarray
             Mean between frames
         dict
             If group_by is set, a dictionary keyed by this group will be returned
-        
+
         """
         if check_unique is None:
             if normalize:
@@ -599,7 +612,7 @@ class AstroDir(object):
             sys.stdout.flush()
 
         if len(groupers) > 1:
-            return {g: r for r,g in zip(ret, groupers)}
+            return {g: r for r, g in zip(ret, groupers)}
         else:
             return ret[0]
         # todo: return AstroFile
@@ -610,7 +623,7 @@ class AstroDir(object):
                    check_unique=None, group_by=None):
         """
         Linear interpolate to given target value of the field 'field'.
-        
+
         Parameters
         ----------
         target : int, optional
@@ -619,18 +632,18 @@ class AstroDir(object):
             Output progress indicator
         field : str, optional
             Name of the header item which will be used to interpolate the frames
-        group_by : 
+        group_by :
             If set, then group by the specified header returning an [n_unique, n_y, n_x] array
-        check_unique : str, optional 
+        check_unique : str, optional
             Check uniqueness in header
-        
+
         Returns
         -------
         ndarray
             Linear Interpolation between frames with the specified target
         dict
             If group_by is set, a dictionary keyed by this group will be returned
-        
+
         """
         if check_unique is None:
             check_unique = []
@@ -665,16 +678,15 @@ class AstroDir(object):
 
             for j in range(data_cube[0].shape[1]):
                 for i in range(data_cube[0].shape[0]):
-                    ret[k,j,i] = np.interp(target, values, data_cube[:,j,i])
+                    ret[k, j, i] = np.interp(target, values, data_cube[:, j, i])
         if verbose:
             print(". done.")
             sys.stdout.flush()
 
         if len(groupers) > 1:
-            return {g: r for r,g in zip(ret, groupers)}
+            return {g: r for r, g in zip(ret, groupers)}
         else:
             return ret[0]
-
 
     def std(self, normalize_region=None, normalize=False, verbose=True,
              check_unique=None, group_by=None):
@@ -683,25 +695,25 @@ class AstroDir(object):
 
         Parameters
         ----------
-        normalize_region : 
+        normalize_region :
             Subregion to use for normalization
         normalize : bool, optional
             Whether to Normalize
         verbose : bool, optional
             Output progress indicator
-        check_unique : str, optional 
+        check_unique : str, optional
             Check uniqueness in header
-        group_by : 
+        group_by :
             If set, then group by the specified header returning an
             [n_unique, n_y, n_x] array
-        
+
         Returns
         -------
         ndarray
-            Mean between frames
+            Standard deviation between frames
         dict
             If group_by is set, a dictionary keyed by this group will be returned
-        
+
         """
         if check_unique is None:
             if normalize:
@@ -734,25 +746,23 @@ class AstroDir(object):
             sys.stdout.flush()
 
         if len(groupers) > 1:
-            return {g: r for r,g in zip(ret, groupers)}
+            return {g: r for r, g in zip(ret, groupers)}
         else:
             return ret[0]
         # todo: return AstroFile
 
-
-
     def jd_from_ut(self, target='jd', source='date-obs'):
         """
-        Add jd in header's cache to keyword 'target' using ut on keyword 
+        Add jd in header's cache to keyword 'target' using ut on keyword
         'source'
-        
+
         Parameters
         ----------
         target: str
             Target keyword for JD storage
         source: str
             Location of the input value on UT format
-            
+
         See Also
         --------
         dataproc.AstroFile.jd_from_ut : For individual file implementation
@@ -761,11 +771,11 @@ class AstroDir(object):
             af.jd_from_ut(target, source)
 
         return self
-        
-    def merger(self, start = 1, end = None):
+
+    def merger(self, start=1, end=None):
         """
         Merges HDUImage data for all files contained in this object
-        
+
         Parameters
         ----------
         start : int, optional
@@ -773,16 +783,13 @@ class AstroDir(object):
         end ; int, optional
             Last ImageHDU unit to be included, if None will stop at the last
             hdu found
-        
+
         See Also
         --------
         dataproc.AstroFile.merger : For individual file implementation
         """
-        
-        for files in self:
-            files.merger(start = start, end=end)
-        
-        return self
-    
-    
 
+        for files in self:
+            files.merger(start=start, end=end)
+
+        return self

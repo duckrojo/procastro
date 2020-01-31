@@ -30,6 +30,7 @@ from urllib.error import URLError
 from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
 import pdb
 
+
 def _update_airmass(func):
     def wrapper_airmass(self, *args, **kwargs):
         ret = func(self, *args, **kwargs)
@@ -54,7 +55,8 @@ def _update_transits(func):
 
 # noinspection PyCompatibility
 class ObsCalc(object):
-    """Object used to compute exoplanet transits
+    """
+    Object used to compute exoplanet transits
 
     Attributes
     ----------
@@ -328,9 +330,9 @@ class ObsCalc(object):
         magnitude:
         star_name: string, optional
             Name of host star
-        transit_length:
-        transit_period:
-        transit_epoch:
+        transit_length: float, optional
+        transit_period: float, optional
+        transit_epoch: float, optional
         phase_offset: float, optional
             Set to 0.5 to show occultations instead of transits
         """
@@ -353,8 +355,6 @@ class ObsCalc(object):
                                   ra_dec.dec.to_string(sep=':'),
                                   magnitude, epoch))
 
-
-
         transit_epoch, transit_period, transit_length = dpa.get_transit_ephemeris(target, os.path.dirname(__file__))
 
         if transit_epoch is None or transit_period is None:
@@ -364,9 +364,9 @@ class ObsCalc(object):
             except URLError as mesg:
                 raise NotImplementedError(f"NASA has not yet fixed the SSL validation error ({mesg}). Info has to be isput "
                        "manually in ~/.transits")
-            #TODO: Raise exception when some of this columns are missing
-            #TODO: Find a way to correctly handle returned data types (QType, Column, float, etc)
-            #      Find which errors show when failing to recover pl_orbper and pl_tranmid
+            # TODO: Raise exception when some of this columns are missing
+            # TODO: Find a way to correctly handle returned data types (QType, Column, float, etc)
+            #       Find which errors show when failing to recover pl_orbper and pl_tranmid
             transit_period = planet['pl_orbper'].value
             transit_epoch = planet['pl_tranmid']
             transit_length = planet['pl_trandur'] * 24
@@ -387,7 +387,7 @@ class ObsCalc(object):
                      tr_period=None, tr_epoch=None,
                      **kwargs):
         """
-        Calculate the transits.  It assumes that the decorator has already
+        Calculate the transits. It assumes that the decorator has already
         checked transit_info existence
 
         Parameters

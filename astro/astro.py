@@ -3,7 +3,7 @@
 # Copyright (C) 2014,2018 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,9 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
-#
 #
 
 from __future__ import division, print_function
@@ -53,22 +52,22 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
     Parameters
     ----------
     target: str
-       Either a coordinate understandable by astropy.coordinates 
+       Either a coordinate understandable by astropy.coordinates
        (RA in hours, Dec in degrees), a name in coo_files, or a name
-       resolvable by Simbad. 
-       Tests strictly in the previous order, returns as soon as it 
+       resolvable by Simbad.
+       Tests strictly in the previous order, returns as soon as it
        finds a match.
     coo_files: array_like, optional
-       List of files that are searched for a match in target name.  
-       File should have at least three columns: Target_name RA Dec; 
-       optionally, a fourth column for comments. Target_name can have 
-       underscores that will be matched against spaces, dash, or no-character. 
-       Two underscores will additionally consider optional anything that 
-       follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a). 
-       RA and Dec can be any mathematical expression that eval() can handle. 
+       List of files that are searched for a match in target name.
+       File should have at least three columns: Target_name RA Dec;
+       optionally, a fourth column for comments. Target_name can have
+       underscores that will be matched against spaces, dash, or no-character.
+       Two underscores will additionally consider optional anything that
+       follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a).
+       RA and Dec can be any mathematical expression that eval() can handle.
        RA is hms by default, unless 'd' is appended, Dec is always dms.
     return_pm : bool, optional
-      if True return proper motions. Only as provided by Simbad for now, 
+      if True return proper motions. Only as provided by Simbad for now,
       otherwise returns None for each
     equinox : str, optional
        Which astronomy equinox the coordinates refer. Default is J2000
@@ -76,11 +75,17 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
     Returns
     -------
     SkyCoord object
-       RA and Dec in hours and degrees, respectively.  
+       RA and Dec in hours and degrees, respectively.
+
+    Raises
+    ------
+    ValueError
+        If all query attempts fail (Wrong coordinates or unknown)
     """
 
     pm_ra = None
     pm_dec = None
+
     try:
         ra_dec = apcoo.SkyCoord([f"{target}"], unit=(apu.hour, apu.degree),
                                 equinox=equinox)
@@ -143,23 +148,46 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
         return ra_dec, pm_ra, pm_dec
     return ra_dec
 
+
 def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
     """
-    Recovers epoch, period and length of a target transit if said transit has 
+    Recovers epoch, period and length of a target transit if said transit has
     been specified in one of the provided paths
-    
+
+    Transit files must be named ".transits" or "transits.txt", each transit
+    should have the following columns separated by a space:
+
+    {object_name} E{transit_epoch} P{transit_period} L{transit_length}
+
+    If the object name contain spaces, replace them with an underscore when
+    writing it into the file. On the other hand querying a name with spaces
+    requires using spaces.
+
+    An optional comment column can be placed at the end of a row placing a-mass
+    'C' as prefix.
+
     Parameters
     ----------
     target: str
         Target requested
     dir: str, optional
         Directory containing the files to be inspected
-    
+
+    Returns
+    -------
+    tr_epoch : float or None
+    tr_period : float or None
+    tr_length : float or None
+
+    Raises
+    ------
+    ValueError
+        If a data field does not match the specified format
     """
     paths = [os.path.expanduser("~")+'/.transits',
              dir+'/transits.txt',
              ]
-             
+
     tr_epoch = None
     tr_period = None
     tr_length = None
@@ -199,34 +227,35 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
 
         except IOError:
             pass
-            
+
     return tr_epoch, tr_period, tr_length
 
 ###############################################################################
 # Unused methods
 ######
 
+
 def read_horizons_cols(file):
     """
     Reads an horizons ephemeris file into a dictionary. It maintains the
-    original column's header as dictionary keys.  
-    Columns can be automatically recognized as float or int (work in progress 
-    the latter) 
-    
+    original column's header as dictionary keys.
+    Columns can be automatically recognized as float or int (work in progress
+    the latter)
+
     Parameters
     ----------
     file : str
-    
+
     Returns
     -------
     dict
     """
 
     mapping = defaultdict(lambda: str)
-    map_float = ['dRA*cosD', 'd(DEC)/dt', 'a-mass', 'mag_ex', 'APmag', 
-                 'S-brt', 'Illu%', 'Ang-diam', 'Obsrv-lon', 'Obsrv-lat', 
-                 'Ob-lon', 'Ob-lat', 'SN.ang', 'SN.dist', 'delta', 'deldot', 
-                 'S-O-T', 'S-T-O', 'Solar-lon', 'Solar-lat', 'NP.ang', 
+    map_float = ['dRA*cosD', 'd(DEC)/dt', 'a-mass', 'mag_ex', 'APmag',
+                 'S-brt', 'Illu%', 'Ang-diam', 'Obsrv-lon', 'Obsrv-lat',
+                 'Ob-lon', 'Ob-lat', 'SN.ang', 'SN.dist', 'delta', 'deldot',
+                 'S-O-T', 'S-T-O', 'Solar-lon', 'Solar-lat', 'NP.ang',
                  'NP.dist', 'N.Pole-RA', 'N.Pole_Dec']
     map_int = []
 
@@ -266,7 +295,7 @@ def read_horizons_cols(file):
 def blackbody(temperature, wav_freq, unit=None):
     """
     Computes a blackbody curve for the parameters given
-    
+
     Parameters
     ----------
     temperature : astropy.unit
@@ -274,12 +303,17 @@ def blackbody(temperature, wav_freq, unit=None):
     wav_freq : astropy.unit
         Wavelength or frequency
     unit : astropy.unit, optional
-        unit for wav_freq from astropy.unit. If None and wav_freq is not an 
+        unit for wav_freq from astropy.unit. If None and wav_freq is not an
         astropy.quantity, then assume microns
 
     Returns
     -------
     Blackbody curve at specified wavelength or frequency
+
+    Raises
+    ------
+    ValueError
+        wav_frequency unit is invalid
     """
 
     if not isinstance(temperature, apu.Quantity):
@@ -292,6 +326,7 @@ def blackbody(temperature, wav_freq, unit=None):
         else:
             raise ValueError("Specified unit (%s) is not a valid astropy.unit"
                              % (unit,))
+
     if wav_freq.cgs.unit == apu.cm:
         use_length = True
     elif wav_freq.cgs.unit == 1 / apu.s:
@@ -327,21 +362,21 @@ def getfilter(name,
     ----------
     name: str or array_like
       Name of the filter (filenames in directory). If array_like, then it needs
-      to have two elements to define a uniform filter within the specified 
-      cut-in and cut-out values with value 1.0 and in a range 10% beyond with 
+      to have two elements to define a uniform filter within the specified
+      cut-in and cut-out values with value 1.0 and in a range 10% beyond with
       value 0.0, for a total of 50 pixels.
     name_only : bool, optional
       If True returns the name of the file only
     filter_unit : astropy quantity, optional
-      Default filter unit that should be in files. Default is Angstroms. 
+      Default filter unit that should be in files. Default is Angstroms.
       Can be specified in file as first line with comment 'unit:'
     fct : int, optional
-      Factor by which the transmission is divided in the archive 
-      (i.e. 100 if it is written in percentage). 
+      Factor by which the transmission is divided in the archive
+      (i.e. 100 if it is written in percentage).
       Can be specified in file as first line with comment 'fct:'.
       Default is 1
     filter_dir : str, optional
-      Directory that hold the filters, it accepts wildcards that will be used 
+      Directory that hold the filters, it accepts wildcards that will be used
       by glob. Default is '/home/inv/common/standards/filters/oth/*/
     force_positive : bool, optional
        Force positive values for transmission
@@ -436,7 +471,7 @@ def applyfilter(name, spectra,
     filter_dir : str, optional
       If None use getfilter's default
     full : bool, optional
-      If True, then return (filtered value, central weighted wavelength, 
+      If True, then return (filtered value, central weighted wavelength,
                                             equivalent width)
 
     Returns
@@ -515,8 +550,8 @@ def filter_conversion(target_filter, temperature,
     verbose: boolean, optional
        Write out the conversion
     kwargs: dict
-       It should have one element: filter=value, as the original filter. 
-       Any dot (.) in filter will be converted to '_' before passing it to 
+       It should have one element: filter=value, as the original filter.
+       Any dot (.) in filter will be converted to '_' before passing it to
        get_filter.
 
     Returns
@@ -547,8 +582,9 @@ def filter_conversion(target_filter, temperature,
 
 def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
     """
-    ---
-    
+    Computes effective temperature of a planet based on the given
+    parameters
+
     Parameters
     ----------
     au : float, optional

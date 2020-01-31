@@ -17,7 +17,7 @@
 #
 #
 
-#from __future__ import print_function
+# from __future__ import print_function
 # noinspection PyUnresolvedReferences
 
 from IPython.core.debugger import Tracer
@@ -45,6 +45,7 @@ class FilterMessage(logging.Filter):
             if needle in record.msg:
                 return 0
         return 1
+
 
 tmlogger = logging.getLogger('dataproc.timeseries')
 for hnd in tmlogger.handlers:
@@ -129,12 +130,13 @@ def _prep_offset(start, offsets, ignore):
                                 " It can be either an xy-offset or 0 to indicate skipping".format(v))
     return ignore, offset_list
 
+
 def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
                      ccd_lims_xy=None, logger=None, skip_calib=False):
     """
     If files were not calibrated in AstroFile, then  generate calibrated data
     from a specified frame
-    
+
     Parameters
     ----------
     sci_files: dataproc.AstroDir
@@ -148,7 +150,7 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
     logger: bool
         Toggles logging
     skip_calib: If this is True, there will be no calibration.
-    
+
     Returns
     -------
     array_like :
@@ -174,6 +176,7 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
         d = (d - mdark) / mflat
     return d
 
+
 def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 mdark=None, mflat=None, labels=None, recenter=True,
                 offsets_xy=None, logger=None, ignore=None, brightest=0,
@@ -186,14 +189,14 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     ----------
     sci_files : dataproc.AstroDir
     target_coords_xy: List
-        List containing each target coordinates. 
+        List containing each target coordinates.
         ([[t1x, t1y], [t2x, t2y], ...])
     stamp_rad : int
         Radius of the stamp used
     maxskip : int
         Maximum distance allowed between target and stamp center, a longer
         skip will toggle a warning.
-    mdark : 
+    mdark :
         Master dark/bias to be used
     mflat :
         Master Flat to be used
@@ -203,7 +206,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         If True, the stamp will readjust its position each frame, following
         the target's movement
     offset_xy : List, optional
-        
+
     logger : bool
         If True, enables logger output
     ignore : int list, optional
@@ -218,23 +221,23 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     ccd_lims_xy : List, optional
         Limit of the section being analysed.
         ([x1, x2, y1, y2] means [x1:x2, y1:y2])
-    
+
     Notes
     -----
     Interactive Mode:
-    Enbling this setting gives manual control over the reduction process, 
+    Enbling this setting gives manual control over the reduction process,
     the following commands are available:
         * Left and Right keys : Change to previous/next frame
         * c : Recenter stamps based on mouse position
         * d : Ignore current frame
         * g : Keep going until a major drift occurs
         * q : Exit interactive mode and stop the process
-        
+
     Frames can be flagged by pressing 1-9
-    
+
     Returns
     -------
-    
+
     """
 
     if ignore is None:
@@ -306,7 +309,6 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                              skip_calib=skip_calib)
         astrofile = sci_files[idx]
         off = offsets_xy[idx]
-
 
         last_frame_coords_xy = []
         indexing[to_store] = idx
@@ -509,7 +511,7 @@ def _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain=None, ron=None):
         Telescope gain
     ron: float, optional
         Read-out-noise
-    
+
     Returns
     -------
     float
@@ -535,23 +537,23 @@ class Photometry:
     """
     Applies photometry to a target from the data stored in multiple
     fit frames.
-    
+
     Fit frames must be stored in a dataproc.AstroDir object, the user gives the
     coordinates of the target to be analysed and if possible the positions of
     other stars for reference. The process starts from the first frame with
     the coordinates given and tracks their position as frames are read.
-    
+
     This process can be controlled by the user by enabling interactive mode
     during initialization. This mode can be used to correct the position of the
     target after a jump or to verify the integrity of the files visually.
-    
+
     Attributes
     ----------
     surrounding_ap_limit :
     coord_user_xy :
     extra_header :
     extras :
-    
+
     Parameters
     ----------
     sci_files : dataproc.AstroDir
@@ -570,7 +572,7 @@ class Photometry:
     stamp_rad : int, optional
         Radius of the stamp used
     max_skip : int, optional
-        Maximum distance allowed between target and stamp center, 
+        Maximum distance allowed between target and stamp center,
         a longer skip will toggle a warning.
     max_counts : int, optional
         Maximum value permitted per pixel
@@ -583,7 +585,7 @@ class Photometry:
         Name of each target
     brightest : int, optional
         Index of star to use as position reference
-    deg : 
+    deg :
     gain : float, optional
         Gain of the telescope
     ron : float, optional
@@ -597,14 +599,14 @@ class Photometry:
         Enables interactive mode
     ccd_lims_xy : List, optional
         CCD dimensions
-        
+
     See Also
     --------
     dataproc.AstroFile
     dataproc.AstroDir
     photometry
     datproc.TimeSeries.timeseries
-    
+
     """
 
     def __init__(self, sci_files, target_coords_xy, offsets_xy=None, idx0=0,
@@ -615,7 +617,7 @@ class Photometry:
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
                  interactive=False, ccd_lims_xy=None):
-        
+
         if isinstance(epoch, str):
             self.epoch = sci_files.getheaderval(epoch)
         elif hasattr(epoch, '__iter__'):
@@ -765,7 +767,7 @@ class Photometry:
                    outer_ap=None):
         """
         Verifies parameters given and applies photometry through cpu_phot
-        
+
         Parameters
         ----------
         aperture:
@@ -773,7 +775,7 @@ class Photometry:
         deg:
         max_counts: int, optional
             Maximum value allowed per pixel, raises a warning if a target does
-        outer_ap:  
+        outer_ap:
             Outer ring as a fraction of aperture, to report surrounding region
         """
         if aperture is not None:
@@ -811,7 +813,7 @@ class Photometry:
     def remove_from(self, idx):
         """
         Removes file of index 'idx' from the list of frames to be processed
-        
+
         idx : int
         """
         if not isinstance(idx, int):
@@ -828,7 +830,7 @@ class Photometry:
     def append(self, sci_files, offsets_xy=None, ignore=None):
         """
         Adds more files to photometry
-        
+
         Parameters
         ----------
         offsets_xy:
@@ -836,7 +838,7 @@ class Photometry:
             Path ton directory where the data is located
         ignore:
             Keeps the same zero from original serie
-        
+
         """
 
         sci_files = dp.AstroDir(sci_files)
@@ -874,12 +876,12 @@ class Photometry:
     def cpu_phot(self):
         """
         Calculates the CPU photometry for all frames
-        
+
         Returns
         -------
         dataproc.TimeSeries :
             TimeSeries object containing the resulting data
-            
+
         See Also
         --------
         dataproc.TimeSeries : Object used to store the output
@@ -1027,7 +1029,7 @@ class Photometry:
         """
         Returns a dictionary with each target's position from the last frame.
         Useful if continued on a separate object
-        
+
         Returns
         -------
         dict :
@@ -1045,11 +1047,11 @@ class Photometry:
                            recenter=True, save=None, overwrite=False):
         """
         Plots a Radial Profile from the data using dataproc.radialprofile
-        
+
         Parameters
         ----------
-        targets: int/str 
-            Target specification for re-centering. Either an integer for 
+        targets: int/str
+            Target specification for re-centering. Either an integer for
             specific target.
         xlim :
         axes : int, plt.Figure, plt.Axes
@@ -1117,10 +1119,10 @@ class Photometry:
                   imshow=None, save=None, overwrite=False):
         """
         Show the star at the same position for the different frames
-        
+
         Parameters
         ----------
-        target : None for the first key() 
+        target : None for the first key()
         stamp_rad : int, optional
             Stamp radius
         axes : int, matplotlib.pyplot Axes, optional
@@ -1129,7 +1131,7 @@ class Photometry:
         last : int, optional
             Last frame to show. -1 will show all stamps
         n_show : int, optional
-            Indicates the number of figures to present. It overwrites the 
+            Indicates the number of figures to present. It overwrites the
             value of last
         ncol : int, optional
             Number of columns
@@ -1205,7 +1207,7 @@ class Photometry:
     def plot_drift(self, target=None, axes=None):
         """
         Plots a target movement between frames
-        
+
         Parameters
         ----------
         target : str, optional
@@ -1238,7 +1240,7 @@ class Photometry:
 
     def plot_extra(self, x_id=None, axes=None):
         """
-        
+
         Parameters
         ----------
         x_id:
@@ -1260,7 +1262,7 @@ class Photometry:
         """
         Plots the image from the fits file, after being processed using the
         zscale Algorithm
-        
+
         Parameters
         ----------
         frame:
@@ -1272,7 +1274,7 @@ class Photometry:
         annotate: bool, optional
             Displays target's name
         cnt: tuple, string, optional
-            It can be an XY tuple or a str to identify a specific target 
+            It can be an XY tuple or a str to identify a specific target
             position at the required frame
         interactive: bool, optional
             Enables interactive mode

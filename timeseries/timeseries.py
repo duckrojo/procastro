@@ -25,21 +25,22 @@ import dataproc as dp
 import matplotlib.pyplot as plt
 import pdb
 
+
 class TimeSeries:
     """
     Stores different data channels using multiple TimSeriesSingle instances.
     Each channel represents a column on a timeseries table, this object selects
     one channel as a default for all related methods, to display different
     channels the user must set this default to the desired channel.
-    
+
     Receives a timeseries object with, optionally, several different kinds of
     information (flux, errors, centroid, ...)
-    
+
     Attributes
     ----------
     _tss: dict
         Name to TSS dictionary for all channels
-    
+
     Parameters
     ----------
     data : dict or scipy.array
@@ -80,7 +81,7 @@ class TimeSeries:
 
     def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
                  default_info=None, grouping='mean'):
-        
+
         # blank definition
         self.default_info = None
         if isinstance(data, dict):
@@ -106,7 +107,7 @@ class TimeSeries:
     def plot(self, info=None, **kwargs):
         """
         Executes .plot() on the default TimeSeriesSingle
-        
+
         Parameters
         ----------
         info : str, optional
@@ -119,15 +120,15 @@ class TimeSeries:
     def get_ratio(self, info=None, **kwargs):
         """
         Recovers ratio
-        
+
         Parameters
         ----------
         info : str, optional
             Data channel, default is the current default channel
-        
+
         Returns
         -------
-        
+
         """
 
         if info is None:
@@ -138,12 +139,12 @@ class TimeSeries:
     def plot_ratio(self, info=None, **kwargs):
         """
         Execute .plot_ratio() on the default TimeSeriesSingle
-        
+
         Parameters
         ----------
         info : str, optional
             Data channel, default is the current default channel
-        
+
         """
         if info is None:
             info = self.default_info
@@ -169,7 +170,7 @@ class TimeSeries:
 class TimeSeriesSingle:
     """
     Stores a single kind of information for all targets
-    
+
     Attributes
     ----------
     channels : array_like
@@ -178,7 +179,7 @@ class TimeSeriesSingle:
         Contains the function used for grouping
     groups : array_like
         Groups generated after gropuing
-    
+
     Parameters
     ----------
     data : array_like, optional
@@ -191,7 +192,7 @@ class TimeSeriesSingle:
         Aditional header items
     group_op : str, optional
         Operation used to group the targets
-    
+
     """
 
     def __repr__(self):
@@ -203,7 +204,7 @@ class TimeSeriesSingle:
 
     def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
                  group_op='mean'):
-        
+
         self.channels = [np.array(d) for d in
                          data]  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
 
@@ -230,7 +231,7 @@ class TimeSeriesSingle:
     def set_main(self, target, ignore=None):
         """
         Set target channel as group #1, and all other channels as group #2
-        
+
         Parameters
         ----------
         target: str
@@ -251,7 +252,7 @@ class TimeSeriesSingle:
 
     def __getitem__(self, target):
         """
-        To recover errors or any of the other extras try: 
+        To recover errors or any of the other extras try:
             ts('error')[0] ts['centers_xy']['Target'], etc
         """
         # This is so I can do ts[0]/ts[2] and it works directly with the channels!
@@ -285,7 +286,7 @@ class TimeSeriesSingle:
     def grouping_with(self, op):
         """
         Sets grouping method used to group the channels
-        
+
         Parameters
         ----------
         op : str
@@ -305,10 +306,10 @@ class TimeSeriesSingle:
              overwrite=False, fmt_time="MJD", title="TimeSeries Data"):
         """
         Display the timeseries data: flux (with errors) as function of mjd
-        
+
         Parameters:
         -----------
-        label : str, optional 
+        label : str, optional
             Specify a single star to plot
         normalize: bool, optional
             If set, normalizes the data before plotting
@@ -319,7 +320,7 @@ class TimeSeriesSingle:
         fmt_time : str, optional
             Specify a format for epoch time like "JD", by default it's "MJD"
         title : str, optional
-        
+
         Returns
         -------
         None
@@ -364,7 +365,7 @@ class TimeSeriesSingle:
     def get_ratio(self, label=None, axes=None, sector=None):
         """
         Calculates the ratio of the stored data
-        
+
         Parameters
         ----------
         label : str, optional
@@ -372,14 +373,14 @@ class TimeSeriesSingle:
         axes : matplotlib.pyplot axes object, optional
         sector : tuple, optional
             Range from self.epoch to be used
-            
+
         Returns
         -------
-        
+
         """
         ratio = self[-1] / self[-2]
 
-        ratio_error = ratio * np.sqrt((self.grp_errors(1) / self[-1]) ** 2 +\
+        ratio_error = ratio * np.sqrt((self.grp_errors(1) / self[-1]) ** 2 +
                                       (self.grp_errors(2) / self[-2]) ** 2)
 
         x1=0
@@ -398,12 +399,12 @@ class TimeSeriesSingle:
     def JD(self, sector=None):
         """
         Recovers the epoch values from the x-axis
-        
+
         Parameters
         ----------
         sector : List or tuple, optional
             Range to be retrieved from self.epoch
-         
+
         Returns
         -------
         array_like
@@ -420,7 +421,7 @@ class TimeSeriesSingle:
                    overwrite=False):
         """
         Plots data ratio
-        
+
         Parameters
         ----------
         label : str, optional

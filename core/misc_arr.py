@@ -3,7 +3,7 @@
 # Copyright (C) 2013 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
-# modify it under the terms of version 2 of the GNU General 
+# modify it under the terms of version 2 of the GNU General
 # Public License as published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+# Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
 #
@@ -32,29 +32,29 @@ import scipy.signal as sg
 import astropy.io.fits as pf
 import copy
 from IPython.core.debugger import Tracer
-
 from .misc_general import sortmanynsp
+
 
 def subarray(data, cyx, rad, padding=False, return_origpos=False):
     """
     Returns a subarray centered on 'cxy' with radius 'rad'
-    
+
     Parameters
     ----------
     arr : array_like
         Original array
     cxy : tuple
         Center coordinates
-    rad : int 
+    rad : int
         radius
     padding: bool, optional
-        Returns a zero padded subarray when the requested stamp does not 
+        Returns a zero padded subarray when the requested stamp does not
         completely fit inside the array.
-    
+
     Returns
     -------
     origpos: tuple
-        Returns the original position of the subarray in the original array, 
+        Returns the original position of the subarray in the original array,
         it could be negative when padding if reached the origin of array
     """
 
@@ -63,7 +63,7 @@ def subarray(data, cyx, rad, padding=False, return_origpos=False):
 
     orig_y = (icy-rad>0)*(icy-rad)
     orig_x = (icx-rad>0)*(icx-rad)
-    
+
     ret0 = data[orig_y:icy+rad+1,
                 orig_x:icx+rad+1]
     if 0 in ret0.shape:
@@ -82,7 +82,6 @@ def subarray(data, cyx, rad, padding=False, return_origpos=False):
     else:
         ret = ret0
 
-
     if return_origpos:
         return ret, (orig_y, orig_x)
     else:
@@ -92,13 +91,13 @@ def subarray(data, cyx, rad, padding=False, return_origpos=False):
 def centroid(orig_arr, medsub=True):
     """
     Find centroid of small array
-    
+
     Parameters
     ----------
     orig_arr : array_like
     med_sub : bool, optional
         If set, substracts the median from the array
-    
+
     Returns
     -------
     float, float :
@@ -122,7 +121,7 @@ def centroid(orig_arr, medsub=True):
 def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     """
     Returns the centroid after a number of iterations
-    
+
     Parameters
     ----------
     arr : array_like
@@ -134,7 +133,7 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
         If True, substracts median from array
     iters : int, optional
         Number of times this procedure is repeated
-        
+
     Returns
     -------
     float, float
@@ -147,17 +146,18 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     for i in range(iters):
         sub_array, (offy, offx) = subarray(sub_array, [cy, cx], stamprad,
                                            padding=False, return_origpos=True)
-        
+
         scy, scx = centroid(sub_array, medsub=medsub)
         cy = scy + offy
         cx = scx + offx
-        
+
     return cy, cx
+
 
 def subcentroidxy(arr, cxy, stamprad, medsub=True, iters=1):
     """
     Returns the centroid after a number of iterations, order by xy
-    
+
     Parameters
     ----------
     arr : array_like
@@ -169,28 +169,29 @@ def subcentroidxy(arr, cxy, stamprad, medsub=True, iters=1):
         If True, substracts median from array
     iters : int, optional
         Number of times this procedure is repeated
-        
+
     Returns
     -------
     float, float
         Subcentroid coordinates
-    
+
     """
-    cy,cx = subcentroid(arr,[cxy[1],cxy[0]], stamprad,
+    cy, cx = subcentroid(arr, [cxy[1], cxy[0]], stamprad,
                         medsub=medsub, iters=iters)
-    return cx,cy
+    return cx, cy
+
 
 def radial(data, cyx):
     """
     Return a same-dimensional array with the pixel distance to cxy
-    
+
     Parameters
     ----------
-    data : array_like 
+    data : array_like
         Data to get the shape from
-    cyx: tuple  
+    cyx: tuple
         Center in native Y-X coordinates
-    
+
     Returns
     -------
     array_like
@@ -222,7 +223,7 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
         Stamp radius
     recenter: bool, optional
         Whether to recenter
-    
+
     Returns
     -------
     array_like :
@@ -236,7 +237,6 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
         cx, cy = nx//2, ny//2
     else:
         cx, cy = cnt_xy
-
 
     #use the whole data range if no stamp radius is given
     if stamp_rad is None:
@@ -254,9 +254,10 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
 
     return x, y, (cx, cy)
 
-def zscale(img,  trim = 0.05, contr=1, mask=None):
+
+def zscale(img,  trim=0.05, contr=1, mask=None):
     """
-    Returns lower and upper limits found by zscale algorithm for improved 
+    Returns lower and upper limits found by zscale algorithm for improved
     contrast in astronomical images.
 
     Parameters
@@ -286,28 +287,29 @@ def zscale(img,  trim = 0.05, contr=1, mask=None):
     a, b = np.polyfit(x, sy, 1)
 
     return b, a*img.size/contr+b
-    
+
 ###############################################################################
 # Unused methods
 ######
 
-def expandlims(xl,yl,offset=0):
+
+def expandlims(xl, yl, offset=0):
     """
-    Find x1,x2,y1,and y2 from the 2-item pairs xl and yl including some offset 
+    Find x1,x2,y1,and y2 from the 2-item pairs xl and yl including some offset
     (negative is inwards, positive outwards)
-    
+
     Parameters
     ----------
     xl, yl : int or tuples, optional
-    
+
     Returns
     -------
     """
-    if (not isinstance(xl,(list,tuple))) or (not isinstance(xl,(list,tuple))) or len(xl)!=2 or len(yl)!=2:
+    if (not isinstance(xl, (list, tuple))) or (not isinstance(xl, (list, tuple))) or len(xl)!=2 or len(yl)!=2:
         raise ValueError("xl and yl must each be 2-element list or tuple")
     dx = xl[1]-xl[0]
     dy = yl[1]-yl[0]
-    return xl[0]-offset*dx,xl[1]+offset*dx, \
+    return xl[0]-offset*dx, xl[1]+offset*dx, \
         yl[0]-offset*dy, yl[1]+offset*dy
 
 
@@ -317,12 +319,12 @@ def axis_from_fits(h, axis=1):
 
     Parameters
     ----------
-    h : int 
+    h : int
         Header or primary HDU
     axis : int, optional
-        Axis along the wavelength dispersion. If positive, then return data 
+        Axis along the wavelength dispersion. If positive, then return data
         with the same size as FITS, otherwise just the desired dimension
-    
+
     Returns
     -------
     array_like
@@ -348,7 +350,7 @@ def axis_from_fits(h, axis=1):
 
     wav_offset = header["crval%i" % (axis,)]
     wav_reference = header["crpix%i" % (axis,)]
-    try: 
+    try:
         delt = header["cdelt%i" % (axis,)]
     except KeyError:
         delt = header["cd%i_%i" %(axis, axis)]
@@ -358,9 +360,8 @@ def axis_from_fits(h, axis=1):
     return wav
 
 
-
 def fluxacross(diameter, seeing,
-               shape='slit', psf='gauss', 
+               shape='slit', psf='gauss',
                nseeing=10, nsamp=300,
                show=False):
     """
@@ -368,24 +369,24 @@ def fluxacross(diameter, seeing,
 
     Parameters
     ----------
-    diameter : 
+    diameter :
         Diameter of the block
-    seeing : 
+    seeing :
         Seeing
     shape : str, optional
-        Shape of the block. Currently slit, square, circle 
+        Shape of the block. Currently slit, square, circle
     psf: str, optional
         PSF shape. Currently gauss, cube
     nseeing : int, optional
         How many times the seeing is the considered stamp size
-    nsamp : int, optional 
+    nsamp : int, optional
         Divide the stamp in this many samples
-    show : bool, optional 
+    show : bool, optional
         Show a plot
-        
+
     Returns
     -------
-    
+
     """
     import scipy as sp
 
@@ -393,7 +394,7 @@ def fluxacross(diameter, seeing,
 
     gtof=(np.sqrt(2.0*np.log(2.0)))
     gaussigma = hseeing/gtof
-    
+
     psfshape={'gauss': lambda hseeing, ygrid, xgrid: (gtof/hseeing)**2/(2.0*np.pi)*np.exp(-(xgrid**2 + ygrid**2)/2.0/(hseeing/gtof)**2),
               'cube': lambda hseeing, ygrid, xgrid: (-hseeing<ygrid<hseeing)*(-hseeing<xgrid<hseeing)/4.0/hseeing**2,
               }
@@ -405,7 +406,7 @@ def fluxacross(diameter, seeing,
              }
 
     dy = dx = nseeing*seeing/2.0/nsamp
-    y,x = np.mgrid[-nsamp/2.0:nsamp/2.0,-nsamp/2.0:nsamp/2.0]
+    y, x = np.mgrid[-nsamp/2.0:nsamp/2.0, -nsamp/2.0:nsamp/2.0]
     y*=dy
     x*=dx
 
@@ -420,18 +421,16 @@ def fluxacross(diameter, seeing,
     return dy*dx*(psf*blk).sum()
 
 
-
-
 def azimuth(data, cyx):
     """
-    Return a same-dimensional array with the azimuth value of each pixel with 
+    Return a same-dimensional array with the azimuth value of each pixel with
     respect to 'cxy'
-    
+
     Parameters
     ----------
     data: data to get the shape from. It has to be 2D
     cyx:  Center in native Y-X coordinates
-    
+
     Returns
     -------
     float
@@ -444,7 +443,7 @@ def azimuth(data, cyx):
     if len(cyx) != ndim:
         raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
 
-    yy, xx = np.mgrid[0:data.shape[0],0:data.shape[1]]
+    yy, xx = np.mgrid[0:data.shape[0], 0:data.shape[1]]
 
     return np.arctan2(yy-cyx[0], xx-cyx[1])
 
@@ -455,7 +454,7 @@ def azimuth(data, cyx):
 
 def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=None, full=False):
     """
-    Returns a mask with those values that are 'sigmas'-sigmas beyond the mean 
+    Returns a mask with those values that are 'sigmas'-sigmas beyond the mean
     value of arr.
 
     Parameters
@@ -464,35 +463,35 @@ def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=
     sigmas: int
         Variation beyond this number of sigmas will be masked.
     axis : int, optional
-        Look for the condition along an axis, mark those. 
+        Look for the condition along an axis, mark those.
         None is the full array.
     kernel : int, optional (some algorithms accepts ndarray)
-        Size of the kernel to build the comparison. If 0, then obtain just 
-        an scalar from the whole array for comparison. 
+        Size of the kernel to build the comparison. If 0, then obtain just
+        an scalar from the whole array for comparison.
         Note that the borders are likely to contain useless data.
     algorithm : str, optional
-        Algorithm to build the comparison. 
-        If kernel==0, then any scipy function that receives a single array 
-        argument and returns an scalar works.  
-        Otherwise, the following kernels are implemented: 'median' filter, 
-        or convolution with a 'gaussian' (total size equals 5 times the 
+        Algorithm to build the comparison.
+        If kernel==0, then any scipy function that receives a single array
+        argument and returns an scalar works.
+        Otherwise, the following kernels are implemented: 'median' filter,
+        or convolution with a 'gaussian' (total size equals 5 times the
         specified sigma),  'boxcar'.
     mask : ndarray, optional
         Initial mask
     npass : int, optional
-        Number of passes this function is run, the mask-out pixels are 
-        cumulative. However, only the standard deviation to find sigmas is 
+        Number of passes this function is run, the mask-out pixels are
+        cumulative. However, only the standard deviation to find sigmas is
         recomputed, the comparison is not.
     full : bool, optional
         Return full statistics
-        
+
     Returns
     -------
     bool ndarray
         A boolean np.array with True on good pixels and False otherwise.
         If full==True, then it also return standard deviation and residuals
     """
-    if not isinstance(arr,np.ndarray):
+    if not isinstance(arr, np.ndarray):
         arr = np.array(arr)
 
     krnfcn = {'mean': lambda n: sg.boxcar(n)/n,
@@ -506,7 +505,7 @@ def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=
     else:
         try:
             comparison = getattr(sp, algorithm)(arr)
-            if hasattr(comparison,'__len__'):
+            if hasattr(comparison, '__len__'):
                 raise AttributeError()
         except AttributeError:
             print("In function '%s', algorithm requested '%s' is not available from scipy to receive an array and return a comparison scalar " % (inspect.stack()[0][3], algorithm))
@@ -521,4 +520,4 @@ def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=
 
     if full:
         return mask, std, residuals
-    return mask            
+    return mask
