@@ -29,7 +29,7 @@ __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
 import astropy.constants as apc
 import astropy.coordinates as apcoo
 import astropy.units as apu
-import scipy as sp
+import numpy as np
 import glob
 import os.path as path
 import scipy.interpolate as it
@@ -82,8 +82,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
     pm_ra = None
     pm_dec = None
     try:
-        #TODO: Investigate value error caused by string formatting issue ("Passed literaly" to angle)
-        ra_dec = apcoo.SkyCoord('%s'.format(target), unit=(apu.hour, apu.degree),
+        ra_dec = apcoo.SkyCoord([f"{target}"], unit=(apu.hour, apu.degree),
                                 equinox=equinox)
     except ValueError:
         if not isinstance(coo_files, (list, tuple)):

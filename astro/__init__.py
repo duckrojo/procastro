@@ -22,6 +22,3 @@ from . import astro
 from .astro import *
 
 __all__ = []
-__all__ += astro.__all__
-
-
