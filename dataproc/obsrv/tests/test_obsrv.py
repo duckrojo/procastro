@@ -8,8 +8,9 @@ import pytest
 import os
 import pdb
 
+
 class TestObsrv(object):
-    
+
     @patch("matplotlib.pyplot.show")
     def setup_method(self, method, mock_show):
         mock_show.return_value = None
@@ -21,8 +22,8 @@ class TestObsrv(object):
         assert result == 2457926.4925700002
 
     def test_update_plot(self):
-        # _update_plot is called every time a setter is used, setters are 
-        # already tested in test_obscalc so what remains here is to test if 
+        # _update_plot is called every time a setter is used, setters are
+        # already tested in test_obscalc so what remains here is to test if
         # the decorator itself wont cause errors.
 
         self.obs.set_target("CoRoT-6 b")

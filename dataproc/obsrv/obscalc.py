@@ -58,34 +58,6 @@ class ObsCalc(object):
     """
     Object used to compute exoplanet transits
 
-    Attributes
-    ----------
-    _obs : ephem.Observer instance
-    _sun : ephem.Sun instance
-    params : dict
-        General parameter values.
-        Available keys: 'target', 'current transit', 'equinox', 'lat_lon',
-                        'site', 'to_local_midday', 'timespan'
-    daily : dict
-        Sunset, sunrise and twilight information
-    jd0 : float
-        Initial transit timespan value in JD
-    star : SkyCoord instance
-        Host star
-    transit_info : dict
-        Data relevant to the current transit being observed
-        Current keys include:
-    airmass : array_like
-    transits : array_like
-        Available transits for the current target
-    transit_hours : array_like
-        Hours in which the exoplanet transit is detectable
-    days : array_like
-        Days in which the current transit is visible
-    hours : array_like
-    xlims, ylims : array_like
-       Dimensions of grid used to create the main figures
-
     Parameters
     ----------
     timespan : int, optional
@@ -95,6 +67,33 @@ class ObsCalc(object):
     central_time: int, optional
         Central time of y-axis.  If outside the [-12,24] range, then
         only shows nighttime
+
+    Attributes
+    ----------
+    _obs : ephem.Observer instance
+    _sun : ephem.Sun instance
+    params : dict
+        General parameter values.
+        Available keys: 'target', 'current transit', 'equinox', 'lat_lon', 'site', 'to_local_midday', 'timespan'
+    daily : dict
+        Sunset, sunrise and twilight information
+    jd0 : float
+        Initial transit timespan value in JD
+    star : SkyCoord instance
+        Host star
+    transit_info : dict
+        Data relevant to the current transit being observed
+        Current keys include: length, epoch, period and offset
+    airmass : array_like
+    transits : array_like
+        Available transits for the current target
+    transit_hours : array_like
+        Hours in which the exoplanet transit is detectable
+    days : array_like
+        Days in which the current transit is visible
+    hours : array_like
+    xlims, ylims : array_like
+        Dimensions of grid used to create the main figures
 
     """
     def __init__(self, timespan=2017, target=None,
@@ -248,7 +247,7 @@ class ObsCalc(object):
                                           "dash separating integers)")
             elif int(years[0]) > int(years[1]):
                 raise ValueError("Starting year must be lower than the end year")
-                
+
             ed0 = ephem.Date('%i/1/1' % (int(years[0]),))
             ed1 = ephem.Date('%i/1/1' % (int(years[1])+1,))
 
@@ -367,9 +366,9 @@ class ObsCalc(object):
             except URLError as mesg:
                 raise NotImplementedError(f"NASA has not yet fixed the SSL validation error ({mesg}). Info has to be isput "
                        "manually in ~/.transits")
-            
+
             # As of astroquery 0.3.10, normal columns are u.Quantity while extra
-            # columns are floats. 
+            # columns are floats.
             # NOTE: If astroquery is upgraded check this block for any API changes.
             req_cols = ['pl_orbper', 'pl_tranmid', 'pl_trandur']
             for i in range(len(req_cols)):
@@ -383,10 +382,10 @@ class ObsCalc(object):
                     req_cols[i] = planet[col].value
                 else:
                     req_cols[i] = planet[col]
-            
+
             transit_period, transit_epoch, transit_length = req_cols
             transit_length *= 24
-            
+
             print("  Found ephemeris: %f + E*%f (length: %f)" % (transit_epoch, transit_period, transit_length))
 
         if transit_period != 0:

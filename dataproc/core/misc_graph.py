@@ -322,6 +322,9 @@ def imshowz(data,
 def figaxes_xdate(x, axes=None, overwrite=False):
     """
     Returns the figure and axes with a properly formatted date X-axis.
+    
+    Parameters
+    ----------
     x : astropy.Time, datetime.datetime, float
         Time data used for the x axis. If its a float, then assumes JD
     axes : int, plt.Figure, plt.Axes, optional

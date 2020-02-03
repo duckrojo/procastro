@@ -290,17 +290,6 @@ class AstroFile(object):
     Representation of an astronomical data file, contains information related
     to the file's data. Currently supports usage of arrays and .fit files
 
-    Attributes
-    ----------
-    shape : tuple
-        Shape of the data contained on the file
-    header_cache : dict
-        Data contained on the most recently read header
-    sortkey : str
-        Header Item used when sorting this object
-    type : str
-        File extension
-
     Parameters
     ----------
     filename : str or dataproc.AstroFile
@@ -324,7 +313,7 @@ class AstroFile(object):
     read_keywords : list, optional
         Read all specified keywords at creation time and store them in
         the header cache
-    auto_trim : str
+    auto_trim : str, optional
         Header field name which is used to cut a portion of the data. This
         field should contain the dimensions of the section to be cut.
         (i.e. TRIMSEC = '[1:1992,1:1708]')
@@ -338,6 +327,17 @@ class AstroFile(object):
         is used as default unit; if not set at all, uses 1.0 (with warning)
     unit : astropy.unit, optional
         Specifies the unit for the data
+
+    Attributes
+    ----------
+    shape : tuple
+        Shape of the data contained on the file
+    header_cache : dict
+        Data contained on the most recently read header
+    sortkey : str
+        Header Item used when sorting this object
+    type : str
+        File extension
 
     """
 
@@ -592,33 +592,21 @@ class AstroFile(object):
         Filtering can be customized by including one of the following options
         after the item name, separated by an underscore.
 
-        When querying strings:
-            * BEGIN:    True if value starts with the given string
-            * END:      True if value ends with the given string
-            * ICASE:    Case unsensitive match
-            * MATCH     Case sensitive match
+        - Strings:
+            + BEGIN:     True if value starts with the given string
+            + END:       True if value ends with the given string
+            + ICASE:     Case unsensitive match
+            + MATCH:     Case sensitive match
 
-        When querying numeric values:
-            * LT:       True if current value is lower than the given number
-            * GT:       True if current value is greater than the given number
-            * EQUAL:    True if both values are the same, can be used in
-                        conjunction with LT or GT
-        Other:
-            NOT:        Logical Not
+        - Numeric values:
+            + LT:        True if current value is lower than the given number
+            + GT:        True if current value is greater than the given number
+            + EQUAL:     True if both values are the same, can be used in conjunction with LT or GT
+        - Other:
+            + NOT:       Logical Not
 
         Its possible to include multiple options, this statements count as
         a logical "or" statements.
-
-        Notes
-        -----
-        If a header item has a "-" character on its name, use two underscores
-        to represent it.
-
-        Examples
-        --------
-        NAME_BEGIN_ICASE_NOT = "WASP"   (False if string starts with wasp
-                                         ignores uppercase)
-        NAXIS1_GT = 20                  (True if NAXIS1 > 20)
 
         Parameters
         ----------
@@ -628,6 +616,17 @@ class AstroFile(object):
         Returns
         -------
         bool
+
+        Notes
+        -----
+        If a header item has a "-" character on its name, use two underscores
+        to represent it.
+
+        Examples
+        --------
+        NAME_BEGIN_ICASE_NOT = "WASP"   (False if string starts with wasp ignores uppercase)
+        NAXIS1_GT = 20                  (True if NAXIS1 > 20)
+
         """
         ret = []
 
@@ -720,8 +719,11 @@ class AstroFile(object):
         Parameters
         ----------
         **kwargs : Keyword argument or unpacked dict
-            Ex: setheader(item1 = data1, item2 = data2)
-                setheader(**{"item1" : data1, "item2" : data2})
+            
+        Examples
+        --------
+        setheader(item1 = data1, item2 = data2)
+        ``setheader(**{"item1" : data1, "item2" : data2})``
 
         Returns
         -------

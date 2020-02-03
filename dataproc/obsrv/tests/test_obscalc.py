@@ -55,11 +55,11 @@ class TestObsCalc(object):
         assert_equal(self.obs.days, ed2)
         assert_equal(self.obs.xlims, [0.0, 2160.0])
         assert self.obs.jd0 == 2455197.5
-            
+
         # Reversed timespan should raise an error
         with pytest.raises(ValueError):
-            self.obs.set_timespan("2015-2010")    
-        
+            self.obs.set_timespan("2015-2010")
+
     @pytest.mark.parametrize(('target', 'expected'),
                             [("WASP-8 b", {'length': 24*0.11536,  # All data is available
                                            'epoch': 2454679.33486,

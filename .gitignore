@@ -1,0 +1,12 @@
+# Sphinx documentation
+docs/_build
+docs/_static
+docs/_templates
+
+# Byte Compiled python files
+__pycache__/
+*.pyc
+
+# Pytest
+.coverage
+.pytest_cache

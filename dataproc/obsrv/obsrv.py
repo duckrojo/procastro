@@ -110,9 +110,11 @@ class Obsrv(ocalc.ObsCalc):
         Displays an exoplanet eclipsing transits across a specific timeframe,
         where the x-axis shows the day of occurrence while the y-axis
         corresponds to the hour of the event.
-            Each transit is shown as a white dot which can be clicked to display
+
+        Each transit is shown as a white dot which can be clicked to display
         a plot image specific to that transit located to the left.
-            Yellow lines are used to delimit months, the background color is used
+
+        Yellow lines are used to delimit months, the background color is used
         to plot the expected airmass on that date and the grey bands shown
         above and below represent the sun and twilight set and rise.
 
@@ -122,19 +124,10 @@ class Obsrv(ocalc.ObsCalc):
 
     On each click, the object will print the datetime of the transit in
     standard format and JD format.
-    
+
     Setters are used to change the parameters of the current Obsrv instance while
     the interactive plot is active. Closing the plot and setting data afterwards
     will cause unexpected behaviour.
-
-    Attributes
-    ----------
-    params : dict
-        Store each parameter current values
-    cid : list
-        Stores interactive mode pyplot variables and methods
-    airmass : array_like
-    xlims, ylims : array_Like
 
     Parameters
     ----------
@@ -148,14 +141,24 @@ class Obsrv(ocalc.ObsCalc):
     savedir : str, optional
         Directory where the plotted figures will be stored
     altitude_limit : int, optional
-    central_time:
-        Central time of y-axis.  If outside the [-12,24] range, then
-        only shows nighttime
+    central_time : int, optional
+        Central time of the y-axis. If outside the [-12,24] range then only shows nighttime.
+
+    Attributes
+    ----------
+    params : dict
+        Store each parameter current values
+    cid : list
+        Stores interactive mode pyplot variables and methods
+    airmass : array_like
+    xlims, ylims : array_like
 
     See Also
     --------
     dataproc.obsrv.ObsCalc : Parent class which computes transit data
+
     """
+
     def __init__(self,
                  target=None, show_twilight=True, show_months=True,
                  show_colorbar=True, show_transits=True,

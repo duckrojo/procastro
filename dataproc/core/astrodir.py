@@ -73,8 +73,8 @@ class AstroDir(object):
     dataproc.AstroCalib : Object that holds calibration information.
                           One of them can be shared by many AstroFile instances
 
-    dataproc.AstroCalib.add_mbias()
-    dataproc.AstroCalib.add_mflat()
+    dataproc.AstroCalib.add_bias
+    dataproc.AstroCalib.add_flat
     """
 
     def __init__(self, path, mflat=None, mbias=None,
@@ -279,7 +279,7 @@ class AstroDir(object):
 
         See Also
         --------
-        AstroFile.stats : for the available statistics
+        dataproc.AstroFile.stats : for the available statistics
         """
         verbose_heading = kwargs.pop('verbose_heading', True)
         extra_headers = kwargs.pop('extra_headers', [])
@@ -313,7 +313,8 @@ class AstroDir(object):
 
         See Also
         --------
-        AstroFile.filter : Specifies the syntax used by the recieved arguments.
+        dataproc.AstroFile.filter : Specifies the syntax used by the recieved arguments.
+        
         """
         from copy import copy
         new = copy(self)

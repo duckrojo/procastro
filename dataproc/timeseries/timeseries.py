@@ -311,8 +311,8 @@ class TimeSeriesSingle:
         """
         Display the timeseries data: flux (with errors) as function of mjd
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         label : str, optional
             Specify a single star to plot
         normalize: bool, optional

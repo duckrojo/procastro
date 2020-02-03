@@ -361,32 +361,32 @@ def getfilter(name,
     Parameters
     ----------
     name: str or array_like
-      Name of the filter (filenames in directory). If array_like, then it needs
-      to have two elements to define a uniform filter within the specified
-      cut-in and cut-out values with value 1.0 and in a range 10% beyond with
-      value 0.0, for a total of 50 pixels.
+        Name of the filter (filenames in directory). If array_like, then it needs
+        to have two elements to define a uniform filter within the specified
+        cut-in and cut-out values with value 1.0 and in a range 10% beyond with
+        value 0.0, for a total of 50 pixels.
     name_only : bool, optional
-      If True returns the name of the file only
+        If True returns the name of the file only
     filter_unit : astropy quantity, optional
-      Default filter unit that should be in files. Default is Angstroms.
-      Can be specified in file as first line with comment 'unit:'
+        Default filter unit that should be in files. Default is Angstroms.
+        Can be specified in file as first line with comment 'unit:'
     fct : int, optional
-      Factor by which the transmission is divided in the archive
-      (i.e. 100 if it is written in percentage).
-      Can be specified in file as first line with comment 'fct:'.
-      Default is 1
+        Factor by which the transmission is divided in the archive
+        (i.e. 100 if it is written in percentage).
+        Can be specified in file as first line with comment 'fct:'.
+        Default is 1
     filter_dir : str, optional
-      Directory that hold the filters, it accepts wildcards that will be used
-      by glob. Default is '/home/inv/common/standards/filters/oth/*/
+        Directory that hold the filters, it accepts wildcards that will be used
+        by glob. Default is ``/home/inv/common/standards/filters/oth/*/``
     force_positive : bool, optional
-       Force positive values for transmission
+        Force positive values for transmission
     force_increasing : bool, optional
-       Sort such that wavelength is always increasing
+        Sort such that wavelength is always increasing
 
     Returns
     -------
     wavelength, transmission
-      Transmission curve
+        Transmission curve
     """
 
     filters = glob.glob(filter_dir + '/*.dat')
