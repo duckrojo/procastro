@@ -240,12 +240,15 @@ class ObsCalc(object):
             ed0 = ephem.Date('%i/1/1' % (timespan,))
             ed1 = ephem.Date('%i/1/1' % (timespan+1,))
 
-        elif isinstance(timespan, str):
+        elif isinstance(timespan, str): # Start Year - End Year
             years = timespan.split('-')
             if len(years) != 2:
                 raise NotImplementedError("Requested timespan (%s) is not valid. Only a string "
                                           "in the format <FROMYEAR-TOYEAR> is accepted (only one "
                                           "dash separating integers)")
+            elif int(years[0]) > int(years[1]):
+                raise ValueError("Starting year must be lower than the end year")
+                
             ed0 = ephem.Date('%i/1/1' % (int(years[0]),))
             ed1 = ephem.Date('%i/1/1' % (int(years[1])+1,))
 
@@ -364,12 +367,26 @@ class ObsCalc(object):
             except URLError as mesg:
                 raise NotImplementedError(f"NASA has not yet fixed the SSL validation error ({mesg}). Info has to be isput "
                        "manually in ~/.transits")
-            # TODO: Raise exception when some of this columns are missing
-            # TODO: Find a way to correctly handle returned data types (QType, Column, float, etc)
-            #       Find which errors show when failing to recover pl_orbper and pl_tranmid
-            transit_period = planet['pl_orbper'].value
-            transit_epoch = planet['pl_tranmid']
-            transit_length = planet['pl_trandur'] * 24
+            
+            # As of astroquery 0.3.10, normal columns are u.Quantity while extra
+            # columns are floats. 
+            # NOTE: If astroquery is upgraded check this block for any API changes.
+            req_cols = ['pl_orbper', 'pl_tranmid', 'pl_trandur']
+            for i in range(len(req_cols)):
+                col = req_cols[i]
+                # Missing information can be returned as None or as a numpy
+                # Masked array
+                if planet[col] is None or isinstance(planet[col], np.ma.MaskedArray):
+                    raise ValueError("Requested data {} is not available on the \
+                                       NASA archives for target {}".format(col, target))
+                elif isinstance(planet[col],  u.Quantity):
+                    req_cols[i] = planet[col].value
+                else:
+                    req_cols[i] = planet[col]
+            
+            transit_period, transit_epoch, transit_length = req_cols
+            transit_length *= 24
+            
             print("  Found ephemeris: %f + E*%f (length: %f)" % (transit_epoch, transit_period, transit_length))
 
         if transit_period != 0:

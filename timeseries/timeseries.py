@@ -28,7 +28,7 @@ import pdb
 
 class TimeSeries:
     """
-    Stores different data channels using multiple TimSeriesSingle instances.
+    Stores different data channels using multiple TimeSeriesSingle instances.
     Each channel represents a column on a timeseries table, this object selects
     one channel as a default for all related methods, to display different
     channels the user must set this default to the desired channel.
@@ -112,6 +112,10 @@ class TimeSeries:
         ----------
         info : str, optional
             Data channel to be plotted, default is the current default channel
+        
+        See Also
+        --------
+        TimeSeriesSingle
         """
         if info is None:
             info = self.default_info
@@ -376,7 +380,15 @@ class TimeSeriesSingle:
 
         Returns
         -------
-
+        ratio_cut : array_like
+            Ratio obtained, if sector is enabled will return the ratio of said
+            sector.
+        ratio_error_cut : array_like
+            Error of the calculated sector.
+        sigma : float
+            Standard deviation of the data
+        errbar_media : float
+            Median value of the ratio error
         """
         ratio = self[-1] / self[-2]
 
@@ -402,7 +414,7 @@ class TimeSeriesSingle:
 
         Parameters
         ----------
-        sector : List or tuple, optional
+        sector : 2 item list, optional
             Range to be retrieved from self.epoch
 
         Returns
@@ -546,7 +558,7 @@ class TimeSeriesSingle:
         #
         #     return self.channels[-group_id]
         #
-   #     return self.channels[-group_id]
+        #     return self.channels[-group_id]
         #
         # def median(self, group_id):
         #     if group_id > 2:

@@ -96,18 +96,19 @@ class TestAstroFile(object):
             self.file.setheader(**dict)
 
     def test_reader(self):
-        #Raw data
+        # Raw data
         f = pf.open(os.path.join(self.path, "file.fits"))
         expected = f[0].data
         assert_equal(self.file.reader(), expected)
         f.close()
 
-        #Corrupt files return None
+        # Corrupt files should raise an exception
         corrupt = AstroFile(os.path.join(self.path, "empty.fits"))
-        assert corrupt.reader() is None
+        with pytest.raises(IOError):
+            corrupt.reader()
 
     def test_load(self):
-        #Load to empty file
+        # Load to empty file
         empty = AstroFile()
         filename = os.path.join(self.path, "file.fits")
         data = pf.getheader(filename)
@@ -118,7 +119,7 @@ class TestAstroFile(object):
 
     @pytest.mark.skip(reason="Pending method refactoring")
     def test_writer(self):
-        #No header given
+        # No header given
         blank = AstroFile("blank.fits")
         data = self.file.reader()
         blank.writer(data)
@@ -127,12 +128,12 @@ class TestAstroFile(object):
     def test_jd_from_ut(self):
         expected = 2457487.626745567
 
-        #UT time is located in one header value
+        # UT time is located in one header value
         self.file.jd_from_ut(target="test", source="date")
         val = self.file.getheaderval("test")
         assert val == expected
 
-        #UT time is split between two keys
+        # UT time is split between two keys
         self.file.jd_from_ut(target ="test2", source = ["ut-date", "ut-time"])
         split_val = self.file.getheaderval("test2")
         assert split_val == expected
@@ -186,10 +187,10 @@ class TestAstroFile(object):
 
         create_merge_example(2048, 568, 4, src)
 
-        #Creates a symbolic link to the file
+        # Creates a symbolic link to the file
         os.symlink(src, os.path.join(self.path, "merge_example.fits"))
 
-        #Generates expected result
+        # Generates expected result
         target = pf.open(src)
         prev = len(target)
         expected = target[1].data
@@ -198,28 +199,28 @@ class TestAstroFile(object):
             expected = np.concatenate((expected, target[i].data), axis=1)
         target.close()
 
-        #Create AstroFile pointing to file
+        # Create AstroFile pointing to file
         src = os.path.join(self.path, "merge_example.fits")
         af = AstroFile(src)
 
-        #Merge ImageHDU's of image, saves data on current folder
+        # Merge ImageHDU's of image, saves data on current folder
         af.merger()
 
-        #Compare result with expected data
+        # Compare result with expected data
         mod = pf.open(src)
         assert len(mod) == prev+1
         result = mod[-1].data
         assert_equal(result, expected)
         mod.close()
 
-        #Merger wont execute if a file already has a composite image
+        # Merger wont execute if a file already has a composite image
         af.merger()
         again = pf.open(src)
         assert len(again) == prev+1
         again.close()
 
     def test_merge_empty(self):
-        # Theres the chance that some hdu units are empty but the rest of the
+        # There is the chance that some hdu units are empty but the rest of the
         # file is still usable. merger should rise a warning in that case
         # and exclude said hdu from the process while merging the rest.
 

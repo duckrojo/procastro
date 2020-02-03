@@ -55,9 +55,11 @@ class TestObsCalc(object):
         assert_equal(self.obs.days, ed2)
         assert_equal(self.obs.xlims, [0.0, 2160.0])
         assert self.obs.jd0 == 2455197.5
-
-        ### TODO patch obscalc for cases where years are reversed (Ex: 2019-2000)
-
+            
+        # Reversed timespan should raise an error
+        with pytest.raises(ValueError):
+            self.obs.set_timespan("2015-2010")    
+        
     @pytest.mark.parametrize(('target', 'expected'),
                             [("WASP-8 b", {'length': 24*0.11536,  # All data is available
                                            'epoch': 2454679.33486,
@@ -75,9 +77,9 @@ class TestObsCalc(object):
         self.obs.set_target(target)
         assert self.obs.transit_info == expected
 
-    @pytest.mark.skip(reason="Need to know which exceptions are raised")
     def test_set_target_error(self):
-        self.obs.set_target("WASP-3 b")   #No Data in txt, NASA returns None
+        with pytest.raises(ValueError):
+            self.obs.set_target("WASP-3 b")   # NASA returns masked array on trandur
 
     def teardown_method(self):
         del self.obs

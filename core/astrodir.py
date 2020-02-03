@@ -105,14 +105,20 @@ class AstroDir(object):
             elif pth.isdir(f):
                 for sf in os.listdir(f):
                     nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud, read_keywords=read_keywords, auto_trim=auto_trim)
-                    if nf:
-                        files.append(nf)
+                    try:
+                        if nf: files.append(nf)
+                    except IOError:
+                        warnings.warn(f"Warning: File {nf.basename()} could not be read, skipping")
+                        
                 nf = False
             else:
                 nf = dp.AstroFile(f, hduh=hduh, hdud=hdud, read_keywords=read_keywords, auto_trim=auto_trim)
-            if nf:
-                files.append(nf)
-
+            
+            try:
+                if nf: files.append(nf)
+            except IOError:
+                warnings.warn(f"Warning: File {nf.basename()} could not be read, skipping")
+        
         self.files = files
         self.props = {}
         calib = dp.AstroCalib(mbias, mflat, auto_trim=auto_trim,
@@ -380,7 +386,7 @@ class AstroDir(object):
     def get_datacube(self, normalize_region=None, normalize=False, verbose=False,
                      check_unique=None, group_by=None):
         """
-        Generates a data cube containing the data of each AstroFile contained.
+        Generates a data cube with the data of each AstroFile.
 
         Parameters
         ----------

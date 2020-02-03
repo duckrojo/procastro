@@ -476,19 +476,19 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         _show_apertures(curr_center_xy, axes=ax, labels=labels,
                         sk_color=sk_color, ap_color=ap_color)
         f.show()
-        print ("offsets_xy = {", end='')
+        print("offsets_xy = {", end='')
         for idx in range(len(offsets_xy)):
             if idx in ignore:
-                print ("{:d}:0, ".format(idx+idx0), end='')
+                print("{:d}:0, ".format(idx+idx0), end='')
             elif offsets_xy[idx].sum() != 0:
-                print ("{:d}: [{:.0f}, {:.0f}],\n              ".format(idx+idx0,
+                print("{:d}: [{:.0f}, {:.0f}],\n              ".format(idx+idx0,
                                                                         offsets_xy[idx][0], offsets_xy[idx][1]),
                        end="")
         print("}")
-        print ("flags = {")
+        print("flags = {")
         for i in range(1, 10):
             if str(i) in flag:
-                print ("{:d}: {},".format(i, list(np.array(list(set(flag[str(i)]))) + idx0)))
+                print("{:d}: {},".format(i, list(np.array(list(set(flag[str(i)]))) + idx0)))
         print("}")
         logger.removeFilter(msg_filter)
 
@@ -549,10 +549,10 @@ class Photometry:
 
     Attributes
     ----------
-    surrounding_ap_limit :
-    coord_user_xy :
-    extra_header :
-    extras :
+    surrounding_ap_limit : Limit to compute excess flux for a given aperture
+    coord_user_xy : Stores original coordinates given by the user
+    extra_header : Name of header item given 'extra'
+    extras : Values fiven by 'extra' dict
 
     Parameters
     ----------
@@ -673,7 +673,7 @@ class Photometry:
             handler.setLevel(logging.INFO)
             self._logger.addHandler(handler)
 
-            print ("Detailed logging redirected to {}".format(logfile))
+            print("Detailed logging redirected to {}".format(logfile))
         self._logger.info("dataproc.timeseries.Photometry execution on: {}".format(sci_files))
 
         sci_files = dp.AstroDir(sci_files)
@@ -701,6 +701,7 @@ class Photometry:
             elif len(labels) < nstars:
                 labels = list(labels) + list(np.arange(len(labels),
                                                        nstars).astype(str))
+        # TODO: Define this exception type
         except:
             raise ValueError("Coordinates of target stars need to be " +
                              "specified as dictionary or as a list of 2 elements, not: %s" %
@@ -1383,10 +1384,10 @@ class Photometry:
             if event.inaxes != ax:
                 return
             xx, yy = event.xdata - ref_xy[0], event.ydata - ref_xy[1]
-            print ("\nFrame #{} (X, Y, Flux) = ({:.1f}, {:.1f}{})]".format(frame,
+            print("\nFrame #{} (X, Y, Flux) = ({:.1f}, {:.1f}{})]".format(frame,
                                                                            event.xdata, event.ydata,
                                                                            d[event.ydata, event.xdata]))
-            print ("Distance to '{}'{}: (x,y,r) = ({:.1f}, {:.1f}, {:.1f})".format(ref_label,
+            print("Distance to '{}'{}: (x,y,r) = ({:.1f}, {:.1f}, {:.1f})".format(ref_label,
                                                                                    reference != frame
                                                                                    and " on frame #{}".format(reference)
                                                                                    or "",

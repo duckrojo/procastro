@@ -107,12 +107,12 @@ class Obsrv(ocalc.ObsCalc):
     be interacted with.
 
     Right Image:
-        Displays an exoplanet eclipsing transits across a specific timeframe
+        Displays an exoplanet eclipsing transits across a specific timeframe,
         where the x-axis shows the day of occurrence while the y-axis
         corresponds to the hour of the event.
-        Each transit is shown as a white dot which can be clicked to display
+            Each transit is shown as a white dot which can be clicked to display
         a plot image specific to that transit located to the left.
-        Yellow lines are used to delimit months, the background color is used
+            Yellow lines are used to delimit months, the background color is used
         to plot the expected airmass on that date and the grey bands shown
         above and below represent the sun and twilight set and rise.
 
@@ -122,6 +122,10 @@ class Obsrv(ocalc.ObsCalc):
 
     On each click, the object will print the datetime of the transit in
     standard format and JD format.
+    
+    Setters are used to change the parameters of the current Obsrv instance while
+    the interactive plot is active. Closing the plot and setting data afterwards
+    will cause unexpected behaviour.
 
     Attributes
     ----------

@@ -825,8 +825,10 @@ class AstroFile(object):
             return False
 
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
-        # TODO: exception when corrupt
-
+        
+        if data is None: # File with no data / corrupt
+            raise IOError("Empty or corrupt hdu/file")
+        
         # Just print the HDUs if requested hdu=-1
         # if hdu == -1:
         #     return data
@@ -1092,19 +1094,6 @@ class AstroFile(object):
             Last HDU to be merged, if None will continue until the end of the
             HDUList
         """
-
-        #######
-        # NOTE: This method is causing a deprecation warning somewhere caused
-        #       by a recent numpy change (only for windows).
-        #       To obtain information about the warning see
-        #       https://github.com/astropy/astropy/issues/5797
-        #
-        # NOTE: Error removed after setting memory mapping to False, need to
-        #       check if files are being closed at all using psutils before
-        #       using the with statement with pf.open.
-        #       Remove this comment block after testing
-        #######
-
         with pf.open(self.filename, mode='update', memmap=False) as fit:
 
             # This file already has a composite image

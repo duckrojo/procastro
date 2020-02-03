@@ -2,6 +2,7 @@ from dataproc import AstroDir, AstroFile
 from dataproc.timeseries import Photometry
 from numpy.testing import assert_equal
 from .fit_factory import create_targeted_fit, create_bias
+from unittest.mock import patch
 import matplotlib.pyplot as plt
 import astropy.io.fits as pf
 import numpy as np
@@ -9,7 +10,6 @@ import copy
 import pytest
 import os
 import pdb
-
 
 class TestPhotometry(object):
     @pytest.fixture(autouse=True)
@@ -30,7 +30,7 @@ class TestPhotometry(object):
             #self.data.add_bias(bias)
             #self.data.add_flat(f)
             self.phot = Photometry(self.data, [[self.size/2, self.size/2]], aperture = 7.5, sky = [11,20], brightest=0, gain = 1.8, ron = 4.7)
-
+        
     def test_append(self):
         self.phot.append(os.path.join(self.path,"extra"))
         assert(len(self.phot.indexing) == 10)
@@ -72,18 +72,35 @@ class TestPhotometry(object):
         del broken
 
     #####
-    #   TODO: Find a way to recover numeric data from this methods.
-    #   The following tests only check if the plots work properly
-
-    def test_plot_radial_profile(self):
+    # TODO: Find a way to recover numeric data from this methods.
+    #       The following tests only check if the plots work properly
+    #       
+    # NOTE: If you want to visually test if the graphs are correctly
+    #       displayed, comment these lines:
+    #       * @patch("matplotlib.pyplot.show")
+    #       * mock_show.return_value = None
+    #       And remove the mock_show parameter from the signature (leave self)
+    
+    @patch("matplotlib.pyplot.show")
+    def test_plot_radial_profile(self, mock_show):
+        mock_show.return_value = None
         self.phot.plot_radialprofile()
-
-    def test_show_stamps(self):
+    
+    @patch("matplotlib.pyplot.show")
+    def test_show_stamps(self, mock_show):
+        mock_show.return_value = None
         self.phot.showstamp(last = 3, ncol=3)
-
-    def test_imshowz(self):
+    
+    @patch("matplotlib.pyplot.show")
+    def test_imshowz(self, mock_show):
+        mock_show.return_value = None
         fig = plt.figure()
         self.phot.imshowz(axes = fig, ccd_lims_xy = [0, self.size, 0, self.size])
-
-    def test_plot_drift(self):
+        
+    @patch("matplotlib.pyplot.show")
+    def test_plot_drift(self, mock_show):
+        mock_show.return_value = None
         self.phot.plot_drift()
+    
+    def teardown_class(self):
+        plt.close('all')    # Finish by cleaning all remaining plots
