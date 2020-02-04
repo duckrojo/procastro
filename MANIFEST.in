@@ -1,0 +1,4 @@
+include dataproc/core/tests/results/*.txt
+include dataproc/astro/tests/*.txt
+include dataproc/obsrv/tests/*.txt
+include dataproc/obsrv/tests/*.coo
