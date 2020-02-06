@@ -13,7 +13,7 @@ requirements = ["astropy", "astroquery==0.3.10", "numpy", "scipy", "pyephem", "m
 
 # Setup script
 setup(
-    # Currently using test.pipy DO NOT UPLOAD TO pipy until release is consolidated
+    # Currently using test.pypi DO NOT UPLOAD TO PYPI until release is consolidated
     name="dataproc",     # Distribution name
     version="0.0.8",           # Version name, MUST be updated after each release or will cause an error
     author="Patricio Rojo",
