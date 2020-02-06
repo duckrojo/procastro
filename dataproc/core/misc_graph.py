@@ -19,8 +19,6 @@
 #
 
 
-from __future__ import division, print_function
-
 __all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
            'imshowz', 'figaxes_xdate', 'figaxes',
            ]
@@ -29,7 +27,6 @@ import astropy.time as apt
 import datetime
 import dataproc as dp
 import matplotlib.pyplot as plt
-import matplotlib.dates as md
 import astropy.io.fits as pf
 import numpy as np
 
@@ -82,11 +79,13 @@ def plot_accross(data,
 
     data = prep_data_plot(data, hdu=hdu)
 
-    dt = data
+    # dt = data
     if not isinstance(pos, (list, tuple)):
         pos = [None] + [0]*(len(data.shape)-2) + [pos]
     if len(pos) != len(data.shape):
-        raise TypeError("pos (size: %i) must have the same size as data array dimension (%i)" % (len(pos), len(data.shape)))
+        raise TypeError(
+            "pos (size: {0:d}) must have the same size as data array "
+            "dimension ({1:d})".format(len(pos), len(data.shape)))
     pos = tuple([p is None and slice(None, None) or p for p in pos])
 
     print(pos)
@@ -95,7 +94,7 @@ def plot_accross(data,
 
     fig, ax = prep_canvas(axes, title, xtitle, ytitle)
 
-    if xlim is not  None:
+    if xlim is not None:
         ax.set_xlim(xlim)
     if ylim is not None:
         ax.set_ylim(ylim)
@@ -137,12 +136,14 @@ def prep_data_plot(indata, **kwargs):
         if af:
             data = af.reader(**kwargs)
         else:
-            raise TypeError("Unrecognized type for input data: %s" % (indata.__class__,))
+            raise TypeError(
+                "Unrecognized type for input data: {0:s}"
+                .format(indata.__class__.__name__,))
 
     if data is None:
         if error_msg is None:
             error_msg = indata
-        raise ValueError("Nothing to plot %s" % (error_msg,))
+        raise ValueError("Nothing to plot {0:s}".format(error_msg,))
 
     return data
 
@@ -250,7 +251,9 @@ def imshowz(data,
     data = prep_data_plot(data, **kwargs)
 
     if extent is not None and xlim is not None and ylim is not None:
-        raise ValueError("If extents is specified for imshowz, then xlim and ylim should not")
+        raise ValueError(
+            "If extents is specified for imshowz, then xlim and ylim "
+            "should not")
 
     if xlim is None:
         xlim = [0, data.shape[1]]
@@ -265,10 +268,11 @@ def imshowz(data,
         if times % 1 != 0:
             raise ValueError("rotate must be a multiple of 90")
         data = np.rot90(data, int(times))
-        #todo: update x0, x1, y0, y1
+        # TODO: update x0, x1, y0, y1
 
     if cxy is not None:
-        border_distance = [data.shape[1]-cxy[0], cxy[0], data.shape[0]-cxy[1], cxy[1]]
+        border_distance = [data.shape[1]-cxy[0], cxy[0],
+                           data.shape[0]-cxy[1], cxy[1]]
         if plot_rad is None:
             plot_rad = min(border_distance)
         xlim = [cxy[0]-plot_rad, cxy[0]+plot_rad]
@@ -294,13 +298,15 @@ def imshowz(data,
 
     # Find the contrast
     if minmax is None:
-        mn, mx = dp.zscale(data) # [ylim[0]:ylim[1], xlim[0]:xlim[1]])  only if trimmed it will not use the whole image
+        # [ylim[0]:ylim[1], xlim[0]:xlim[1]])
+        # only if trimmed, it will not use the whole image
+        mn, mx = dp.zscale(data)
     else:
         mn, mx = minmax
 
     fig, ax = prep_canvas(axes, title, ytitle, xtitle, force_new=force_new)
 
-    #draw in the canvas
+    # Draw in the canvas
     if extent is None:
         extent = [x0, x1, y0, y1]
     imag = ax.imshow(data, vmin=mn, vmax=mx, origin=origin,
@@ -322,7 +328,7 @@ def imshowz(data,
 def figaxes_xdate(x, axes=None, overwrite=False):
     """
     Returns the figure and axes with a properly formatted date X-axis.
-    
+
     Parameters
     ----------
     x : astropy.Time, datetime.datetime, float
@@ -334,6 +340,7 @@ def figaxes_xdate(x, axes=None, overwrite=False):
     -------
     Matplotlib figure, axes and x-axis data
     """
+    import matplotlib.dates as md
 
     f, ax = dp.figaxes(axes, overwrite=overwrite)
     if isinstance(x, apt.Time):
@@ -347,13 +354,13 @@ def figaxes_xdate(x, axes=None, overwrite=False):
 
     ax.xaxis_date()
     tdelta = (retx[-1] - retx[0])*24*60
-    if tdelta < 4: #if range is smaller than 4 minutes
+    if tdelta < 4:  # If range is smaller than 4 minutes
         fmt = '%H:%M:%S'
-    elif tdelta < 8*60: #if range is smaller than 8 hours
+    elif tdelta < 8*60:  # If range is smaller than 8 hours
         fmt = '%H:%M'
-    elif tdelta < 5*60*24: #if range is smaller than 5 days
+    elif tdelta < 5*60*24:  # If range is smaller than 5 days
         fmt = '%Y-%b-%d %H:%M'
-    elif tdelta < 1*60*24*365: #if range is smaller than 1 years
+    elif tdelta < 1*60*24*365:  # If range is smaller than 1 years
         fmt = '%Y %b'
     else:
         fmt = '%Y'
@@ -398,8 +405,8 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
         ax = axes
         fig = axes.figure
     else:
-        raise ValueError("Given value for axes (%s) is not recognized"
-                         % (axes,))
+        raise ValueError("Given value for axes ({0:s}) is not"
+                         "recognized".format(axes,))
 
     if not overwrite:
         ax.cla()

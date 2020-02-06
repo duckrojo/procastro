@@ -19,11 +19,7 @@
 #
 
 import numpy as np
-from IPython.core.debugger import Tracer
-
 import dataproc as dp
-import matplotlib.pyplot as plt
-import pdb
 
 
 class TimeSeries:
@@ -61,17 +57,18 @@ class TimeSeries:
 
     def __repr__(self):
         return "<timeseries object with {n_channels} channels of {size} " \
-               "elements. " \
-               "Information available: " \
-               "{infos}>".format(n_channels=len(self._tss[self.default_info].channels),
-                                 channels=self._tss[self.default_info].labels,
-                                 size=len(self._tss[self.default_info]),
-                                 infos=", ".join(["{}{}".format(k, "*"
-                                                                if self._tss[k].has_errors()
-                                                                else "")
-                                                 for k
-                                                 in self._tss.keys()])
-                                   )
+                "elements. " \
+                "Information available: " \
+                "{infos}>" \
+                .format(n_channels=len(self._tss[self.default_info].channels),
+                        channels=self._tss[self.default_info].labels,
+                        size=len(self._tss[self.default_info]),
+                        infos=", ".join(
+                            ["{}{}".format(k, "*"
+                                              if self._tss[k].has_errors()
+                                              else "")
+                             for k in self._tss.keys()])
+                        )
 
     def __len__(self):
         return len(self._tss[self.default_info])
@@ -79,26 +76,34 @@ class TimeSeries:
     def __getitem__(self, item):
         return self._tss[self.default_info][item]
 
-    def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
-                 default_info=None, grouping='mean'):
+    def __init__(self, data, errors=None, labels=None, epoch=None,
+                 extras=None, default_info=None, grouping='mean'):
 
-        # blank definition
+        # Blank definition
         self.default_info = None
         if isinstance(data, dict):
             if default_info is None:
-                self.set_default_info(data.keys()[0])   ##Posible error here keys[0] invalid
-            self._tss = {k: TimeSeriesSingle(v, errors[k] if (k in errors) else None,
-                                             labels=labels, epoch=epoch, group_op=grouping)
+                # TODO: Posible error here keys[0] invalid
+                self.set_default_info(data.keys()[0])
+            self._tss = {k: TimeSeriesSingle(v,
+                                             errors[k] if (k in errors)
+                                             else None,
+                                             labels=labels,
+                                             epoch=epoch,
+                                             group_op=grouping)
                          for k, v in data.items()}
-            # todo check whether this old style will be implemented.
-            # if False in [isinstance(v, (list, tuple, np.ndarray)) for v in extras.values()]:
-            #     raise TypeError("Each element of 'extras' dictionary must be a list")
+            # TODO: check whether this old style will be implemented.
+            # if False in [isinstance(v, (list, tuple, np.ndarray))
+            #              for v in extras.values()]:
+            #     raise TypeError("Each element of 'extras' dictionary must "
+            #                     "be a list")
 
         elif isinstance(data, np.array):
             if default_info is None:
                 default_info = "data"
             self._tss["data"] = TimeSeriesSingle(data, errors,
-                                                 labels=labels, epoch=epoch, group_op=grouping)
+                                                 labels=labels, epoch=epoch,
+                                                 group_op=grouping)
         self.set_default_info(default_info)
 
     def set_default_info(self, name):
@@ -112,7 +117,7 @@ class TimeSeries:
         ----------
         info : str, optional
             Data channel to be plotted, default is the current default channel
-        
+
         See Also
         --------
         TimeSeriesSingle
@@ -156,7 +161,8 @@ class TimeSeries:
 
     def __call__(self, *args):
         if len(args) != 1:
-            raise ValueError("Only one argument in the form 'field=target' must be given to index it")
+            raise ValueError("Only one argument in the form 'field=target' "
+                             "must be given to index it")
         info = args[0]
 
         if info in self._tss:
@@ -200,17 +206,19 @@ class TimeSeriesSingle:
     """
 
     def __repr__(self):
-        return "<single timeseries object with {channels} channels of {size} " \
-               "elements ({err} error channel).>".format(channels=len(self.channels),
-                                                         size=len(self),
-                                                         err="it has" if self.has_errors()
-                                                         else "has no")
+        return "<single timeseries object with {channels} channels of " \
+               "{size} elements ({err} error channel).>" \
+               .format(channels=len(self.channels),
+                       size=len(self),
+                       err="it has" if self.has_errors()
+                       else "has no")
 
     def __init__(self, data, errors=None, labels=None, epoch=None, extras=None,
                  group_op='mean'):
 
+        # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
         self.channels = [np.array(d) for d in
-                         data]  # [[target1_im1, target1_im2, ...], [target2_im1, target2_im2, ...]]
+                         data]
 
         self.labels = []
         if labels is not None:
@@ -225,7 +233,8 @@ class TimeSeriesSingle:
         self.combine = {}
         self.grouping_with(group_op)
         self.groups = np.zeros(self.n_channels())  # group #0 is ignored
-        # Default group_op: 1st channel is group #1, all other channels are group #2
+        # Default group_op: 1st channel is group #1,
+        # all other channels are group #2
         self.set_main(0)
 
     def has_errors(self):
@@ -259,14 +268,17 @@ class TimeSeriesSingle:
         To recover errors or any of the other extras try:
             ts('error')[0] ts['centers_xy']['Target'], etc
         """
-        # This is so I can do ts[0]/ts[2] and it works directly with the channels!
+        # This is so I can do ts[0]/ts[2] and it works directly
+        # with the channels!
 
         target = self._search_channel(target)
 
         # if negative, then group the channels
         if target < 0:
-            return self.combine['op'](np.array(self.channels)[np.array(self.groups) == abs(target)],
-                                      **(self.combine['prm']))
+            return self.combine['op'](
+                        np.array(self.channels)[np.array(self.groups)
+                                                == abs(target)],
+                        **(self.combine['prm']))
 
         return self.channels[target]
 
@@ -278,13 +290,15 @@ class TimeSeriesSingle:
         return target
 
     def grp_errors(self, group):
-        if not (self.combine['name'] == 'mean' or self.combine['name'] == 'median'):
-            raise NotImplementedError("Only know how to compute error of median- or mean-combined groups. "
-                                      "Errors of median computed as errors of mean, actually")
+        if not (self.combine['name'] == 'mean'
+                or self.combine['name'] == 'median'):
+            raise NotImplementedError(
+                "Only know how to compute error of median- or mean-combined "
+                "groups. Errors of median computed as errors "
+                "of mean, actually")
         sample = np.array(self.groups) == abs(group)
         sigma = self.errors[sample]
         variance = (sigma ** 2).sum(0)
-        # Tracer()()
         return np.sqrt(variance) / sample.sum()
 
     def grouping_with(self, op):
@@ -294,7 +308,8 @@ class TimeSeriesSingle:
         Parameters
         ----------
         op : str
-            Operation to be applied, possible operations are 'mean' and 'median'
+            Operation to be applied, possible operations
+            are 'mean' and 'median'
         """
         self.combine['name'] = op
         if op == 'mean':
@@ -330,7 +345,7 @@ class TimeSeriesSingle:
         None
             Displays plot if 'save' set to None
         """
-
+        import matplotlib.pyplot as plt
         fig, ax = dp.figaxes(axes, overwrite=overwrite)
 
         if label is None:
@@ -395,11 +410,11 @@ class TimeSeriesSingle:
         ratio_error = ratio * np.sqrt((self.grp_errors(1) / self[-1]) ** 2 +
                                       (self.grp_errors(2) / self[-2]) ** 2)
 
-        x1=0
-        x2=len(ratio)
+        x1 = 0
+        x2 = len(ratio)
         if isinstance(sector, list):
-            x1=sector[0]
-            x2=sector[1]
+            x1 = sector[0]
+            x2 = sector[1]
         sigma = np.std(ratio[x1:x2])
         errbar_media = np.median(ratio_error[x1:x2])
         ratio_cut = ratio[x1:x2]
@@ -407,7 +422,7 @@ class TimeSeriesSingle:
 
         return ratio_cut, ratio_error_cut, sigma, errbar_media
 
-    # todo grouping not functional
+    # TODO: grouping not functional
     def JD(self, sector=None):
         """
         Recovers the epoch values from the x-axis
@@ -446,7 +461,7 @@ class TimeSeriesSingle:
             Filename of image file where the plot will be saved
         overwrite : bool, optional
         """
-
+        import matplotlib.pyplot as plt
         fig, ax = dp.figaxes(axes, overwrite=overwrite)
 
         ratio, ratio_error, s, erbm = self.get_ratio(sector=sector)
@@ -467,15 +482,19 @@ class TimeSeriesSingle:
         # epochs, groups, errors = self.make_groups(self.epoch, ratio,
         #                                           group_by, ratio_error)
         #
-        # for x, y, e, c, lab in zip(epochs, groups, errors, colors, group_labels):
+        # for x, y, e, c, lab in zip(epochs, groups, errors, colors,
+        #                            group_labels):
         #     # ax.set_prop_cycle(cycler('color', colors),
         #     #                   cycler('marker', markers),)
         #     ax.errorbar(x, y, yerr=e, props={"ls": 'None'}, label=lab)
 
-        # labs = [', '.join(np.array(self.labels)[np.array(self.groups) == grp]) for grp in [1, 2]]
+        # labs = [', '.join(np.array(
+        #                   self.labels)[np.array(self.groups) == grp])
+        #                                         for grp in [1, 2]]
         # ax.set_title("Flux Ratio: <{}>/<{}>".format(labs[0], labs[1]))
 
-        ax.errorbar(self.JD(sector=sector), ratio, yerr=ratio_error, label=label, fmt='o-')
+        ax.errorbar(self.JD(sector=sector), ratio, yerr=ratio_error,
+                    label=label, fmt='o-')
         ax.set_title("Flux Ratio of {}".format(self.labels[0]))
         ax.set_xlabel("JD")
         ax.set_ylabel("Flux Ratio")
@@ -489,7 +508,8 @@ class TimeSeriesSingle:
     # def save_to_file(self, filename):
     #     to_save=np.zeros([len(self), len(extras)])
     #
-    #     np.savetxt(header="# {}".format(", ".join(self.epoch, self[-1]/self[-2], err, )))
+    #     np.savetxt(header="# {}".format(", ".join(self.epoch,
+    #                                     self[-1]/self[-2], err, )))
 
         # def get_error(self, item):
         #     return self(errors=item)
@@ -500,14 +520,17 @@ class TimeSeriesSingle:
         # def group2(self):
         #     return np.array(self.channels[:-2])[np.array(self.group)==False]
         #
-        # def set_group(self, new_group):  # Receives pe [0 1 0 0 1 0] and that is used to define 2 groups
+        # # Receives pe [0 1 0 0 1 0] and that is used to define 2 groups
+        # def set_group(self, new_group):
         #     self.group = new_group
         #
         # def errors_group1(self):
-        #     return [self(errors=lab) for lab,g in zip(self.labels, self.group) if g]
+        #     return [self(errors=lab) for lab,g in zip(self.labels,
+        #                                               self.group) if g]
         #
         # def errors_group2(self):
-        #     return [self(errors=lab) for lab,g in zip(self.labels, self.group) if not g]
+        #     return [self(errors=lab) for lab,g in zip(self.labels,
+        #                                               self.group) if not g]
         #
         # def set_labels(self, ids):
         #     self.ids = ids
@@ -520,7 +543,8 @@ class TimeSeriesSingle:
         #
         # def mean(self, group_id):
         #     if group_id > 2:
-        #         warnings.warn("group_id must be 1 or 2 only. Group 2 will be used as default.")
+        #         warnings.warn("group_id must be 1 or 2 only. "
+        #                       "Group 2 will be used as default.")
         #         group = self.group2()
         #         g_errors = self.errors_group2()
         #     elif group_id == 1:
@@ -540,7 +564,8 @@ class TimeSeriesSingle:
         #
         # def median(self, group_id):
         #     if group_id > 2:
-        #         warnings.warn("group_id must be 1 or 2 only. Group 2 will be used as default.")
+        #         warnings.warn("group_id must be 1 or 2 only. "
+        #                       "Group 2 will be used as default.")
         #         group = self.group2()
         #         g_errors = self.errors_group2()
         #     elif group_id == 1:
@@ -562,7 +587,8 @@ class TimeSeriesSingle:
         #
         # def median(self, group_id):
         #     if group_id > 2:
-        #         warnings.warn("group_id must be 1 or 2 only. Group 2 will be used as default.")
+        #         warnings.warn("group_id must be 1 or 2 only."
+        #                        Group 2 will be used as default.")
         #         group = self.group2()
         #         g_errors = self.errors_group2()
         #     elif group_id == 1:

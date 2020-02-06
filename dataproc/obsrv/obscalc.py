@@ -18,7 +18,6 @@
 #
 #
 
-from __future__ import print_function, division
 
 import ephem
 import numpy as np
@@ -28,7 +27,6 @@ import os
 import dataproc.astro as dpa
 from urllib.error import URLError
 from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
-import pdb
 
 
 def _update_airmass(func):
@@ -65,8 +63,8 @@ class ObsCalc(object):
     site : string, optional
     equinox : string, optional
     central_time: int, optional
-        Central time of y-axis.  If outside the [-12,24] range, then
-        only shows nighttime
+        Central time of y-axis.  If outside the [-12,24] range, 
+        then only shows nighttime
 
     Attributes
     ----------
@@ -74,7 +72,8 @@ class ObsCalc(object):
     _sun : ephem.Sun instance
     params : dict
         General parameter values.
-        Available keys: 'target', 'current transit', 'equinox', 'lat_lon', 'site', 'to_local_midday', 'timespan'
+        Available keys: 'target', 'current transit', 'equinox', 'lat_lon',
+        'site', 'to_local_midday', 'timespan'
     daily : dict
         Sunset, sunrise and twilight information
     jd0 : float
@@ -162,7 +161,8 @@ class ObsCalc(object):
         elif isinstance(site, tuple) and len(site) == 2:
             lat_lon = site
         else:
-            raise TypeError("object can only be a 2-component tuple or a string")
+            raise TypeError(
+                "object can only be a 2-component tuple or a string")
 
         # Parameters for user-friendly values
         self.params["lat_lon"] = lat_lon
@@ -208,8 +208,9 @@ class ObsCalc(object):
                           frame='icrs')
         dist = st.separation(mn)
         return dist, moon.phase
-        # return np.cos(self.star.dec)*np.cos(moon.dec)*np.cos(self.star.ra-moon.ra) \
-        #     + np.sin(self.star.dec)*np.sin(self.star.dec)
+        # return np.cos(self.star.dec)*np.cos(moon.dec) \
+        #        * np.cos(self.star.ra-moon.ra) \
+        #        + np.sin(self.star.dec)*np.sin(self.star.dec)
 
     @_update_airmass
     @_update_transits
@@ -236,25 +237,28 @@ class ObsCalc(object):
 
         if isinstance(timespan, int):   # Year
             # times always at midnight (UT)
-            ed0 = ephem.Date('%i/1/1' % (timespan,))
-            ed1 = ephem.Date('%i/1/1' % (timespan+1,))
+            ed0 = ephem.Date('{0:d}/1/1'.format(timespan,))
+            ed1 = ephem.Date('{0:d}/1/1'.format(timespan+1,))
 
-        elif isinstance(timespan, str): # Start Year - End Year
+        elif isinstance(timespan, str):  # Start Year - End Year
             years = timespan.split('-')
             if len(years) != 2:
-                raise NotImplementedError("Requested timespan (%s) is not valid. Only a string "
-                                          "in the format <FROMYEAR-TOYEAR> is accepted (only one "
-                                          "dash separating integers)")
+                raise NotImplementedError(
+                    "Requested timespan ({0:s}) is not valid. Only a string "
+                    "in the format <FROMYEAR-TOYEAR> is accepted (only one "
+                    "dash separating integers)".format(years[0]))
             elif int(years[0]) > int(years[1]):
-                raise ValueError("Starting year must be lower than the end year")
+                raise ValueError(
+                    "Starting year must be lower than the end year")
 
-            ed0 = ephem.Date('%i/1/1' % (int(years[0]),))
-            ed1 = ephem.Date('%i/1/1' % (int(years[1])+1,))
+            ed0 = ephem.Date('{0:d}/1/1'.format(int(years[0]),))
+            ed1 = ephem.Date('{0:d}/1/1'.format(int(years[1])+1,))
 
         else:
-            raise NotImplementedError("""Requested timespan (%s) not implemented yet. Currently supported:
-            * single integer (year)
-            """ % (timespan,))
+            raise NotImplementedError(
+                "Requested timespan ({0:s}) not implemented"
+                "yet. Currently supported: * single"
+                "integer (year)".format(timespan,))
 
         ed = np.arange(ed0, ed1, int((ed1 - ed0) / samples))
         xlims = [ed[0] - ed0, ed[-1] - ed0]
@@ -306,13 +310,16 @@ class ObsCalc(object):
             Time interval between ibservations
 
         """
-        if central_time>24 or central_time<-12:
-            ylims = [min(self.daily["sunset"])*24-0.5, max(self.daily["sunrise"])*24+0.5]
+        if central_time > 24 or central_time < -12:
+            ylims = [min(self.daily["sunset"])*24-0.5,
+                     max(self.daily["sunrise"])*24+0.5
+                     ]
             self.hours = np.arange(ylims[0], ylims[1], hour_step)
             self.ylims = ylims
         else:
-            raise NotImplementedError("centering at times different than middle of night is"
-                                      " not supported yet")
+            raise NotImplementedError(
+                "Centering at times different than middle of night is"
+                " not supported yet")
 
         return self
 
@@ -328,7 +335,8 @@ class ObsCalc(object):
         Parameters
         ----------
         target:
-            Either RA and Dec in hours and degrees, or target name to be queried
+            Either RA and Dec in hours and degrees, or target name
+            to be queried
         magnitude:
         star_name: string, optional
             Name of host star
@@ -343,41 +351,51 @@ class ObsCalc(object):
         if 'current_transit' in self.params:
             del self.params['current_transit']
 
+        paths = [os.path.dirname(__file__)+'/coo.txt',
+                 os.path.expanduser("~")+'/.coostars'
+                 ]
         ra_dec = dpa.read_coordinates(target,
-                                     coo_files=[os.path.dirname(__file__)+'/coo.txt',
-                                                os.path.expanduser("~")+'/.coostars'],
-                                     equinox=self.params["equinox"])
+                                      coo_files=paths,
+                                      equinox=self.params["equinox"])
 
-        print("Star at RA/DEC: %s/%s" %(ra_dec.ra.to_string(sep=':'),
-                                        ra_dec.dec.to_string(sep=':')))
+        print("Star at RA/DEC: {0:s}/{1:s}"
+              .format(ra_dec.ra.to_string(sep=':'),
+                      ra_dec.dec.to_string(sep=':')))
+
         epoch = float(ra_dec.equinox.value[1:])
-        self.star = ephem.readdb("%s,f,%s,%s,%.2f, %f" %
-                                 (star_name,
+        self.star = ephem.readdb("{0:s},f,{1:s},{2:s},{3:.2f}, {4:f}".format(
+                                  star_name,
                                   ra_dec.ra.to_string(sep=':', unit=u.hour),
                                   ra_dec.dec.to_string(sep=':'),
                                   magnitude, epoch))
 
-        transit_epoch, transit_period, transit_length = dpa.get_transit_ephemeris(target, os.path.dirname(__file__))
+        transit_epoch, transit_period, transit_length = \
+            dpa.get_transit_ephemeris(target, os.path.dirname(__file__))
 
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
             try:
-                planet = NasaExoplanetArchive.query_planet(target, all_columns=True) ### Included all_columns tags
+                planet = NasaExoplanetArchive.query_planet(target,
+                                                           all_columns=True)
             except URLError as mesg:
-                raise NotImplementedError(f"NASA has not yet fixed the SSL validation error ({mesg}). Info has to be isput "
-                       "manually in ~/.transits")
+                raise NotImplementedError(
+                    f"NASA has not yet fixed the SSL validation error ({mesg})"
+                    f". Info has to be written manually in ~/.transits")
 
-            # As of astroquery 0.3.10, normal columns are u.Quantity while extra
-            # columns are floats.
-            # NOTE: If astroquery is upgraded check this block for any API changes.
+            # As of astroquery 0.3.10, normal columns are u.Quantity while
+            # extra columns are floats.
+            # NOTE: If astroquery is upgraded check this block for any
+            #       API changes.
             req_cols = ['pl_orbper', 'pl_tranmid', 'pl_trandur']
             for i in range(len(req_cols)):
                 col = req_cols[i]
-                # Missing information can be returned as None or as a numpy
-                # Masked array
-                if planet[col] is None or isinstance(planet[col], np.ma.MaskedArray):
-                    raise ValueError("Requested data {} is not available on the \
-                                       NASA archives for target {}".format(col, target))
+                # Missing information can be returned as None or
+                # as a numpy masked array
+                if planet[col] is None or isinstance(planet[col],
+                                                     np.ma.MaskedArray):
+                    raise ValueError(
+                        "Requested data {} is not available on the"
+                        "NASA archives for target {}".format(col, target))
                 elif isinstance(planet[col],  u.Quantity):
                     req_cols[i] = planet[col].value
                 else:
@@ -386,7 +404,8 @@ class ObsCalc(object):
             transit_period, transit_epoch, transit_length = req_cols
             transit_length *= 24
 
-            print("  Found ephemeris: %f + E*%f (length: %f)" % (transit_epoch, transit_period, transit_length))
+            print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
+                  .format(transit_epoch, transit_period, transit_length))
 
         if transit_period != 0:
             transit_epoch += phase_offset * transit_period
@@ -433,7 +452,8 @@ class ObsCalc(object):
         self.transit_hours = (self.transits-(np.fix(self.transits-0.5)+0.5))*24
 
         if jd0 < tr_epoch:
-            print("WARNING: Reference transit epoch is in the future. Are you certain that you are using JD?")
+            print("WARNING: Reference transit epoch is in the future."
+                  "Are you certain that you are using JD?")
 
         return self
 

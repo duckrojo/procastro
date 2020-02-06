@@ -18,7 +18,6 @@
 #
 #
 
-import types
 
 from . import obsrv
 from .obsrv import *

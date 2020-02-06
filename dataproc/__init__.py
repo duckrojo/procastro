@@ -22,7 +22,6 @@
 """
 Data proc docstring
 """
-
 from . import astro
 from . import core
 from .core import *

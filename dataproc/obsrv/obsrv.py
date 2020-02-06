@@ -18,15 +18,10 @@
 #
 #
 
-from __future__ import print_function, division
+from . import obscalc as ocalc
 
 import numpy as np
 import ephem
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-import pdb
-
-from . import obscalc as ocalc
 
 __all__ = ['Obsrv']
 
@@ -45,6 +40,8 @@ def _plot_poly(ax, x, up, down, alpha=0.5, facecolor='0.8', edgecolor='k'):
     facecolor : string, optional
     edgecolor : string, optional
     """
+    from matplotlib.patches import Polygon
+
     vertices = list(zip(x, down*24)) + list(zip(x[::-1], (up*24)[::-1]))
     poly = Polygon(vertices,
                    facecolor=facecolor, edgecolor=edgecolor, alpha=alpha)
@@ -56,6 +53,7 @@ def _update_plot(func):
     Decorator used to update the displayed figures after an attribute is
     modified by the user.
     """
+    import matplotlib.pyplot as plt
     def wrapper(self, *args, **kwargs):
 
         ret = func(self, *args, **kwargs)
@@ -65,14 +63,23 @@ def _update_plot(func):
         else:
             fig = plt.figure(figsize=(10, 5))
             if self.params['interact']:
-                self.cid = [fig.canvas.mpl_connect('button_press_event', self._onclick),
-                            fig.canvas.mpl_connect('key_press_event', self._onkey)]
+                self.cid = [fig.canvas.mpl_connect('button_press_event',
+                                                   self._onclick),
+                            fig.canvas.mpl_connect('key_press_event',
+                                                   self._onkey)]
             self.params['plot_figure'] = fig
 
         fig.clf()
-        self.params["plot_ax-airmass"] = ax_airmass = fig.add_axes([0.06, 0.1, 0.35, 0.85])  # subplot(121)
-        self.params["plot_ax-elev"] = fig.add_axes([0.55, 0.1, 0.4, 0.83])  # fig.add_subplot(122)
-        # delete right y-axis of the transit night if exists since fig.clf() disconnects it.
+        # subplot(121)
+        self.params["plot_ax-airmass"] = \
+            ax_airmass = \
+            fig.add_axes([0.06, 0.1, 0.35, 0.85])
+
+        # fig.add_subplot(122)
+        self.params["plot_ax-elev"] = fig.add_axes([0.55, 0.1, 0.4, 0.83])
+        # Delete right y-axis of the transit night if exists since fig.clf()
+        # disconnects it.
+        #
         if 'plot_ax-elev2' in self.params:
             del self.params['plot_ax-elev2']
 
@@ -90,7 +97,6 @@ def _update_plot(func):
         ax_airmass.set_ylim(self.ylims)
         ax_airmass.set_xlim(self.xlims)
 
-        #pdb.set_trace()
         fig.show()
 
         return ret
@@ -125,9 +131,9 @@ class Obsrv(ocalc.ObsCalc):
     On each click, the object will print the datetime of the transit in
     standard format and JD format.
 
-    Setters are used to change the parameters of the current Obsrv instance while
-    the interactive plot is active. Closing the plot and setting data afterwards
-    will cause unexpected behaviour.
+    Setters are used to change the parameters of the current Obsrv instance
+    while the interactive plot is active. Closing the plot and setting data
+    afterwards will cause unexpected behaviour.
 
     Parameters
     ----------
@@ -142,7 +148,8 @@ class Obsrv(ocalc.ObsCalc):
         Directory where the plotted figures will be stored
     altitude_limit : int, optional
     central_time : int, optional
-        Central time of the y-axis. If outside the [-12,24] range then only shows nighttime.
+        Central time of the y-axis. If outside the [-12,24] range then only
+        shows nighttime.
 
     Attributes
     ----------
@@ -191,11 +198,13 @@ class Obsrv(ocalc.ObsCalc):
         super(Obsrv, self).set_transits(*args, **kwargs)
 
     def _plot_airmass(self, ax):
+        from matplotlib.pyplot import cm
         ams = np.arange(1, 3.01, 0.1)
-        self.params["plot_airmass"] = ax.contourf(self.days-self.days[0], self.hours,
+        self.params["plot_airmass"] = ax.contourf(self.days-self.days[0],
+                                                  self.hours,
                                                   np.array(self.airmass),
                                                   levels=ams,
-                                                  cmap=plt.cm.jet_r)
+                                                  cmap=cm.jet_r)
 
     def _plot_twilight(self, ax):
         """
@@ -218,7 +227,8 @@ class Obsrv(ocalc.ObsCalc):
         ax : matplotlib.pyplot.axes
         """
 
-        month_length = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+        month_length = np.array([31, 28, 31, 30, 31, 30,
+                                 31, 31, 30, 31, 30, 31])
         cum = month_length.copy()
         for i in range(len(month_length))[1:]:
             cum[i:] += month_length[:-i]
@@ -232,7 +242,8 @@ class Obsrv(ocalc.ObsCalc):
         ny = (self.days[-1]-jan1)//365
 
         for i in range(int(ny)):
-            ax.plot(i*365+self.days[0]-jan1+month_cumulative, vertical_lims, 'y--')
+            ax.plot(i*365+self.days[0]-jan1+month_cumulative,
+                    vertical_lims, 'y--')
         return self
 
     def _plot_transits(self, ax):
@@ -255,7 +266,8 @@ class Obsrv(ocalc.ObsCalc):
         ax : matplotlib.pyplot.axes
         """
         ax.set_title(title)
-        ax.set_xlabel(f"Days from {ephem.Date(self.days[0]).datetime().strftime('%Y.%m.%d')}"
+        days = ephem.Date(self.days[0]).datetime().strftime('%Y.%m.%d')
+        ax.set_xlabel(f"Days from {days}"
                       f" (Site: {self.params['site']})")
         ax.set_ylabel(f'Time (UT). Target: {self.params["target"]}.'
                       f' Offset: {self.transit_info["offset"]:.2f}')
@@ -268,7 +280,10 @@ class Obsrv(ocalc.ObsCalc):
         cax.yaxis.set_ticks_position('left')
 
         ax.text(1.12, 0.04, "Min.", transform=ax.transAxes, ha="center")
-        ax.text(1.12, 0.005, '%.2f' % min(self.airmass.flatten()), transform=ax.transAxes, ha="center")
+        ax.text(1.12, 0.005,
+                '{0:.2f}'.format(min(self.airmass.flatten())),
+                transform=ax.transAxes,
+                ha="center")
 
         return self
 
@@ -311,7 +326,7 @@ class Obsrv(ocalc.ObsCalc):
     def _plot_night(self, jd, ax):
 
         ax.cla()
-        #todo: ax_elev2 should be always initialized
+        # todo: ax_elev2 should be always initialized
         if 'plot_ax-elev2' in self.params:
             self.params['plot_ax-elev2'].cla()
 
@@ -357,8 +372,8 @@ class Obsrv(ocalc.ObsCalc):
         ax.set_xlim([(ss-et_out)*24-0.5, (sr-et_out)*24+0.5])
         datetime = ephem.date(jd-self.jd0+self.days[0])
         phase_info = f"phase {self.transit_info['offset']}: " if self.transit_info['offset'] != 0.0 else ""
-        print("%s%s %s" % (phase_info, str(datetime)[:-3], jd))
-        ax.set_title('%s%s' % (phase_info, str(datetime)[:-3]))
+        print("{0:s}{1:s} {2:s}".format(phase_info, str(datetime)[:-3], jd))
+        ax.set_title('{0:s}{1:s}'.format(phase_info, str(datetime)[:-3]))
         ax.set_ylim(ax.get_ylim())
         sam = np.array([1, 1.5, 2, 3, 4, 5])
         ax2.set_yticks(np.arcsin(1.0/sam)*180.0/np.pi)
@@ -372,8 +387,10 @@ class Obsrv(ocalc.ObsCalc):
                       f'{float(self.params["current_moon_phase"]):.0f}%')
 
         if hasattr(self, 'transits'):
-            enter_transit = (jd-self.jd0+self.days[0]-et_out)*24 - self.transit_info['length']/2
-            exit_transit = (jd-self.jd0+self.days[0]-et_out)*24 + self.transit_info['length']/2
+            enter_transit = ((jd-self.jd0+self.days[0]-et_out)*24
+                             - self.transit_info['length']/2)
+            exit_transit = ((jd-self.jd0+self.days[0]-et_out)*24
+                            + self.transit_info['length']/2)
             if enter_transit > exit_transit:
                 exit_transit += 24
             facecolor = '0.5'
@@ -395,31 +412,39 @@ class Obsrv(ocalc.ObsCalc):
 
         if event.key == 'e' and event.inaxes == axa:  # at position
             self._plot_night(event.xdata + self.jd0, axe)
-        elif event.key == 'P':  # save file at no transit or transit if it has been set before
+        # Save file at no transit or transit if it has been set before
+        elif event.key == 'P':
             target_no_space = self.params['target'].replace(' ', '_')
             if 'current_transit' in self.params:
-                current_transit = self.params['current_transit'].replace('/', '-')
-                filename = '%s/%s_%s_%s.png' % (self.params['savedir'],
-                                                target_no_space,
-                                                current_transit,
-                                                self.params['site'])
+                current_transit = self.params['current_transit'] \
+                                      .replace('/', '-')
+                filename = "{0:s}/{1:s}_{2:s}_{3:s}.png" \
+                           .format(self.params['savedir'],
+                                   target_no_space,
+                                   current_transit,
+                                   self.params['site'])
             else:
-                filename = '%s/%s_T%s_%s.png' % (self.params['savedir'],
-                                                 target_no_space,
-                                                 self.params['timespan'],
-                                                 self.params['site'])
-            print("Saving: %s" % (filename,))
+                filename = "{0:s}/{1:s}_T{2:s}_{3:s}.png" \
+                           .format(self.params['savedir'],
+                                   target_no_space,
+                                   self.params['timespan'],
+                                   self.params['site'])
+
+            print("Saving: {0:s}".format(filename,))
             self.params['plot_figure'].savefig(filename)
         elif event.key == 'f':  # recenter transit and save file
             self._plot_elev_transit(event.xdata, event.ydata)
             target_no_space = self.params['target'].replace(' ', '_')
             site = self.params['site']
-            current_transit = self.params['current_transit'].replace('/', '-')[:-3].replace(':', '')
-            filename = '%s/%s_%s_%s.png' % (self.params['savedir'],
-                                            target_no_space,
-                                            current_transit,
-                                            site)
-            print("Saving: %s" % (filename,))
+            current_transit = self.params['current_transit'] \
+                                  .replace('/', '-')[:-3]\
+                                  .replace(':', '')
+            filename = '{0:s}/{1:s}_{2:s}_{3:s}.png' \
+                       .format(self.params['savedir'],
+                               target_no_space,
+                               current_transit,
+                               site)
+            print("Saving: {0:s}".format(filename,))
             self.params['plot_figure'].savefig(filename)
 
     def _onclick(self, event):
@@ -431,9 +456,10 @@ class Obsrv(ocalc.ObsCalc):
         self._plot_elev_transit(day, hour)
 
 
-#if __name__ == '__MAIN__':
+# if __name__ == '__MAIN__':
 #    import obsrv
-#    test_target = ['HD83443', 9+(37 + 11.82841/60)/60.0, -(43+(16+19.9354/60)/60.0),
+#    test_target = ['HD83443', 9+(37 + 11.82841/60)/60.0,
+#                    -(43+(16+19.9354/60)/60.0),
 #                   2455943.20159650, 2.985, 3]
 #    test_target = ['WASP-34', 11+(1+36/60.0)/60.0, -(23+(51+38/60)/60),
 #                   2454647.55358, 4.3176782, 3]

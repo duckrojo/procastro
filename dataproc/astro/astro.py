@@ -17,7 +17,6 @@
 # Boston, MA  02110-1301, USA.
 #
 
-from __future__ import division, print_function
 
 __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'blackbody', 'getfilter', 'applyfilter',
@@ -31,13 +30,12 @@ import astropy.units as apu
 import numpy as np
 import glob
 import os.path as path
-import scipy.interpolate as it
 import dataproc as dp
 from collections import defaultdict
 import re
 import warnings
 import os
-import pdb
+
 
 try:
     import astroquery.simbad as aqs
@@ -109,9 +107,9 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                             continue
                         name, ra, dec, note = line.split(None, 4)
                         if ra[-1] == 'd':
-                            ra = "%f" % (float(ra[:-1]) / 15,)
+                            ra = "{0:f}".format(float(ra[:-1]) / 15,)
                         if dp.accept_object_name(name, target):
-                            print("Found in coordinate file: %s" % (coo_file,))
+                            print(f"Found in coordinate file: {coo_file}")
                             break
                     # this is to break out of two for loops as it should
                     # stop looking in other files
@@ -120,10 +118,11 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                     break
         # if coordinate not in file
         else:
-            print(" '%s' not understood as coordinates, attempting query as name... " %
-                  (target,), end='')
+            print(" '{0:s}' not understood as coordinates, attempting query"
+                  "as name... ".format(target,), end='')
             if aqs is None:
-                raise ValueError("Sorry, AstroQuery not available for coordinate querying")
+                raise ValueError(
+                    "Sorry, AstroQuery not available for coordinate querying")
 
             custom_simbad = aqs.Simbad()
             custom_simbad.add_votable_fields('propermotions')
@@ -135,14 +134,15 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                     query = custom_simbad.query_object(target[:-2])
 
             if query is None:
-                raise ValueError("Target '%s' not found on Simbad" % (target,))
+                raise ValueError(
+                    f"Target '{target}' not found on Simbad")
             ra, dec = query['RA'][0], query['DEC'][0]
             pm_ra, pm_dec = query['PMRA'][0], query['PMDEC'][0]
 
-        ra_dec = apcoo.SkyCoord('%s %s' % (ra, dec),
+        ra_dec = apcoo.SkyCoord('{0:s} {1:s}'.format(ra, dec),
                                 unit=(apu.hour, apu.degree),
                                 equinox=equinox)
-        print("success! (%s)" % (ra_dec,))
+        print("success! {})".format(ra_dec,))
 
     if return_pm:
         return ra_dec, pm_ra, pm_dec
@@ -216,11 +216,13 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
                         elif d[0].lower() == 'c':
                             override.append("comment")
                         else:
-                            raise ValueError("data field not understood, it must start with L, P, C, "
-                                             "or E:\n%s" % (line,))
-                    print("Overriding for '%s' from file '%s':\n %s" % (planet,
-                                                                        transit_filename,
-                                                                        ', '.join(override),))
+                            raise ValueError("data field not understood, it "
+                                             "must start with L, P, C, "
+                                             "or E:\n{0:s}".format(line,))
+                    print("Overriding for '%s' from file '{0:s}':\n "
+                          "{1:s}".format(planet,
+                                         transit_filename,
+                                         ', '.join(override),))
 
                 if len(override):
                     break
@@ -269,6 +271,7 @@ def read_horizons_cols(file):
         pre_line = ''
         for line in infile:
             if line.startswith('$$SOE'):
+                # FIXME: pre2_line is undefined
                 quantities_ws = re.findall(r" +\S+", pre2_line)
                 quantities_ns = [s.strip() for s in quantities_ws]
                 break
@@ -324,16 +327,16 @@ def blackbody(temperature, wav_freq, unit=None):
         elif isinstance(unit, apu.Unit):
             wav_freq = wav_freq * unit
         else:
-            raise ValueError("Specified unit (%s) is not a valid astropy.unit"
-                             % (unit,))
+            raise ValueError("Specified unit ({0:s}) is not a valid "
+                             "astropy.unit".format(unit,))
 
     if wav_freq.cgs.unit == apu.cm:
         use_length = True
     elif wav_freq.cgs.unit == 1 / apu.s:
         use_length = False
     else:
-        raise ValueError("Units for x must be either length or frequency, not %s"
-                         % (wav_freq.unit,))
+        raise ValueError("Units for x must be either length or frequency, "
+                         "not {0:s}".format(wav_freq.unit,))
 
     h_kb_t = apc.h / apc.k_B / temperature
 
@@ -361,10 +364,10 @@ def getfilter(name,
     Parameters
     ----------
     name: str or array_like
-        Name of the filter (filenames in directory). If array_like, then it needs
-        to have two elements to define a uniform filter within the specified
-        cut-in and cut-out values with value 1.0 and in a range 10% beyond with
-        value 0.0, for a total of 50 pixels.
+        Name of the filter (filenames in directory). If array_like, then it
+        needs to have two elements to define a uniform filter within the
+        specified cut-in and cut-out values with value 1.0 and in a range 10%
+        beyond with value 0.0, for a total of 50 pixels.
     name_only : bool, optional
         If True returns the name of the file only
     filter_unit : astropy quantity, optional
@@ -398,14 +401,16 @@ def getfilter(name,
     if isinstance(name, (list, tuple)) and len(name) == 2:
         n_wavs = 50
         delta_filter = name[1] - name[0]
-        axis = np.linspace(name[0] - 0.1*delta_filter, name[1] + 0.1*delta_filter, n_wavs)
+        axis = np.linspace(name[0] - 0.1*delta_filter,
+                           name[1] + 0.1*delta_filter, n_wavs)
         transmission = np.zeros(n_wavs)
         transmission[(axis < name[1]) * (axis > name[0])] = 1
         return axis * filter_unit, transmission
     # otherwise, only accept strings
     elif not isinstance(name, str):
-        raise TypeError("Filter can be a string identifying its name or a two-element tuple"
-                        " identifying cut-in & cut-out values for an uniform filter")
+        raise TypeError(
+            "Filter can be a string identifying its name or a two-element "
+            "tuple identifying cut-in & cut-out values for an uniform filter")
 
     found = []
     for f in filters:
@@ -415,9 +420,10 @@ def getfilter(name,
     if not len(found):
         raise ValueError(f"No filter matches '{name}'")
     if len(found) > 2:
-        raise ValueError(("Only one of the available filters should match '%s'." +
-                          " Be more specific between:\n %s")
-                         % (name, '\n '.join(found)))
+        raise ValueError(
+            ("Only one of the available filters should match '{0:s}'." +
+             " Be more specific between:\n {1:s}").format(name,
+                                                          '\n '.join(found)))
 
     if name_only:
         return path.basename(found[0])
@@ -478,7 +484,9 @@ def applyfilter(name, spectra,
     -------
     float
     """
+    import scipy.interpolate as it
 
+    
     filter_wav, filter_transmission = getfilter(name, filter_dir)
     filter_unit = filter_wav.unit
     if output_unit is None:
@@ -488,7 +496,8 @@ def applyfilter(name, spectra,
 
     try:
         if wav_freq is None:
-            raise ValueError("wav_freq needs to be specified if spectra is given")
+            raise ValueError(
+                "wav_freq needs to be specified if spectra is given")
         if not isinstance(wav_freq, apu.Quantity):
             wav_freq *= filter_unit
 
@@ -502,25 +511,29 @@ def applyfilter(name, spectra,
                                  equivalencies=apu.spectral_density(wav_freq))[::-1]
             wav_freq = wav_freq.to(apu.nm,
                                    equivalencies=apu.spectral())[::-1]
-            print("WARNING: frequency domain filtering has not been tested thoroughly!!")
+            print("WARNING: frequency domain filtering has not been tested "
+                  "thoroughly!!")
         else:
             raise ValueError(
-                "Invalid unit (%s) for wav_freq. Currently supported: length and frequency" % (wav_freq.unit,))
+                "Invalid unit ({0:s}) for wav_freq. Currently supported: "
+                "length and frequency".format(wav_freq.unit,))
 
         idx = (wav_freq > wav_min) * (wav_freq < wav_max)
         if len(idx) < n_wav_bb / 5:
-            warnings.warn(f"Too little points ({len(idx)}) from given spectra inside the "
-                          f"filter range ({wav_min} - {wav_max})")
+            warnings.warn(f"Too little points ({len(idx)}) from given spectra "
+                          f"inside the filter range ({wav_min} - {wav_max})")
         wav_freq = wav_freq[idx]
         spectra = spectra[idx]
     except TypeError:  # spectra is scalar (temperature)
         wav_freq = np.linspace(wav_min, wav_max, n_wav_bb)
         spectra = blackbody(spectra, wav_freq)
 
-    spec_flt_tot = it.UnivariateSpline(wav_freq, (spectra * us(wav_freq)).value,
+    spec_flt_tot = it.UnivariateSpline(wav_freq,
+                                       (spectra * us(wav_freq)).value,
                                        s=0.0).integral(wav_freq[0].value,
                                                        wav_freq[-1].value)
-    wav_flt_tot = it.UnivariateSpline(wav_freq, (wav_freq * us(wav_freq)).value,
+    wav_flt_tot = it.UnivariateSpline(wav_freq,
+                                      (wav_freq * us(wav_freq)).value,
                                       s=0.0).integral(wav_freq[0].value,
                                                       wav_freq[-1].value)
     flt_tot = us.integral(wav_freq[0].value,
@@ -563,21 +576,25 @@ def filter_conversion(target_filter, temperature,
 
     if len(kwargs) != 1:
         raise ValueError("One, and only one reference filter needs to "
-                         "be specified as kwargs (%s)" % (kwargs,))
+                         "be specified as kwargs ({0:s})".format(kwargs,))
 
     orig_filter, orig_value = kwargs.items()[0]
     orig_filter = getfilter(orig_filter.replace('_', '.'), True)
     target_filter = getfilter(target_filter.replace('_', '.'), True)
 
     if verbose:
-        print("Converting from '%s'=%f to '%s'\n(T=%s object)" %
-              (orig_filter, orig_value, target_filter, temperature))
+        print("Converting from '{0:s}'={1:f} to '{2:s}'\n"
+              "(T={3:s} object)".format(orig_filter,
+                                        orig_value,
+                                        target_filter,
+                                        temperature))
 
     ref0 = orig_value + 2.5 * np.log(applyfilter(orig_filter, temperature) /
                                      applyfilter(orig_filter, temperature_ref)) / np.log(10)
 
-    return -2.5 * np.log(applyfilter(target_filter, temperature) /
-                         applyfilter(target_filter, temperature_ref)) / np.log(10) + ref0
+    return -2.5 * (np.log(applyfilter(target_filter, temperature) /
+                          applyfilter(target_filter, temperature_ref)) /
+                          np.log(10) + ref0)
 
 
 def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):

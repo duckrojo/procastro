@@ -26,7 +26,6 @@ import numpy as np
 import warnings
 import copy
 import sys
-import pdb
 from astropy.utils.exceptions import AstropyUserWarning
 
 import logging
@@ -104,37 +103,52 @@ class AstroDir(object):
                 nf = copy.deepcopy(f)
             elif pth.isdir(f):
                 for sf in os.listdir(f):
-                    nf = dp.AstroFile(f + '/' + sf, hduh=hduh, hdud=hdud, read_keywords=read_keywords, auto_trim=auto_trim)
+                    nf = dp.AstroFile(f + '/' + sf,
+                                      hduh=hduh,
+                                      hdud=hdud,
+                                      read_keywords=read_keywords,
+                                      auto_trim=auto_trim)
                     try:
-                        if nf: files.append(nf)
+                        if nf:
+                            files.append(nf)
                     except IOError:
-                        warnings.warn(f"Warning: File {nf.basename()} could not be read, skipping")
-                        
+                        warnings.warn(f"Warning: File {nf.basename()} could"
+                                      f"not be read, skipping")
+
                 nf = False
             else:
-                nf = dp.AstroFile(f, hduh=hduh, hdud=hdud, read_keywords=read_keywords, auto_trim=auto_trim)
-            
+                nf = dp.AstroFile(f, hduh=hduh,
+                                  hdud=hdud,
+                                  read_keywords=read_keywords,
+                                  auto_trim=auto_trim)
+
             try:
-                if nf: files.append(nf)
+                if nf:
+                    files.append(nf)
             except IOError:
-                warnings.warn(f"Warning: File {nf.basename()} could not be read, skipping")
-        
+                warnings.warn(f"Warning: File {nf.basename()} could not"
+                              f"be read, skipping")
+
         self.files = files
         self.props = {}
         calib = dp.AstroCalib(mbias, mflat, auto_trim=auto_trim,
-                              mbias_header=mbias_header, mflat_header=mflat_header)
+                              mbias_header=mbias_header,
+                              mflat_header=mflat_header)
 
         for f in files:
-            if calib_force or not f.has_calib():  # allows some of the files to keep their calibration
-                # AstroFile are created with an empty calib by default, which is overwritten here.
-                # Hoping that garbage collection works:D
+            # Allows some of the files to keep their calibration
+            if calib_force or not f.has_calib():  #
+                # AstroFile are created with an empty calib by default, which
+                # is overwritten here.
                 f.calib = calib
 
         self.path = path
 
         if jd_from_ut is not None:
             if len(jd_from_ut) != 2:
-                raise TypeError("jd_from_ut parameter need to be a 2-element tuple: source, target. See help on method .jd_from_ut()")
+                raise TypeError("jd_from_ut parameter need to be a 2-element "
+                                "tuple: source, target."
+                                "See help on method .jd_from_ut()")
             self.jd_from_ut(*jd_from_ut)
 
     def add_bias(self, mbias):
@@ -149,7 +163,7 @@ class AstroDir(object):
 
         See Also
         --------
-        dataproc.AstroCalib.add_bias : this function is called for each unique }
+        dataproc.AstroCalib.add_bias : this function is called for each unique
                                        AstroCalib object in AstroDir
         """
         unique_calibs = set([f.calib for f in self])
@@ -194,7 +208,8 @@ class AstroDir(object):
 
         """
         if len(args) == 0:
-            raise ValueError("At least one valid header field must be specified to sort")
+            raise ValueError("At least one valid header field must be "
+                             "specified to sort")
         hdrfld = False
 
         for a in args:
@@ -204,23 +219,26 @@ class AstroDir(object):
         if not hdrfld:
             raise ValueError(
                 "A valid header field must be specified to use as a sort key."
-                " None of the currently requested were found: %s" % (', '.join(args),))
+                " None of the currently requested "
+                "were found: {0:s}".format(', '.join(args),))
 
-        # Sorting is done using python operators __lt__, __gt__, ... who are inquired by .sort() directly.
+        # Sorting is done using python operators __lt__, __gt__
+        # which are inquired by .sort() directly.
         for f in self:
             f.add_sortkey(hdrfld)
         self.files.sort()
         return self
 
     def __repr__(self):
-        return "<AstroFile container: %s>" % (self.files.__repr__(),)
+        return "<AstroFile container: {0:s}>".format(self.files.__repr__(),)
 
     def __add__(self, other):
         if isinstance(other, AstroDir):
             other_af = other.files
         elif isinstance(other, (list, tuple)) and isinstance(other[0], str):
-            io_logger.warning("Adding list of files to Astrodir, calib and hdu defaults"
-                             " will be shared from first AstroFile in AstroDir")
+            io_logger.warning("Adding list of files to Astrodir, calib and hdu"
+                              "defaults will be shared from first "
+                              "AstroFile in AstroDir")
             other_af = [dp.AstroFile(filename,
                                      hdud=self[0].default_hdu_dh()[0],
                                      hduh=self[0].default_hdu_dh()[1],
@@ -228,12 +246,14 @@ class AstroDir(object):
                                      mbias=self[0].calib.mbias)
                         for filename in other]
         else:
-            raise TypeError("Cannot add {} + {}", self.__class__, other.__class__)
+            raise TypeError(
+                "Cannot add {0:s} + {1:s}".format(self.__class__.__name__,
+                                                  other.__class__.__name__))
 
         return dp.AstroDir(self.files+other_af)
 
     # def __eq__(self, other):
-    #     #as in scipy
+    #     # as in scipy
     #     if isinstance(other, )
 
     def __getitem__(self, item):
@@ -241,21 +261,22 @@ class AstroDir(object):
         if isinstance(item, np.ndarray):
             if item.dtype == 'bool':
                 if len(item) != len(self):
-                    raise ValueError("Attempted to index AstroDir with a boolean array "
-                                     "of different size (it must include all bads)")
+                    raise ValueError("Attempted to index AstroDir with "
+                                     "a boolean array of different size"
+                                     "(it must include all bads)")
 
                 fdir = [f for b, f in zip(item, self) if b]
                 return AstroDir(fdir)
 
-        #if string, return as getheaderval
+        # if string, return as getheaderval
         if isinstance(item, str):
             return self.getheaderval(item)
 
-        #if slice, return a new astrodir
+        # if slice, return a new astrodir
         elif isinstance(item, slice):
             return AstroDir(self.files.__getitem__(item))
 
-        #otherwise, use a list
+        # otherwise, use a list
         return self.files[item]  # .__getitem__(item)
 
     def __len__(self):
@@ -284,10 +305,14 @@ class AstroDir(object):
         verbose_heading = kwargs.pop('verbose_heading', True)
         extra_headers = kwargs.pop('extra_headers', [])
         if kwargs:
-            raise SyntaxError("only the following keyword arguments for stats are accepted 'verbose_heading', 'extra_headers'")
+            raise SyntaxError(
+                "Only the following keyword arguments for stats"
+                "are accepted: 'verbose_heading', 'extra_headers'")
+
         ret = []
         for af in self:
-            ret.append(af.stats(*args, verbose_heading=verbose_heading, extra_headers=extra_headers))
+            ret.append(af.stats(*args, verbose_heading=verbose_heading,
+                                extra_headers=extra_headers))
             verbose_heading = False
         return ret
 
@@ -313,8 +338,9 @@ class AstroDir(object):
 
         See Also
         --------
-        dataproc.AstroFile.filter : Specifies the syntax used by the recieved arguments.
-        
+        dataproc.AstroFile.filter :
+            Specifies the syntax used by the recieved arguments.
+
         """
         from copy import copy
         new = copy(self)
@@ -359,14 +385,17 @@ class AstroDir(object):
         if 'cast' in kwargs:
             cast = kwargs['cast']
         else:
-            cast = lambda x: x
+            def cast(x): return x
 
-        warnings.filterwarnings("once", "non-standard convention", AstropyUserWarning)
+        warnings.filterwarnings("once",
+                                "non-standard convention",
+                                AstropyUserWarning)
         ret = [f.getheaderval(*args, cast=cast, **kwargs) for f in self]
         try:
             while True:
                 idx = ret.index(None)
-                logging.warning("Removing file with defective header from AstroDir")
+                logging.warning("Removing file with defective header "
+                                "from AstroDir")
                 self.files.pop(idx)
                 ret.pop(idx)
         except ValueError:
@@ -380,12 +409,12 @@ class AstroDir(object):
         Sets the header values specified in 'args' from each of the files.
         """
         if False in [f.setheader(**kwargs) for f in self]:
-            raise ValueError("Setting the header of a file returned error... panicking!")
+            raise ValueError("Setting the header of a file returned error")
 
         return self
 
-    def get_datacube(self, normalize_region=None, normalize=False, verbose=False,
-                     check_unique=None, group_by=None):
+    def get_datacube(self, normalize_region=None, normalize=False,
+                     verbose=False, check_unique=None, group_by=None):
         """
         Generates a data cube with the data of each AstroFile.
 
@@ -409,7 +438,9 @@ class AstroDir(object):
         """
         if verbose:
             print("Reading {} good frames{}: ".format(len(self),
-                                                      normalize and " and normalizing" or ""),
+                                                      normalize
+                                                      and " and normalizing"
+                                                      or ""),
                   end='')
         if check_unique is None:
             check_unique = []
@@ -421,17 +452,19 @@ class AstroDir(object):
 
         grouped_data = {}
 
-        # check uniqueness... first get the number of unique header values for each requested keyword
-        # and then complain if any greater than 1
+        # check uniqueness... first get the number of unique header values for
+        # each requested keyword and then complain if any greater than 1
         if len(check_unique) > 1:
-            lens = np.array([len(set(rets)) for rets in zip(*self.getheaderval(*check_unique))])
+            lens = np.array([len(set(rets)) for rets
+                            in zip(*self.getheaderval(*check_unique))])
         elif len(check_unique) == 1:
             lens = np.array([len(set(self.getheaderval(*check_unique)))])
         else:
             lens = np.array([])
         if True in (lens > 1):
-            raise ValueError("Header(s) {} are not unique in the input dataset".
-                             format(", ".join(np.array(check_unique)[lens > 1])))
+            raise ValueError(
+                "Header(s) {} are not unique in the input dataset"
+                .format(", ".join(np.array(check_unique)[lens > 1])))
 
         for af in self:
             data = af.reader()
@@ -448,8 +481,9 @@ class AstroDir(object):
 
         if None in grouped_data and len(grouped_data) > 1:
             # TODO: check error message
-            raise ValueError("Panic. None should have been key of grouped_data only if group_by was None. "
-                            "In such case, it should have been alone.")
+            raise ValueError("Panic. None should have been key of "
+                             "grouped_data only if group_by was None. "
+                             "In such case, it should have been alone.")
 
         for g in grouped_data:
             grouped_data[g] = np.stack(grouped_data[g])
@@ -460,7 +494,7 @@ class AstroDir(object):
         return grouped_data
 
     def pixel_xy(self, xx, yy, normalize_region=None, normalize=False,
-             check_unique=None, group_by=None):
+                 check_unique=None, group_by=None):
         """
         Obtains the pixel value at the ('xx','yy') position for all frames.
 
@@ -525,7 +559,8 @@ class AstroDir(object):
         array_like
             Median between frames
         dict
-            If group_by is set, a dictionary keyed by this group will be returned
+            If group_by is set, a dictionary keyed by this group will be
+            returned
         """
         if check_unique is None:
             if normalize:
@@ -542,7 +577,10 @@ class AstroDir(object):
                                       group_by=group_by)
 
         if verbose:
-            print("Median combining{}".format(group_by is not None and ' grouped by "{}":'.format(group_by) or ""),
+            print("Median combining{}".format(group_by
+                                              is not None
+                                              and f' grouped by "{group_by}":'
+                                              or ""),
                   end='')
             sys.stdout.flush()
         groupers = sorted(data_dict.keys())
@@ -586,7 +624,8 @@ class AstroDir(object):
         ndarray
             Mean between frames
         dict
-            If group_by is set, a dictionary keyed by this group will be returned
+            If group_by is set, a dictionary keyed by this group will be
+            returned
 
         """
         if check_unique is None:
@@ -604,11 +643,15 @@ class AstroDir(object):
                                       group_by=group_by)
 
         if verbose:
-            print("Mean combining{}".format(group_by is not None and ' grouped by "{}":'.format(group_by) or ""),
+            print("Mean combining{}".format(group_by
+                                            is not None
+                                            and f' grouped by "{group_by}":'
+                                            or ""),
                   end='')
             sys.stdout.flush()
         groupers = sorted(data_dict.keys())
-        ret = np.zeros([len(groupers)] + list(data_dict[groupers[0]][0].shape))
+        ret = np.zeros([len(groupers)]
+                       + list(data_dict[groupers[0]][0].shape))
         for k in range(len(groupers)):
             if verbose and group_by is not None:
                 print("{} {}".format(k and "," or "", groupers[k]), end='')
@@ -638,9 +681,11 @@ class AstroDir(object):
         verbose : bool, optional
             Output progress indicator
         field : str, optional
-            Name of the header item which will be used to interpolate the frames
+            Name of the header item which will be used to interpolate
+            each frame
         group_by :
-            If set, then group by the specified header returning an [n_unique, n_y, n_x] array
+            If set, then group by the specified header returning an [n_unique,
+            n_y, n_x] array
         check_unique : str, optional
             Check uniqueness in header
 
@@ -649,7 +694,8 @@ class AstroDir(object):
         ndarray
             Linear Interpolation between frames with the specified target
         dict
-            If group_by is set, a dictionary keyed by this group will be returned
+            If group_by is set, a dictionary keyed by this group will be
+            returned
 
         """
         if check_unique is None:
@@ -662,11 +708,17 @@ class AstroDir(object):
                                       group_by=group_by)
 
         if verbose:
-            print("Linear interpolating{}".format(group_by is not None and ' grouped by "{}":'.format(group_by) or ""),
+            print("Linear interpolating{}"
+                  .format(group_by
+                          is not None
+                          and f' grouped by "{group_by}":'
+                          or ""),
                   end='')
+
             sys.stdout.flush()
         groupers = sorted(data_dict.keys())
-        ret = np.zeros([len(groupers)] + list(data_dict[groupers[0]][0].shape))
+        ret = np.zeros([len(groupers)]
+                       + list(data_dict[groupers[0]][0].shape))
         for k in range(len(groupers)):
             if verbose and group_by is not None:
                 print("{} {}".format(k and "," or "", groupers[k]), end='')
@@ -677,15 +729,20 @@ class AstroDir(object):
             values, data_cube = dp.sortmanynsp(values, data_cube)
 
             if not (values[0] <= target <= values[-1]):
-                io_logger.warning("Target value for interpolation ({})\n outside "
-                                  "the range of chosen keyword {}: [{}, {}]."
-                                  "\nCannot interpolate".format(target, field,
-                                                                values[0], values[-1]))
+                io_logger.warning("Target value for interpolation ({})\n"
+                                  "outside the range of chosen keyword {}: "
+                                  "[{}, {}].\nCannot "
+                                  "interpolate".format(target,
+                                                       field,
+                                                       values[0],
+                                                       values[-1]))
                 return None
 
             for j in range(data_cube[0].shape[1]):
                 for i in range(data_cube[0].shape[0]):
-                    ret[k, j, i] = np.interp(target, values, data_cube[:, j, i])
+                    ret[k, j, i] = np.interp(target,
+                                             values,
+                                             data_cube[:, j, i])
         if verbose:
             print(". done.")
             sys.stdout.flush()
@@ -696,7 +753,7 @@ class AstroDir(object):
             return ret[0]
 
     def std(self, normalize_region=None, normalize=False, verbose=True,
-             check_unique=None, group_by=None):
+            check_unique=None, group_by=None):
         """
         Get pixel by pixel standard deviation within files.
 
@@ -719,7 +776,8 @@ class AstroDir(object):
         ndarray
             Standard deviation between frames
         dict
-            If group_by is set, a dictionary keyed by this group will be returned
+            If group_by is set, a dictionary keyed by this group will be
+            returned
 
         """
         if check_unique is None:
@@ -737,12 +795,16 @@ class AstroDir(object):
                                       group_by=group_by)
 
         if verbose:
-            print("Obtaining Standard Deviation{}".format(group_by is not None
-                                                          and ' grouped by "{}":'.format(group_by) or ""),
+            print("Obtaining "
+                  "Standard Deviation{}".format(group_by
+                                                is not None
+                                                and f"grouped by '{group_by}':"
+                                                or ""),
                   end='')
             sys.stdout.flush()
         groupers = sorted(data_dict.keys())
-        ret = np.zeros([len(groupers)] + list(data_dict[groupers[0]][0].shape))
+        ret = np.zeros([len(groupers)]
+                       + list(data_dict[groupers[0]][0].shape))
         for k in range(len(groupers)):
             if verbose and group_by is not None:
                 print("{} {}".format(k and "," or "", groupers[k]), end='')

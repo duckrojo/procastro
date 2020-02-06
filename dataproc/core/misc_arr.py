@@ -18,7 +18,6 @@
 #
 #
 
-from __future__ import print_function, division
 
 __all__ = ['sigmask', 'zscale', 'expandlims', 'axis_from_fits',
            'fluxacross', 'subarray',
@@ -28,10 +27,8 @@ __all__ = ['sigmask', 'zscale', 'expandlims', 'axis_from_fits',
 
 import numpy as np
 import inspect
-import scipy.signal as sg
 import astropy.io.fits as pf
 import copy
-from IPython.core.debugger import Tracer
 from .misc_general import sortmanynsp
 
 
@@ -61,8 +58,8 @@ def subarray(data, cyx, rad, padding=False, return_origpos=False):
     icy = int(cyx[0])
     icx = int(cyx[1])
 
-    orig_y = (icy-rad>0)*(icy-rad)
-    orig_x = (icx-rad>0)*(icx-rad)
+    orig_y = (icy-rad > 0)*(icy-rad)
+    orig_x = (icx-rad > 0)*(icx-rad)
 
     ret0 = data[orig_y:icy+rad+1,
                 orig_x:icx+rad+1]
@@ -177,7 +174,7 @@ def subcentroidxy(arr, cxy, stamprad, medsub=True, iters=1):
 
     """
     cy, cx = subcentroid(arr, [cxy[1], cxy[0]], stamprad,
-                        medsub=medsub, iters=iters)
+                         medsub=medsub, iters=iters)
     return cx, cy
 
 
@@ -199,7 +196,9 @@ def radial(data, cyx):
 
     ndim = data.ndim
     if len(cyx) != ndim:
-        raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
+        raise ValueError(
+            "Number of central coordinates ({0:d}) does not match the "
+            "data dimension ({1:d})".format(len(cyx), ndim))
 
     grid = np.meshgrid(*[np.arange(l) for l in data.shape], indexing='ij')
 
@@ -232,13 +231,13 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
 
     ny, nx = data.shape
 
-    #use data's center if not given explicit
+    # Use data's center if not given explicit
     if cnt_xy is None:
         cx, cy = nx//2, ny//2
     else:
         cx, cy = cnt_xy
 
-    #use the whole data range if no stamp radius is given
+    # Use the whole data range if no stamp radius is given
     if stamp_rad is None:
         to_show = data
     else:
@@ -278,7 +277,7 @@ def zscale(img,  trim=0.05, contr=1, mask=None):
     if not isinstance(img, np.ndarray):
         img = np.array(img)
     if mask is None:
-        mask = (np.isnan(img) == False)
+        mask = (np.isnan(img) == False)  # Switches values for boolean matrix
 
     itrim = int(img.size*trim)
     x = np.arange(mask.sum()-2*itrim)+itrim
@@ -305,7 +304,11 @@ def expandlims(xl, yl, offset=0):
     Returns
     -------
     """
-    if (not isinstance(xl, (list, tuple))) or (not isinstance(xl, (list, tuple))) or len(xl)!=2 or len(yl)!=2:
+    if (not isinstance(xl, (list, tuple))) \
+            or (not isinstance(yl, (list, tuple))) \
+            or len(xl) != 2 \
+            or len(yl) != 2:
+
         raise ValueError("xl and yl must each be 2-element list or tuple")
     dx = xl[1]-xl[0]
     dy = yl[1]-yl[0]
@@ -336,9 +339,9 @@ def axis_from_fits(h, axis=1):
         header = h
 
     nax = header["NAXIS"]
-    dims = [header["NAXIS%i" % (ax+1,)] for ax in range(nax)]
+    dims = [header["NAXIS{0:d}".format(ax+1,)] for ax in range(nax)]
 
-    if axis<0:
+    if axis < 0:
         axis = -axis
         grid = np.arange(dims[axis-1])
     elif nax == 1:
@@ -348,12 +351,12 @@ def axis_from_fits(h, axis=1):
     elif nax == 3:
         grid = np.mgrid[0:dims[0], 0:dims[1], 0:dims[2]][axis-1]
 
-    wav_offset = header["crval%i" % (axis,)]
-    wav_reference = header["crpix%i" % (axis,)]
+    wav_offset = header["crval{0:d}".format(axis,)]
+    wav_reference = header["crpix{0:d}".format(axis,)]
     try:
-        delt = header["cdelt%i" % (axis,)]
+        delt = header["cdelt{0:d}".format(axis,)]
     except KeyError:
-        delt = header["cd%i_%i" %(axis, axis)]
+        delt = header["cd{0:d}_{1:d}".format(axis, axis)]
 
     wav = delt*(grid + 1 - wav_reference) + wav_offset
 
@@ -388,27 +391,25 @@ def fluxacross(diameter, seeing,
     -------
 
     """
-    import scipy as sp
+    hseeing = seeing/2.0
 
-    hseeing=seeing/2.0
+    gtof = (np.sqrt(2.0*np.log(2.0)))
+    # gaussigma = hseeing/gtof
 
-    gtof=(np.sqrt(2.0*np.log(2.0)))
-    gaussigma = hseeing/gtof
+    psfshape = {'gauss': lambda hseeing, ygrid, xgrid: (gtof/hseeing)**2/(2.0*np.pi)*np.exp(-(xgrid**2 + ygrid**2)/2.0/(hseeing/gtof)**2),
+                'cube': lambda hseeing, ygrid, xgrid: (-hseeing < ygrid < hseeing)*(-hseeing < xgrid < hseeing)/4.0/hseeing**2,
+                }
 
-    psfshape={'gauss': lambda hseeing, ygrid, xgrid: (gtof/hseeing)**2/(2.0*np.pi)*np.exp(-(xgrid**2 + ygrid**2)/2.0/(hseeing/gtof)**2),
-              'cube': lambda hseeing, ygrid, xgrid: (-hseeing<ygrid<hseeing)*(-hseeing<xgrid<hseeing)/4.0/hseeing**2,
-              }
-
-    rad= diameter/2.0
-    block = {'slit': lambda rad, ygrid, xgrid: (-rad<xgrid)*(xgrid<rad),
-             'square': lambda rad, ygrid, xgrid: (-rad<xgrid)*(xgrid<rad)*(-rad<ygrid)*(ygrid<rad),
-             'circle': lambda rad, ygrid, xgrid: (xgrid**2+ygrid**2)<rad**2,
+    rad = diameter/2.0
+    block = {'slit': lambda rad, ygrid, xgrid: (-rad < xgrid)*(xgrid < rad),
+             'square': lambda rad, ygrid, xgrid: (-rad < xgrid)*(xgrid < rad)*(-rad < ygrid)*(ygrid < rad),
+             'circle': lambda rad, ygrid, xgrid: (xgrid**2+ygrid**2) < rad**2,
              }
 
     dy = dx = nseeing*seeing/2.0/nsamp
     y, x = np.mgrid[-nsamp/2.0:nsamp/2.0, -nsamp/2.0:nsamp/2.0]
-    y*=dy
-    x*=dx
+    y *= dy
+    x *= dx
 
     psf = psfshape[psf](hseeing, y, x)
     blk = block[shape](rad, y, x)
@@ -439,9 +440,13 @@ def azimuth(data, cyx):
 
     ndim = data.ndim
     if ndim != 2:
-        raise ValueError("Input array must be 2-D in order to get azimuthal values. Shape: {data}".format(data=data.shape))
+        raise ValueError(
+            "Input array must be 2-D in order to get azimuthal values. "
+            "Shape: {data}".format(data=data.shape))
     if len(cyx) != ndim:
-        raise ValueError("Number of central coordinates (%i) does not match the data dimension (%i)" % (len(cyx), ndim))
+        raise ValueError(
+            "Number of central coordinates ({0:d}) does not match the data"
+            "dimension ({1:d})".format(len(cyx), ndim))
 
     yy, xx = np.mgrid[0:data.shape[0], 0:data.shape[1]]
 
@@ -452,7 +457,8 @@ def azimuth(data, cyx):
 ######
 
 
-def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=None, full=False):
+def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1,
+            mask=None, full=False):
     """
     Returns a mask with those values that are 'sigmas'-sigmas beyond the mean
     value of arr.
@@ -491,6 +497,8 @@ def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=
         A boolean np.array with True on good pixels and False otherwise.
         If full==True, then it also return standard deviation and residuals
     """
+    import scipy.signal as sg
+
     if not isinstance(arr, np.ndarray):
         arr = np.array(arr)
 
@@ -498,17 +506,21 @@ def sigmask(arr, sigmas, axis=None, kernel=0, algorithm='median', npass=1, mask=
               'gaussian': lambda n: sg.gaussian(n*5, n)}
 
     if kernel:
-        if algorithm=='median':
+        if algorithm == 'median':
             comparison = sg.medfilt(arr, kernel)
         else:
-            comparison = sg.convolve(arr, krnfcn[algorithm](kernel), mode='same')
+            comparison = sg.convolve(arr, krnfcn[algorithm](kernel),
+                                     mode='same')
     else:
         try:
-            comparison = getattr(sp, algorithm)(arr)
+            comparison = getattr(np, algorithm)(arr)
             if hasattr(comparison, '__len__'):
                 raise AttributeError()
         except AttributeError:
-            print("In function '%s', algorithm requested '%s' is not available from scipy to receive an array and return a comparison scalar " % (inspect.stack()[0][3], algorithm))
+            print("In function '{0:s}', algorithm requested '{1:s}' is not "
+                  "available from scipy to receive an array and return a "
+                  "comparison scalar "
+                  .format(inspect.stack()[0][3], algorithm))
 
     residuals = arr - comparison
 
