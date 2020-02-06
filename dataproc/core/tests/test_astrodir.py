@@ -2,7 +2,7 @@ import pytest
 from ..astrodir import AstroDir
 from ..astrofile import AstroFile
 from numpy.testing import assert_equal, assert_almost_equal
-from .fit_factory import create_random_fit, create_empty_fit
+from .test_utils import create_random_fit, create_empty_fit
 import astropy.io.fits as pf
 import numpy as np
 import os
@@ -69,10 +69,10 @@ class TestAstroDir(object):
         # using np.savetxt. If failure ocurrs always check that the seed
         # is the one mentioned.
         res_path = os.path.dirname(__file__)
-        mean = np.loadtxt(os.path.join(res_path, 'results', 'mean.txt'))
-        std = np.loadtxt(os.path.join(res_path, 'results', 'std.txt'))
-        median = np.loadtxt(os.path.join(res_path, 'results', 'median.txt'))
-        linterp = np.loadtxt(os.path.join(res_path, 'results', 'linterp.txt'))
+        mean = np.loadtxt(os.path.join(res_path, 'data', 'mean.txt'))
+        std = np.loadtxt(os.path.join(res_path, 'data', 'std.txt'))
+        median = np.loadtxt(os.path.join(res_path, 'data', 'median.txt'))
+        linterp = np.loadtxt(os.path.join(res_path, 'data', 'linterp.txt'))
 
         assert_equal(self.dataset.mean(check_unique=['NAXIS1']), mean)
         assert_equal(self.dataset.std(check_unique=['NAXIS1']), std)

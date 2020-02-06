@@ -18,8 +18,6 @@
 #
 
 
-from . import io
-from .io import *
 from . import astrodir
 from .astrodir import *
 from . import astrofile
@@ -34,7 +32,6 @@ from . import misc_math
 from .misc_math import *
 
 __all__ = []
-__all__ += io.__all__
 __all__ += astrodir.__all__
 __all__ += astrofile.__all__
 __all__ += misc_arr.__all__

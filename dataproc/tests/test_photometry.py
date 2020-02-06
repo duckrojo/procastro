@@ -1,7 +1,7 @@
 from dataproc import AstroDir, AstroFile
 from dataproc.timeseries import Photometry
 from numpy.testing import assert_equal
-from .fit_factory import create_targeted_fit, create_bias
+from .test_utils import create_targeted_fit, create_bias
 from unittest.mock import patch
 import matplotlib.pyplot as plt
 import astropy.io.fits as pf
@@ -23,12 +23,6 @@ class TestPhotometry(object):
                 create_targeted_fit(os.path.join(".", "sci_files", "file"+str(i)+".fit"), (self.size, self.size), (self.size/2,self.size/2), pf.Header({'JD': 2457487.62537041+i}))
                 create_targeted_fit(os.path.join(".", "extra", "extra"+str(i)+".fit"), (self.size, self.size), (self.size/2,self.size/2), pf.Header({'JD': 2457487.62537041+i}))
             self.data = AstroDir(os.path.join(self.path, "sci_files"))
-            ##### TODO Find ways to simulate calibration files
-            #create_bias(os.path.join(".","mbias.fits"), (self.size, self.size))
-            #bias = AstroFile(os.path.join(".","mbias.fits"))
-            #f = ff.create_flat()
-            #self.data.add_bias(bias)
-            #self.data.add_flat(f)
             self.phot = Photometry(self.data, [[self.size/2, self.size/2]], aperture = 7.5, sky = [11,20], brightest=0, gain = 1.8, ron = 4.7)
         
     def test_append(self):

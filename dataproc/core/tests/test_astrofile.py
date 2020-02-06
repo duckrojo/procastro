@@ -2,7 +2,7 @@ from ..astrofile import AstroFile, AstroCalib
 from numpy.testing import assert_equal, assert_almost_equal
 import astropy.io.fits as pf
 import numpy as np
-from .fit_factory import create_merge_example, create_random_fit, create_empty_fit
+from .test_utils import create_merge_example, create_random_fit, create_empty_fit
 import pytest
 import os
 import pdb
@@ -49,7 +49,7 @@ class TestAstroCalib(object):
         data = AstroFile(os.path.join(self.path, "target.fits"))
 
         res_path = os.path.dirname(__file__)
-        expected = np.loadtxt(os.path.join(res_path, 'results', 'reduced.txt'))
+        expected = np.loadtxt(os.path.join(res_path, 'data', 'reduced.txt'))
 
         result = calib.reduce(data)
         assert_equal(result, expected)
