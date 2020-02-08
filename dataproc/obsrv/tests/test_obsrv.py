@@ -6,7 +6,6 @@ import astropy.io.fits as pf
 import numpy as np
 import pytest
 import os
-import pdb
 
 
 class TestObsrv(object):

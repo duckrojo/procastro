@@ -97,8 +97,7 @@ def _fits_reader(filename, hdu=0):
 
 def _fits_writer(filename, data, header=None):
     """
-    Write 'data' to specified file
-    WIP
+    Writes 'data' to specified file
 
     Parameters
     ----------
@@ -107,14 +106,14 @@ def _fits_writer(filename, data, header=None):
     header : Header Object, optional
     """
     if header is None:
-        header = pf.header()
+        header = pf.Header()
         iologger.warning(
             "No header provided to save on disk, using a default empty header"
             "for '{}'".format(filename))
     header['history'] = "Saved by dataproc v{} on {}".format(dp.__version__,
                                                              apt.Time.now())
     return pf.writeto(filename, data, header,
-                      clobber=True, output_verify='silentfix')
+                      overwrite=True, output_verify='silentfix')
 
 
 def _fits_verify(filename, ffilter=None, hdu=0):
@@ -921,16 +920,13 @@ class AstroFile(object):
         return self._readhs[tp](self.filename, *args, hdu=hdu, **kwargs)
 
     @_checkfilename
-    def writer(self, *args, **kwargs):
+    def writer(self, data, *args, **kwargs):
         """
         Writes given data to file
         """
         tp = self.type
         # TODO: Save itself if data exists. Now it only saves explicit
         #       array given by user
-        # FIXME: Solve issue where *args are not read properly by _fits_writer
-        #        (different method signarture)
-        data = args[0]
         return tp and self._writes[tp](self.filename, data, *args, **kwargs)
 
     @_checkfilename

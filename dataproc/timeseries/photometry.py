@@ -732,7 +732,7 @@ class Photometry:
                 labels = list(labels) + list(np.arange(len(labels),
                                                        nstars).astype(str))
         # TODO: Define this exception type
-        except:
+        except (TypeError, ValueError):
             raise ValueError("Coordinates of target stars need to be "
                              "specified as dictionary or as a list of 2 "
                              "elements, not: {}"

@@ -1,7 +1,6 @@
 import astropy.io.fits as pf
 import numpy as np
 import sys
-import pdb
 
 
 def create_merge_example(x, y, hdus, path, empty=[]):

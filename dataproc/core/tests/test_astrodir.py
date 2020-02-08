@@ -6,7 +6,6 @@ from .test_utils import create_random_fit, create_empty_fit
 import astropy.io.fits as pf
 import numpy as np
 import os
-import pdb
 
 
 class TestAstroDir(object):

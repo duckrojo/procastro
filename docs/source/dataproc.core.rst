@@ -20,14 +20,6 @@ dataproc.core.astrofile module
    :undoc-members:
    :show-inheritance:
 
-dataproc.core.io module
------------------------
-
-.. automodule:: dataproc.core.io
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 dataproc.core.misc\_arr module
 ------------------------------
 

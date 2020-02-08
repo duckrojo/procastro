@@ -486,7 +486,6 @@ def applyfilter(name, spectra,
     """
     import scipy.interpolate as it
 
-    
     filter_wav, filter_transmission = getfilter(name, filter_dir)
     filter_unit = filter_wav.unit
     if output_unit is None:

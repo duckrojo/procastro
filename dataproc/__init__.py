@@ -35,7 +35,7 @@ __all__ += core.__all__
 
 dplogger = _log.getLogger('dataproc')
 _ch = _log.StreamHandler()
-_formatter = _log.Formatter('%(name)s (%(module)s.%(funcName)) %(levelname)s: %(message)s')
+_formatter = _log.Formatter('%(name)s (%(module)s.%(funcName)s) %(levelname)s: %(message)s')
 _ch.setFormatter(_formatter)
 dplogger.addHandler(_ch)
 

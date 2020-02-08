@@ -126,7 +126,7 @@ class AstroDir(object):
                 if nf:
                     files.append(nf)
             except IOError:
-                warnings.warn(f"Warning: File {nf.basename()} could not"
+                warnings.warn(f"Warning: File {nf.basename()} could not "
                               f"be read, skipping")
 
         self.files = files

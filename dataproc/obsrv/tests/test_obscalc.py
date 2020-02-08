@@ -1,10 +1,9 @@
 from ..obscalc import ObsCalc
-from numpy.testing import assert_equal
+from numpy.testing import assert_equal, assert_almost_equal
 import astropy.io.fits as pf
 import numpy as np
 import pytest
 import os
-
 
 class TestObsCalc(object):
     ### TODO: Check if decorators are updating related parameters for each setter
@@ -80,6 +79,19 @@ class TestObsCalc(object):
     def test_set_target_error(self):
         with pytest.raises(ValueError):
             self.obs.set_target("WASP-3 b")   # NASA returns masked array on trandur
-
+    
+    #TODO: Add more parametrized inputs
+    def test_set_transit(self):
+        exp_tr=np.array([2457750, 2457800, 2457850, 2457900, 2457950, 
+                                2458000, 2458050, 2458100, 2458150])
+        
+        exp_hours= np.array([12., 12., 12., 12., 12., 12., 12., 12., 12.])
+        
+        self.obs.set_target("WASP-8 b")
+        self.obs.set_transits(tr_period = 50, tr_epoch = 100)
+        
+        assert_equal(self.obs.transits, exp_tr)
+        assert_equal(self.obs.transit_hours, exp_hours)
+        
     def teardown_method(self):
         del self.obs

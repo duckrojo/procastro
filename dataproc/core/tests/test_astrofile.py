@@ -5,7 +5,6 @@ import numpy as np
 from .test_utils import create_merge_example, create_random_fit, create_empty_fit
 import pytest
 import os
-import pdb
 
 
 class TestAstroCalib(object):
@@ -117,14 +116,30 @@ class TestAstroFile(object):
         with pytest.raises(ValueError):
             empty.load(filename, data)
 
-    @pytest.mark.skip(reason="Pending method refactoring")
     def test_writer(self):
-        # No header given
-        blank = AstroFile("blank.fits")
-        data = self.file.reader()
+        # No header given, it should use an empty header
+        bl_path = os.path.join(self.path, "blank.fits")
+        
+        create_empty_fit(bl_path)
+        blank = AstroFile(bl_path)
+        
+        data = AstroFile(os.path.join(self.path, "file.fits")).reader()
         blank.writer(data)
+        
         assert_equal(blank.reader(), data)
-
+        
+        # Header given
+        bl_path = os.path.join(self.path, "blank2.fits")
+        header = pf.Header({"TEST": 85})
+        
+        create_empty_fit(bl_path)
+        blank = AstroFile(bl_path)
+        data = AstroFile(os.path.join(self.path, "file.fits")).reader()
+        blank.writer(data, header)
+        
+        assert_equal(blank.reader(), data)
+        assert blank.getheaderval("TEST") == 85
+        
     def test_jd_from_ut(self):
         expected = 2457487.626745567
 

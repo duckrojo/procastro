@@ -18,15 +18,15 @@
 #
 #
 
-
-import ephem
-import numpy as np
-import astropy.coordinates as apc
-import astropy.units as u
-import os
-import dataproc.astro as dpa
 from urllib.error import URLError
 from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
+import astropy.coordinates as apc
+import astropy.time as apt
+import astropy.units as u
+import dataproc.astro as dpa
+import numpy as np
+import ephem
+import os
 
 
 def _update_airmass(func):
@@ -63,7 +63,7 @@ class ObsCalc(object):
     site : string, optional
     equinox : string, optional
     central_time: int, optional
-        Central time of y-axis.  If outside the [-12,24] range, 
+        Central time of y-axis.  If outside the [-12,24] range,
         then only shows nighttime
 
     Attributes
@@ -237,8 +237,8 @@ class ObsCalc(object):
 
         if isinstance(timespan, int):   # Year
             # times always at midnight (UT)
-            ed0 = ephem.Date('{0:d}/1/1'.format(timespan,))
-            ed1 = ephem.Date('{0:d}/1/1'.format(timespan+1,))
+            t0 = apt.Time('{0:d}-01-01'.format(timespan,))
+            t1 = apt.Time('{0:d}-01-01'.format(timespan+1,))
 
         elif isinstance(timespan, str):  # Start Year - End Year
             years = timespan.split('-')
@@ -251,19 +251,23 @@ class ObsCalc(object):
                 raise ValueError(
                     "Starting year must be lower than the end year")
 
-            ed0 = ephem.Date('{0:d}/1/1'.format(int(years[0]),))
-            ed1 = ephem.Date('{0:d}/1/1'.format(int(years[1])+1,))
+            t0 = apt.Time('{0:d}-1-1'.format(int(years[0]),))
+            t1 = apt.Time('{0:d}-1-1'.format(int(years[1])+1,))
 
         else:
             raise NotImplementedError(
-                "Requested timespan ({0:s}) not implemented"
-                "yet. Currently supported: * single"
+                "Requested timespan ({0:s}) not implemented "
+                "yet. Currently supported: * single "
                 "integer (year)".format(timespan,))
+
+        # ephem used the Dublin JD calendar
+        ed0 = t0.jd - 2415020
+        ed1 = t1.jd - 2415020
 
         ed = np.arange(ed0, ed1, int((ed1 - ed0) / samples))
         xlims = [ed[0] - ed0, ed[-1] - ed0]
 
-        self.jd0 = ephem.julian_date(ephem.Date(ed[0]))
+        self.jd0 = t0.jd
         self.days = ed
         self.xlims = xlims
 
@@ -346,7 +350,6 @@ class ObsCalc(object):
         phase_offset: float, optional
             Set to 0.5 to show occultations instead of transits
         """
-
         self.params['target'] = target
         if 'current_transit' in self.params:
             del self.params['current_transit']
@@ -394,7 +397,7 @@ class ObsCalc(object):
                 if planet[col] is None or isinstance(planet[col],
                                                      np.ma.MaskedArray):
                     raise ValueError(
-                        "Requested data {} is not available on the"
+                        "Requested data '{}' is not available through the "
                         "NASA archives for target {}".format(col, target))
                 elif isinstance(planet[col],  u.Quantity):
                     req_cols[i] = planet[col].value
@@ -445,7 +448,7 @@ class ObsCalc(object):
             tr_epoch = self.transit_info['epoch']
 
         jd0 = self.jd0
-        jd1 = ephem.julian_date(ephem.Date(self.days[-1]))
+        jd1 = self.days[-1] + 2415020   # Dublin JD conversion
         n_transits = int((jd1-jd0)/tr_period)+2
         tr1 = tr_epoch+tr_period*int((jd0-tr_epoch)/tr_period+0.9)
         self.transits = tr1+np.arange(n_transits)*tr_period

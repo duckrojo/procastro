@@ -81,7 +81,7 @@ def gauss(grid, sigma, center=None, norm=False, ndim=None):
 def bipol(coef, x, y):
     """
     Polynomial fit for sky subtraction
-    
+
     Parameters
     ----------
     coef : scipy ndarray

@@ -21,7 +21,9 @@
 from . import obscalc as ocalc
 
 import numpy as np
+import astropy.time as apt
 import ephem
+
 
 __all__ = ['Obsrv']
 
@@ -236,7 +238,9 @@ class Obsrv(ocalc.ObsCalc):
         vertical_lims = list(ax.get_ylim())
         vertical_lims = (vertical_lims + vertical_lims[::-1])*6
 
-        y, m, d = ephem.Date(self.days[0]).triple()
+        tm = apt.Time((self.days[0] + 2415020), format='jd')
+        y, m, d, _, _, _ = tm.ymdhms
+
         jan1 = self.days[0]-((m-1 != 0)*cum[m-2]+d-1)
         ax.plot(self.days[0]-jan1 + month_cumulative, vertical_lims, 'y--')
         ny = (self.days[-1]-jan1)//365
@@ -266,7 +270,7 @@ class Obsrv(ocalc.ObsCalc):
         ax : matplotlib.pyplot.axes
         """
         ax.set_title(title)
-        days = ephem.Date(self.days[0]).datetime().strftime('%Y.%m.%d')
+        days = apt.Time((self.days[0] + 2415020), format='jd').strftime('%Y.%m.%d')
         ax.set_xlabel(f"Days from {days}"
                       f" (Site: {self.params['site']})")
         ax.set_ylabel(f'Time (UT). Target: {self.params["target"]}.'
@@ -363,16 +367,22 @@ class Obsrv(ocalc.ObsCalc):
 
         ax.plot(ut_hours, star_altitude)
         ax.plot(ut_hours, moon_altitude, '--')
+
         setev = np.array([ss, ss, ts, ts])
         risev = np.array([sr, sr, tr, tr])
+
         ax.plot((setev - et_out)*24, [0, 90, 90, 0], 'k:')
         ax.plot((risev - et_out)*24, [0, 90, 90, 0], 'k:')
         ax.plot([ut_hours[0], ut_hours[-1]], [altitude_limit]*2, 'k:')
         ax.set_ylim([10, 90])
         ax.set_xlim([(ss-et_out)*24-0.5, (sr-et_out)*24+0.5])
-        datetime = ephem.date(jd-self.jd0+self.days[0])
+
+        tm = apt.Time(jd-self.jd0+self.days[0]+2415020.0, format = 'jd')
+        datetime = tm.iso.replace("-","/")
+
         phase_info = f"phase {self.transit_info['offset']}: " if self.transit_info['offset'] != 0.0 else ""
-        print("{0:s}{1:s} {2:s}".format(phase_info, str(datetime)[:-3], jd))
+        print("{0:s}{1:s} {2:f}".format(phase_info, str(datetime)[:-3], jd))
+
         ax.set_title('{0:s}{1:s}'.format(phase_info, str(datetime)[:-3]))
         ax.set_ylim(ax.get_ylim())
         sam = np.array([1, 1.5, 2, 3, 4, 5])
@@ -381,6 +391,7 @@ class Obsrv(ocalc.ObsCalc):
         self.params['current_transit'] = str(datetime).replace(' ', '_')
         self.params['current_moon_distance'], self.params['current_moon_phase'] = self._moon_distance(datetime)
         percent = 0  # todo: ts<np.array(ut_hours)<tr
+
         ax.set_ylabel(f'Elevation ({percent}% inside twilight and {altitude_limit}${{^\\degree}}$)')
         ax.set_xlabel(f'UT time. Moon distance and phase: '
                       f'{int(self.params["current_moon_distance"].degree)}${{^\\degree}}$ '
