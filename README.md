@@ -22,7 +22,7 @@ docs directory
 
 ## Dependencies
 
-dataproc supports python version 3.7 or higher, it currently depends on the following libraries: 
+dataproc supports python version 3.6 or higher, it currently depends on the following libraries: 
 
 * astropy 
 * numpy 

@@ -60,6 +60,7 @@ def create_random_fit(xy, path, header=pf.Header(),
         data = np.random.rand(xy[0], xy[1])
     else:
         data = np.random.randint(min_val, max_val, size=(xy[0], xy[1]))
+        
     primer = pf.PrimaryHDU(data=data, header=header)
     hdul = pf.HDUList([primer])
     hdul.writeto(path)

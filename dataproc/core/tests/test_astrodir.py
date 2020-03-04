@@ -7,7 +7,6 @@ import astropy.io.fits as pf
 import numpy as np
 import os
 
-
 class TestAstroDir(object):
     @pytest.fixture(autouse=True)
     def setup_class(self, tmpdir):
@@ -38,6 +37,11 @@ class TestAstroDir(object):
             
             # Generate main instance
             self.dataset = AstroDir(os.path.join(self.path, "sci_files"))
+
+            # NOTE: Files contained in self.dataset might be unsorted 
+            #       depending on the OS running the tests due to os.listdir()
+            #       implementation.
+            self.dataset.sort('JD')
 
     def test_file_warnings(self):
         # Generate AstroDir with corrupt data and catch warning

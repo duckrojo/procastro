@@ -13,9 +13,8 @@ requirements = ["astropy", "astroquery==0.3.10", "numpy", "scipy", "pyephem", "m
 
 # Setup script
 setup(
-    # Currently using test.pypi DO NOT UPLOAD TO PYPI until release is consolidated
     name="dataproc",     # Distribution name
-    version="0.0.8",           # Version name, MUST be updated after each release or will cause an error
+    version="0.0.8",           # Version name, remember to always update the version number after each release, otherwise an error will occur during deployment 
     author="Patricio Rojo",
     author_email="pato@das.uchile.cl",
     description="Data processing framework for handling astronomy data files",
@@ -31,5 +30,5 @@ setup(
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
         "Operating System :: OS Independent",
         ],
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     )

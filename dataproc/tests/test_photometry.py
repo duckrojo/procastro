@@ -39,7 +39,12 @@ class TestPhotometry(object):
 
     def test_photometry(self):
         #Calls cpu_phot, checks if parameters are sound
-        broken = copy.deepcopy(self.phot)
+        #NOTE: Copying Photometry objects using deepcopy will raise
+        #      an error for python 3.6. Initializing a new object 
+        #      will fix the issue.
+        broken = Photometry(self.data, [[self.size/2, self.size/2]], 
+                            aperture = 7.5, sky = [11,20], 
+                            brightest=0, gain = 1.8, ron = 4.7)
 
         broken.stamp_rad = 1.0
         with pytest.raises(ValueError):     #Stamp radius < Aperture
