@@ -854,7 +854,7 @@ class AstroFile(object):
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
 
         if data is None:  # File with no data / corrupt
-            raise IOError("Empty or corrupt hdu/file")
+            raise IOError(f"Empty or corrupt file {self.filename} or HDU {hdu}")
 
         # Just print the HDUs if requested hdu=-1
         # if hdu == -1:

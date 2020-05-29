@@ -127,7 +127,7 @@ class AstroDir(object):
                     files.append(nf)
             except IOError:
                 warnings.warn(f"Warning: File {nf.basename()} could not "
-                              f"be read, skipping")
+                              f"be read, or HDU {hdud} empty... skipping")
 
         self.files = files
         self.props = {}
