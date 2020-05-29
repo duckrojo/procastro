@@ -24,6 +24,9 @@ import numpy as np
 import astropy.time as apt
 import ephem
 
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+from matplotlib.pyplot import cm
 
 __all__ = ['Obsrv']
 
@@ -42,7 +45,6 @@ def _plot_poly(ax, x, up, down, alpha=0.5, facecolor='0.8', edgecolor='k'):
     facecolor : string, optional
     edgecolor : string, optional
     """
-    from matplotlib.patches import Polygon
 
     vertices = list(zip(x, down*24)) + list(zip(x[::-1], (up*24)[::-1]))
     poly = Polygon(vertices,
@@ -55,7 +57,6 @@ def _update_plot(func):
     Decorator used to update the displayed figures after an attribute is
     modified by the user.
     """
-    import matplotlib.pyplot as plt
     def wrapper(self, *args, **kwargs):
 
         ret = func(self, *args, **kwargs)
@@ -200,7 +201,6 @@ class Obsrv(ocalc.ObsCalc):
         super(Obsrv, self).set_transits(*args, **kwargs)
 
     def _plot_airmass(self, ax):
-        from matplotlib.pyplot import cm
         ams = np.arange(1, 3.01, 0.1)
         self.params["plot_airmass"] = ax.contourf(self.days-self.days[0],
                                                   self.hours,

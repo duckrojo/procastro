@@ -185,6 +185,7 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
         If a data field does not match the specified format
     """
     paths = [os.path.expanduser("~")+'/.transits',
+             os.path.expanduser("~") + '/.config/obsrv/transits',
              dir+'/transits.txt',
              ]
 
