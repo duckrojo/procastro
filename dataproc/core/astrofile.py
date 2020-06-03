@@ -592,7 +592,9 @@ class AstroFile(object):
         misc_graph.imshowz :
             For details on what keyword arguments are available
         """
-        return dp.imshowz(self.reader(), *args, **kwargs)
+        hdu = kwargs.pop('hdu', self._hdud)
+
+        return dp.imshowz(self.reader(hdu=hdu), *args, **kwargs)
 
     def __nonzero__(self):
         return hasattr(self, 'filename') and (self.type is not None)
