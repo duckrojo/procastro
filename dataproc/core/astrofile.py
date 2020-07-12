@@ -53,24 +53,24 @@ def _numerize_other(method):
 #
 ##################################
 
-def _fits_header(filename, hdu=0):
-    """
-    Read fits header.
-
-    Parameters
-    ----------
-    hdu: int, optional
-        HDU slot to be read
-
-    Returns
-    -------
-    Header Object of the specified hdu
-    """
-
-    hdu_list = pf.open(filename)
-    ret = hdu_list[hdu].header
-    hdu_list.close()
-    return ret
+# def _fits_header(filename, hdu=0):
+#     """
+#     Read fits header.
+#
+#     Parameters
+#     ----------
+#     hdu: int, optional
+#         HDU slot to be read
+#
+#     Returns
+#     -------
+#     Header Object of the specified hdu
+#     """
+#
+#     hdu_list = pf.open(filename)
+#     ret = hdu_list[hdu].header
+#     hdu_list.close()
+#     return ret
 
 
 def _fits_reader(filename, hdu=0):
@@ -135,6 +135,9 @@ def _fits_verify(filename, ffilter=None, hdu=0):
     -------
     bool
     """
+    if not isinstance(filename, str):
+        return False
+
     single_extension = filename.lower().split('.')[-1] in ['fits', 'fit',
                                                            'ftsc', 'fts']
     double_extension = ''.join(filename.lower()
@@ -227,17 +230,31 @@ def _fits_setheader(_filename, **kwargs):
 
 #############################
 #
-# Start sparray type
+# Startnparray type
 #
 ####################################
 
 
-def array_reader(filename, **kwargs):
-    return filename
+def _array_reader(array, **kwargs):
+    return array
 
 
-def array_verify(filename, **kwargs):
-    if isinstance(filename, np.ndarray):
+def _array_write(filename, **kwargs):
+    raise NotImplementedError("Write array into file is not implemented yet")
+
+
+def _array_setheader(filename, **kwargs):
+    warnings.warn( "Saving an np.array type is not implemented yet: only saving in memory for now ",
+                   UserWarning)
+    return None
+
+
+def _array_getheader(array, **kwargs):
+    return [{}]
+
+
+def _array_verify(array, **kwargs):
+    if isinstance(array, np.ndarray):
         return True
     return False
 
@@ -346,14 +363,18 @@ class AstroFile(object):
     """
 
     # Interface between public and private methods for each supported type
-    _reads = {'fits': _fits_reader, 'sparray': array_reader}
-    _readhs = {'fits': _fits_header, 'sparray': return_none}
-    _ids = {'fits': _fits_verify, 'sparray': array_verify}
-    _writes = {'fits': _fits_writer, 'sparray': return_none}
-    _geth = {'fits': _fits_getheader, 'sparray': return_none}
-    _seth = {'fits': _fits_setheader, 'sparray': return_none}
+    _reads = {'fits': _fits_reader, 'nparray': _array_reader}
+    # _readhs = {'fits': _fits_header, 'nparray': array_header}
+    _ids = {'fits': _fits_verify, 'nparray': _array_verify}
+    _writes = {'fits': _fits_writer, 'nparray': _array_write}
+    _geth = {'fits': _fits_getheader, 'nparray': _array_getheader}
+    _seth = {'fits': _fits_setheader, 'nparray': _array_setheader}
 
     def __repr__(self):
+        if isinstance(self.filename, str):
+            filename = self.filename
+        else:
+            filename = str(self.filename)
         return '<AstroFile{}: {}>'.format(self.has_calib()
                                           and "({}{})"
                                               .format(self.calib.has_bias
@@ -361,7 +382,7 @@ class AstroFile(object):
                                                       self.calib.has_flat
                                                       and "F" or "",)
                                           or "",
-                                          self.filename,)
+                                          filename,)
 
     def __new__(cls, *args, **kwargs):
         """
@@ -374,29 +395,29 @@ class AstroFile(object):
             return super(AstroFile, cls).__new__(cls)
 
     def __init__(self, filename=None,
-                 mbias=None, mflat=None, exists=False,
+                 mbias=None, mflat=None,
                  mbias_header=None, mflat_header=None,
-                 hdu=0, hduh=None, hdud=None, read_keywords=None,
-                 auto_trim=None,
-                 ron=None, gain=None, unit=None,
+                 hdu=0, hduh=None, hdud=None,
+                 auto_trim=None, header=None,
                  *args, **kwargs):
 
         if isinstance(filename, AstroFile):
             return
 
-        if isinstance(filename, str):
-            self.filename = filename
-        else:
-            self.filename = None
+        self.filename = filename
+        self.type = self.checktype(*args, **kwargs)
+        self.header_cache = self._geth[self.type](self.filename)
+        if isinstance(header, dict):
+            for k,v in header.items():
+                self.header_cache=v
 
-        self.type = self.checktype(exists, *args, **kwargs)
         if hduh is None:
             hduh = hdu
         if hdud is None:
             hdud = hdu
         self._hduh = hduh
         self._hdud = hdud
-        self.header_cache = None
+
 
         # if gain is None:
         #     self.gain = 1.0*u.photon/u.adu
@@ -445,15 +466,15 @@ class AstroFile(object):
         """
         self.calib.add_bias(mbias)
 
-    def add_flat(self, mflat):
+    def add_flat(self, master_flat):
         """
         Includes a Master Bias to this instance
 
         Parameters
         ----------
-        mflat: dict indexed by filter name time, array or AstroFile
+        master_flat: dict indexed by filter name time, array or AstroFile
         """
-        self.calib.add_flat(mflat)
+        self.calib.add_flat(master_flat)
 
     def default_hdu_dh(self):
         """
@@ -461,54 +482,54 @@ class AstroFile(object):
         """
         return [self._hdud, self._hduh]
 
-    def load(self, filename, exists=False, *args, **kwargs):
-        """
-        Loads name and header data to an empty AstroFile instance
+    # def load(self, filename, exists=False, *args, **kwargs):
+    #     """
+    #     Loads name and header data to an empty AstroFile instance
+    #
+    #     Parameters
+    #     ----------
+    #     filename : str
+    #     exists : bool
+    #
+    #     Raises
+    #     ------
+    #     ValueError
+    #         If file already contains data
+    #     """
+    #
+    #     if self.filename is None:
+    #         import os.path as path
+    #         self.filename = filename
+    #         self.type = self.checktype(exists, *args, **kwargs)
+    #         self.header_cache = {'basename': path.basename(filename)}
+    #     else:
+    #         raise ValueError("The current Astrofile already has data in it.\n"
+    #                          "Data must be loaded to an empty AstroFile.")
 
-        Parameters
-        ----------
-        filename : str
-        exists : bool
+    # # Para setHeader, puedo querer poner header antes de cargar datos
+    # def set_filename(self, filename, exists=False, *args, **kwargs):
+    #     """
+    #     Sets filename to empty Astrofile objects
+    #
+    #     Parameters
+    #     ----------
+    #     filename : str
+    #     exists : Bool
+    #
+    #     Raises
+    #     ------
+    #     ValueError
+    #         If AstroFile already has a name
+    #     """
+    #     if self.filename is None:
+    #         self.filename = filename
+    #         import os.path as path
+    #         self.type = self.checktype(exists, *args, **kwargs)
+    #         self.header_cache = {'basename': path.basename(filename)}
+    #     else:
+    #         raise ValueError("Existing file cannot be renamed.")
 
-        Raises
-        ------
-        ValueError
-            If file already contains data
-        """
-
-        if self.filename is None:
-            import os.path as path
-            self.filename = filename
-            self.type = self.checktype(exists, *args, **kwargs)
-            self.header_cache = {'basename': path.basename(filename)}
-        else:
-            raise ValueError("The current Astrofile already has data in it.\n"
-                             "Data must be loaded to an empty AstroFile.")
-
-    # Para setHeader, puedo querer poner header antes de cargar datos
-    def set_filename(self, filename, exists=False, *args, **kwargs):
-        """
-        Sets filename to empty Astrofile objects
-
-        Parameters
-        ----------
-        filename : str
-        exists : Bool
-
-        Raises
-        ------
-        ValueError
-            If AstroFile already has a name
-        """
-        if self.filename is None:
-            self.filename = filename
-            import os.path as path
-            self.type = self.checktype(exists, *args, **kwargs)
-            self.header_cache = {'basename': path.basename(filename)}
-        else:
-            raise ValueError("Existing file cannot be renamed.")
-
-    def checktype(self, exists, *args, **kwargs):
+    def checktype(self, *args, **kwargs):
         """
         Verifies if the filename given corresponds to an existing file
 
@@ -523,15 +544,14 @@ class AstroFile(object):
             "fits" : If AstroFile points to an existing .fits file
             None : Otherwise
         """
-        import os.path as path
         if not hasattr(self, 'filename'):
             return None
-        if not isinstance(self.filename, str):
-            return None
-        elif self.filename is None:
-            return "array"
-        if exists and not path.isfile(self.filename):
-            return None
+        # if not isinstance(self.filename, str):
+        #     return None
+        # elif self.filename is None:
+        #     return "array"
+        # if exists and not path.isfile(self.filename):
+        #     return None
         for k in self._ids.keys():
             if self._ids[k](self.filename, *args, **kwargs):
                 return k
@@ -824,9 +844,9 @@ class AstroFile(object):
                 ret.append(None)
 
         if len(ret) == 1:
-            return(ret[0])
+            return ret[0]
         else:
-            return (ret)
+            return ret
 
     @_checkfilename
     def reader(self, *args, **kwargs):
@@ -904,22 +924,22 @@ class AstroFile(object):
         """
         return self.calib.has_flat or self.calib.has_bias
 
-    @_checkfilename
-    def readheader(self, *args, **kwargs):
-        """
-        Reads header from the file
-
-        Parameters
-        ----------
-        hdu: int, optional
-            Specific hdu slot to be read
-        """
-        tp = self.type
-        hdu = kwargs.pop('hdu', self._hduh)
-
-        if not tp:
-            return False
-        return self._readhs[tp](self.filename, *args, hdu=hdu, **kwargs)
+    # @_checkfilename
+    # def readheader(self, *args, **kwargs):
+    #     """
+    #     Reads header from the file
+    #
+    #     Parameters
+    #     ----------
+    #     hdu: int, optional
+    #         Specific hdu slot to be read
+    #     """
+    #     tp = self.type
+    #     hdu = kwargs.pop('hdu', self._hduh)
+    #
+    #     if not tp:
+    #         return False
+    #     return self._readhs[tp](self.filename, *args, hdu=hdu, **kwargs)
 
     @_checkfilename
     def writer(self, data, *args, **kwargs):
@@ -1134,8 +1154,14 @@ class AstroFile(object):
             Last HDU to be merged, if None will continue until the end of the
             HDUList
         """
-        with pf.open(self.filename, mode='update', memmap=False) as fit:
+        try:
+            f = pf.open(self.filename, mode='update', memmap=False)
+            read_only = False
+        except IOError:
+            f = pf.open(self.filename)
+            read_only = True
 
+        with f as fit:
             # This file already has a composite image
             if fit[-1].header.get('COMP') is not None:
                 fit.close()
@@ -1162,8 +1188,11 @@ class AstroFile(object):
 
             composite = pf.ImageHDU(comp)
             composite.header.set('COMP', True)
-            fit.append(composite)
-            fit.flush()
+            if read_only:
+                return dp.AstroFile(comp, header=composite.header)
+            else:
+                fit.append(composite)
+                fit.flush()
 
         return self
 
