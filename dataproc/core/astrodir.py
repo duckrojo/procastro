@@ -21,6 +21,9 @@ from __future__ import print_function, division
 
 __all__ = ['AstroDir']
 
+import os
+import re
+
 import dataproc as dp
 import numpy as np
 import warnings
@@ -57,9 +60,6 @@ class AstroDir(object):
     calib_force : bool, optional
         If True, then force specified `mbias` and `mflat` to all files,
         otherwise assign it only if it doesn't have one already.
-    read_keywords : list, optional
-        Read all specified keywords at creation time and store them in
-        the header cache
     hdu : int, optional
         default HDU
     hdud : int, optional
@@ -76,9 +76,21 @@ class AstroDir(object):
     dataproc.AstroCalib.add_flat
     """
 
+
+    def __new__(cls, *args, **kwargs):
+        """
+        If passed an AstroDir, then do not create a new instance, just pass
+        that one
+        """
+        if args and isinstance(args[0], AstroDir):
+            return args[0]
+
+        return super(AstroDir, cls).__new__(cls)
+
+
     def __init__(self, path, mflat=None, mbias=None,
                  mbias_header=None, mflat_header=None,
-                 calib_force=False, read_keywords=None,
+                 calib_force=False,
                  hdu=0, hdud=None, hduh=None, auto_trim=None,
                  jd_from_ut=None):
 
@@ -106,7 +118,6 @@ class AstroDir(object):
                     nf = dp.AstroFile(f + '/' + sf,
                                       hduh=hduh,
                                       hdud=hdud,
-                                      read_keywords=read_keywords,
                                       auto_trim=auto_trim)
                     try:
                         if nf:
@@ -119,7 +130,6 @@ class AstroDir(object):
             else:
                 nf = dp.AstroFile(f, hduh=hduh,
                                   hdud=hdud,
-                                  read_keywords=read_keywords,
                                   auto_trim=auto_trim)
 
             try:
@@ -841,12 +851,14 @@ class AstroDir(object):
 
         return self
 
-    def merger(self, start=1, end=None):
+    def merger(self, start=1, end=None, verbose=None):
         """
         Merges HDUImage data for all files contained in this object
 
         Parameters
         ----------
+        verbose: str
+            a single character to be repeated unbuffered for every AstroFile
         start : int, optional
             HDU unit from which the method starts joining
         end ; int, optional
@@ -856,9 +868,17 @@ class AstroDir(object):
         See Also
         --------
         dataproc.AstroFile.merger : For individual file implementation
-        """
 
-        for files in self:
-            files.merger(start=start, end=end)
+        """
+        if isinstance(verbose, str):
+            verbose = verbose[0]
+        else:
+            verbose = None
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("once", category=UserWarning, message=".+Merged image stored in HDU 0.+")
+            for files in self:
+                print(verbose, flush=True, end='')
+                files.merger(start=start, end=end)
 
         return self

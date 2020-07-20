@@ -373,6 +373,8 @@ class AstroFile(object):
     def __repr__(self):
         if isinstance(self.filename, str):
             filename = self.filename
+        elif isinstance(self.filename, np.ndarray):
+            filename = f"Array {'x'.join([str(i) for i in self.filename.shape])}"
         else:
             filename = str(self.filename)
         return '<AstroFile{}: {}>'.format(self.has_calib()
@@ -391,8 +393,8 @@ class AstroFile(object):
         """
         if args and isinstance(args[0], AstroFile):
             return args[0]
-        else:
-            return super(AstroFile, cls).__new__(cls)
+
+        return super(AstroFile, cls).__new__(cls)
 
     def __init__(self, filename=None,
                  mbias=None, mflat=None,
@@ -408,8 +410,8 @@ class AstroFile(object):
         self.type = self.checktype(*args, **kwargs)
         self.header_cache = self._geth[self.type](self.filename)
         if isinstance(header, dict):
-            for k,v in header.items():
-                self.header_cache=v
+            for k, v in header.items():
+                self.header_cache = v
 
         if hduh is None:
             hduh = hdu
@@ -417,39 +419,6 @@ class AstroFile(object):
             hdud = hdu
         self._hduh = hduh
         self._hdud = hdud
-
-
-        # if gain is None:
-        #     self.gain = 1.0*u.photon/u.adu
-        #     iologger.warning("Gain not specified, defaulting to
-        #                       1 photon/ADU")
-        # else:
-        #     if isinstance(gain, str):
-        #         gain = self[gain]
-        #     if not isinstance(gain, u.Quantity):
-        #         iologger.warning("Gain specified without units, defaulting
-        #                           to photon/ADU")
-        #         self.gain = gain*u.photon/u.adu
-        #     else:
-        #         self.gain = gain
-        # if ron is None:
-        #     self.ron = 0.0*u.photon
-        #     iologger.warning("Read-out-noise not specified, defaulting to 0
-        #                       photon")
-        # else:
-        #     if isinstance(ron, str):
-        #         ron = self[ron]
-        #     if not isinstance(ron, u.Quantity):
-        #         iologger.warning("Read-out-noise specified without units,
-        #                           defaulting to photon")
-        #         self.ron = ron*u.photon
-        #     else:
-        #         self.ron = ron
-        #
-        # if unit is None:
-        #     iologger.warning("Astrofile unit not specified, assuming: ADU")
-        #     gain = 1*u.adu
-        # self.unit = unit
 
         self.calib = AstroCalib(mbias, mflat,
                                 mbias_header=mbias_header,
@@ -482,60 +451,12 @@ class AstroFile(object):
         """
         return [self._hdud, self._hduh]
 
-    # def load(self, filename, exists=False, *args, **kwargs):
-    #     """
-    #     Loads name and header data to an empty AstroFile instance
-    #
-    #     Parameters
-    #     ----------
-    #     filename : str
-    #     exists : bool
-    #
-    #     Raises
-    #     ------
-    #     ValueError
-    #         If file already contains data
-    #     """
-    #
-    #     if self.filename is None:
-    #         import os.path as path
-    #         self.filename = filename
-    #         self.type = self.checktype(exists, *args, **kwargs)
-    #         self.header_cache = {'basename': path.basename(filename)}
-    #     else:
-    #         raise ValueError("The current Astrofile already has data in it.\n"
-    #                          "Data must be loaded to an empty AstroFile.")
-
-    # # Para setHeader, puedo querer poner header antes de cargar datos
-    # def set_filename(self, filename, exists=False, *args, **kwargs):
-    #     """
-    #     Sets filename to empty Astrofile objects
-    #
-    #     Parameters
-    #     ----------
-    #     filename : str
-    #     exists : Bool
-    #
-    #     Raises
-    #     ------
-    #     ValueError
-    #         If AstroFile already has a name
-    #     """
-    #     if self.filename is None:
-    #         self.filename = filename
-    #         import os.path as path
-    #         self.type = self.checktype(exists, *args, **kwargs)
-    #         self.header_cache = {'basename': path.basename(filename)}
-    #     else:
-    #         raise ValueError("Existing file cannot be renamed.")
-
     def checktype(self, *args, **kwargs):
         """
         Verifies if the filename given corresponds to an existing file
 
         Parameters
         ----------
-        exists : boolean
 
         Returns
         -------
@@ -561,9 +482,8 @@ class AstroFile(object):
         """
         Generates a 1D plot based on a cross section of the current data.
 
-        Parameters
-        ----------
-        data : array_like
+        Uses parameters from dataproc.plot()
+        ---------
         axes: int, plt.Figure, plt.Axes, optional
         title: str, optional
         xlim : tuple, optional
@@ -672,7 +592,8 @@ class AstroFile(object):
             match = False
             exists = True
 
-            cast = lambda x: x
+            def cast(x):
+                return x
             filter_keyword = filter_keyword.replace('__', '-')
             if '_' in filter_keyword:
                 tmp = filter_keyword.split('_')
@@ -753,7 +674,7 @@ class AstroFile(object):
                                      for r in request]) == exists)
 
         # Returns whether the filter existed (or not if _not function)
-        return (True in ret)
+        return True in ret
 
     @_checkfilename
     def setheader(self, **kwargs):
@@ -924,22 +845,22 @@ class AstroFile(object):
         """
         return self.calib.has_flat or self.calib.has_bias
 
-    # @_checkfilename
-    # def readheader(self, *args, **kwargs):
-    #     """
-    #     Reads header from the file
-    #
-    #     Parameters
-    #     ----------
-    #     hdu: int, optional
-    #         Specific hdu slot to be read
-    #     """
-    #     tp = self.type
-    #     hdu = kwargs.pop('hdu', self._hduh)
-    #
-    #     if not tp:
-    #         return False
-    #     return self._readhs[tp](self.filename, *args, hdu=hdu, **kwargs)
+    @_checkfilename
+    def readheader(self, *args, **kwargs):
+        """
+        Reads header from the file
+
+        Parameters
+        ----------
+        hdu: int, optional
+            Specific hdu slot to be read
+        """
+        tp = self.type
+        hdu = kwargs.pop('hdu', self._hduh)
+
+        if not tp:
+            return False
+        return self.header_cache
 
     @_checkfilename
     def writer(self, data, *args, **kwargs):
@@ -1189,7 +1110,15 @@ class AstroFile(object):
             composite = pf.ImageHDU(comp)
             composite.header.set('COMP', True)
             if read_only:
-                return dp.AstroFile(comp, header=composite.header)
+                self.filename = comp
+                self.type = self.checktype()
+                self.header_cache = composite.header
+                self._hduh = 0
+                self._hdud = 0
+                warnings.warn("Merged image stored in hdu 0 and previous info discarded as system was read-only",
+                              UserWarning,
+                              )
+
             else:
                 fit.append(composite)
                 fit.flush()
@@ -1227,7 +1156,7 @@ class AstroFile(object):
         else:
             raise NotImplementedError("Spectra not understood")
 
-        ax.plot(wav, flx)
+        ax.plot(wav, flx, *args, **kwargs)
 
 
 class AstroCalib(object):
