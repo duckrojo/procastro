@@ -799,25 +799,13 @@ class AstroFile(object):
         if data is None:  # File with no data / corrupt
             raise IOError(f"Empty or corrupt file {self.filename} or HDU {hdu}")
 
-        # Just print the HDUs if requested hdu=-1
-        # if hdu == -1:
-        #     return data
-        #
-        # if data is None:
-        #     raise ValueError("HDU {hdu} empty at file {file}?\n "
-        #                      "available: {hdus}"
-        #                      .format(hdu=hdu,
-        #                              file=self.filename,
-        #                              hdus=self.reader(hdu=-1)))
-
-        #
-        if ('hdu' in kwargs and kwargs['hdu'] < 0):
+        if 'hdu' in kwargs and kwargs['hdu'] < 0:
             raise ValueError("Invalid HDU specification ({hdu})"
                              "in file {file}?\n available: {hdus}"
                              .format(hdu=hdu,
                                      file=self.filename,
                                      hdus=self.reader(hdu=-1)))
-        if ('rawdata' in kwargs and kwargs['rawdata']):
+        if 'rawdata' in kwargs and kwargs['rawdata']:
             return data
 
         # transform into CCDData
@@ -1103,16 +1091,16 @@ class AstroFile(object):
                         dataset.append(mat)
                 else:
                     raise(TypeError,
-                          "Unable to merge hdu of type: "+type(fit[i]))
+                          "Unable to merge hdu of type: " + type(fit[i]))
 
             comp = np.concatenate(dataset, axis=1)
 
-            composite = pf.ImageHDU(comp)
+            composite = pf.ImageHDU(comp, header=fit[0].header)
             composite.header.set('COMP', True)
             if read_only:
                 self.filename = comp
                 self.type = self.checktype()
-                self.header_cache = composite.header
+                self.header_cache = [composite.header]
                 self._hduh = 0
                 self._hdud = 0
                 warnings.warn("Merged image stored in hdu 0 and previous info discarded as system was read-only",
