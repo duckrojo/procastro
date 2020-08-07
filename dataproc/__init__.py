@@ -25,12 +25,12 @@ Data proc docstring
 from . import astro
 from . import core
 from .core import *
-from . import timeseries
-from . import obsrv
+#from . import timeseries
+#from . import obsrv
 import logging as _log
 
 
-__all__ = ['astro', 'timeseries', 'obsrv', 'dplogger']
+__all__ = ['astro', 'dplogger']
 __all__ += core.__all__
 
 dplogger = _log.getLogger('dataproc')

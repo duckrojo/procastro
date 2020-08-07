@@ -22,7 +22,7 @@ from . import obscalc as ocalc
 
 import numpy as np
 import astropy.time as apt
-import ephem
+#import ephem
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon

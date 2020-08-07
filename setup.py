@@ -9,7 +9,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 # Package requirements
-requirements = ["astropy", "astroquery==0.3.10", "numpy", "scipy", "pyephem", "matplotlib"]
+requirements = ["astropy", "astroquery", "numpy", "scipy", "matplotlib"]
 
 # Setup script
 setup(
