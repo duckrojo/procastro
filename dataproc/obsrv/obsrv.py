@@ -334,28 +334,61 @@ class Obsrv(ocalc.ObsCalc):
         if 'plot_ax-elev2' in self.params:
             self.params['plot_ax-elev2'].cla()
 
-        moon = ephem.Moon()
-        obs = self._obs
-        altitude_limit = self.params['altitude_limit']
-        obs.date = jd - self.jd0 + self.days[0]
-        midday = obs.previous_transit(self._sun)
-        obs.date = midday
-        ss = obs.next_setting(self._sun)
-        sr = obs.next_rising(self._sun)
-        obs.horizon = '-18:00'
-        ts = obs.next_setting(self._sun)
-        tr = obs.next_rising(self._sun)
-        obs.horizon = '0:00'
-        hours = np.arange(ss-0.03, sr+0.03, 0.007)
+        loc = self._location
+        star_coords = self._target
 
-        moon_altitude = []
-        star_altitude = []
-        for h in hours:
-            obs.date = h
-            moon.compute(obs)
-            moon_altitude.append(moon.alt*180/np.pi)
-            self.star.compute(obs)
-            star_altitude.append(self.star.alt*180/np.pi)
+        with solar_system_ephemeris.set('builtin'):
+
+            n_hours = 50
+            previous_24 = jd - self.jd0 + self.days[0] - sp.arange(0, 1, 0.05)
+            ref_at_night = previous_24[0]
+            previous_midday_idx = np.argmax(apc.get_sun(
+                ref_at_night).transform_to(apc.AltAz(obstime=previous_24,
+                                                     location=loc)).alt)
+            the_24 = previous_24[previous_midday_idx] + sp.linspace(0,1,n_hours)
+
+            the_24_alt = apc.get_sun(
+                ref_at_night).transform_to(apc.AltAz(obstime=the_24,
+                                                     location=loc)).alt
+            twi_set_rise_twi_idx = [np.argmin(np.absolute(the_24_alt[:n_hours // 2])),
+                                    np.argmin(np.absolute((the_24_alt+18)[:n_hours // 2])),
+                                    np.argmin(np.absolute(the_24_alt[n_hours // 2:])) + n_hours // 2,
+                                    np.argmin(np.absolute((the_24_alt+18)[n_hours // 2:])) + n_hours // 2,
+                                    ]
+
+            hours = np.linspace(the_24[twi_set_rise_twi_idx[0]-0.01],
+                                the_24[twi_set_rise_twi_idx[3]+0.01],
+                                n_hours)
+
+#            hours = np.arange(ss - 0.03, sr + 0.03, 0.007)
+
+            moon_cords = apc.get_moon(hours, loc)
+            alt_moon = moon_coords.transform_to(apc.AltAz(obstime=hours, location=loc)).alt
+            alt_target = star_coords.transform_to(apc.AltAz(obstime=hours, location=loc)).alt
+
+
+        # moon = ephem.Moon()
+        # obs = self._obs
+        # altitude_limit = self.params['altitude_limit']
+        # obs.date = jd - self.jd0 + self.days[0]
+        # midday = obs.previous_transit(self._sun)
+        # obs.date = midday
+        # ss = obs.next_setting(self._sun)
+        # sr = obs.next_rising(self._sun)
+        # obs.horizon = '-18:00'
+        # ts = obs.next_setting(self._sun)
+        # tr = obs.next_rising(self._sun)
+        # obs.horizon = '0:00'
+        # hours = np.arange(ss-0.03, sr+0.03, 0.007)
+        #
+        # moon_altitude = []
+        # star_altitude = []
+        # for h in hours:
+        #     obs.date = h
+        #     moon.compute(obs)
+        #     moon_altitude.append(moon.alt*180/np.pi)
+        #     self.star.compute(obs)
+        #     star_altitude.append(self.star.alt*180/np.pi)
 
         et_out = np.fix(hours[0])+0.5
         ut_hours = (hours - et_out)*24
@@ -365,11 +398,13 @@ class Obsrv(ocalc.ObsCalc):
             self.params['plot_figure'].delaxes(self.params['plot_ax-elev2'])
         self.params['plot_ax-elev2'] = ax2
 
-        ax.plot(ut_hours, star_altitude)
-        ax.plot(ut_hours, moon_altitude, '--')
+        ax.plot(ut_hours, alt_target)
+        ax.plot(ut_hours, alt_moon, '--')
 
-        setev = np.array([ss, ss, ts, ts])
-        risev = np.array([sr, sr, tr, tr])
+        setev = np.array([the_24[twi_set_rise_twi_idx[0]]] * 2 +
+                         [the_24[twi_set_rise_twi_idx[1]]] * 2 )
+        risev = np.array([the_24[twi_set_rise_twi_idx[2]]] * 2 +
+                         [the_24[twi_set_rise_twi_idx[3]]] * 2 )
 
         ax.plot((setev - et_out)*24, [0, 90, 90, 0], 'k:')
         ax.plot((risev - et_out)*24, [0, 90, 90, 0], 'k:')

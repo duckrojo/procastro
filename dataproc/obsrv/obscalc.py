@@ -25,7 +25,7 @@ import astropy.time as apt
 import astropy.units as u
 import dataproc.astro as dpa
 import numpy as np
-import ephem
+# import ephem
 import os
 
 
@@ -100,23 +100,23 @@ class ObsCalc(object):
                  equinox="J2000",
                  **kwargs):
 
-        self._obs = ephem.Observer()
-        self._sun = ephem.Sun()
         if not hasattr(self, 'params'):
             self.params = {}
         self.params["equinox"] = equinox
         self.daily = {}
 
         # The following are attributes that will be initialized elsewhere
+        self._target = None
+        self._location = None
         self.jd0 = 0
         self.star = None
         self.transit_info = None
         self.airmass = None
         self.transits = None
-        self.days = []
         self.xlims = []
         self.ylims = []
-        self.hours = []
+        self.days = np.array([])
+        self.hours = np.array([])
         self.transit_hours = []
 
         self.set_site(site, **kwargs)
@@ -125,62 +125,64 @@ class ObsCalc(object):
         if target is not None:
             self.set_target(target, **kwargs)
 
-    def set_site(self, site,
-                 site_filename=None, **kwargs):
+    def set_site(self, site, **kwargs):
         """
-        Checks whether name's coordinate are known from a list or whether it
-        is a (lat, lon) tuple
+        Define name from list aailable from EarthLocation
 
         Parameters
         ----------
-        site_filename: string, optional
-            Filename storing site coordinates
         site: string ,optional
             Identifies the observatory as a name, or (lat, lon) tuple,
         """
+        # from astropy.coordinates import get_body_barycentric, get_body, get_moon, get_sun
+        # import astropy.coordinates as apc
+        #
+        # self._target =
 
-        obs = self._obs
-
-        if site_filename is None:
-            site_filename = os.path.dirname(__file__) + '/observatories.coo'
-
-        coordinates = {}
-        for line in open(site_filename, 'r').readlines():
-            field = line.split(',')
-            coordinates[field[0]] = (eval(field[1]), eval(field[2]))
-
-        if site is None:
-            return coordinates.keys()
-
-        if isinstance(site, str):
-            try:
-                lat_lon = coordinates[site]
-            except KeyError:
-                raise KeyError("site keyword is not defined. Valid values "
-                               "are " + ', '.join(coordinates) + '.')
-        elif isinstance(site, tuple) and len(site) == 2:
-            lat_lon = site
-        else:
-            raise TypeError(
-                "object can only be a 2-component tuple or a string")
+        self._location = apc.EarthLocation.of_site(site)
 
         # Parameters for user-friendly values
-        self.params["lat_lon"] = lat_lon
         self.params["site"] = site
         # fraction of day to move from UT to local midday
-        self.params["to_local_midday"] = 0.5-lat_lon[1]/360.0
+        self.params["to_local_midday"] = 0.5 - self._location.lat/360.0
 
-        # parameters in pyephem
-        obs.lon = str(lat_lon[1])
-        obs.lat = str(lat_lon[0])
-
-        obs.elevation = 0
-        epoch = str(self.params["equinox"])
-        if epoch[0] == 'J':
-            epoch = epoch[1:]
-        obs.epoch = epoch
-
-        print("Selected (lat, lon): %s" % (lat_lon,))
+        # obs = self._obs
+        #
+        # if site_filename is None:
+        #     site_filename = os.path.dirname(__file__) + '/observatories.coo'
+        #
+        # coordinates = {}
+        # for line in open(site_filename, 'r').readlines():
+        #     field = line.split(',')
+        #     coordinates[field[0]] = (eval(field[1]), eval(field[2]))
+        #
+        # if site is None:
+        #     return coordinates.keys()
+        #
+        # if isinstance(site, str):
+        #     try:
+        #         lat_lon = coordinates[site]
+        #     except KeyError:
+        #         raise KeyError("site keyword is not defined. Valid values "
+        #                        "are " + ', '.join(coordinates) + '.')
+        # elif isinstance(site, tuple) and len(site) == 2:
+        #     lat_lon = site
+        # else:
+        #     raise TypeError(
+        #         "object can only be a 2-component tuple or a string")
+        #
+        #
+        # # parameters in pyephem
+        # obs.lon = str(lat_lon[1])
+        # obs.lat = str(lat_lon[0])
+        #
+        # obs.elevation = 0
+        # epoch = str(self.params["equinox"])
+        # if epoch[0] == 'J':
+        #     epoch = epoch[1:]
+        # obs.epoch = epoch
+        #
+        print(f"Selected (lat, lon): {self._location.lat}, {self._location.lon}")
 
         return self
 
@@ -197,17 +199,25 @@ class ObsCalc(object):
         int, float :
             Distance and moon phase represented as percentage
         """
-        obs = self._obs
-        obs.date = date
-        self.star.compute(obs)
-        moon = ephem.Moon()
-        moon.compute(obs)
-        st = apc.SkyCoord(ra=self.star.ra*u.radian, dec=self.star.dec*u.radian,
-                          frame='icrs')
-        mn = apc.SkyCoord(ra=moon.ra*u.radian, dec=moon.dec*u.radian,
-                          frame='icrs')
-        dist = st.separation(mn)
-        return dist, moon.phase
+        moon = apc.get_moon(date, location=self._location)
+        # obs = self._obs
+        # obs.date = date
+        # self.star.compute(obs)
+        # moon = ephem.Moon()
+        # moon.compute(obs)
+        # st = apc.SkyCoord(ra=self.star.ra*u.radian, dec=self.star.dec*u.radian,
+        #                   frame='icrs')
+        # mn = apc.SkyCoord(ra=moon.ra*u.radian, dec=moon.dec*u.radian,
+        #                   frame='icrs')
+        separation = self._target.separation(moon)
+        sun = apc.get_sun(date)
+        sun_moon_dist = np.sqrt(sun.distance**2 + moon.distance**2
+                                - 2*sun.distance*moon.distance*np.cos(sun.separation(moon)))
+        cos_phase_angle = (moon.distance**2 + sun_moon_dist**2
+                           - sun.distance**2)/moon.distance/sun_moon_dist/2
+        illumination = 100*(1+cos_phase_angle)/2
+
+        return separation, illumination
         # return np.cos(self.star.dec)*np.cos(moon.dec) \
         #        * np.cos(self.star.ra-moon.ra) \
         #        + np.sin(self.star.dec)*np.sin(self.star.dec)
@@ -281,24 +291,37 @@ class ObsCalc(object):
         Compute sunsets and sunrises
 
         """
-        sunset = []
-        sunrise = []
-        twilight_set = []
-        twilight_rise = []
-        obs = self._obs
-        for day in self.days:
-            # sunrise/set calculated from local midday
-            obs.date = day + self.params["to_local_midday"]
-            sunset.append(obs.next_setting(self._sun)-day)
-            sunrise.append(obs.next_rising(self._sun)-day)
-            obs.horizon = '-18:00'
-            twilight_set.append(obs.next_setting(self._sun)-day)
-            twilight_rise.append(obs.next_rising(self._sun)-day)
-            obs.horizon = '0:00'
-        self.daily["sunrise"] = np.array(sunrise)
-        self.daily["twilight_rise"] = np.array(twilight_rise)
+
+        hours = self.params["to_local_midday"] + np.linspace(0, 1, 100)
+        the_24_365 = self.days + hours[:, np.newaxis]
+
+        half = len(self.hours)/2
+        suns = apc.get_sun(the_24_365).transform_to(apc.AltAz(obstime=the_24_365,
+                                                              location=self._location))
+        sunset = hours[np.argmax(np.absolute(suns.alt[:half]), axis=1)]
+        twilight_set = hours[np.argmax(np.absolute(suns.alt[:half]+18*u.deg), axis=1)]
+        twilight_rise = hours[half+np.argmax(np.absolute(suns.alt[half:]+18*u.deg), axis=1)]
+        sunrise = hours[half+np.argmax(np.absolute(suns.alt[half:]), axis=1)]
+
+        # sunset = []
+        # sunrise = []
+        # twilight_set = []
+        # twilight_rise = []
+        # obs = self._obs
+        # for day in self.days:
+        #     # sunrise/set calculated from local midday
+        #     obs.date = day + self.params["to_local_midday"]
+        #     sunset.append(obs.next_setting(self._sun)-day)
+        #     sunrise.append(obs.next_rising(self._sun)-day)
+        #     obs.horizon = '-18:00'
+        #     twilight_set.append(obs.next_setting(self._sun)-day)
+        #     twilight_rise.append(obs.next_rising(self._sun)-day)
+        #     obs.horizon = '0:00'
+
         self.daily["sunset"] = np.array(sunset)
         self.daily["twilight_set"] = np.array(twilight_set)
+        self.daily["twilight_rise"] = np.array(twilight_rise)
+        self.daily["sunrise"] = np.array(sunrise)
 
         return self
 
@@ -357,20 +380,13 @@ class ObsCalc(object):
         paths = [os.path.dirname(__file__)+'/coo.txt',
                  os.path.expanduser("~")+'/.coostars'
                  ]
-        ra_dec = dpa.read_coordinates(target,
-                                      coo_files=paths,
-                                      equinox=self.params["equinox"])
+        self._target = dpa.read_coordinates(target,
+                                            coo_files=paths,
+                                            equinox=self.params["equinox"])
 
         print("Star at RA/DEC: {0:s}/{1:s}"
-              .format(ra_dec.ra.to_string(sep=':'),
-                      ra_dec.dec.to_string(sep=':')))
-
-        epoch = float(ra_dec.equinox.value[1:])
-        self.star = ephem.readdb("{0:s},f,{1:s},{2:s},{3:.2f}, {4:f}".format(
-                                  star_name,
-                                  ra_dec.ra.to_string(sep=':', unit=u.hour),
-                                  ra_dec.dec.to_string(sep=':'),
-                                  magnitude, epoch))
+              .format(self._target.ra.to_string(sep=':'),
+                      self._target.dec.to_string(sep=':')))
 
         transit_epoch, transit_period, transit_length = \
             dpa.get_transit_ephemeris(target, os.path.dirname(__file__))
@@ -460,29 +476,33 @@ class ObsCalc(object):
 
         return self
 
-    def _get_airmass(self, max_airmass=3.0, **kwargs):
+    def _get_airmass(self):
         """
         Get airmass
 
         Parameters
         ----------
-        max_airmass : float, optional
         """
-        obs = self._obs
+        # obs = self._obs
         hours = self.hours
+        days = self.days
 
-        airmass = []
-        for d in self.days:
-            alts = []
-            for h in hours:
-                obs.date = d+h/24.0
-                self.star.compute(obs)
-                alts.append(self.star.alt)
+        times = days + hours[:, np.newaxis]
+        self.airmass = self._target.transform_to(apc.AltAz(obstime=times,
+                                                           location=self._location)).secz
 
-            cosz = np.sin(np.array(alts))
-            cosz[cosz < (1.0 / max_airmass)] = 1.0 / max_airmass
-            airmass.append(1.0/cosz)
-
-        self.airmass = np.array(airmass).transpose()
+        # airmass = []
+        # for d in self.days:
+        #     alts = []
+        #     for h in hours:
+        #         obs.date = d+h/24.0
+        #         self.star.compute(obs)
+        #         alts.append(self.star.alt)
+        #
+        #     cosz = np.sin(np.array(alts))
+        #     cosz[cosz < (1.0 / max_airmass)] = 1.0 / max_airmass
+        #     airmass.append(1.0/cosz)
+        #
+        # self.airmass = np.array(airmass).transpose()
 
         return self
