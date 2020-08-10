@@ -202,7 +202,7 @@ class Obsrv(ocalc.ObsCalc):
 
     def _plot_airmass(self, ax):
         ams = np.arange(1, 3.01, 0.1)
-        self.params["plot_airmass"] = ax.contourf(self.days-self.days[0],
+        self.params["plot_airmass"] = ax.contourf(self.days.jd-self.days[0].jd,
                                                   self.hours,
                                                   np.array(self.airmass),
                                                   levels=ams,
@@ -216,7 +216,7 @@ class Obsrv(ocalc.ObsCalc):
         ----------
         ax : matplotlib.pyplot.axes
         """
-        sx = self.days-self.days[0]
+        sx = self.days.jd-self.days[0].jd
         _plot_poly(ax, sx, self.daily["twilight_set"], self.daily["sunset"])
         _plot_poly(ax, sx, self.daily["sunrise"], self.daily["twilight_rise"])
 
@@ -231,23 +231,33 @@ class Obsrv(ocalc.ObsCalc):
 
         month_length = np.array([31, 28, 31, 30, 31, 30,
                                  31, 31, 30, 31, 30, 31])
-        cum = month_length.copy()
-        for i in range(len(month_length))[1:]:
-            cum[i:] += month_length[:-i]
-        month_cumulative = np.array(list(zip(cum, cum))).flatten()
-        vertical_lims = list(ax.get_ylim())
-        vertical_lims = (vertical_lims + vertical_lims[::-1])*6
-
-        tm = apt.Time((self.days[0] + 2415020), format='jd')
+        tm = self.days[0]
         y, m, d, _, _, _ = tm.ymdhms
+        cum -= d - 1
+        m -= 1
 
-        jan1 = self.days[0]-((m-1 != 0)*cum[m-2]+d-1)
-        ax.plot(self.days[0]-jan1 + month_cumulative, vertical_lims, 'y--')
-        ny = (self.days[-1]-jan1)//365
+        while cum < self.xlims[1]:
+            ax.axvspan(cum, fmt='y--')
+            cum += month_length[m % 12]
+            m += 1
 
-        for i in range(int(ny)):
-            ax.plot(i*365+self.days[0]-jan1+month_cumulative,
-                    vertical_lims, 'y--')
+        # cum = month_length.copy()
+        # for i in range(len(month_length))[1:]:
+        #     cum[i:] += month_length[:-i]
+        # month_cumulative = np.array(list(zip(cum, cum))).flatten()
+        # vertical_lims = list(ax.get_ylim())
+        # vertical_lims = (vertical_lims + vertical_lims[::-1])*6
+        #
+        # tm = apt.Time((self.days[0] + 2415020), format='jd')
+        # y, m, d, _, _, _ = tm.ymdhms
+        #
+        # jan1 = self.days[0]-((m-1 != 0)*cum[m-2]+d-1)
+        # ax.plot(self.days[0]-jan1 + month_cumulative, vertical_lims, 'y--')
+        # ny = (self.days[-1]-jan1)//365
+        #
+        # for i in range(int(ny)):
+        #     ax.plot(i*365+self.days[0]-jan1+month_cumulative,
+        #             vertical_lims, 'y--')
         return self
 
     def _plot_transits(self, ax):
@@ -256,7 +266,8 @@ class Obsrv(ocalc.ObsCalc):
         ----------
         ax : matplotlib.pyplot.axes
         """
-        x = self.transits-self.jd0
+#        x = self.transits-self.jd0
+        x = self.transits-self.days[0].jd
         y = self.transit_hours
         half_length = self.transit_info['length']/2
 
@@ -270,8 +281,8 @@ class Obsrv(ocalc.ObsCalc):
         ax : matplotlib.pyplot.axes
         """
         ax.set_title(title)
-        days = apt.Time((self.days[0] + 2415020), format='jd').strftime('%Y.%m.%d')
-        ax.set_xlabel(f"Days from {days}"
+#        days = apt.Time((self.days[0] + 2415020), format='jd').strftime('%Y.%m.%d')
+        ax.set_xlabel(f"Days from {self.days[0].isot[0:10]}"
                       f" (Site: {self.params['site']})")
         ax.set_ylabel(f'Time (UT). Target: {self.params["target"]}.'
                       f' Offset: {self.transit_info["offset"]:.2f}')
@@ -320,9 +331,9 @@ class Obsrv(ocalc.ObsCalc):
 
         dist = []
         for htr, dtr in zip(self.transit_hours, self.transits):
-            dist.append(np.sqrt(((cd+self.jd0-dtr)*xy_ratio/dx)**2
+            dist.append(np.sqrt(((cd+self.days[0].jd-dtr)*xy_ratio/dx)**2
                         + ((ch-htr)/dy)**2))
-            dist.append(np.sqrt(((cd+self.jd0-dtr)*xy_ratio/dx)**2
+            dist.append(np.sqrt(((cd+self.days[0].jd-dtr)*xy_ratio/dx)**2
                         + ((ch-(htr-24))/dy)**2))
         return np.array(list(zip(self.transits,
                                  self.transits))).flatten()[np.argmin(dist)]
@@ -340,7 +351,7 @@ class Obsrv(ocalc.ObsCalc):
         with solar_system_ephemeris.set('builtin'):
 
             n_hours = 50
-            previous_24 = jd - self.jd0 + self.days[0] - sp.arange(0, 1, 0.05)
+            previous_24 = apt.Time(jd, format='jd') - sp.arange(0, 1, 0.05)
             ref_at_night = previous_24[0]
             previous_midday_idx = np.argmax(apc.get_sun(
                 ref_at_night).transform_to(apc.AltAz(obstime=previous_24,
@@ -351,9 +362,9 @@ class Obsrv(ocalc.ObsCalc):
                 ref_at_night).transform_to(apc.AltAz(obstime=the_24,
                                                      location=loc)).alt
             twi_set_rise_twi_idx = [np.argmin(np.absolute(the_24_alt[:n_hours // 2])),
-                                    np.argmin(np.absolute((the_24_alt+18)[:n_hours // 2])),
+                                    np.argmin(np.absolute((the_24_alt+18*u.deg)[:n_hours // 2])),
                                     np.argmin(np.absolute(the_24_alt[n_hours // 2:])) + n_hours // 2,
-                                    np.argmin(np.absolute((the_24_alt+18)[n_hours // 2:])) + n_hours // 2,
+                                    np.argmin(np.absolute((the_24_alt+18*u.deg)[n_hours // 2:])) + n_hours // 2,
                                     ]
 
             hours = np.linspace(the_24[twi_set_rise_twi_idx[0]-0.01],
@@ -412,8 +423,8 @@ class Obsrv(ocalc.ObsCalc):
         ax.set_ylim([10, 90])
         ax.set_xlim([(ss-et_out)*24-0.5, (sr-et_out)*24+0.5])
 
-        tm = apt.Time(jd-self.jd0+self.days[0]+2415020.0, format = 'jd')
-        datetime = tm.iso.replace("-","/")
+        tm = apt.Time(jd, format='jd')
+        datetime = tm.iso.replace("-", "/")
 
         phase_info = f"phase {self.transit_info['offset']}: " if self.transit_info['offset'] != 0.0 else ""
         print("{0:s}{1:s} {2:f}".format(phase_info, str(datetime)[:-3], jd))
@@ -433,9 +444,9 @@ class Obsrv(ocalc.ObsCalc):
                       f'{float(self.params["current_moon_phase"]):.0f}%')
 
         if hasattr(self, 'transits'):
-            enter_transit = ((jd-self.jd0+self.days[0]-et_out)*24
+            enter_transit = ((jd-et_out)*24
                              - self.transit_info['length']/2)
-            exit_transit = ((jd-self.jd0+self.days[0]-et_out)*24
+            exit_transit = ((jd-et_out)*24
                             + self.transit_info['length']/2)
             if enter_transit > exit_transit:
                 exit_transit += 24
@@ -457,7 +468,7 @@ class Obsrv(ocalc.ObsCalc):
         axa = self.params["plot_ax-airmass"]
 
         if event.key == 'e' and event.inaxes == axa:  # at position
-            self._plot_night(event.xdata + self.jd0, axe)
+            self._plot_night(event.xdata + self.days[0].jd, axe)
         # Save file at no transit or transit if it has been set before
         elif event.key == 'P':
             target_no_space = self.params['target'].replace(' ', '_')

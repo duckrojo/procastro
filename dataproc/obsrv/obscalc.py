@@ -17,7 +17,7 @@
 # Boston, MA  02110-1301, USA.
 #
 #
-
+import warnings
 from urllib.error import URLError
 from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
 import astropy.coordinates as apc
@@ -108,7 +108,6 @@ class ObsCalc(object):
         # The following are attributes that will be initialized elsewhere
         self._target = None
         self._location = None
-        self.jd0 = 0
         self.star = None
         self.transit_info = None
         self.airmass = None
@@ -134,54 +133,14 @@ class ObsCalc(object):
         site: string ,optional
             Identifies the observatory as a name, or (lat, lon) tuple,
         """
-        # from astropy.coordinates import get_body_barycentric, get_body, get_moon, get_sun
-        # import astropy.coordinates as apc
-        #
-        # self._target =
 
         self._location = apc.EarthLocation.of_site(site)
 
         # Parameters for user-friendly values
         self.params["site"] = site
         # fraction of day to move from UT to local midday
-        self.params["to_local_midday"] = 0.5 - self._location.lat/360.0
+        self.params["to_local_midday"] = 0.5 - self._location.lat/(360.0*u.deg)
 
-        # obs = self._obs
-        #
-        # if site_filename is None:
-        #     site_filename = os.path.dirname(__file__) + '/observatories.coo'
-        #
-        # coordinates = {}
-        # for line in open(site_filename, 'r').readlines():
-        #     field = line.split(',')
-        #     coordinates[field[0]] = (eval(field[1]), eval(field[2]))
-        #
-        # if site is None:
-        #     return coordinates.keys()
-        #
-        # if isinstance(site, str):
-        #     try:
-        #         lat_lon = coordinates[site]
-        #     except KeyError:
-        #         raise KeyError("site keyword is not defined. Valid values "
-        #                        "are " + ', '.join(coordinates) + '.')
-        # elif isinstance(site, tuple) and len(site) == 2:
-        #     lat_lon = site
-        # else:
-        #     raise TypeError(
-        #         "object can only be a 2-component tuple or a string")
-        #
-        #
-        # # parameters in pyephem
-        # obs.lon = str(lat_lon[1])
-        # obs.lat = str(lat_lon[0])
-        #
-        # obs.elevation = 0
-        # epoch = str(self.params["equinox"])
-        # if epoch[0] == 'J':
-        #     epoch = epoch[1:]
-        # obs.epoch = epoch
-        #
         print(f"Selected (lat, lon): {self._location.lat}, {self._location.lon}")
 
         return self
@@ -200,15 +159,7 @@ class ObsCalc(object):
             Distance and moon phase represented as percentage
         """
         moon = apc.get_moon(date, location=self._location)
-        # obs = self._obs
-        # obs.date = date
-        # self.star.compute(obs)
-        # moon = ephem.Moon()
-        # moon.compute(obs)
-        # st = apc.SkyCoord(ra=self.star.ra*u.radian, dec=self.star.dec*u.radian,
-        #                   frame='icrs')
-        # mn = apc.SkyCoord(ra=moon.ra*u.radian, dec=moon.dec*u.radian,
-        #                   frame='icrs')
+
         separation = self._target.separation(moon)
         sun = apc.get_sun(date)
         sun_moon_dist = np.sqrt(sun.distance**2 + moon.distance**2
@@ -218,9 +169,6 @@ class ObsCalc(object):
         illumination = 100*(1+cos_phase_angle)/2
 
         return separation, illumination
-        # return np.cos(self.star.dec)*np.cos(moon.dec) \
-        #        * np.cos(self.star.ra-moon.ra) \
-        #        + np.sin(self.star.dec)*np.sin(self.star.dec)
 
     @_update_airmass
     @_update_transits
@@ -270,16 +218,8 @@ class ObsCalc(object):
                 "yet. Currently supported: * single "
                 "integer (year)".format(timespan,))
 
-        # ephem used the Dublin JD calendar
-        ed0 = t0.jd - 2415020
-        ed1 = t1.jd - 2415020
-
-        ed = np.arange(ed0, ed1, int((ed1 - ed0) / samples))
-        xlims = [ed[0] - ed0, ed[-1] - ed0]
-
-        self.jd0 = t0.jd
-        self.days = ed
-        self.xlims = xlims
+        self.days = np.linspace(t0, t1, samples)
+        self.xlims = [0,(t1 - t0).to(u.day).value]
 
         self._get_sun_set_rise(**kwargs)
         self.set_vertical(central_time)
@@ -293,30 +233,15 @@ class ObsCalc(object):
         """
 
         hours = self.params["to_local_midday"] + np.linspace(0, 1, 100)
-        the_24_365 = self.days + hours[:, np.newaxis]
+        the_24_365 = (self.days + hours[:, np.newaxis]).value
 
-        half = len(self.hours)/2
+        half = len(hours)/2
         suns = apc.get_sun(the_24_365).transform_to(apc.AltAz(obstime=the_24_365,
                                                               location=self._location))
         sunset = hours[np.argmax(np.absolute(suns.alt[:half]), axis=1)]
         twilight_set = hours[np.argmax(np.absolute(suns.alt[:half]+18*u.deg), axis=1)]
         twilight_rise = hours[half+np.argmax(np.absolute(suns.alt[half:]+18*u.deg), axis=1)]
         sunrise = hours[half+np.argmax(np.absolute(suns.alt[half:]), axis=1)]
-
-        # sunset = []
-        # sunrise = []
-        # twilight_set = []
-        # twilight_rise = []
-        # obs = self._obs
-        # for day in self.days:
-        #     # sunrise/set calculated from local midday
-        #     obs.date = day + self.params["to_local_midday"]
-        #     sunset.append(obs.next_setting(self._sun)-day)
-        #     sunrise.append(obs.next_rising(self._sun)-day)
-        #     obs.horizon = '-18:00'
-        #     twilight_set.append(obs.next_setting(self._sun)-day)
-        #     twilight_rise.append(obs.next_rising(self._sun)-day)
-        #     obs.horizon = '0:00'
 
         self.daily["sunset"] = np.array(sunset)
         self.daily["twilight_set"] = np.array(twilight_set)
@@ -463,16 +388,16 @@ class ObsCalc(object):
         if tr_epoch is None:
             tr_epoch = self.transit_info['epoch']
 
-        jd0 = self.jd0
-        jd1 = self.days[-1] + 2415020   # Dublin JD conversion
+        jd0 = self.days[0].jd
+        jd1 = self.days[-1].jd
         n_transits = int((jd1-jd0)/tr_period)+2
         tr1 = tr_epoch+tr_period*int((jd0-tr_epoch)/tr_period+0.9)
         self.transits = tr1+np.arange(n_transits)*tr_period
         self.transit_hours = (self.transits-(np.fix(self.transits-0.5)+0.5))*24
 
         if jd0 < tr_epoch:
-            print("WARNING: Reference transit epoch is in the future."
-                  "Are you certain that you are using JD?")
+            warnings.warn("WARNING: Reference transit epoch is in the future."
+                          "Are you certain that you are using JD?", UserWarning)
 
         return self
 
@@ -490,19 +415,5 @@ class ObsCalc(object):
         times = days + hours[:, np.newaxis]
         self.airmass = self._target.transform_to(apc.AltAz(obstime=times,
                                                            location=self._location)).secz
-
-        # airmass = []
-        # for d in self.days:
-        #     alts = []
-        #     for h in hours:
-        #         obs.date = d+h/24.0
-        #         self.star.compute(obs)
-        #         alts.append(self.star.alt)
-        #
-        #     cosz = np.sin(np.array(alts))
-        #     cosz[cosz < (1.0 / max_airmass)] = 1.0 / max_airmass
-        #     airmass.append(1.0/cosz)
-        #
-        # self.airmass = np.array(airmass).transpose()
 
         return self
