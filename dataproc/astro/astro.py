@@ -118,7 +118,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                     break
         # if coordinate not in file
         else:
-            print(" '{0:s}' not understood as coordinates, attempting query"
+            print(" '{0:s}' not understood as coordinates, attempting query "
                   "as name... ".format(target,), end='')
             if aqs is None:
                 raise ValueError(
@@ -142,7 +142,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
         ra_dec = apcoo.SkyCoord('{0:s} {1:s}'.format(ra, dec),
                                 unit=(apu.hour, apu.degree),
                                 equinox=equinox)
-        print("success! {})".format(ra_dec,))
+        print("success! \n  {})".format(ra_dec,))
 
     if return_pm:
         return ra_dec, pm_ra, pm_dec
@@ -184,9 +184,9 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
     ValueError
         If a data field does not match the specified format
     """
-    paths = [os.path.expanduser("~")+'/.transits',
-             os.path.expanduser("~") + '/.config/obsrv/transits',
-             dir+'/transits.txt',
+    paths = [os.path.expanduser("~") + os.path.sep+'.transits',
+             os.path.expanduser("~") + os.path.sep.join(['', '.config', 'obsrv', 'transits']),
+             dir + os.path.sep + 'transits.txt',
              ]
 
     tr_epoch = None
@@ -220,10 +220,10 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
                             raise ValueError("data field not understood, it "
                                              "must start with L, P, C, "
                                              "or E:\n{0:s}".format(line,))
-                    print("Overriding for '%s' from file '{0:s}':\n "
-                          "{1:s}".format(planet,
-                                         transit_filename,
-                                         ', '.join(override),))
+                    print("Overriding for '{:s}' from file '{:s}': "
+                          "{:s}".format(planet,
+                                        transit_filename,
+                                        ', '.join(override),))
 
                 if len(override):
                     break
