@@ -25,14 +25,13 @@ import astropy.time as apt
 import astropy.units as u
 import dataproc.astro as dpa
 import numpy as np
-# import ephem
 import os
 
 
 def _update_airmass(func):
     def wrapper_airmass(self, *args, **kwargs):
         ret = func(self, *args, **kwargs)
-        if self.star is not None:
+        if self._target is not None:
             self._get_airmass()
 
         return ret
@@ -114,7 +113,7 @@ class ObsCalc(object):
         self.transits = None
         self.xlims = []
         self.ylims = []
-        self.days = np.array([])
+        self.days = apt.Time.now()
         self.hours = np.array([])
         self.transit_hours = []
 
@@ -139,7 +138,7 @@ class ObsCalc(object):
         # Parameters for user-friendly values
         self.params["site"] = site
         # fraction of day to move from UT to local midday
-        self.params["to_local_midday"] = 0.5 - self._location.lat/(360.0*u.deg)
+        self.params["to_local_midday"] = 0.5 - self._location.lon/(360.0*u.deg)
 
         print(f"Selected (lat, lon): {self._location.lat}, {self._location.lon}")
 
@@ -158,21 +157,22 @@ class ObsCalc(object):
         int, float :
             Distance and moon phase represented as percentage
         """
-        moon = apc.get_moon(date, location=self._location)
+        with apc.solar_system_ephemeris.set('builtin'):
+            moon = apc.get_moon(date, location=self._location)
+            sun = apc.get_sun(date)
 
         separation = self._target.separation(moon)
-        sun = apc.get_sun(date)
-        sun_moon_dist = np.sqrt(sun.distance**2 + moon.distance**2
-                                - 2*sun.distance*moon.distance*np.cos(sun.separation(moon)))
-        cos_phase_angle = (moon.distance**2 + sun_moon_dist**2
-                           - sun.distance**2)/moon.distance/sun_moon_dist/2
+        sun_moon_dist = np.sqrt(sun.distance**2 + moon.distance**2 -
+                                2*sun.distance*moon.distance*np.cos(sun.separation(moon)))
+        cos_phase_angle = (moon.distance**2 + sun_moon_dist**2 -
+                           sun.distance**2)/moon.distance/sun_moon_dist/2
         illumination = 100*(1+cos_phase_angle)/2
 
         return separation, illumination
 
     @_update_airmass
     @_update_transits
-    def set_timespan(self, timespan, samples=60,
+    def set_timespan(self, timespan, samples=120,
                      central_time=25,
                      **kwargs):
         """
@@ -218,30 +218,39 @@ class ObsCalc(object):
                 "yet. Currently supported: * single "
                 "integer (year)".format(timespan,))
 
-        self.days = np.linspace(t0, t1, samples)
-        self.xlims = [0,(t1 - t0).to(u.day).value]
+        dt = (t1 - t0)/(samples-1)
+        dt = int(dt.to(u.day).value + 0.5)
+        self.days = t0 + dt*u.day*np.arange(samples)
+        self.xlims = [0, (t1 - t0).to(u.day).value]
 
         self._get_sun_set_rise(**kwargs)
         self.set_vertical(central_time)
 
         return self
 
-    def _get_sun_set_rise(self, **kwargs):
+    def _get_sun_set_rise(self, nhours=40, **kwargs):
         """
         Compute sunsets and sunrises
 
         """
 
-        hours = self.params["to_local_midday"] + np.linspace(0, 1, 100)
-        the_24_365 = (self.days + hours[:, np.newaxis]).value
+        hours = self.params["to_local_midday"] + np.linspace(-1, 0, nhours)
+        the_24_365 = apt.Time((self.days.jd + hours[:, np.newaxis]).value, format='jd')
 
-        half = len(hours)/2
-        suns = apc.get_sun(the_24_365).transform_to(apc.AltAz(obstime=the_24_365,
-                                                              location=self._location))
-        sunset = hours[np.argmax(np.absolute(suns.alt[:half]), axis=1)]
-        twilight_set = hours[np.argmax(np.absolute(suns.alt[:half]+18*u.deg), axis=1)]
-        twilight_rise = hours[half+np.argmax(np.absolute(suns.alt[half:]+18*u.deg), axis=1)]
-        sunrise = hours[half+np.argmax(np.absolute(suns.alt[half:]), axis=1)]
+        half = len(hours)//2
+        with apc.solar_system_ephemeris.set('builtin'):
+            suns = apc.get_sun(the_24_365).transform_to(apc.AltAz(obstime=the_24_365,
+                                                                  location=self._location))
+
+        first_half = np.flip(np.array(suns.alt[:half, :]).transpose(), axis=1)
+        first_hours = np.flip(hours[:half])
+        sunset = np.array([np.interp(0, alts, first_hours) for alts in first_half])
+        twilight_set = np.array([np.interp(-18, alts, first_hours) for alts in first_half])
+
+        second_half = np.array(suns.alt[half:, :]).transpose()
+        second_hours = hours[half:]
+        sunrise = np.array([np.interp(0, alts, second_hours) for alts in second_half])
+        twilight_rise = np.array([np.interp(-18, alts, second_hours) for alts in second_half])
 
         self.daily["sunset"] = np.array(sunset)
         self.daily["twilight_set"] = np.array(twilight_set)
@@ -266,7 +275,7 @@ class ObsCalc(object):
             ylims = [min(self.daily["sunset"])*24-0.5,
                      max(self.daily["sunrise"])*24+0.5
                      ]
-            self.hours = np.arange(ylims[0], ylims[1], hour_step)
+            self.hours = np.arange(ylims[0], ylims[1], hour_step)*u.hour
             self.ylims = ylims
         else:
             raise NotImplementedError(
@@ -413,7 +422,9 @@ class ObsCalc(object):
         days = self.days
 
         times = days + hours[:, np.newaxis]
+
         self.airmass = self._target.transform_to(apc.AltAz(obstime=times,
                                                            location=self._location)).secz
+        self.airmass[self.airmass < 0] = 100
 
         return self

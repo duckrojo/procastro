@@ -22,6 +22,8 @@ from . import obscalc as ocalc
 
 import numpy as np
 import astropy.time as apt
+import astropy.coordinates as apc
+import astropy.units as u
 #import ephem
 
 import matplotlib.pyplot as plt
@@ -206,7 +208,8 @@ class Obsrv(ocalc.ObsCalc):
                                                   self.hours,
                                                   np.array(self.airmass),
                                                   levels=ams,
-                                                  cmap=cm.jet_r)
+                                                  cmap=cm.jet_r,
+                                                  extend="max")
 
     def _plot_twilight(self, ax):
         """
@@ -233,31 +236,14 @@ class Obsrv(ocalc.ObsCalc):
                                  31, 31, 30, 31, 30, 31])
         tm = self.days[0]
         y, m, d, _, _, _ = tm.ymdhms
-        cum -= d - 1
+        cum = -(d - 1)
         m -= 1
 
         while cum < self.xlims[1]:
-            ax.axvspan(cum, fmt='y--')
+            ax.axvline(cum, ls='--', color='yellow')
             cum += month_length[m % 12]
             m += 1
 
-        # cum = month_length.copy()
-        # for i in range(len(month_length))[1:]:
-        #     cum[i:] += month_length[:-i]
-        # month_cumulative = np.array(list(zip(cum, cum))).flatten()
-        # vertical_lims = list(ax.get_ylim())
-        # vertical_lims = (vertical_lims + vertical_lims[::-1])*6
-        #
-        # tm = apt.Time((self.days[0] + 2415020), format='jd')
-        # y, m, d, _, _, _ = tm.ymdhms
-        #
-        # jan1 = self.days[0]-((m-1 != 0)*cum[m-2]+d-1)
-        # ax.plot(self.days[0]-jan1 + month_cumulative, vertical_lims, 'y--')
-        # ny = (self.days[-1]-jan1)//365
-        #
-        # for i in range(int(ny)):
-        #     ax.plot(i*365+self.days[0]-jan1+month_cumulative,
-        #             vertical_lims, 'y--')
         return self
 
     def _plot_transits(self, ax):
@@ -266,7 +252,6 @@ class Obsrv(ocalc.ObsCalc):
         ----------
         ax : matplotlib.pyplot.axes
         """
-#        x = self.transits-self.jd0
         x = self.transits-self.days[0].jd
         y = self.transit_hours
         half_length = self.transit_info['length']/2
@@ -348,61 +333,35 @@ class Obsrv(ocalc.ObsCalc):
         loc = self._location
         star_coords = self._target
 
-        with solar_system_ephemeris.set('builtin'):
+        with apc.solar_system_ephemeris.set('builtin'):
 
             n_hours = 50
-            previous_24 = apt.Time(jd, format='jd') - sp.arange(0, 1, 0.05)
+            previous_24 = apt.Time(jd, format='jd') - np.arange(0, 1, 0.05)
             ref_at_night = previous_24[0]
             previous_midday_idx = np.argmax(apc.get_sun(
                 ref_at_night).transform_to(apc.AltAz(obstime=previous_24,
                                                      location=loc)).alt)
-            the_24 = previous_24[previous_midday_idx] + sp.linspace(0,1,n_hours)
+            the_24 = previous_24[previous_midday_idx] + np.linspace(0, 1, n_hours)
 
             the_24_alt = apc.get_sun(
                 ref_at_night).transform_to(apc.AltAz(obstime=the_24,
                                                      location=loc)).alt
             twi_set_rise_twi_idx = [np.argmin(np.absolute(the_24_alt[:n_hours // 2])),
                                     np.argmin(np.absolute((the_24_alt+18*u.deg)[:n_hours // 2])),
-                                    np.argmin(np.absolute(the_24_alt[n_hours // 2:])) + n_hours // 2,
                                     np.argmin(np.absolute((the_24_alt+18*u.deg)[n_hours // 2:])) + n_hours // 2,
+                                    np.argmin(np.absolute(the_24_alt[n_hours // 2:])) + n_hours // 2,
                                     ]
 
-            hours = np.linspace(the_24[twi_set_rise_twi_idx[0]-0.01],
-                                the_24[twi_set_rise_twi_idx[3]+0.01],
-                                n_hours)
+            night_span = the_24[twi_set_rise_twi_idx[3]] - the_24[twi_set_rise_twi_idx[0]]
+            delta = 1.1*night_span / (n_hours - 1)
+            hours = the_24[twi_set_rise_twi_idx[0]] - 0.05*night_span + delta*np.arange(n_hours)
 
-#            hours = np.arange(ss - 0.03, sr + 0.03, 0.007)
-
-            moon_cords = apc.get_moon(hours, loc)
+            moon_coords = apc.get_moon(hours, loc)
             alt_moon = moon_coords.transform_to(apc.AltAz(obstime=hours, location=loc)).alt
             alt_target = star_coords.transform_to(apc.AltAz(obstime=hours, location=loc)).alt
 
-
-        # moon = ephem.Moon()
-        # obs = self._obs
-        # altitude_limit = self.params['altitude_limit']
-        # obs.date = jd - self.jd0 + self.days[0]
-        # midday = obs.previous_transit(self._sun)
-        # obs.date = midday
-        # ss = obs.next_setting(self._sun)
-        # sr = obs.next_rising(self._sun)
-        # obs.horizon = '-18:00'
-        # ts = obs.next_setting(self._sun)
-        # tr = obs.next_rising(self._sun)
-        # obs.horizon = '0:00'
-        # hours = np.arange(ss-0.03, sr+0.03, 0.007)
-        #
-        # moon_altitude = []
-        # star_altitude = []
-        # for h in hours:
-        #     obs.date = h
-        #     moon.compute(obs)
-        #     moon_altitude.append(moon.alt*180/np.pi)
-        #     self.star.compute(obs)
-        #     star_altitude.append(self.star.alt*180/np.pi)
-
-        et_out = np.fix(hours[0])+0.5
-        ut_hours = (hours - et_out)*24
+        et_out = np.fix(hours[0].jd)+0.5
+        ut_hours = 24*(hours.jd - et_out)
 
         ax2 = ax.twinx()
         if 'plot_ax-elev2' in self.params:
@@ -412,16 +371,17 @@ class Obsrv(ocalc.ObsCalc):
         ax.plot(ut_hours, alt_target)
         ax.plot(ut_hours, alt_moon, '--')
 
-        setev = np.array([the_24[twi_set_rise_twi_idx[0]]] * 2 +
-                         [the_24[twi_set_rise_twi_idx[1]]] * 2 )
-        risev = np.array([the_24[twi_set_rise_twi_idx[2]]] * 2 +
-                         [the_24[twi_set_rise_twi_idx[3]]] * 2 )
+        setev = np.array([the_24[twi_set_rise_twi_idx[0]].jd] * 2 +
+                         [the_24[twi_set_rise_twi_idx[1]].jd] * 2)
+        risev = np.array([the_24[twi_set_rise_twi_idx[2]].jd] * 2 +
+                         [the_24[twi_set_rise_twi_idx[3]].jd] * 2)
+        altitude_limit = self.params['altitude_limit']
 
         ax.plot((setev - et_out)*24, [0, 90, 90, 0], 'k:')
         ax.plot((risev - et_out)*24, [0, 90, 90, 0], 'k:')
         ax.plot([ut_hours[0], ut_hours[-1]], [altitude_limit]*2, 'k:')
         ax.set_ylim([10, 90])
-        ax.set_xlim([(ss-et_out)*24-0.5, (sr-et_out)*24+0.5])
+        ax.set_xlim(ut_hours[[0, -1]])
 
         tm = apt.Time(jd, format='jd')
         datetime = tm.iso.replace("-", "/")
@@ -435,7 +395,7 @@ class Obsrv(ocalc.ObsCalc):
         ax2.set_yticks(np.arcsin(1.0/sam)*180.0/np.pi)
         ax2.set_yticklabels(sam)
         self.params['current_transit'] = str(datetime).replace(' ', '_')
-        self.params['current_moon_distance'], self.params['current_moon_phase'] = self._moon_distance(datetime)
+        self.params['current_moon_distance'], self.params['current_moon_phase'] = self._moon_distance(tm)
         percent = 0  # todo: ts<np.array(ut_hours)<tr
 
         ax.set_ylabel(f'Elevation ({percent}% inside twilight and {altitude_limit}${{^\\degree}}$)')
@@ -473,34 +433,28 @@ class Obsrv(ocalc.ObsCalc):
         elif event.key == 'P':
             target_no_space = self.params['target'].replace(' ', '_')
             if 'current_transit' in self.params:
-                current_transit = self.params['current_transit'] \
-                                      .replace('/', '-')
-                filename = "{0:s}/{1:s}_{2:s}_{3:s}.png" \
-                           .format(self.params['savedir'],
-                                   target_no_space,
-                                   current_transit,
-                                   self.params['site'])
+                current_transit = self.params['current_transit'].replace('/', '-')[:-3].replace(':', '')
+                filename = "{0:s}/{1:s}_{2:s}_{3:s}.png".format(self.params['savedir'],
+                                                                target_no_space,
+                                                                current_transit,
+                                                                self.params['site'])
             else:
-                filename = "{0:s}/{1:s}_T{2:s}_{3:s}.png" \
-                           .format(self.params['savedir'],
-                                   target_no_space,
-                                   self.params['timespan'],
-                                   self.params['site'])
+                filename = "{0:s}/{1:s}_T{2:s}_{3:s}.png".format(self.params['savedir'],
+                                                                 target_no_space,
+                                                                 str(self.params['timespan']),
+                                                                 self.params['site'])
 
             print("Saving: {0:s}".format(filename,))
             self.params['plot_figure'].savefig(filename)
-        elif event.key == 'f':  # recenter transit and save file
+        elif event.key == 'p':  # recenter transit and save file
             self._plot_elev_transit(event.xdata, event.ydata)
             target_no_space = self.params['target'].replace(' ', '_')
             site = self.params['site']
-            current_transit = self.params['current_transit'] \
-                                  .replace('/', '-')[:-3]\
-                                  .replace(':', '')
-            filename = '{0:s}/{1:s}_{2:s}_{3:s}.png' \
-                       .format(self.params['savedir'],
-                               target_no_space,
-                               current_transit,
-                               site)
+            current_transit = self.params['current_transit'].replace('/', '-')[:-3].replace(':', '')
+            filename = '{0:s}/{1:s}_{2:s}_{3:s}.png'.format(self.params['savedir'],
+                                                            target_no_space,
+                                                            current_transit,
+                                                            site)
             print("Saving: {0:s}".format(filename,))
             self.params['plot_figure'].savefig(filename)
 
@@ -511,17 +465,3 @@ class Obsrv(ocalc.ObsCalc):
 
         day, hour = event.xdata, event.ydata
         self._plot_elev_transit(day, hour)
-
-
-# if __name__ == '__MAIN__':
-#    import obsrv
-#    test_target = ['HD83443', 9+(37 + 11.82841/60)/60.0,
-#                    -(43+(16+19.9354/60)/60.0),
-#                   2455943.20159650, 2.985, 3]
-#    test_target = ['WASP-34', 11+(1+36/60.0)/60.0, -(23+(51+38/60)/60),
-#                   2454647.55358, 4.3176782, 3]
-#    a = obsrv.Obsrv((test_target[1], test_target[2]),
-#                          tr_period=test_target[4],
-#                          tr_epoch=test_target[3],
-#                          title=test_target[0])
-#
