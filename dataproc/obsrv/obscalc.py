@@ -334,6 +334,12 @@ class ObsCalc(object):
                 raise NotImplementedError(
                     f"NASA has not yet fixed the SSL validation error ({mesg})"
                     f". Info has to be written manually in ~/.transits")
+            except KeyError:
+                raise ValueError(f"There was no transit info on planet '{target}' in the NASA"
+                                 f"exoplanet archive.  You need to manually specify it in a .transits"
+                                 f" file in your home directory.\n The format of that file is one planet "
+                                 f"per line:\n<full_name_no_spaces> E<reference_transit_JD> P<period_days> "
+                                 f"L<length_hours> c<comment>")
 
             # As of astroquery 0.3.10, normal columns are u.Quantity while
             # extra columns are floats.
