@@ -141,8 +141,7 @@ def _fits_verify(filename, ffilter=None, hdu=0):
     single_extension = filename.lower().split('.')[-1] in ['fits', 'fit',
                                                            'ftsc', 'fts']
     double_extension = ''.join(filename.lower()
-                               .split('.')[-2:]) in ['fitsgz', 'fitgz',
-                                                     'fitszip', 'fitzip']
+                               .split('.')[-2:]) in ['fitsgz', 'fitgz', 'ftsgz']
     if single_extension or double_extension:
         if ffilter is None:
             return True
