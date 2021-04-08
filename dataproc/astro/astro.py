@@ -149,7 +149,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
     return ra_dec
 
 
-def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
+def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
     """
     Recovers epoch, period and length of a target transit if said transit has
     been specified in one of the provided paths
@@ -170,7 +170,7 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
     ----------
     target: str
         Target requested
-    dir: str, optional
+    direc: str, optional
         Directory containing the files to be inspected
 
     Returns
@@ -184,9 +184,9 @@ def get_transit_ephemeris(target, dir=os.path.dirname(__file__)):
     ValueError
         If a data field does not match the specified format
     """
-    paths = [os.path.expanduser("~") + os.path.sep+'.transits',
+    paths = [os.path.expanduser("~") + os.path.sep +'.transits',
              os.path.expanduser("~") + os.path.sep.join(['', '.config', 'obsrv', 'transits']),
-             dir + os.path.sep + 'transits.txt',
+             direc + os.path.sep + 'transits.txt',
              ]
 
     tr_epoch = None

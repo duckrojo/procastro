@@ -19,6 +19,8 @@
 #
 import warnings
 from urllib.error import URLError
+
+from astropy.utils.exceptions import AstropyWarning, AstropyUserWarning
 from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
 import astropy.coordinates as apc
 import astropy.time as apt
@@ -26,6 +28,9 @@ import astropy.units as u
 import dataproc.astro as dpa
 import numpy as np
 import os
+import pyvo as vo
+
+exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
 
 
 def _update_airmass(func):
@@ -161,7 +166,11 @@ class ObsCalc(object):
             moon = apc.get_moon(date, location=self._location)
             sun = apc.get_sun(date)
 
-        separation = self._target.separation(moon)
+#        print(moon)
+#        print(sun)
+#        print(self._target)
+        separation = moon.separation(self._target)
+#        print(separation)
         sun_moon_dist = np.sqrt(sun.distance**2 + moon.distance**2 -
                                 2*sun.distance*moon.distance*np.cos(sun.separation(moon)))
         cos_phase_angle = (moon.distance**2 + sun_moon_dist**2 -
@@ -327,41 +336,19 @@ class ObsCalc(object):
 
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
-            try:
-                planet = NasaExoplanetArchive.query_planet(target,
-                                                           all_columns=True)
-            except URLError as mesg:
-                raise NotImplementedError(
-                    f"NASA has not yet fixed the SSL validation error ({mesg})"
-                    f". Info has to be written manually in ~/.transits")
-            except KeyError:
-                raise ValueError(f"There was no transit info on planet '{target}' in the NASA"
-                                 f"exoplanet archive.  You need to manually specify it in a .transits"
-                                 f" file in your home directory.\n The format of that file is one planet "
-                                 f"per line:\n<full_name_no_spaces> E<reference_transit_JD> P<period_days> "
-                                 f"L<length_hours> c<comment>")
 
-            # As of astroquery 0.3.10, normal columns are u.Quantity while
-            # extra columns are floats.
-            # NOTE: If astroquery is upgraded check this block for any
-            #       API changes.
-            req_cols = ['pl_orbper', 'pl_tranmid', 'pl_trandur']
-            for i in range(len(req_cols)):
-                col = req_cols[i]
-                # Missing information can be returned as None or
-                # as a numpy masked array
-                if planet[col] is None or isinstance(planet[col],
-                                                     np.ma.MaskedArray):
-                    raise ValueError(
-                        "Requested data '{}' is not available through the "
-                        "NASA archives for target {}".format(col, target))
-                elif isinstance(planet[col],  u.Quantity):
-                    req_cols[i] = planet[col].value
-                else:
-                    req_cols[i] = planet[col]
+            resultset = exo_service.search(f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur "
+                                           f"FROM exo_tap.pscomppars "
+                                           f"WHERE lower(pl_name) like '%{target}%' ")
+            req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
+            trandur = resultset['pl_trandur'].data[0]
+            if trandur is None:
+                req_cols.append(1)
+                warnings.warn("Using default 1hr length for transit duration", UserWarning)
+            else:
+                req_cols.append(trandur)
 
             transit_period, transit_epoch, transit_length = req_cols
-            transit_length *= 24
 
             print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
                   .format(transit_epoch, transit_period, transit_length))
