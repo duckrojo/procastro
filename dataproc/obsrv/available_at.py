@@ -11,8 +11,10 @@ from astropy.coordinates import get_sun
 from astropy.coordinates import get_moon
 from matplotlib import cm
 
+__all__ = ['AvailableAt']
 
-class AvalaibleAt():
+
+class AvailableAt():
     def __init__(self, date, observatory, min_transit_percent=0.9, night_angle=-18, min_obs=30,
                  min_obs_ix=19.5,
                  max_obs=40.0, min_baseline_ix=0.01, max_baseline=0.04, min_baseline=0.02, moon_separation_min_ix=10,
@@ -244,7 +246,7 @@ class AvalaibleAt():
 
     def transit_observation_percent(self):
         planets_df_input = self.transit_percent_
-        planets_df_input['delta_transit_i_obs'] = planets_df_input['transit_i'] - planets_df_input['start_observation']
+        planets_df_input.loc['delta_transit_i_obs'] = planets_df_input['transit_i'] - planets_df_input['start_observation']
         planets_df_input = planets_df_input[planets_df_input['transit_i'] < planets_df_input['end_observation']]
         planets_df_input = planets_df_input[planets_df_input['transit_f'] > planets_df_input['start_observation']]
         planets_df_input['transit_observation_percent'] = np.where(0 <= planets_df_input['delta_transit_i_obs'],
@@ -386,13 +388,14 @@ class AvalaibleAt():
         max_altitudes_sidereal_time_to_utc = pd.Series([])
         max_altitudes_utc_time_index = pd.Series([])
         for planet_index in self.transit_percent_.index:
-            star_ra = pd.Series(np.full(precision, self.transit_percent_.loc[planet_index, :]['ra'] * u.degree))
+            full = np.full(precision, self.transit_percent_.loc[planet_index, :]['ra'] * u.degree)
+            star_ra = pd.Series(full)
             sideral_ra_delta = (local_sidereal_times - star_ra).abs()
             min_ra_index = sideral_ra_delta.idxmin()
             max_altitudes_sidereal_time_to_utc = max_altitudes_sidereal_time_to_utc.append(
-                pd.Series(local_midnight_times[min_ra_index], index=[planet_index]))
+                pd.Series(local_midnight_times[[min_ra_index]], index=[planet_index]))
             max_altitudes_utc_time_index = max_altitudes_utc_time_index.append(
-                pd.Series(min_ra_index, index=[planet_index]))
+                pd.Series([min_ra_index], index=[planet_index]))
         self.transit_percent_['max_altitude_time'] = max_altitudes_sidereal_time_to_utc
         self.transit_percent_['max_altitude_index'] = max_altitudes_utc_time_index
         return
@@ -569,7 +572,7 @@ class AvalaibleAt():
         self.baseline_percent_filter.insert(loc=int(rank_loc), column='rank', value=rank)
         self.baseline_percent_filter.sort_values('transit_i', axis=0, inplace=True)
 
-    def plot(self, precision,extention=False):
+    def plot(self, precision, extention=False):
         self.transit_and_baseline_index(precision)
         self.planets_rank()
         planets_df = self.baseline_percent_filter.reset_index()
@@ -685,12 +688,3 @@ def star_sidereal_time_to_local_hour(sun_ra, star_ra, midday):
     star_time_in_utc = midday + star_to_sun_distance * u.hour
     return star_time_in_utc
 
-
-# In[8]:
-
-
-# a = AvalaibleAt('2021-08-16', 'La Silla Observatory', min_obs_ix=25.0,
-#                 night_angle=-12)  # 25 y -12, comienzo del observable , comienzo del transito, fin del transito, fin del observable. del 15 16 y 17
-
-a = AvalaibleAt('2021-08-16', 'La Silla Observatory', min_obs_ix=25.0,
-                night_angle=-12)  # 25 y -12, comienzo del observable , comienzo del transito, fin del transito, fin del observable. del 15 16 y 17
