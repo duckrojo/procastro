@@ -18,10 +18,7 @@
 #
 #
 import warnings
-from urllib.error import URLError
 
-from astropy.utils.exceptions import AstropyWarning, AstropyUserWarning
-from astroquery.nasa_exoplanet_archive import NasaExoplanetArchive
 import astropy.coordinates as apc
 import astropy.time as apt
 import astropy.units as u
@@ -128,7 +125,7 @@ class ObsCalc(object):
         if target is not None:
             self.set_target(target, **kwargs)
 
-    def set_site(self, site, **kwargs):
+    def set_site(self, site):
         """
         Define name from list aailable from EarthLocation
 
@@ -166,11 +163,7 @@ class ObsCalc(object):
             moon = apc.get_moon(date, location=self._location)
             sun = apc.get_sun(date)
 
-#        print(moon)
-#        print(sun)
-#        print(self._target)
         separation = moon.separation(self._target)
-#        print(separation)
         sun_moon_dist = np.sqrt(sun.distance**2 + moon.distance**2 -
                                 2*sun.distance*moon.distance*np.cos(sun.separation(moon)))
         cos_phase_angle = (moon.distance**2 + sun_moon_dist**2 -
@@ -237,7 +230,7 @@ class ObsCalc(object):
 
         return self
 
-    def _get_sun_set_rise(self, nhours=40, **kwargs):
+    def _get_sun_set_rise(self, nhours=40):
         """
         Compute sunsets and sunrises
 
@@ -333,6 +326,7 @@ class ObsCalc(object):
 
         transit_epoch, transit_period, transit_length = \
             dpa.get_transit_ephemeris(target, os.path.dirname(__file__))
+        print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
 
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
@@ -340,7 +334,10 @@ class ObsCalc(object):
             resultset = exo_service.search(f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur "
                                            f"FROM exo_tap.pscomppars "
                                            f"WHERE lower(pl_name) like '%{target}%' ")
-            req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
+            try:
+                req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
+            except IndexError:
+                raise IndexError(f"Planet {target} not found in exoplanet database")
             trandur = resultset['pl_trandur'].data[0]
             if trandur is None:
                 req_cols.append(1)

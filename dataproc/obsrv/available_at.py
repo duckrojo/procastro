@@ -14,6 +14,10 @@ from matplotlib import cm
 __all__ = ['AvailableAt']
 
 
+def to_hms(jd):
+    return Time(jd, format='jd').to_value('iso', 'date_hms')[11:20]
+
+
 class AvailableAt():
     def __init__(self, date, observatory, min_transit_percent=0.9, night_angle=-18, min_obs=30,
                  min_obs_ix=19.5,
@@ -246,7 +250,7 @@ class AvailableAt():
 
     def transit_observation_percent(self):
         planets_df_input = self.transit_percent_
-        planets_df_input.loc['delta_transit_i_obs'] = planets_df_input['transit_i'] - planets_df_input['start_observation']
+        planets_df_input['delta_transit_i_obs'] = planets_df_input['transit_i'] - planets_df_input['start_observation']
         planets_df_input = planets_df_input[planets_df_input['transit_i'] < planets_df_input['end_observation']]
         planets_df_input = planets_df_input[planets_df_input['transit_f'] > planets_df_input['start_observation']]
         planets_df_input['transit_observation_percent'] = np.where(0 <= planets_df_input['delta_transit_i_obs'],
@@ -572,7 +576,7 @@ class AvailableAt():
         self.baseline_percent_filter.insert(loc=int(rank_loc), column='rank', value=rank)
         self.baseline_percent_filter.sort_values('transit_i', axis=0, inplace=True)
 
-    def plot(self, precision, extention=False):
+    def plot(self, precision, extention=False, altitude_separation=60):
         self.transit_and_baseline_index(precision)
         self.planets_rank()
         planets_df = self.baseline_percent_filter.reset_index()
@@ -595,7 +599,7 @@ class AvailableAt():
         fig, axes = plt.subplots(figsize=(10, 15))
         cmap = cm.get_cmap(name='OrRd')
         for i in reversed(range(0, len(planets_df.index))):
-            if extention==False:
+            if extention:
                 altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 5 * i
                 x_axis = np.linspace(planets_df.loc[i, :]['start_observation_index'],
                                         planets_df.loc[i, :]['end_observation_index'], len(altitudes))
@@ -618,7 +622,7 @@ class AvailableAt():
                 axes.text(x_axis[len(x_axis) - 1], altitudes_min[len(altitudes_min) - 1],
                             s=planets_df.loc[i, :]['pl_name'])
             else:
-                altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 5 * i
+                altitudes = np.array(stars_altitudes.loc[:, i]) + altitude_separation * i
                 x_axis = np.linspace(planets_df.loc[i, :]['start_observation_index'],
                                      planets_df.loc[i, :]['end_observation_index'], len(altitudes))
                 altitudes_min = np.full(len(x_axis), altitudes.min())
@@ -638,8 +642,17 @@ class AvailableAt():
                 axes.fill_between(x_axis[transit_f_index:baseline_f_index + 1],
                                   altitudes[transit_f_index:baseline_f_index + 1],
                                   altitudes_min[transit_f_index:baseline_f_index + 1], color='blue', )
-                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1],
+                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.3,
                           s=planets_df.loc[i, :]['pl_name'])
+                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.5,
+                          s=planets_df.loc[i, :]['sy_vmag'])
+                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.7,
+                          s=f"{(planets_df.loc[i, :]['transit_observation_percent']<1)*(planets_df.loc[i, :]['transit_observation_percent']-1)+1:.2f}")
+                axes.text(x_axis_[0], altitudes_min_[len(altitudes_min_) - 1],
+                          s=transit_times[i][baseline_i_index].iso[11:19],
+                          ha='right')
+                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1],
+                          s=transit_times[i][baseline_f_index].iso[11:19])
 
             axes.set_xlabel('Planets by Observation Rank', fontsize=20)
             axes.set_xticks([0, 1, 1.2])
@@ -676,7 +689,7 @@ class AvailableAt():
         self.baseline_percent_filter['end_observation_index'] = (self.baseline_percent_filter[
                                                                      'end_observation'] - self.start_night.jd) / (
                                                                         self.end_night.jd - self.start_night.jd)
-        delta_observation = pd.DataFrame(np.linspace(self.baseline_percent_filter['start_observation'],self.baseline_percent_filter['end_observation'],precision))
+        delta_observation = pd.DataFrame(np.linspace(self.baseline_percent_filter['start_observation'],self.baseline_percent_filter['end_observation'], precision))
 
 
 

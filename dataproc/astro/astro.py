@@ -43,7 +43,7 @@ except ImportError:
     aqs = None
 
 
-def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
+def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', extra_info=None, verbose=False):
     """
     Obtain coordinates from a target, that can be specified in various formats.
 
@@ -81,8 +81,8 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
         If all query attempts fail (Wrong coordinates or unknown)
     """
 
-    pm_ra = None
-    pm_dec = None
+    extra = []
+    votable = {"sptype": "SP_TYPE"}
 
     try:
         ra_dec = apcoo.SkyCoord([f"{target}"], unit=(apu.hour, apu.degree),
@@ -92,6 +92,8 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
             coo_files = [coo_files]
 
         for coo_file in coo_files:
+            if coo_file is None:
+                continue
             # try:
             #     open_file = open(coo_file)
             # except TypeError:
@@ -109,7 +111,8 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                         if ra[-1] == 'd':
                             ra = "{0:f}".format(float(ra[:-1]) / 15,)
                         if dp.accept_object_name(name, target):
-                            print(f"Found in coordinate file: {coo_file}")
+                            if verbose:
+                                print(f"Found in coordinate file: {coo_file}")
                             break
                     # this is to break out of two for loops as it should
                     # stop looking in other files
@@ -118,14 +121,17 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                     break
         # if coordinate not in file
         else:
-            print(" '{0:s}' not understood as coordinates, attempting query "
-                  "as name... ".format(target,), end='')
+            if verbose:
+                print(" '{0:s}' not understood as coordinates, attempting query "
+                      "as name... ".format(target,), end='')
             if aqs is None:
                 raise ValueError(
                     "Sorry, AstroQuery not available for coordinate querying")
 
             custom_simbad = aqs.Simbad()
-            custom_simbad.add_votable_fields('propermotions')
+            if extra_info is not None:
+                for info in extra_info:
+                    custom_simbad.add_votable_fields(info)
 
             query = custom_simbad.query_object(target)
             if query is None:
@@ -137,15 +143,27 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000'):
                 raise ValueError(
                     f"Target '{target}' not found on Simbad")
             ra, dec = query['RA'][0], query['DEC'][0]
-            pm_ra, pm_dec = query['PMRA'][0], query['PMDEC'][0]
+            if extra_info is not None:
+                for info in extra_info:
+                    if info in votable:
+                        info = votable[info]
+                    info = info.replace("(", "_")
+                    info = info.replace(")", "")
+                    extra.append(query[info.upper()][0])
 
         ra_dec = apcoo.SkyCoord('{0:s} {1:s}'.format(ra, dec),
                                 unit=(apu.hour, apu.degree),
                                 equinox=equinox)
-        print("success! \n  {})".format(ra_dec,))
+        if verbose:
+            print("success! \n  {})".format(ra_dec,))
 
-    if return_pm:
-        return ra_dec, pm_ra, pm_dec
+    if extra_info is not None:
+        if len(extra_info) == len(extra):
+            return ra_dec, extra
+        else:
+            print(f"Extra Info ({extra_info}) was not found: {extra}")
+            return ra_dec, extra_info
+
     return ra_dec
 
 
