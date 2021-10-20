@@ -642,12 +642,13 @@ class AvailableAt():
                 axes.fill_between(x_axis[transit_f_index:baseline_f_index + 1],
                                   altitudes[transit_f_index:baseline_f_index + 1],
                                   altitudes_min[transit_f_index:baseline_f_index + 1], color='blue', )
-                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.3,
+                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.4,
                           s=planets_df.loc[i, :]['pl_name'])
-                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.5,
-                          s=planets_df.loc[i, :]['sy_vmag'])
                 axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.7,
-                          s=f"{(planets_df.loc[i, :]['transit_observation_percent']<1)*(planets_df.loc[i, :]['transit_observation_percent']-1)+1:.2f}")
+                          s=planets_df.loc[i, :]['sy_vmag'])
+                axes.text(x_axis_[0], altitudes_min_[len(altitudes_min_) - 1] + altitude_separation*0.4,
+                          s=f"{(planets_df.loc[i, :]['transit_observation_percent']<1)*(planets_df.loc[i, :]['transit_observation_percent']-1)+1:.2f}",
+                          ha='right')
                 axes.text(x_axis_[0], altitudes_min_[len(altitudes_min_) - 1],
                           s=transit_times[i][baseline_i_index].iso[11:19],
                           ha='right')
