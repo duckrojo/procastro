@@ -20,10 +20,14 @@ from . import rawinfo
 from .rawinfo import *
 from . import orchestrator
 from .orchestrator import *
+from . import plotting
+from .plotting import *
 
 __all__ = []
 __all__ += rawinfo.__all__
 __all__ += orchestrator.__all__
+__all__ += plotting.__all__
 
 del rawinfo
 del orchestrator
+del plotting
