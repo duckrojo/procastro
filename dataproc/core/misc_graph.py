@@ -393,12 +393,14 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
             fig, ax = plt.subplots(num=plt.gcf().number)
     elif isinstance(axes, int):
         fig = plt.figure(axes)
-        if not overwrite:
-            dummy = [fig.delaxes(a) for a in fig.axes]
-        ax = fig.add_subplot(111)
+        if overwrite or len(fig.axes) == 0:
+            fig.clf()
+            ax = fig.add_subplot(111)
+        else:
+            ax = fig.axes[0]
     elif isinstance(axes, plt.Figure):
-        if not overwrite:
-            dummy = [axes.delaxes(a) for a in axes.axes]
+        if overwrite:
+            axes.clf()
         ax = axes.add_subplot(111)
         fig = axes
     elif isinstance(axes, plt.Axes):
@@ -408,7 +410,7 @@ def figaxes(axes=None, forcenew=True, overwrite=False):
         raise ValueError("Given value for axes ({0:s}) is not"
                          "recognized".format(axes,))
 
-    if not overwrite:
+    if overwrite:
         ax.cla()
 
     return fig, ax
