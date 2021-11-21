@@ -70,6 +70,50 @@ class PhotoPlotting:
         if legend:
             ax.legend()
 
+    def plot_aperture(self, ref_frame=0, ref_time=None,
+                marker='.', ls='', color='red',
+                label=None, legend=False,
+                xlims=None, ax=None, overwrite=False):
+
+        self.set_ref_time(ref_time, ref_frame)
+        df = self._df
+        f, ax = dp.figaxes(ax, overwrite=overwrite)
+        if f not in self._figs:
+            self._figs.append(f)
+
+        ax.plot(df['delta_time'], df['fnumber'], label=label,
+                marker=marker, ls=ls, color=color)
+        ax.set_title(self._dataset_name)
+        ax.set_ylabel("fnumber")
+        ax.yaxis.label.set_color(color)
+
+        ax.set_xlim(xlims)
+        f.tight_layout()
+        if legend:
+            ax.legend()
+
+    def plot_iso(self, ref_frame=0, ref_time=None,
+                marker='.', ls='', color='red',
+                label=None, legend=False,
+                xlims=None, ax=None, overwrite=False):
+
+        self.set_ref_time(ref_time, ref_frame)
+        df = self._df
+        f, ax = dp.figaxes(ax, overwrite=overwrite)
+        if f not in self._figs:
+            self._figs.append(f)
+
+        ax.plot(df['delta_time'], df['iso'], label=label,
+                marker=marker, ls=ls, color=color)
+        ax.set_title(self._dataset_name)
+        ax.set_ylabel("iso")
+        ax.yaxis.label.set_color(color)
+
+        ax.set_xlim(xlims)
+        f.tight_layout()
+        if legend:
+            ax.legend()
+
     def plot_exposure(self, ref_time=None, ref_frame=0,
                       marker='|', ls='-', color='blue',
                       label=None, legend=False,

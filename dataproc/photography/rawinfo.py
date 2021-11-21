@@ -24,26 +24,58 @@ import exifread as er
 import numpy as np
 import pandas as pd
 from .plotting import PhotoPlotting
+import rawpy as rp
+
 
 __all__ = ['RawFiles', 'RawFile']
 
 
 class RawFiles(PhotoPlotting):
     def __init__(self,
-                 dirname=None, name="", ref_time=None,
-                 hour_offset=0,
-                 extension="nef"):
+                 dirname, name="", ref_time=None,
+                 hour_offset=0, fnumber_def=None,
+                 extension="nef", sort_time=True,
+                 verbose=True):
+        """
+Container of image information class
+        Args:
+            dirname: str, (list, tuple)
+              Directory where to look for files, or list of files
+            name: str
+               Name of the dataset
+            ref_time: astropy.time.Time, int, str
+               Frame to take as reference for time, or string that can be converted to time, or time object
+            hour_offset: float
+               Offset of time in hours
+            extension: str
+                Extension of files to consider
+        """
         super().__init__()
-        self._df = pd.DataFrame()
+        database = pd.DataFrame()
+        self._df = database
+        self._extension = extension
 
-        if isinstance(ref_time, str):
+        if isinstance(dirname, (list, tuple)):
+            self._raw_files = dirname
+            error_msg = f"Empty list given to RawFiles"
+        else:
+            search_string = f"{dirname}/*{extension}"
+            image_list = glob.glob(search_string)
+            self._raw_files = [RawFile(image) for image in image_list]
+            error_msg = f"No files found on: '{search_string}'"
+        if not len(self._raw_files):
+            raise ValueError(error_msg)
+
+        self._dataset_name = name
+
+        self.read_exif(fnumber_def=fnumber_def, sort_time=sort_time, verbose=verbose)
+
+        if ref_time is None:
+            ref_time = self._df['date'][0]
+        elif isinstance(ref_time, str):
             ref_time = apt.Time(ref_time)
         ref_time += hour_offset*u.h
         self._ref_time = ref_time
-
-        image_list = glob.glob(f"{dirname}/*{extension}")
-        self._dataset_name = name
-        self._raw_files = [RawFile(image) for image in image_list]
 
     def __len__(self):
         return len(self._raw_files)
@@ -52,29 +84,45 @@ class RawFiles(PhotoPlotting):
         return f"<dataproc.photography: {len(self)} RawFiles>"
 
     def __getitem__(self, item):
-        return self._raw_files[item]
+        if isinstance(item, int):
+            return self._raw_files[item]
 
-    def read_exif(self, **kwargs):
+        files = self._raw_files[item]
+        return RawFiles(files, name=self._dataset_name,
+                        ref_time=self._ref_time, extension=self._extension,
+                        verbose=False)
+
+    def read_exif(self, sort_time=True, verbose=True, **kwargs):
         i = 0
 
-        print(f"Processing {len(self._raw_files)} images: ", end='')
+        if verbose:
+            print(f"Processing {len(self._raw_files)} images: ", end='')
         for image in self._raw_files:
             data_read = image.read_exif(**kwargs)
             self._df = self._df.append(data_read, ignore_index=True)
-            if i % 10 == 0:
-                if i % 100 == 0:
-                    print(f'\n{i:3d}', end='')
+            if verbose:
+                if i % 10 == 0:
+                    if i % 100 == 0:
+                        print(f'\n{i:3d}', end='')
+                    else:
+                        print(f'{(i//10) % 10}', end='')
                 else:
-                    print(f'{(i//10) % 10}', end='')
-            else:
-                print(".", end="")
-            i += 1
-        print("")
+                    print(".", end="")
+                i += 1
+        if verbose:
+            print("")
+
+        if sort_time:
+            self._df.sort_values('date', inplace=True)
 
         self._df['ev'] = np.log(100 * self._df['fnumber'] ** 2
                                 / self._df['exposure'] / self._df['iso']) / np.log(2)
 
         return self
+
+    def __iter__(self):
+        for image in self._raw_files:
+            yield image
 
 
 class RawFile:
@@ -83,11 +131,11 @@ class RawFile:
 
     def __init__(self, filename):
         self._filename = filename
-        self.data = None
+        self.header = None
 
     def read_exif(self, fields=None, reload=False, fnumber_def=None):
-        if self.data is not None and not reload:
-            return self.data
+        if self.header is not None and not reload:
+            return self.header
 
         if fields is None:
             fields = {'EXIF FNumber': 'fnumber_str',
@@ -96,14 +144,20 @@ class RawFile:
                       'EXIF DateTimeOriginal': 'date_str'}
 
         tags = er.process_file(open(self._filename, 'rb'))
-        data = {v: tags[f].printable for f, v in fields.items()}
+        header = {v: tags[f].printable for f, v in fields.items()}
 
-        data['exposure'] = eval(data['exposure_str'])
-        data['iso'] = eval(data['iso_str'])
+        header['exposure'] = eval(header['exposure_str'])
+        header['iso'] = eval(header['iso_str'])
         if fnumber_def is None:
-            fnumber_def = data['fnumber_str']
-        data['fnumber'] = eval(fnumber_def)
-        data['date'] = apt.Time(data['date_str'].replace(":", "-", 2))
+            fnumber_def = header['fnumber_str']
+        header['fnumber'] = eval(fnumber_def)
+        header['date'] = apt.Time(header['date_str'].replace(":", "-", 2))
 
-        self.data = data
-        return data
+        self.header = header
+        return header
+
+    @property
+    def data(self):
+        with rp.imread(self._filename) as raw:
+            rgb = raw.postprocess()
+            return rgb
