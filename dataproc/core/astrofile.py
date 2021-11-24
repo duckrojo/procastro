@@ -24,27 +24,17 @@ import logging
 from functools import wraps as _wraps
 import warnings
 import re
+
+import pandas as pd
+
 import dataproc as dp
 import astropy.time as apt
 import numpy as np
 import os.path as path
 import astropy.io.fits as pf
+from .astrocommon import AstroCommon
 
 iologger = logging.getLogger('dataproc.io')
-
-
-def _numerize_other(method):
-    """
-    When operating between two AstroFile objects, this decorator will try to
-    read the second AstroFile first.
-    """
-    @_wraps(method)
-    def wrapper(instance, other, *args, **kwargs):
-        if isinstance(other, AstroFile):
-            other = other.reader()
-        return method(instance, other, *args, **kwargs)
-
-    return wrapper
 
 
 #######################
@@ -52,25 +42,6 @@ def _numerize_other(method):
 # FITS handling of AstroFile
 #
 ##################################
-
-# def _fits_header(filename, hdu=0):
-#     """
-#     Read fits header.
-#
-#     Parameters
-#     ----------
-#     hdu: int, optional
-#         HDU slot to be read
-#
-#     Returns
-#     -------
-#     Header Object of the specified hdu
-#     """
-#
-#     hdu_list = pf.open(filename)
-#     ret = hdu_list[hdu].header
-#     hdu_list.close()
-#     return ret
 
 
 def _fits_reader(filename, hdu=0):
@@ -169,10 +140,9 @@ def _fits_getheader(_filename, *args, **kwargs):
         the file
     """
     ret = []
-    hdu_list = pf.open(_filename)
-    for h in hdu_list:
-        ret.append({k.lower(): v for k, v in h.header.items()})
-    hdu_list.close()
+    with pf.open(_filename) as hdu_list:
+        for h in hdu_list:
+            ret.append({k.lower(): v for k, v in h.header.items()})
 
     return ret
 
@@ -243,8 +213,8 @@ def _array_write(filename, **kwargs):
 
 
 def _array_setheader(filename, **kwargs):
-    warnings.warn( "Saving an np.array type is not implemented yet: only saving in memory for now ",
-                   UserWarning)
+    warnings.warn("Saving an np.array type is not implemented yet: only saving in memory for now ",
+                  UserWarning)
     return None
 
 
@@ -268,44 +238,62 @@ def return_none(*args, **kwargs):
     return None
 
 
-def _checksortkey(f):
-    """
-    Verifies that the given sortkey is valid
-    """
-    @_wraps(f)
-    def ret(self, *args, **kwargs):
-        if not hasattr(self, 'sortkey'):
-            raise ValueError(
-                "Sortkey must be defined before trying to sort AstroFile")
-        if not isinstance(self.sortkey, str) or "," in self.sortkey:
-            raise ValueError(
-                "Invalid value for sortkey ({}), it must be a single header"
-                "specification (without commas)".format(self.sortkey))
-        return f(self, *args, **kwargs)
+class _AstroDecorator:
 
-    return ret
+    @staticmethod
+    def numerize_other(fcn):
+        """
+        When operating between two AstroFile objects, this decorator will try to
+        read the second AstroFile first.
+        """
 
+        @_wraps(fcn)
+        def wrapper(instance, other, *args, **kwargs):
+            if isinstance(other, AstroFile):
+                other = other.reader()
+            return fcn(instance, other, *args, **kwargs)
 
-def _checkfilename(f):
-    """
-    Verifies that the given filename is valid
-    """
-    @_wraps(f)
-    def isfiledef(inst, *args, **kwargs):
-        if hasattr(inst, 'filename'):
-            if inst.type is None:
-                # raise ValueError("File %s not a supported astro-type." % (f))
+        return wrapper
+
+    @staticmethod
+    def check_filename(fcn):
+        """
+        Verifies that the given filename is valid
+        """
+        @_wraps(fcn)
+        def isfiledef(self, *args, **kwargs):
+            if hasattr(self, 'filename'):
+                if self.type is None:
+                    # raise ValueError("File %s not a supported astro-type." % (f))
+                    raise ValueError(
+                        "Please specify filename with setFilename first.")
+                return fcn(self, *args, **kwargs)
+            else:
                 raise ValueError(
-                    "Please specify filename with setFilename first.")
-            return f(inst, *args, **kwargs)
-        else:
-            raise ValueError(
-                "Filename not defined. Must give valid filename to AstroFile")
+                    "Filename not defined. Must give valid filename to AstroFile")
 
-    return isfiledef
+        return isfiledef
+
+    @staticmethod
+    def check_sort_key(fcn):
+        """
+        Verifies that the given sortkey is valid
+        """
+        @_wraps(fcn)
+        def ret(self, *args, **kwargs):
+            if self.sort_key is None:
+                raise ValueError(
+                    "Sortkey must be defined before trying to sort AstroFile")
+            if not isinstance(self.sort_key, str) or "," in self.sort_key:
+                raise ValueError(
+                    "Invalid value for sortkey ({}), it must be a single header"
+                    "specification (without commas)".format(self.sort_key))
+            return fcn(self, *args, **kwargs)
+
+        return ret
 
 
-class AstroFile(object):
+class AstroFile(AstroCommon):
     """
     Representation of an astronomical data file, contains information related
     to the file's data. Currently supports usage of arrays and .fit files
@@ -405,12 +393,12 @@ class AstroFile(object):
         if isinstance(filename, AstroFile):
             return
 
-        self.filename = filename
         self.type = self.checktype(*args, **kwargs)
-        self.header_cache = self._geth[self.type](self.filename)
-        if isinstance(header, dict):
-            for k, v in header.items():
-                self.header_cache = v
+        self.filename = filename
+        self.sort_key = None
+
+        self._info = None
+        _ = self.readheader(use_header=header)
 
         if hduh is None:
             hduh = hdu
@@ -520,7 +508,7 @@ class AstroFile(object):
         ----------
         key: str
         """
-        self.sortkey = key
+        self.sort_key = key
 
     def imshowz(self, *args, **kwargs):
         """
@@ -538,7 +526,7 @@ class AstroFile(object):
     def __nonzero__(self):
         return hasattr(self, 'filename') and (self.type is not None)
 
-    @_checkfilename
+    @_AstroDecorator.check_filename
     def filter(self, **kwargs):
         """
         Compares if the expected value of the given header item matches
@@ -560,8 +548,11 @@ class AstroFile(object):
         - Other:
             + NOT:       Logical Not
 
-        Its possible to include multiple options, this statements count as
-        a logical "or" statements.
+        Its possible to include multiple options in a 1-element dictionary using
+           {'cast':[val1,val2,val3]}
+        or as different keywords. Both these statements count as a logical "or"
+        construction. For "and" build a series of concatenated calls, as in
+           .filter(cond1=val1).filter(cond2=val2)
 
         Parameters
         ----------
@@ -574,7 +565,7 @@ class AstroFile(object):
 
         Notes
         -----
-        If a header item has a "-" character on its name, use two underscores
+        If a header item has a "_" character on its name, use two underscores
         to represent it.
 
         Examples
@@ -583,99 +574,17 @@ class AstroFile(object):
         NAXIS1_GT_EQUAL = 20                  (True if NAXIS1 >= 20)
 
         """
-        ret = []
+        filters = self.parse_filter(**kwargs)
 
-        for filter_keyword, request in kwargs.items():
-            functions = []
-            # By default is not comparing match, but rather equality
-            match = False
-            exists = True
+        return True in [False
+                        if pd.isna(value)
+                        else (True in [operation(value_cast(value, r), request_cast(value, r))
+                                       for r in request])
+                        for value_cast, request_cast, operation, request, filter_keyword in filters
+                        for value in [self[filter_keyword]]]
 
-            def cast(x):
-                return x
-            filter_keyword = filter_keyword.replace('__', '-')
-            if '_' in filter_keyword:
-                tmp = filter_keyword.split('_')
-                filter_keyword = tmp[0]
-                functions.extend(tmp[1:])
-            header_val = self.getheaderval(filter_keyword)
 
-            # Treat specially the not-found and list as filter_keyword
-            if header_val is None:
-                ret.append(False)
-                continue
-
-            if isinstance(request, str):
-                request = [request]
-            elif isinstance(request, (tuple, list)):
-                raise TypeError("Filter string cannot be tuple/list anymore. "
-                                "It has to be a dictionary with the casting "
-                                "function as key (e.g. 'str')")
-            elif isinstance(request, dict):
-                keys = request.keys()
-                if len(keys) != 1:
-                    raise NotImplementedError(
-                        "Only a single key (casting) per filtering function "
-                        "has been implemented for multiple alternatives")
-                try:
-                    request = list(request[keys[0]])
-                    if 'begin' in functions or 'end' in functions:
-                        raise ValueError("Cannot use '_begin' or '_end'"
-                                         "if comparing to a list")
-                except TypeError:
-                    request = [request[keys[0]]]
-                cast = eval(keys[0])
-                if not callable(cast):
-                    raise ValueError(
-                        "Dictionary key (casting) has to be a callable "
-                        "function accepting only one argument")
-            else:
-                cast = type(request)
-                request = [request]
-
-            less_than = greater_than = False
-            for f in functions:
-                f = f.lower()
-                if f[:5] == 'begin':
-                    header_val = header_val[:len(request[0])]
-                elif f[:3] == 'end':
-                    header_val = header_val[-len(request[0]):]
-                elif f[:5] == 'icase':
-                    header_val = header_val.lower()
-                    request = [a.lower() for a in request]
-                elif f[:3] == 'not':
-                    exists = False
-                elif f[:5] == 'match':
-                    match = True
-                elif f[:5] == 'equal':
-                    match = False
-                elif f[:3] == 'lt':
-                    less_than = True
-                elif f[:3] == 'gt':
-                    greater_than = True
-                else:
-                    iologger.warning(f"Function '{f}' not recognized in "
-                                     f"filtering, ignoring")
-
-            # print("r:%s h:%s m:%i f:%s" %(request, header_val,
-            #                               match, functions))
-            if greater_than:
-                ret.append((True in [cast(r) < cast(header_val)
-                                     for r in request]) == exists)
-            elif less_than:
-                ret.append((True in [cast(r) > cast(header_val)
-                                     for r in request]) == exists)
-            elif match:
-                ret.append((True in [cast(r) in cast(header_val)
-                                     for r in request]) == exists)
-            else:
-                ret.append((True in [cast(r) == cast(header_val)
-                                     for r in request]) == exists)
-
-        # Returns whether the filter existed (or not if _not function)
-        return True in ret
-
-    @_checkfilename
+    @_AstroDecorator.check_filename
     def setheader(self, **kwargs):
         """
         Set header values from kwargs. They can be specified as tuple to add
@@ -702,13 +611,14 @@ class AstroFile(object):
         tp = self.type
         hdu = kwargs.pop('hduh', self._hduh)
         for k, v in kwargs.items():
-            if v is None:
-                del self.header_cache[hdu][k]
+            key = f"{hdu}_{k}"
+            if v is None and key in self._info:
+                self._info[key] = pd.NA
             else:
-                self.header_cache[hdu][k] = v
-        return self._seth[tp](self.filename, hdu=hdu, **kwargs)
+                self._info[key] = v
+        return self._seth[tp](self._info.name, hdu=hdu, **kwargs)
 
-    @_checkfilename
+    @_AstroDecorator.check_filename
     def getheaderval(self, *args, **kwargs):
         """
         Get header value for each of the fields specified in args.
@@ -747,19 +657,18 @@ class AstroFile(object):
             elif isinstance(args[0], str):
                 args = args[0].split(',')
 
-        if self.header_cache is None:
-            self.header_cache = self._geth[tp](self.filename)
-
-        hdr = self.header_cache[hdu]
+        hdr = self._info
         ret = []
         for k in args:
-            k_lc = k.lower().strip()
-            if k_lc in hdr:
-                ret.append(cast(hdr[k_lc]))
-            elif k_lc == "basename":
-                ret.append(path.basename(self.filename))
+            k_lc = f"{hdu}_{k.lower().strip()}"
+            if k_lc == "basename":
+                ret.append(path.basename(self._info.name))
             elif k_lc == "dirname":
-                ret.append(path.dirname(self.filename))
+                ret.append(path.dirname(self._info.name))
+            elif k_lc == "filename":
+                ret.append(self._info.name)
+            elif k_lc in hdr:
+                ret.append(cast(hdr[k_lc]))
             else:
                 ret.append(None)
 
@@ -768,7 +677,7 @@ class AstroFile(object):
         else:
             return ret
 
-    @_checkfilename
+    @_AstroDecorator.check_filename
     def reader(self, *args, **kwargs):
         """
         Read astro data and return it calibrated if provided
@@ -818,7 +727,7 @@ class AstroFile(object):
             return self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
                                      ffilter=self[self.calib.filter_keyword],
-                                     header=self.readheader())
+                                     header=self._info)  # todo: check header!
 
         return data
 
@@ -832,24 +741,39 @@ class AstroFile(object):
         """
         return self.calib.has_flat or self.calib.has_bias
 
-    @_checkfilename
-    def readheader(self, *args, **kwargs):
+    @_AstroDecorator.check_filename
+    def readheader(self, use_header=None):
         """
         Reads header from the file
 
         Parameters
         ----------
-        hdu: int, optional
-            Specific hdu slot to be read
+            use_header:
         """
+        if self._info is not None:
+            return self._info
+
         tp = self.type
-        hdu = kwargs.pop('hdu', self._hduh)
 
         if not tp:
             return False
-        return self.header_cache
 
-    @_checkfilename
+        if use_header is None:
+            header = self._geth[self.type](self.filename)
+        elif isinstance(use_header, dict):
+            header = [use_header]
+        else:
+            raise ValueError(f"Header argument to AstroFile can only be a dictionary")
+
+        header_dict = {}
+        for hdu in range(len(header)):
+            header_dict = self.dict_to_header(header[hdu], hdu=hdu, append_to=header_dict)
+
+        self._info = pd.Series(header_dict, name=self.filename)
+
+        return self._info
+
+    @_AstroDecorator.check_filename
     def writer(self, data, *args, **kwargs):
         """
         Writes given data to file
@@ -859,7 +783,7 @@ class AstroFile(object):
         #       array given by user
         return tp and self._writes[tp](self.filename, data, *args, **kwargs)
 
-    @_checkfilename
+    @_AstroDecorator.check_filename
     def basename(self):
         """
         Obtains the file basename
@@ -873,7 +797,7 @@ class AstroFile(object):
             return None
         return path.basename(self.filename)
 
-    @_checkfilename
+    @_AstroDecorator.check_filename
     def __getitem__(self, key):
         """
         Read data and return key
@@ -892,69 +816,69 @@ class AstroFile(object):
             return self.reader()[key]
 
     # Object Comparison
-    @_checksortkey
+    @_AstroDecorator.check_sort_key
     def __lt__(self, other):
-        return self.getheaderval(self.sortkey) < \
-               other.getheaderval(self.sortkey)
+        return self.getheaderval(self.sort_key) < \
+               other.getheaderval(self.sort_key)
 
-    @_checksortkey
+    @_AstroDecorator.check_sort_key
     def __le__(self, other):
-        return self.getheaderval(self.sortkey) <= \
-               other.getheaderval(self.sortkey)
+        return self.getheaderval(self.sort_key) <= \
+               other.getheaderval(self.sort_key)
 
-    @_checksortkey
+    @_AstroDecorator.check_sort_key
     def __gt__(self, other):
-        return self.getheaderval(self.sortkey) > \
-               other.getheaderval(self.sortkey)
+        return self.getheaderval(self.sort_key) > \
+               other.getheaderval(self.sort_key)
 
-    @_checksortkey
+    @_AstroDecorator.check_sort_key
     def __eq__(self, other):
-        return self.getheaderval(self.sortkey) == \
-               other.getheaderval(self.sortkey)
+        return self.getheaderval(self.sort_key) == \
+               other.getheaderval(self.sort_key)
 
-    @_checksortkey
+    @_AstroDecorator.check_sort_key
     def __ne__(self, other):
-        return self.getheaderval(self.sortkey) != \
-               other.getheaderval(self.sortkey)
+        return self.getheaderval(self.sort_key) != \
+               other.getheaderval(self.sort_key)
 
     # Object Arithmetic
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __add__(self, other):
         return self.reader() + other
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __sub__(self, other):
         return self.reader() - other
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __floordiv__(self, other):
         return self.reader() // other
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __truediv__(self, other):
         return self.reader() / other
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __mul__(self, other):
         return self.reader() * other
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __radd__(self, other):
         return other + self.reader()
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __rsub__(self, other):
         return other - self.reader()
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __rfloordiv__(self, other):
         return other // self.reader()
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __rtruediv__(self, other):
         return other / self.reader()
 
-    @_numerize_other
+    @_AstroDecorator.numerize_other
     def __rmul__(self, other):
         return self.reader() * other
 
@@ -1097,11 +1021,12 @@ class AstroFile(object):
             composite = pf.ImageHDU(comp, header=fit[0].header)
             composite.header.set('COMP', True)
             if read_only:
-                self.filename = comp
+                comp_hdu = len(fit)
+                self._hdud = comp_hdu
+                self._hduh = comp_hdu
+                self._info = self.dict_to_header(composite.header, hdu=comp_hdu, append_to=self._info)
+
                 self.type = self.checktype()
-                self.header_cache = [composite.header]
-                self._hduh = 0
-                self._hdud = 0
                 warnings.warn("Merged image stored in hdu 0 and previous info discarded as system was read-only",
                               UserWarning,
                               )
@@ -1111,6 +1036,16 @@ class AstroFile(object):
                 fit.flush()
 
         return self
+
+    @staticmethod
+    def dict_to_header(header_dict, hdu=0, append_to=None, name=None):
+        header_dict = {f"{hdu}_{k}": v for k, v in header_dict.items()}
+        if append_to is None:
+            return pd.Series(header_dict, name=name)
+        elif isinstance(append_to, pd.Series):
+            append_to.update(header_dict)
+        else:
+            raise ValueError(f"append_to keyword to .dict_to_header() must be a pandas.Series")
 
     #################
     #

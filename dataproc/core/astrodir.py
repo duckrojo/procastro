@@ -23,18 +23,21 @@ __all__ = ['AstroDir']
 import os
 import re
 
+import pandas as pd
+
 import dataproc as dp
 import numpy as np
 import warnings
 import copy
 import sys
 from astropy.utils.exceptions import AstropyUserWarning
+from .astrocommon import AstroCommon
 
 import logging
 io_logger = logging.getLogger('dataproc.io')
 
 
-class AstroDir(object):
+class AstroDir(AstroCommon):
     """Collection of AstroFile objects.
 
     Several recursive methods that are applied to each AstroFile are available
@@ -75,7 +78,6 @@ class AstroDir(object):
     dataproc.AstroCalib.add_flat
     """
 
-
     def __new__(cls, *args, **kwargs):
         """
         If passed an AstroDir, then do not create a new instance, just pass
@@ -86,7 +88,6 @@ class AstroDir(object):
 
         return super(AstroDir, cls).__new__(cls)
 
-
     def __init__(self, path, mflat=None, mbias=None,
                  mbias_header=None, mflat_header=None,
                  calib_force=False,
@@ -96,7 +97,6 @@ class AstroDir(object):
         import os
         import glob
         import os.path as pth
-        files = []
 
         if hduh is None:
             hduh = hdu
@@ -109,6 +109,8 @@ class AstroDir(object):
             file_n_dir = [path]
         else:
             file_n_dir = path
+
+        self._df = pd.DataFrame
         for f in file_n_dir:
             if isinstance(f, dp.AstroFile):
                 nf = copy.deepcopy(f)
@@ -133,18 +135,20 @@ class AstroDir(object):
 
             try:
                 if nf:
-                    files.append(nf)
+                    info = nf.readheader()
+                    info.update({'AstroFile': nf})
+                    self._df.loc[nf.filename] = info
+
             except IOError:
                 warnings.warn(f"Warning: File {nf.basename()} could not "
                               f"be read, or HDU {hdud} empty... skipping")
 
-        self.files = files
         self.props = {}
         calib = dp.AstroCalib(mbias, mflat, auto_trim=auto_trim,
                               mbias_header=mbias_header,
                               mflat_header=mflat_header)
 
-        for f in files:
+        for f in self._df['AstroFile']:
             # Allows some of the files to keep their calibration
             if calib_force or not f.has_calib():  #
                 # AstroFile are created with an empty calib by default, which
@@ -207,7 +211,8 @@ class AstroDir(object):
         Parameters
         ----------
         args : str
-            A header field name to be used as comparison key
+            Names of a header field  o be used as comparison key. If several of them are specified, it will
+            use the first valid one
 
         Raises
         ------
@@ -219,13 +224,13 @@ class AstroDir(object):
         if len(args) == 0:
             raise ValueError("At least one valid header field must be "
                              "specified to sort")
-        hdrfld = False
+        sort_field = False
 
         for a in args:
             if self.getheaderval(a):
-                hdrfld = a
+                sort_field = a
                 break
-        if not hdrfld:
+        if not sort_field:
             raise ValueError(
                 "A valid header field must be specified to use as a sort key."
                 " None of the currently requested "
@@ -234,8 +239,9 @@ class AstroDir(object):
         # Sorting is done using python operators __lt__, __gt__
         # which are inquired by .sort() directly.
         for f in self:
-            f.add_sortkey(hdrfld)
+            f.add_sortkey(sort_field)
         self.files.sort()
+
         return self
 
     def __repr__(self):
@@ -261,18 +267,13 @@ class AstroDir(object):
 
         return dp.AstroDir(self.files+other_af)
 
-    # def __eq__(self, other):
-    #     # as in scipy
-    #     if isinstance(other, )
-
     def __getitem__(self, item):
         # imitate indexing on boolean array as in scipy.
         if isinstance(item, np.ndarray):
             if item.dtype == 'bool':
                 if len(item) != len(self):
                     raise ValueError("Attempted to index AstroDir with "
-                                     "a boolean array of different size"
-                                     "(it must include all bads)")
+                                     "a boolean array of different size")
 
                 fdir = [f for b, f in zip(item, self) if b]
                 return AstroDir(fdir)
@@ -283,13 +284,13 @@ class AstroDir(object):
 
         # if slice, return a new astrodir
         elif isinstance(item, slice):
-            return AstroDir(self.files.__getitem__(item))
+            return AstroDir(self._df['AstroFile'][item])
 
         # otherwise, use a list
-        return self.files[item]  # .__getitem__(item)
+        return self._df['AstroFile'][item]
 
     def __len__(self):
-        return len(self.files)
+        return len(self._df)
 
     def stats(self, *args, **kwargs):
         """
@@ -351,6 +352,14 @@ class AstroDir(object):
             Specifies the syntax used by the recieved arguments.
 
         """
+        filters = self.parse_filter()
+
+        # TODO: NOW: the following is invalid, it needs to look for the correct columns to filter.
+
+        filtered_columns = [(True in [operation(value_cast(value, r), request_cast(value, r))
+                                      for r in request])
+                            for value_cast, request_cast, operation, request, filter_keyword in filters
+                            for column in [self._df[filter_keyword]]]
         from copy import copy
         new = copy(self)
         new.files = [f for f in self if f.filter(*args, **kwargs)]
