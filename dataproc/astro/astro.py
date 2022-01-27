@@ -81,8 +81,9 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', e
         If all query attempts fail (Wrong coordinates or unknown)
     """
 
-    extra = []
     votable = {"sptype": "SP_TYPE"}
+    if extra_info is None:
+        extra_info = []
 
     try:
         ra_dec = apcoo.SkyCoord([f"{target}"], unit=(apu.hour, apu.degree),
@@ -107,7 +108,16 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', e
                     for line in open_file.readlines():
                         if len(line) < 10 or line[0] == '#':
                             continue
-                        name, ra, dec, note = line.split(None, 4)
+                        name, ra, dec, note = line.split(None, 3)
+                        extra = extra_info.copy()
+
+                        for note_item in note.split():
+                            if note_item.count("=") == 1:
+                                key, val = note_item.split("=")
+                                try:
+                                    extra[extra_info.index(key)] = eval(val)
+                                except ValueError:
+                                    print("ignoring extra info not requested: {key}")
                         if ra[-1] == 'd':
                             ra = "{0:f}".format(float(ra[:-1]) / 15,)
                         if dp.accept_object_name(name, target):
@@ -121,6 +131,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', e
                     break
         # if coordinate not in file
         else:
+            extra = []
             if verbose:
                 print(" '{0:s}' not understood as coordinates, attempting query "
                       "as name... ".format(target,), end='')
@@ -129,7 +140,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', e
                     "Sorry, AstroQuery not available for coordinate querying")
 
             custom_simbad = aqs.Simbad()
-            if extra_info is not None:
+            if len(extra_info) > 0:
                 for info in extra_info:
                     custom_simbad.add_votable_fields(info)
 
@@ -143,7 +154,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', e
                 raise ValueError(
                     f"Target '{target}' not found on Simbad")
             ra, dec = query['RA'][0], query['DEC'][0]
-            if extra_info is not None:
+            if len(extra_info) > 0:
                 for info in extra_info:
                     if info in votable:
                         info = votable[info]
@@ -157,7 +168,7 @@ def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', e
         if verbose:
             print("success! \n  {})".format(ra_dec,))
 
-    if extra_info is not None:
+    if len(extra_info) > 0:
         if len(extra_info) == len(extra):
             return ra_dec, extra
         else:

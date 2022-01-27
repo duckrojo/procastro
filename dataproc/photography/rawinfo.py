@@ -32,8 +32,10 @@ __all__ = ['RawFiles', 'RawFile']
 
 class RawFiles(PhotoPlotting):
     def __init__(self,
-                 dirname, name="", ref_time=None,
-                 hour_offset=0, fnumber_def=None,
+                 dirname,
+                 umbra=40,
+                 name="", ref_time=None,
+                 min_offset=0, fnumber_def=None,
                  extension="nef", sort_time=True,
                  verbose=True):
         """
@@ -45,12 +47,12 @@ Container of image information class
                Name of the dataset
             ref_time: astropy.time.Time, int, str
                Frame to take as reference for time, or string that can be converted to time, or time object
-            hour_offset: float
+            min_offset: float
                Offset of time in hours
             extension: str
                 Extension of files to consider
         """
-        super().__init__()
+        super().__init__(umbra=umbra)
         database = pd.DataFrame()
         self._df = database
         self._extension = extension
@@ -61,20 +63,21 @@ Container of image information class
         else:
             search_string = f"{dirname}/*{extension}"
             image_list = glob.glob(search_string)
-            self._raw_files = [RawFile(image) for image in image_list]
+            self._raw_files = [RawFile(image, fnumber_def=fnumber_def)
+                               for image in image_list]
             error_msg = f"No files found on: '{search_string}'"
         if not len(self._raw_files):
             raise ValueError(error_msg)
 
         self._dataset_name = name
 
-        self.read_exif(fnumber_def=fnumber_def, sort_time=sort_time, verbose=verbose)
+        self.read_exif()
 
         if ref_time is None:
             ref_time = self._df['date'][0]
         elif isinstance(ref_time, str):
             ref_time = apt.Time(ref_time)
-        ref_time += hour_offset*u.h
+        ref_time += min_offset * u.min
         self._ref_time = ref_time
 
     def __len__(self):
@@ -98,8 +101,9 @@ Container of image information class
         if verbose:
             print(f"Processing {len(self._raw_files)} images: ", end='')
         for image in self._raw_files:
-            data_read = image.read_exif(**kwargs)
-            self._df = self._df.append(data_read, ignore_index=True)
+            data_read = image.read_exif(**kwargs)  # receives a dictiionary
+            self._df = self._df.append(data_read, ignore_index=True)  # adds that info into database
+
             if verbose:
                 if i % 10 == 0:
                     if i % 100 == 0:
@@ -129,9 +133,10 @@ class RawFile:
     def __repr__(self):
         return f"RAW image {self._filename}"
 
-    def __init__(self, filename):
+    def __init__(self, filename, fnumber_def=None):
         self._filename = filename
         self.header = None
+        self.read_exif(fnumber_def=fnumber_def)
 
     def read_exif(self, fields=None, reload=False, fnumber_def=None):
         if self.header is not None and not reload:
@@ -152,6 +157,8 @@ class RawFile:
             fnumber_def = header['fnumber_str']
         header['fnumber'] = eval(fnumber_def)
         header['date'] = apt.Time(header['date_str'].replace(":", "-", 2))
+        header['ev'] = np.log(100 * header['fnumber'] ** 2
+                              / header['exposure'] / header['iso']) / np.log(2)
 
         self.header = header
         return header
@@ -161,3 +168,6 @@ class RawFile:
         with rp.imread(self._filename) as raw:
             rgb = raw.postprocess()
             return rgb
+
+
+#sample = "C:/Users/duckr/Desktop/post/sony/DSC09845.ARW"

@@ -331,9 +331,9 @@ class ObsCalc(object):
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
 
-            resultset = exo_service.search(f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur "
-                                           f"FROM exo_tap.pscomppars "
-                                           f"WHERE lower(pl_name) like '%{target}%' ")
+            query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
+                    f"WHERE lower(pl_name) like '%{target.lower()}%' "
+            resultset = exo_service.search(query)
             try:
                 req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
             except IndexError:

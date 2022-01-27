@@ -28,9 +28,10 @@ import astropy.time as apt
 
 
 class PhotoPlotting:
-    def __init__(self):
+    def __init__(self, umbra=40):
         self._df = None  # type: pandas.DataFrame
         self._figs = []
+        self.umbra = umbra
         self._ref_time = None
         self._dataset_name = None
 
@@ -50,8 +51,9 @@ class PhotoPlotting:
         self._ref_time = ref_time
 
     def plot_ev(self, ref_frame=0, ref_time=None,
+                ylabel="Ev",
                 marker='.', ls='', color='red',
-                label=None, legend=False,
+                label=None, legend=False, umbra=True, save=None,
                 xlims=None, ax=None, overwrite=False):
         self.set_ref_time(ref_time, ref_frame)
         df = self._df
@@ -62,13 +64,17 @@ class PhotoPlotting:
         ax.plot(df['delta_time'], df['ev'], label=label,
                 marker=marker, ls=ls, color=color)
         ax.set_title(self._dataset_name)
-        ax.set_ylabel("ev")
+        ax.set_ylabel(ylabel)
         ax.yaxis.label.set_color(color)
 
+        if umbra:
+            ax.axvspan(0, self.umbra, color="gray", alpha=0.6)
         ax.set_xlim(xlims)
         f.tight_layout()
         if legend:
             ax.legend()
+        if save is not None:
+            f.savefig(save)
 
     def plot_aperture(self, ref_frame=0, ref_time=None,
                 marker='.', ls='', color='red',
