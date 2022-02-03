@@ -70,7 +70,7 @@ def _show_apertures(coords, aperture=None, sky=None,
         logger.warning("Using default sky of 15-20 pixels")
         sky = [15, 20]
 
-    f, ax = dp.figaxes(axes, overwrite=True)
+    f, ax = dp.figaxes(axes, overwrite=False)
     for p in [pp for pp in ax.patches]:
         # noinspection PyArgumentList
         p.remove()
