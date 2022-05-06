@@ -705,3 +705,4 @@ def star_sidereal_time_to_local_hour(sun_ra, star_ra, midday):
     star_time_in_utc = midday + star_to_sun_distance * u.hour
     return star_time_in_utc
 
+a = 1
