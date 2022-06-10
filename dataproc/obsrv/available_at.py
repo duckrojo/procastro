@@ -10,19 +10,108 @@ from astropy.coordinates import SkyCoord, AltAz
 from astropy.coordinates import get_sun
 from astropy.coordinates import get_moon
 from matplotlib import cm
-import time
+
+__all__ = ['AvalaibleAt']
 
 
+def to_hms(jd):
+    return Time(jd, format='jd').to_value('iso', 'date_hms')[11:20]
 
 class AvalaibleAt:
+    """
+    A class that contains information about the avalaible exoplanets at a given observatory and night.
+    ...
+
+    Attributes
+    ----------
+    dataframe : object
+        the dataset with all the confirmed exoplanets and its attributes
+    observatory : object
+        the location's coordinates of the observatory
+    utc_offset : float
+        the utc offset of the observatory's location
+    min_transit_percent : float
+        the minimum transit percentage value for the observation
+    min_transit_percent_ix : float
+        the extreme minimum transit percentage acceptble for the observation
+    night_angle : float
+        the local sun altitude that defines the start and end of the night
+    min_obs_ix : float
+        the star's extreme minimum altitude in degrees that is acceptable for the observation. Must be equal or lower
+        than min_obs.
+    min_obs : float
+        the star's minimum altitude in degrees required for the observation
+    max_obs : float
+        the star's ideal altitude in degrees required for the observation
+    min_baseline_ix : float
+        the baseline's extreme minimum value in days acceptable for the transit observation
+    min_baseline : float
+        the baseline's minimum value in days, required for the transit observation
+    max_baseline : float
+        the baseline's ideal value in days , required for the transit observation
+    moon_separation_min_ix : float
+        the extreme minimum separation angle between the moon and the star acceptable for the observation
+    moon_separation_min : float
+        the minimum separation angle between the moon and the star required for the observation
+    moon_separation_max : float
+        the ideal separation angle between the moon and the star required for the observation
+    vmag_min_ix : float
+        the extreme minimum v magnitude value of the stars acceptable for the observation
+
+    Methods
+    -------
+    run_day(date):
+        determines the avalaible exoplanets on the observatory location at a given date.
+    update(args):
+        determines the avalaible exoplanets on the observatory location at the given date but
+        with a change in the initial args.
+    plot(precision,extention=False):
+        plots the altitudes of the avalaible exoplanets on the observatory location at the given date.
+    """
     def __init__(self, observatory, min_transit_percent=0.9, night_angle=-18, min_obs=30,
                  min_obs_ix=19.5,
                  max_obs=40.0, min_baseline_ix=0.01, max_baseline=0.04, min_baseline=0.02, moon_separation_min_ix=10,
                  moon_separation_min=20, moon_separation_max=50, vmag_min_ix=12.5):
+        """
+        Constructs all the neccesary attributes for the object
+
+        Parameters
+        ----------
+            observatory : str
+                name of the observatory
+            min_transit_percent : float
+                the minimum transit percentage value for the observation
+            night_angle : float
+                the local sun altitude that defines the start and end of the night
+            min_obs : float
+                the star's minimum altitude in degrees required for the observation
+            min_obs_ix : float
+                the star's extreme minimum altitude in degrees that is acceptable for the observation. Must be equal or
+                lower than min_obs.
+            max_obs : float
+                the star's ideal altitude in degrees required for the observation
+            min_baseline_ix : float
+                the baseline's extreme minimum value in days acceptable for the transit observation
+            max_baseline : float
+                the baseline's ideal value in days , required for the transit observation
+            min_baseline : float
+                the baseline's minimum value in days, required for the transit observation
+            moon_separation_min_ix : float
+                the extreme minimum separation angle in degrees between the moon and the star acceptable for the
+                observation
+            moon_separation_min : float
+                the minimum separation angle between the moon and the star required for the observation
+            moon_separation_max : float
+                the ideal separation angle between the moon and the star required for the observation
+            vmag_min_ix : float
+                the extreme minimum v magnitude value of the stars acceptable for the observation
+
+
+        """
         self.night_angle = night_angle
-        self.dataframe = self.dataframe_
+        self.dataframe = self._dataframe()
         self.observatory = coord.EarthLocation.of_site(observatory)
-        self.observatory_lon = self.observatory.lon.degree
+        self.utc_offset = (int(self.observatory.lon.degree / 15)) * u.hour
         # dejar todo en self.date_offset
         self.min_transit_percent = min_transit_percent
         self.min_transit_percent_ix = self.min_transit_percent / 2
@@ -38,20 +127,28 @@ class AvalaibleAt:
         self.vmag_min_ix = vmag_min_ix
 
     def run_day(self, date):
+        """
+        Determines the avalaible exoplanets at a certain date at the given observatory
+
+        Parameters
+        ----------
+        date : str
+            the observation's date
+        Returns
+        -------
+        None
+        """
         self.date = Time(date) + 12 * u.hour
-        self.utc_offset = (int(self.observatory_lon / 15)) * u.hour
         self.date_offset = self.date - self.utc_offset
         self.start_night = self.delta_midnight_times()[0]
         self.end_night = self.delta_midnight_times()[1]
         self.delta_midnight_ = self.delta_midnight()
-        self.start = time.perf_counter()
         self.pre_ephemerides()
         self.ephemerides()
         self.post_ephemerides()
-        self.end = time.perf_counter()
 
-    @property
-    def dataframe_(self):
+
+    def _dataframe(self):
         exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
         resultset = exo_service.search(
             f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
@@ -96,6 +193,18 @@ class AvalaibleAt:
     def update(self, min_transit_percent=None, night_angle=None, min_obs=None, min_obs_ix=None, max_obs=None,
                min_baseline_ix=None, max_baseline=None, min_baseline=None, moon_separation_min_ix=None,
                moon_separation_min=None, moon_separation_max=None):
+        """
+        Updates the attributes of the constructor and determines the avalaible exoplanets with the new attributes
+
+        Parameters
+        ----------
+        Same paramateres of the constructor
+
+        Returns
+        -------
+        None
+
+        """
         args = self.set_default_parameteres(min_transit_percent, night_angle, min_obs, min_obs_ix, max_obs,
                                             min_baseline_ix, max_baseline, min_baseline, moon_separation_min_ix,
                                             moon_separation_min, moon_separation_max)
@@ -130,10 +239,10 @@ class AvalaibleAt:
                 self.end_night.jd > self.baseline_percent_filter['start_observation']]
             self.baseline_percent_filter['start_observation'] = self.baseline_percent_filter['start_observation'].apply(
                 lambda x: x
-                if x['start_observation'] > self.start_night.jd else self.start_night.jd)
+                if x > self.start_night.jd else self.start_night.jd)
             self.baseline_percent_filter['end_observation'] = self.baseline_percent_filter['end_observation'].apply(
                 lambda x: x
-                if x['end_observation'] < self.end_night.jd else self.end_night.jd)
+                if x < self.end_night.jd else self.end_night.jd)
             self.post_ephemerides()
         return
 
@@ -385,7 +494,6 @@ class AvalaibleAt:
                                                              planets_df_input['moon_separation_grade'])
         planets_df_input['moon_separation_grade'] = np.where(planets_df_input['moon_separation_grade'] > 10, 10,
                                                              planets_df_input['moon_separation_grade'])
-        self.baseline_percent_filter = self.baseline_percent_filter.drop('moon_separation', axis=1)
         return planets_df_input
 
     def star_max_altitude_utc_time(self, precision=250):
@@ -642,22 +750,42 @@ class AvalaibleAt:
         return
 
     def planets_rank(self):
-        self.altitude_grades()
-        self.transit_percent_rank()
-        self.baseline_percent_rank()
-        self.moon_separation_rank()
-        grades_dataframe = self.baseline_percent_filter.loc[:, 'altitude_grade':]
-        rank = grades_dataframe.sum(axis=1) / len(grades_dataframe.columns)
-        rank_loc = np.where(self.baseline_percent_filter.columns == 'altitude_grade')[0][0]
-        self.baseline_percent_filter.insert(loc=int(rank_loc), column='rank', value=rank)
-        self.baseline_percent_filter.sort_values('transit_i', axis=0, inplace=True)
+        if ('rank' in self.baseline_percent_filter) == False:
+            self.altitude_grades()
+            self.transit_percent_rank()
+            self.baseline_percent_rank()
+            self.moon_separation_rank()
+            grades_dataframe = self.baseline_percent_filter.loc[:, 'altitude_grade':]
+            rank = grades_dataframe.sum(axis=1) / len(grades_dataframe.columns)
+            rank_loc = np.where(self.baseline_percent_filter.columns == 'altitude_grade')[0][0]
+            self.baseline_percent_filter.insert(loc=int(rank_loc), column='rank', value=rank)
+            self.baseline_percent_filter.sort_values('transit_i', axis=0, inplace=True)
+        else:
+            return
 
-    def plot(self, precision, extention=False):
+    def plot(self, precision, extention=False,altitude_separation=60):
+        """
+        Plots the altitudes of the encountered exoplanet's stars for the given date with information about the
+        observation
+
+         Parameters
+         ----------
+             precision : int
+                the number of altitudes points to plot between the start and the end of the stars' observation
+            extention : bool , optional
+                if True is given , then the plot will have only the transit's interval of the observation. If not,
+                then the plot will have the complete observations.
+
+        Returns
+        -------
+        object
+         """
         self.transit_and_baseline_index(precision)
         self.planets_rank()
         planets_df = self.baseline_percent_filter.reset_index()
         stars_altitudes = pd.DataFrame()
         transit_times = pd.DataFrame()
+
         for planet_index in self.baseline_percent_filter.index:
             transit_time = Time(self.baseline_percent_filter.loc[planet_index, :]['start_observation'], format='jd',
                                 scale='utc') \
@@ -671,11 +799,19 @@ class AvalaibleAt:
             from_icrs_to_alt_az = self.baseline_percent_filter.loc[planet_index, :]['star_coords'].transform_to(
                 local_frame).alt.degree
             stars_altitudes.insert(len(stars_altitudes.columns), len(stars_altitudes.columns), from_icrs_to_alt_az)
+        #baseline_i_times = np.array([])
+        #for i in range(0, len(transit_times.columns)):
+            #baseline_i_index = int(planets_df['baseline_i_index'][i])
+            #baseline_i_times = np.append(baseline_i_times, transit_times[i][baseline_i_index])
+        #baseline_i_times = pd.Series(Time(baseline_i_times).jd)
+        #transit_times = transit_times.append(baseline_i_times,ignore_index=True)
+        #transit_times = transit_times.sort_values(by=len(transit_times.index) - 1, axis=1)
+        #transit_times.drop(labels=len(transit_times.index)-1,axis=0,inplace=True)
         fig, axes = plt.subplots(figsize=(10, 15))
         cmap = cm.get_cmap(name='OrRd')
         for i in reversed(range(0, len(planets_df.index))):
             if extention == False:
-                altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 5 * i
+                altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 7* i
                 x_axis = np.linspace(planets_df.loc[i, :]['start_observation_index'],
                                      planets_df.loc[i, :]['end_observation_index'], len(altitudes))
                 axes.plot(x_axis, altitudes, color='blue')
@@ -695,9 +831,13 @@ class AvalaibleAt:
                                   altitudes[transit_f_index:baseline_f_index + 1],
                                   altitudes_min[transit_f_index:baseline_f_index + 1], color='blue', )
                 axes.text(x_axis[len(x_axis) - 1], altitudes_min[len(altitudes_min) - 1],
-                          s=planets_df.loc[i, :]['pl_name'])
+                          s=planets_df.loc[i, :]['pl_name'] + " / " + str(planets_df.loc[i,:]['sy_vmag'])+" / "+
+                            f"{planets_df.loc[i, :]['moon_separation']:.0f}$^\circ$"+" / "+
+                            f"{100*((planets_df.loc[i, :]['transit_observation_percent']<1)*(planets_df.loc[i, :]['transit_observation_percent']-1)+1):.0f}%"+
+                            " / "+transit_times[i][baseline_i_index].iso[11:19]+" / "+transit_times[i][baseline_f_index].iso[11:19])
+
             else:
-                altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 5 * i
+                altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 10 * i
                 x_axis = np.linspace(planets_df.loc[i, :]['start_observation_index'],
                                      planets_df.loc[i, :]['end_observation_index'], len(altitudes))
                 altitudes_min = np.full(len(x_axis), altitudes.min())
@@ -719,11 +859,14 @@ class AvalaibleAt:
                 axes.fill_between(x_axis[transit_f_index:baseline_f_index + 1],
                                   altitudes[transit_f_index:baseline_f_index + 1],
                                   altitudes_min[transit_f_index:baseline_f_index + 1], color='blue', )
-                axes.text(x_axis_[len(x_axis_) - 1], altitudes_min_[len(altitudes_min_) - 1],
-                          s=planets_df.loc[i, :]['pl_name'])
+                axes.text(x_axis[baseline_f_index], altitudes_min[len(altitudes_min) - 1],
+                          s=planets_df.loc[i, :]['pl_name'] + " / " + str(planets_df.loc[i, :]['sy_vmag']) + " / " +
+                            f"{planets_df.loc[i, :]['moon_separation']:.0f}$^\circ$" + " / " +
+                            f"{100 * ((planets_df.loc[i, :]['transit_observation_percent'] < 1) * (planets_df.loc[i, :]['transit_observation_percent'] - 1) + 1):.0f}%" + " / " +
+                            transit_times[i][baseline_i_index].iso[11:19]+" / "+transit_times[i][baseline_f_index].iso[11:19])
 
             axes.set_xlabel('Planets by Observation Rank', fontsize=20)
-            axes.set_xticks([0, 1, 1.2])
+            axes.set_xticks([0, 1, 1.65])
             axes.set_xticklabels([str(self.start_night.value), str(self.end_night.value), ''])
 
     def transit_and_baseline_index(self, precision):
@@ -759,6 +902,9 @@ class AvalaibleAt:
                                                                         self.end_night.jd - self.start_night.jd)
 
 
+
+
+
 def star_sidereal_time_to_local_hour(sun_ra, star_ra, midday):
     star_to_sun_distance = star_ra.hour - sun_ra.hour
     if star_to_sun_distance < 0:
@@ -767,5 +913,5 @@ def star_sidereal_time_to_local_hour(sun_ra, star_ra, midday):
     return star_time_in_utc
 a = AvalaibleAt('La Silla Observatory', min_obs_ix=25.0,
                 night_angle=-12)
-a.run_day('2022-07-24')
-a = 1
+a.run_day('2022-05-16')
+a.plot(50,extention=False)
