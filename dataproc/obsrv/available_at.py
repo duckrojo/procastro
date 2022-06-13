@@ -11,13 +11,13 @@ from astropy.coordinates import get_sun
 from astropy.coordinates import get_moon
 from matplotlib import cm
 
-__all__ = ['AvalaibleAt']
+__all__ = ['AvailableAt']
 
 
 def to_hms(jd):
     return Time(jd, format='jd').to_value('iso', 'date_hms')[11:20]
 
-class AvalaibleAt:
+class AvailableAt:
     """
     A class that contains information about the avalaible exoplanets at a given observatory and night.
     ...
@@ -146,6 +146,8 @@ class AvalaibleAt:
         self.pre_ephemerides()
         self.ephemerides()
         self.post_ephemerides()
+
+        return self
 
 
     def _dataframe(self):
@@ -810,7 +812,7 @@ class AvalaibleAt:
         fig, axes = plt.subplots(figsize=(10, 15))
         cmap = cm.get_cmap(name='OrRd')
         for i in reversed(range(0, len(planets_df.index))):
-            if extention == False:
+            if extention:
                 altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 7* i
                 x_axis = np.linspace(planets_df.loc[i, :]['start_observation_index'],
                                      planets_df.loc[i, :]['end_observation_index'], len(altitudes))
@@ -830,11 +832,17 @@ class AvalaibleAt:
                 axes.fill_between(x_axis[transit_f_index:baseline_f_index + 1],
                                   altitudes[transit_f_index:baseline_f_index + 1],
                                   altitudes_min[transit_f_index:baseline_f_index + 1], color='blue', )
-                axes.text(x_axis[len(x_axis) - 1], altitudes_min[len(altitudes_min) - 1],
-                          s=planets_df.loc[i, :]['pl_name'] + " / " + str(planets_df.loc[i,:]['sy_vmag'])+" / "+
-                            f"{planets_df.loc[i, :]['moon_separation']:.0f}$^\circ$"+" / "+
-                            f"{100*((planets_df.loc[i, :]['transit_observation_percent']<1)*(planets_df.loc[i, :]['transit_observation_percent']-1)+1):.0f}%"+
-                            " / "+transit_times[i][baseline_i_index].iso[11:19]+" / "+transit_times[i][baseline_f_index].iso[11:19])
+                axes.text(x_axis[len(x_axis) - 1], altitudes_min[-1],
+                          s=transit_times[i][baseline_f_index].iso[11:19]+
+                            f"{100 * ((planets_df.loc[i, :]['transit_observation_percent'] < 1) * (planets_df.loc[i, :]['transit_observation_percent'] - 1) + 1):.0f}%)",
+                          fontsize=9)
+                axes.text(x_axis[len(x_axis) - 1], altitudes_min[-1]+0.7,
+                          s=planets_df.loc[i, :]['pl_name'] + " (" + str(planets_df.loc[i,:]['sy_vmag'])+", "+
+                            f"{planets_df.loc[i, :]['moon_separation']:.0f}$^\circ$)",
+                          fontsize=9)
+                axes.text(x_axis[baseline_i_index], altitudes_min[-1],
+                          s=transit_times[i][baseline_i_index].iso[11:19],
+                          fontsize=9, ha='right')
 
             else:
                 altitudes = 10 * np.array(stars_altitudes.loc[:, i]) / 90 + 10 * i
@@ -859,11 +867,17 @@ class AvalaibleAt:
                 axes.fill_between(x_axis[transit_f_index:baseline_f_index + 1],
                                   altitudes[transit_f_index:baseline_f_index + 1],
                                   altitudes_min[transit_f_index:baseline_f_index + 1], color='blue', )
-                axes.text(x_axis[baseline_f_index], altitudes_min[len(altitudes_min) - 1],
-                          s=planets_df.loc[i, :]['pl_name'] + " / " + str(planets_df.loc[i, :]['sy_vmag']) + " / " +
-                            f"{planets_df.loc[i, :]['moon_separation']:.0f}$^\circ$" + " / " +
-                            f"{100 * ((planets_df.loc[i, :]['transit_observation_percent'] < 1) * (planets_df.loc[i, :]['transit_observation_percent'] - 1) + 1):.0f}%" + " / " +
-                            transit_times[i][baseline_i_index].iso[11:19]+" / "+transit_times[i][baseline_f_index].iso[11:19])
+                axes.text(x_axis[baseline_f_index], altitudes_min[-1],
+                          s=transit_times[i][baseline_f_index].iso[11:16]+
+                            f": {100 * ((planets_df.loc[i, :]['transit_observation_percent'] < 1) * (planets_df.loc[i, :]['transit_observation_percent'] - 1) + 1):.0f}%",
+                          fontsize=9)
+                axes.text(x_axis[baseline_f_index], altitudes_min[-1]+4,
+                          s=planets_df.loc[i, :]['pl_name'] + " (" + str(planets_df.loc[i, :]['sy_vmag']) + ", " +
+                            f"{planets_df.loc[i, :]['moon_separation']:.0f}$^\circ$)",
+                          fontsize=9)
+                axes.text(x_axis[baseline_i_index], altitudes_min[-1],
+                          s=transit_times[i][baseline_i_index].iso[11:16],
+                          fontsize=9, ha='right')
 
             axes.set_xlabel('Planets by Observation Rank', fontsize=20)
             axes.set_xticks([0, 1, 1.65])
@@ -911,7 +925,3 @@ def star_sidereal_time_to_local_hour(sun_ra, star_ra, midday):
         star_to_sun_distance = 24 - math.fabs(star_to_sun_distance)
     star_time_in_utc = midday + star_to_sun_distance * u.hour
     return star_time_in_utc
-a = AvalaibleAt('La Silla Observatory', min_obs_ix=25.0,
-                night_angle=-12)
-a.run_day('2022-05-16')
-a.plot(50,extention=False)
