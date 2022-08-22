@@ -369,7 +369,7 @@ def figaxes_xdate(x, axes=None, overwrite=False):
     return f, ax, retx
 
 
-def figaxes(axes=None, forcenew=True, overwrite=False):
+def figaxes(axes=None, forcenew=True, overwrite=False) -> (plt.Figure, plt.Axes):
     """
     Function that accepts a variety of canvas formats and returns the output
     ready for use with matplotlib

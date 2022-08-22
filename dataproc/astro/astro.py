@@ -448,7 +448,9 @@ def getfilter(name,
             found.append(f)
 
     if not len(found):
-        raise ValueError(f"No filter matches '{name}'")
+        raise ValueError(f"No filter matches '{name}'"
+                         " Be more specific between:\n {1:s}".format(name,
+                                                                      '\n '.join(found)))
     if len(found) > 2:
         raise ValueError(
             ("Only one of the available filters should match '{0:s}'." +

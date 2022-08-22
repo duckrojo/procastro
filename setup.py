@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 
 # Package requirements
 requirements = ["wheel", "sphinx", "astropy", "astroquery", "numpy", "scipy", "matplotlib", "pyvo", "pandas",
-                "exifread", "rawpy"]
+                "exifread", "rawpy", "basemap"]
 
 # Setup script
 setup(

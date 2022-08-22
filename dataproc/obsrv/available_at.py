@@ -17,6 +17,16 @@ __all__ = ['AvailableAt']
 def to_hms(jd):
     return Time(jd, format='jd').to_value('iso', 'date_hms')[11:20]
 
+def query_full_exoplanet_db(self):
+    exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
+    resultset = exo_service.search(
+        f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
+        f"FROM exo_tap.pscomppars "
+        f"WHERE pl_tranmid!=0.0 and sy_pmra is not null and sy_pmdec is not null and pl_orbper!=0.0 ")
+    planets_df = resultset.to_table().to_pandas()
+    return planets_df
+
+
 class AvailableAt:
     """
     A class that contains information about the avalaible exoplanets at a given observatory and night.
@@ -109,7 +119,7 @@ class AvailableAt:
 
         """
         self.night_angle = night_angle
-        self.dataframe = self._dataframe()
+        self.dataframe = query_full_exoplanet_db()
         self.observatory = coord.EarthLocation.of_site(observatory)
         self.utc_offset = (int(self.observatory.lon.degree / 15)) * u.hour
         # dejar todo en self.date_offset
@@ -125,6 +135,8 @@ class AvailableAt:
         self.moon_separation_min = moon_separation_min
         self.moon_separation_max = moon_separation_max
         self.vmag_min_ix = vmag_min_ix
+
+        self.selected_planets = None
 
     def run_day(self, date):
         """
@@ -149,28 +161,18 @@ class AvailableAt:
 
         return self
 
-
-    def _dataframe(self):
-        exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
-        resultset = exo_service.search(
-            f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
-            f"FROM exo_tap.pscomppars "
-            f"WHERE pl_tranmid!=0.0 and sy_pmra is not null and sy_pmdec is not null and pl_orbper!=0.0 ")
-        planets_df = resultset.to_table()
-        planets_df = planets_df.to_pandas()
-        return planets_df
-
     def pre_ephemerides(self):
-        self.closest_transit_ = self.closest_transit_filter(self.date_offset)
-        self.vmag_filter()
-        self.transit_percent_ = self.transit_percent_filter()
+        selected_planets = self.dataframe.copy()
+        selected_planets = self.closest_transit_filter(selected_planets, self.date_offset)
+        selected_planets = self.vmag_filter(selected_planets)
+        self.selected_planets = self.transit_percent_filter(selected_planets)
 
     def ephemerides(self):
         self.stars_altitudes_ = self.stars_altitudes()
         self.start_and_end_observation___()
 
     def post_ephemerides(self):
-        self.transit_observation_filter = self.transit_observation_percent()
+        self.selected_planets = self.transit_observation_percent()
         self.baseline_percent_filter = self.baseline_percent()
 
     def set_default_parameteres(self, min_transit_percent, night_angle, min_obs, min_obs_ix, max_obs, min_baseline_ix,
@@ -192,61 +194,61 @@ class AvailableAt:
 
         return args
 
-    def update(self, min_transit_percent=None, night_angle=None, min_obs=None, min_obs_ix=None, max_obs=None,
-               min_baseline_ix=None, max_baseline=None, min_baseline=None, moon_separation_min_ix=None,
-               moon_separation_min=None, moon_separation_max=None):
-        """
-        Updates the attributes of the constructor and determines the avalaible exoplanets with the new attributes
-
-        Parameters
-        ----------
-        Same paramateres of the constructor
-
-        Returns
-        -------
-        None
-
-        """
-        args = self.set_default_parameteres(min_transit_percent, night_angle, min_obs, min_obs_ix, max_obs,
-                                            min_baseline_ix, max_baseline, min_baseline, moon_separation_min_ix,
-                                            moon_separation_min, moon_separation_max)
-        if args['min_transit_percent'] < self.min_transit_percent and args['night_angle'] == self.night_angle and args[
-            'min_obs_ix'] == self.min_obs_ix:
-            self.set_parameters(args)
-            prev_transit_percent_filter = self.transit_percent__
-            prev_filtered_dataframe = self.baseline_percent_filter
-            self.pre_ephemerides()
-            self.transit_percent_ = self.transit_percent_.drop(prev_transit_percent_filter.index)
-            self.ephemerides()
-            self.post_ephemerides()
-            self.baseline_percent_filter = pd.concat([prev_filtered_dataframe, self.baseline_percent_filter])
-            self.baseline_percent_filter = self.baseline_percent_filter.sort_index()
-        elif args['min_transit_percent'] < self.min_transit_percent or args[
-            'night_angle'] > self.night_angle or self.min_obs_ix != args['min_obs_ix']:
-            self.set_parameters(args)
-            self.pre_ephemerides()
-            self.ephemerides()
-            self.post_ephemerides()
-        elif args['night_angle'] == self.night_angle:
-            self.set_parameters(args)
-            self.transit_percent_ = self.transit_percent_[
-                self.transit_percent_['transit_percent'] > self.min_transit_percent_ix]
-            self.post_ephemerides()
-        else:
-            self.set_parameters(args)
-            self.transit_percent_filter()
-            self.baseline_percent_filter = self.baseline_percent_filter[
-                self.start_night.jd < self.baseline_percent_filter['end_observation']]
-            self.baseline_percent_filter = self.baseline_percent_filter[
-                self.end_night.jd > self.baseline_percent_filter['start_observation']]
-            self.baseline_percent_filter['start_observation'] = self.baseline_percent_filter['start_observation'].apply(
-                lambda x: x
-                if x > self.start_night.jd else self.start_night.jd)
-            self.baseline_percent_filter['end_observation'] = self.baseline_percent_filter['end_observation'].apply(
-                lambda x: x
-                if x < self.end_night.jd else self.end_night.jd)
-            self.post_ephemerides()
-        return
+    # def update(self, min_transit_percent=None, night_angle=None, min_obs=None, min_obs_ix=None, max_obs=None,
+    #            min_baseline_ix=None, max_baseline=None, min_baseline=None, moon_separation_min_ix=None,
+    #            moon_separation_min=None, moon_separation_max=None):
+    #     """
+    #     Updates the attributes of the constructor and determines the avalaible exoplanets with the new attributes
+    #
+    #     Parameters
+    #     ----------
+    #     Same paramateres of the constructor
+    #
+    #     Returns
+    #     -------
+    #     None
+    #
+    #     """
+    #     args = self.set_default_parameteres(min_transit_percent, night_angle, min_obs, min_obs_ix, max_obs,
+    #                                         min_baseline_ix, max_baseline, min_baseline, moon_separation_min_ix,
+    #                                         moon_separation_min, moon_separation_max)
+    #     if args['min_transit_percent'] < self.min_transit_percent and args['night_angle'] == self.night_angle and args[
+    #         'min_obs_ix'] == self.min_obs_ix:
+    #         self.set_parameters(args)
+    #         prev_transit_percent_filter = self.transit_percent__
+    #         prev_filtered_dataframe = self.baseline_percent_filter
+    #         self.pre_ephemerides()
+    #         self.transit_percent_ = self.transit_percent_.drop(prev_transit_percent_filter.index)
+    #         self.ephemerides()
+    #         self.post_ephemerides()
+    #         self.baseline_percent_filter = pd.concat([prev_filtered_dataframe, self.baseline_percent_filter])
+    #         self.baseline_percent_filter = self.baseline_percent_filter.sort_index()
+    #     elif args['min_transit_percent'] < self.min_transit_percent or args[
+    #         'night_angle'] > self.night_angle or self.min_obs_ix != args['min_obs_ix']:
+    #         self.set_parameters(args)
+    #         self.pre_ephemerides()
+    #         self.ephemerides()
+    #         self.post_ephemerides()
+    #     elif args['night_angle'] == self.night_angle:
+    #         self.set_parameters(args)
+    #         self.transit_percent_ = self.transit_percent_[
+    #             self.transit_percent_['transit_percent'] > self.min_transit_percent_ix]
+    #         self.post_ephemerides()
+    #     else:
+    #         self.set_parameters(args)
+    #         self.transit_percent_filter()
+    #         self.baseline_percent_filter = self.baseline_percent_filter[
+    #             self.start_night.jd < self.baseline_percent_filter['end_observation']]
+    #         self.baseline_percent_filter = self.baseline_percent_filter[
+    #             self.end_night.jd > self.baseline_percent_filter['start_observation']]
+    #         self.baseline_percent_filter['start_observation'] = self.baseline_percent_filter['start_observation'].apply(
+    #             lambda x: x
+    #             if x > self.start_night.jd else self.start_night.jd)
+    #         self.baseline_percent_filter['end_observation'] = self.baseline_percent_filter['end_observation'].apply(
+    #             lambda x: x
+    #             if x < self.end_night.jd else self.end_night.jd)
+    #         self.post_ephemerides()
+    #     return
 
     def set_parameters(self, args):
         self.night_angle = args[
@@ -274,21 +276,18 @@ class AvailableAt:
         sunaltazs_july12_to_13 = get_sun(times_july12_to_13).transform_to(frame_july12_to_13)
         return sunaltazs_july12_to_13
 
-    def closest_transit_filter(self, date):
-        self.dataframe['closest_transit'] = ((date.jd - self.dataframe['pl_tranmid']) / self.dataframe[
-            'pl_orbper']) + 1.0
-        self.dataframe['closest_transit'] = self.dataframe['closest_transit'].astype('int')
-        self.dataframe['closest_transit'] = self.dataframe['pl_tranmid'] + self.dataframe['closest_transit'] *\
-                                            self.dataframe['pl_orbper']
-        self.dataframe['delta_closest_transit'] = self.dataframe['closest_transit'] - date.jd
-        first_filter_df = self.dataframe[self.dataframe.delta_closest_transit < 1.0]
-        first_filter_df = first_filter_df[0.0 <= first_filter_df.delta_closest_transit]
-        return first_filter_df
+    def closest_transit_filter(self, planets_df, date):
+        closest_transit_n = (((date.jd - planets_df['pl_tranmid']) / planets_df['pl_orbper'])
+                             + 1.0).astype('int')
+        closest_transit_jd = planets_df['pl_tranmid'] + closest_transit_n * planets_df['pl_orbper']
+        delta_transit_jd = closest_transit_jd - date.jd
+        planets_df['closest_transit'] = closest_transit_jd
+        return planets_df[0 <= (delta_transit_jd < 1.0)]
 
-    def vmag_filter(self):
-        self.closest_transit_['sy_vmag'] = np.where(self.closest_transit_['sy_vmag'] == 0,
-                                                    self.closest_transit_['sy_gmag'], self.closest_transit_['sy_vmag'])
-        self.closest_transit_ = self.closest_transit_[self.closest_transit_.sy_vmag > self.vmag_min_ix]
+    def vmag_filter(self, planets_df):
+        no_filter_data = planets_df['sy_vmag'] == 0
+        planets_df['sy_vmag'][no_filter_data] = planets_df['sy_gmag'][no_filter_data]
+        return planets_df[planets_df['sy_vmag'] > self.vmag_min_ix]
 
     def star_and_end_night(self, precision):
         sun_alt = np.array(self.sun_airmass(precision).alt.degree)
@@ -317,31 +316,21 @@ class AvailableAt:
         delta_midnight = self.start_night + delta_midnight
         return delta_midnight
 
-    def transit_percent_filter(self):
-        planets_df = self.closest_transit_  # se crea una copia del df del primer filtro
-        planets_df['pl_trandur'] = np.where(planets_df['pl_trandur'] == 0.0, 2.5, planets_df['pl_trandur'])
+    def transit_percent_filter(self, planets_df, default_duration=2.5):
+        planets_df['pl_trandur'][planets_df['pl_trandur'] == 0.0] = default_duration
         planets_df['transit_i'] = planets_df['closest_transit'] - (planets_df['pl_trandur'] / 48)
         planets_df['transit_f'] = planets_df['closest_transit'] + (planets_df['pl_trandur'] / 48)
-        planets_df['delta_transit'] = planets_df['transit_f'] - planets_df['transit_i']
-        planets_df = self.transit_percent(planets_df)
-        return planets_df
 
-    def transit_percent(self, planets_df_input):
-        planets_df_input['delta_transit_i_night'] = planets_df_input['transit_i'] - self.start_night.jd
+        planets_df = planets_df[planets_df['transit_i'] < self.end_night.jd]
+        planets_df = planets_df[planets_df['transit_f'] > self.start_night.jd]
 
-        planets_df_input = planets_df_input[planets_df_input['transit_i'] < self.end_night.jd]
+        transit_i = planets_df['transit_i']
+        transit_i[self.start_night.jd > transit_i] = self.start_night.jd
+        transit_f = planets_df['transit_f']
+        transit_f[self.end_night.jd < transit_f] = self.end_night.jd
 
-        planets_df_input = planets_df_input[planets_df_input['transit_f'] > self.start_night.jd]
-
-        planets_df_input['transit_percent'] = np.where(0 <= planets_df_input['delta_transit_i_night'],
-                                                       self.end_night.jd - planets_df_input['transit_i'],
-                                                       planets_df_input['transit_f'] - self.start_night.jd)
-
-        planets_df_input['transit_percent'] = planets_df_input['transit_percent'] / planets_df_input['delta_transit']
-
-        planets_df_input = planets_df_input[planets_df_input.transit_percent > self.min_transit_percent_ix]
-
-        return planets_df_input
+        planets_df['transit_percent'] = (transit_f - transit_i) / (planets_df['pl_trandur']/24)
+        return planets_df[planets_df.transit_percent > self.min_transit_percent_ix]
 
     def stars_coordinates(self, planets_df_input):
         right_ascention = Angle(planets_df_input['sy_pmra'], u.degree)
@@ -357,27 +346,33 @@ class AvailableAt:
         obstime_fi = Time(planets_df_input['closest_transit'], format='jd', scale='utc')
         stars_coords_f = stars_coords_i.apply_space_motion(
             new_obstime=obstime_fi)  # esta es la parte que quizas se podría omitir
-        if len(planets_df_input.columns) == len(self.transit_percent_.columns):
-            self.transit_percent_['star_coords'] = stars_coords_f
+        if len(planets_df_input.columns) == len(self.selected_planets.columns):
+            self.selected_planets['star_coords'] = stars_coords_f
         return stars_coords_f
 
     def transit_observation_percent(self):
-        planets_df_input = self.transit_percent_.copy()
-        planets_df_input['delta_transit_i_obs'] = planets_df_input['transit_i'] - planets_df_input['start_observation']
-        planets_df_input = planets_df_input[planets_df_input['transit_i'] < planets_df_input['end_observation']]
-        planets_df_input = planets_df_input[planets_df_input['transit_f'] > planets_df_input['start_observation']]
-        planets_df_input['transit_observation_percent'] = np.where(0 <= planets_df_input['delta_transit_i_obs'],
-                                                                   planets_df_input['end_observation'] -
-                                                                   planets_df_input['transit_i'],
-                                                                   planets_df_input['transit_f'] -
-                                                                   planets_df_input['start_observation'])
-        planets_df_input['transit_observation_percent'] = planets_df_input['transit_observation_percent'] / \
-                                                          planets_df_input['delta_transit']
-        planets_df_input = planets_df_input[planets_df_input.transit_observation_percent > self.min_transit_percent_ix]
-        return planets_df_input
+        planets_df = self.selected_planets
+        planets_df = planets_df[planets_df['transit_i'] < planets_df['end_observation']]
+        planets_df = planets_df[planets_df['transit_f'] > planets_df['start_observation']]
+        planets_df['transit_i_obs'] = planets_df[['transit_i', 'start_observation']].max(axis=1)
+        planets_df['transit_f_obs'] = planets_df[['transit_f', 'end_observation']].min(axis=1)
+        planets_df['transit_observation_percent'] = (planets_df['transit_f_obs']
+                                                     - planets_df['transit_i_obs'])/(planets_df['pl_trandur']/24)
+
+        # planets_df_input['delta_transit_i_obs'] = planets_df_input['transit_i'] - planets_df_input['start_observation']
+        #
+        # planets_df_input['transit_observation_percent'] = np.where(0 <= planets_df_input['delta_transit_i_obs'],
+        #                                                            planets_df_input['end_observation'] -
+        #                                                            planets_df_input['transit_i'],
+        #                                                            planets_df_input['transit_f'] -
+        #                                                            planets_df_input['start_observation'])
+        # planets_df_input['transit_observation_percent'] = planets_df_input['transit_observation_percent'] / \
+        #                                                   planets_df_input['pl_trandur']
+
+        return planets_df[planets_df['transit_observation_percent'] > self.min_transit_percent_ix]
 
     def baseline_percent(self):
-        planets_df = self.transit_observation_filter
+        planets_df = self.selected_planets
         planets_df['delta_i_baseline'] = planets_df['transit_i'] - planets_df['start_observation']
         planets_df['delta_f_baseline'] = planets_df['end_observation'] - planets_df['transit_f']
         planets_df['delta_i_baseline'] = np.where(self.min_baseline_ix < planets_df['delta_i_baseline'],
@@ -448,7 +443,7 @@ class AvailableAt:
         for i in planets_df_input.index:
             closest_transit = Time(planets_df_input.loc[i, :]['closest_transit'], format='jd', scale='utc')
             local_frame = AltAz(obstime=closest_transit, location=self.observatory)
-            from_icrs_to_alt_az = self.transit_percent_.loc[i, :]['star_coords'].transform_to(local_frame).alt.degree
+            from_icrs_to_alt_az = self.selected_planets.loc[i, :]['star_coords'].transform_to(local_frame).alt.degree
             closest_transit_altitude_ndarray = np.append(closest_transit_altitude_ndarray, from_icrs_to_alt_az)
         planets_df_input['closest_transit_altitudes'] = closest_transit_altitude_ndarray
         planets_df_input['altitude_grade'] = np.where(planets_df_input['closest_transit_altitudes'] <= min_obs_ix,
@@ -500,21 +495,13 @@ class AvailableAt:
 
     def star_max_altitude_utc_time(self, precision=250):
         local_midnight_times = Time(self.delta_midnight(precision), scale='utc', location=self.observatory)
-        local_sidereal_times = pd.Series(local_midnight_times.sidereal_time('mean').degree)
-        max_altitudes_sidereal_time_to_utc = pd.DataFrame()
-        max_altitudes_utc_time_index = pd.DataFrame()
-        for planet_index in self.transit_percent_.index:
-            star_ra = pd.Series(np.full(precision, self.transit_percent_.loc[planet_index, :]['ra'] * u.degree))
-            sideral_ra_delta = (local_sidereal_times - star_ra).abs()
-            min_ra_index = sideral_ra_delta.idxmin()
-            df_to_concat = pd.DataFrame({'local_midnight_times': local_midnight_times[min_ra_index]},
-                                        index=[planet_index])
-            max_altitudes_sidereal_time_to_utc = pd.concat([max_altitudes_sidereal_time_to_utc, df_to_concat])
-            df_to_concat = pd.DataFrame({'min_ra_index': min_ra_index},
-                                        index=[planet_index])
-            max_altitudes_utc_time_index = pd.concat([max_altitudes_utc_time_index, df_to_concat])
-        self.transit_percent_['max_altitude_time'] = max_altitudes_sidereal_time_to_utc
-        self.transit_percent_['max_altitude_index'] = max_altitudes_utc_time_index
+        local_sidereal_times = local_midnight_times.sidereal_time('mean').degree
+        self.selected_planets['max_altitude_index'] = self.selected_planets.apply(lambda x:
+                                                                                  np.argmin(np.abs(local_sidereal_times
+                                                                                                   - x.ra)),
+                                                                                  axis=1)
+        self.selected_planets['max_altitude_time'] = local_midnight_times[self.selected_planets['max_altitude_index']]
+
         return
 
     def altitudes(self, x, y):
@@ -528,13 +515,12 @@ class AvailableAt:
         return from_icrs_to_alt_az
 
     def stars_altitudes(self):
-        self.transit_percent__ = self.transit_percent_
-        self.stars_coordinates(self.transit_percent_)
+        self.stars_coordinates(self.selected_planets)
         self.star_max_altitude_utc_time()
-        self.transit_percent_['altitudes'] = self.transit_percent_.apply(lambda x: self.altitudes(x.max_altitude_time,
+        self.selected_planets['altitudes'] = self.selected_planets.apply(lambda x: self.altitudes(x.max_altitude_time,
                                                                                                   x.star_coords),
                                                                          axis=1)
-        stars_altitudes = pd.DataFrame(self.transit_percent_['altitudes'].explode())
+        stars_altitudes = pd.DataFrame(self.selected_planets['altitudes'].explode())
         index_array = '0 1 2 ' * len(stars_altitudes)
         index_array = np.array(index_array.split()).astype('int')[:len(stars_altitudes)]
         stars_altitudes['index'] = index_array
@@ -617,21 +603,18 @@ class AvailableAt:
     def start_and_end_observation__(self, x):
         start_observation = np.array([])
         end_observation = np.array([])
-        if x.iloc[0] > self.min_obs_ix and x[
-            2] > self.min_obs_ix:
+        if x.iloc[0] > self.min_obs_ix and x[2] > self.min_obs_ix:
             start_observation = np.append(start_observation, self.start_night.jd)
             end_observation = np.append(end_observation, self.end_night.jd)
-        elif x.iloc[0] == x.iloc[1] \
-                and x.iloc[0] > self.min_obs_ix:
+        elif x.iloc[0] == x.iloc[1] and x.iloc[0] > self.min_obs_ix:
             start_observation = np.append(start_observation, self.start_night.jd)
             end_observation = np.append(end_observation, self.linear_aproximation_to_min_obs_ix(
-                self.transit_percent_.loc[x.name, :]['star_coords'], self.delta_midnight_,
+                self.selected_planets.loc[x.name, :]['star_coords'], self.delta_midnight_,
                 x.iloc[0], x.iloc[2], 'decreasing'))
-        elif x.iloc[2] == x.iloc[1] \
-                and x.iloc[2] > self.min_obs_ix:
+        elif x.iloc[2] == x.iloc[1] and x.iloc[2] > self.min_obs_ix:
             end_observation = np.append(end_observation, self.end_night.jd)
             start_observation = np.append(start_observation, self.linear_aproximation_to_min_obs_ix(
-                self.transit_percent_.loc[x.name, :]['star_coords'], self.delta_midnight_,
+                self.selected_planets.loc[x.name, :]['star_coords'], self.delta_midnight_,
                 x.iloc[0],
                 x.iloc[2], 'growing'))
         elif x.iloc[2] != x.iloc[1] \
@@ -641,9 +624,9 @@ class AvailableAt:
                 start_observation = np.append(start_observation, self.start_night.jd)
                 end_observation = np.append(end_observation,
                                             self.linear_aproximation_to_min_obs_ix(
-                                                self.transit_percent_.loc[x.name, :]['star_coords'],
+                                                self.selected_planets.loc[x.name, :]['star_coords'],
                                                 self.delta_midnight_[
-                                                self.transit_percent_.loc[x.name, :]['max_altitude_index']:len(
+                                                self.selected_planets.loc[x.name, :]['max_altitude_index']:len(
                                                     self.delta_midnight_)],
                                                 x.iloc[1],
                                                 x.iloc[2], 'decreasing'))
@@ -652,19 +635,19 @@ class AvailableAt:
                 end_observation = np.append(end_observation, self.end_night.jd)
                 start_observation = np.append(start_observation,
                                               self.linear_aproximation_to_min_obs_ix(
-                                                  self.transit_percent_.loc[x.name, :]['star_coords'],
-                                                  self.delta_midnight_[0:self.transit_percent_.loc[x.name, :]
+                                                  self.selected_planets.loc[x.name, :]['star_coords'],
+                                                  self.delta_midnight_[0:self.selected_planets.loc[x.name, :]
                                                   ['max_altitude_index']], x.iloc[0],
                                                   x.iloc[1], 'growing'))
             else:
                 start_observation = np.append(start_observation, self.linear_aproximation_to_min_obs_ix(
-                    self.transit_percent_.loc[x.name, :]['star_coords'],
-                    self.delta_midnight_[0:self.transit_percent_.loc[x.name, :]['max_altitude_index']],
+                    self.selected_planets.loc[x.name, :]['star_coords'],
+                    self.delta_midnight_[0:self.selected_planets.loc[x.name, :]['max_altitude_index']],
                     x.iloc[0],
                     x.iloc[1], 'growing'))
                 end_observation = np.append(end_observation, self.linear_aproximation_to_min_obs_ix(
-                    self.transit_percent_.loc[x.name, :]['star_coords'], self.delta_midnight_[
-                                                                         self.transit_percent_.loc[
+                    self.selected_planets.loc[x.name, :]['star_coords'], self.delta_midnight_[
+                                                                         self.selected_planets.loc[
                                                                          x.name, :][
                                                                              'max_altitude_index']:len(
                                                                              self.delta_midnight_) - 1],
@@ -679,93 +662,90 @@ class AvailableAt:
 
     def start_and_end_observation___(self):
         observation_times = self.stars_altitudes_.apply(lambda x: self.start_and_end_observation__(x), axis=0)
-        self.transit_percent_['start_observation'] = observation_times.iloc[0, :]
-        self.transit_percent_['end_observation'] = observation_times.iloc[1, :]
-        self.transit_percent_ = self.transit_percent_[self.transit_percent_['start_observation'] != False]
+        self.selected_planets['start_observation'] = observation_times.iloc[0, :]
+        self.selected_planets['end_observation'] = observation_times.iloc[1, :]
+        self.selected_planets = self.selected_planets[self.selected_planets['start_observation'] != False]
         return
 
-    def start_and_end_observation_(self, stars_altitudes):
-        start_observation = np.array([])
-        end_observation = np.array([])
-        for planet_index in stars_altitudes.columns:
-            if stars_altitudes[planet_index].iloc[0] > self.min_obs_ix and stars_altitudes[planet_index][
-                2] > self.min_obs_ix:
-                start_observation = np.append(start_observation, self.start_night.jd)
-                end_observation = np.append(end_observation, self.end_night.jd)
-            elif stars_altitudes[planet_index].iloc[0] == stars_altitudes[planet_index].iloc[1] \
-                    and stars_altitudes[planet_index].iloc[0] > self.min_obs_ix:
-                start_observation = np.append(start_observation, self.start_night.jd)
-                end_observation = np.append(end_observation, self.linear_aproximation_to_min_obs_ix(
-                    self.transit_percent_.loc[planet_index, :]['star_coords'], self.delta_midnight_,
-                    stars_altitudes[planet_index].iloc[0], stars_altitudes[planet_index].iloc[2], 'decreasing'))
-            elif stars_altitudes[planet_index].iloc[2] == stars_altitudes[planet_index].iloc[1] \
-                    and stars_altitudes[planet_index].iloc[2] > self.min_obs_ix:
-                end_observation = np.append(end_observation, self.end_night.jd)
-                start_observation = np.append(start_observation, self.linear_aproximation_to_min_obs_ix(
-                    self.transit_percent_.loc[planet_index, :]['star_coords'], self.delta_midnight_,
-                    stars_altitudes[planet_index].iloc[0],
-                    stars_altitudes[planet_index].iloc[2], 'growing'))
-            elif stars_altitudes[planet_index].iloc[2] != stars_altitudes[planet_index].iloc[1] \
-                    and stars_altitudes[planet_index].iloc[0] != stars_altitudes[planet_index].iloc[1] \
-                    and stars_altitudes[planet_index].iloc[1] > self.min_obs_ix:
-                if stars_altitudes[planet_index].iloc[0] >= self.min_obs_ix:
-                    start_observation = np.append(start_observation, self.start_night.jd)
-                    end_observation = np.append(end_observation,
-                                                self.linear_aproximation_to_min_obs_ix(
-                                                    self.transit_percent_.loc[planet_index, :]['star_coords'],
-                                                    self.delta_midnight_[
-                                                    self.transit_percent_.loc[planet_index, :][
-                                                        'max_altitude_index']:len(
-                                                        self.delta_midnight_)],
-                                                    stars_altitudes[planet_index].iloc[1],
-                                                    stars_altitudes[planet_index].iloc[2], 'decreasing'))
-
-                elif stars_altitudes[planet_index].iloc[2] >= self.min_obs_ix:
-                    end_observation = np.append(end_observation, self.end_night.jd)
-                    start_observation = np.append(start_observation,
-                                                  self.linear_aproximation_to_min_obs_ix(
-                                                      self.transit_percent_.loc[planet_index, :]['star_coords'],
-                                                      self.delta_midnight_[0:self.transit_percent_.loc
-                                                      [planet_index, :]['max_altitude_index']],
-                                                      stars_altitudes[planet_index].iloc[0],
-                                                      stars_altitudes[planet_index].iloc[1], 'growing'))
-                else:
-                    start_observation = np.append(start_observation, self.linear_aproximation_to_min_obs_ix(
-                        self.transit_percent_.loc[planet_index, :]['star_coords'],
-                        self.delta_midnight_[0:self.transit_percent_.loc[planet_index, :]['max_altitude_index']],
-                        stars_altitudes[planet_index].iloc[0],
-                        stars_altitudes[planet_index].iloc[1], 'growing'))
-                    end_observation = np.append(end_observation, self.linear_aproximation_to_min_obs_ix(
-                        self.transit_percent_.loc[planet_index, :]['star_coords'], self.delta_midnight_[
-                                                                                   self.transit_percent_.loc[
-                                                                                   planet_index, :][
-                                                                                       'max_altitude_index']:len(
-                                                                                       self.delta_midnight_) - 1],
-                        stars_altitudes[planet_index].iloc[1], stars_altitudes[planet_index].iloc[2], 'decreasing'))
-            else:
-                start_observation = np.append(start_observation, False)
-                end_observation = np.append(end_observation, False)
-
-        self.transit_percent_['start_observation'] = start_observation
-        self.transit_percent_['end_observation'] = end_observation
-        self.transit_percent_ = self.transit_percent_[self.transit_percent_['start_observation'] != False]
-        return
+    # def start_and_end_observation_(self, stars_altitudes):
+    #     start_observation = np.array([])
+    #     end_observation = np.array([])
+    #     for planet_index in stars_altitudes.columns:
+    #         if stars_altitudes[planet_index].iloc[0] > self.min_obs_ix and stars_altitudes[planet_index][
+    #             2] > self.min_obs_ix:
+    #             start_observation = np.append(start_observation, self.start_night.jd)
+    #             end_observation = np.append(end_observation, self.end_night.jd)
+    #         elif stars_altitudes[planet_index].iloc[0] == stars_altitudes[planet_index].iloc[1] \
+    #                 and stars_altitudes[planet_index].iloc[0] > self.min_obs_ix:
+    #             start_observation = np.append(start_observation, self.start_night.jd)
+    #             end_observation = np.append(end_observation, self.linear_aproximation_to_min_obs_ix(
+    #                 self.transit_percent_.loc[planet_index, :]['star_coords'], self.delta_midnight_,
+    #                 stars_altitudes[planet_index].iloc[0], stars_altitudes[planet_index].iloc[2], 'decreasing'))
+    #         elif stars_altitudes[planet_index].iloc[2] == stars_altitudes[planet_index].iloc[1] \
+    #                 and stars_altitudes[planet_index].iloc[2] > self.min_obs_ix:
+    #             end_observation = np.append(end_observation, self.end_night.jd)
+    #             start_observation = np.append(start_observation, self.linear_aproximation_to_min_obs_ix(
+    #                 self.transit_percent_.loc[planet_index, :]['star_coords'], self.delta_midnight_,
+    #                 stars_altitudes[planet_index].iloc[0],
+    #                 stars_altitudes[planet_index].iloc[2], 'growing'))
+    #         elif stars_altitudes[planet_index].iloc[2] != stars_altitudes[planet_index].iloc[1] \
+    #                 and stars_altitudes[planet_index].iloc[0] != stars_altitudes[planet_index].iloc[1] \
+    #                 and stars_altitudes[planet_index].iloc[1] > self.min_obs_ix:
+    #             if stars_altitudes[planet_index].iloc[0] >= self.min_obs_ix:
+    #                 start_observation = np.append(start_observation, self.start_night.jd)
+    #                 end_observation = np.append(end_observation,
+    #                                             self.linear_aproximation_to_min_obs_ix(
+    #                                                 self.transit_percent_.loc[planet_index, :]['star_coords'],
+    #                                                 self.delta_midnight_[
+    #                                                 self.transit_percent_.loc[planet_index, :][
+    #                                                     'max_altitude_index']:len(
+    #                                                     self.delta_midnight_)],
+    #                                                 stars_altitudes[planet_index].iloc[1],
+    #                                                 stars_altitudes[planet_index].iloc[2], 'decreasing'))
+    #
+    #             elif stars_altitudes[planet_index].iloc[2] >= self.min_obs_ix:
+    #                 end_observation = np.append(end_observation, self.end_night.jd)
+    #                 start_observation = np.append(start_observation,
+    #                                               self.linear_aproximation_to_min_obs_ix(
+    #                                                   self.transit_percent_.loc[planet_index, :]['star_coords'],
+    #                                                   self.delta_midnight_[0:self.transit_percent_.loc
+    #                                                   [planet_index, :]['max_altitude_index']],
+    #                                                   stars_altitudes[planet_index].iloc[0],
+    #                                                   stars_altitudes[planet_index].iloc[1], 'growing'))
+    #             else:
+    #                 start_observation = np.append(start_observation, self.linear_aproximation_to_min_obs_ix(
+    #                     self.transit_percent_.loc[planet_index, :]['star_coords'],
+    #                     self.delta_midnight_[0:self.transit_percent_.loc[planet_index, :]['max_altitude_index']],
+    #                     stars_altitudes[planet_index].iloc[0],
+    #                     stars_altitudes[planet_index].iloc[1], 'growing'))
+    #                 end_observation = np.append(end_observation, self.linear_aproximation_to_min_obs_ix(
+    #                     self.transit_percent_.loc[planet_index, :]['star_coords'], self.delta_midnight_[
+    #                                                                                self.transit_percent_.loc[
+    #                                                                                planet_index, :][
+    #                                                                                    'max_altitude_index']:len(
+    #                                                                                    self.delta_midnight_) - 1],
+    #                     stars_altitudes[planet_index].iloc[1], stars_altitudes[planet_index].iloc[2], 'decreasing'))
+    #         else:
+    #             start_observation = np.append(start_observation, False)
+    #             end_observation = np.append(end_observation, False)
+    #
+    #     self.transit_percent_['start_observation'] = start_observation
+    #     self.transit_percent_['end_observation'] = end_observation
+    #     self.transit_percent_ = self.transit_percent_[self.transit_percent_['start_observation'] != False]
+    #     return
 
     def planets_rank(self):
-        if ('rank' in self.baseline_percent_filter) == False:
-            self.altitude_grades()
-            self.transit_percent_rank()
-            self.baseline_percent_rank()
-            self.moon_separation_rank()
-            grades_dataframe = self.baseline_percent_filter.loc[:, 'altitude_grade':]
-            rank = grades_dataframe.sum(axis=1) / len(grades_dataframe.columns)
-            rank_loc = np.where(self.baseline_percent_filter.columns == 'altitude_grade')[0][0]
-            self.baseline_percent_filter.insert(loc=int(rank_loc), column='rank', value=rank)
-            self.baseline_percent_filter.sort_values('transit_i', axis=0, inplace=True)
-        else:
+        if 'rank' in self.baseline_percent_filter:
             return
 
-    def plot(self, precision=100, extention=False, altitude_separation=50):
+        self.altitude_grades()
+        self.transit_percent_rank()
+        self.baseline_percent_rank()
+        self.moon_separation_rank()
+        self.baseline_percent_filter['rank'] = self.baseline_percent_filter.filter(like='_grade').mean(axis=1)
+        self.baseline_percent_filter.sort_values('transit_i', axis=0, inplace=True)
+
+    def plot(self, precision=100, extend=False, altitude_separation=50):
         """
         Plots the altitudes of the encountered exoplanet's stars for the given date with information about the
         observation
@@ -774,14 +754,16 @@ class AvailableAt:
          ----------
              precision : int
                 the number of altitudes points to plot between the start and the end of the stars' observation
-            extention : bool , optional
+             extend : bool , optional
                 if True is given , then the plot will have only the transit's interval of the observation. If not,
                 then the plot will have the complete observations.
+             altitude_separation : float
+                separation in degrees between vertical altitude curves
 
         Returns
         -------
         object
-         """
+        """
         self.planets_rank()
         cum = 0  # cumulative offset
         filtered_planets = self.baseline_percent_filter
@@ -807,7 +789,7 @@ class AvailableAt:
             baseline_f_index = np.argmin(np.abs(x_axis - (info['transit_f'] + self.max_baseline)))
             baseline_f_index = baseline_f_index if baseline_f_index < precision else precision - 1
 
-            if extention:
+            if extend:
                 axes.fill_between(x_axis, altitudes, altitudes_min, color='yellow')
 
             axes.fill_between(x_axis[transit_i_index:transit_f_index],
