@@ -18,6 +18,7 @@
 #
 
 # noinspection PyUnresolvedReferences
+from matplotlib import patches
 
 import dataproc as dp
 import numpy as np
@@ -58,7 +59,8 @@ tmlogger.addHandler(handler_console)
 
 def _show_apertures(coords, aperture=None, sky=None,
                     axes=None, sk_color='w', ap_color='w',
-                    n_points=30, alpha=0.5, labels=None, logger=None):
+                    n_points=30, alpha=0.5, labels=None, logger=None,
+                    stamp_rad=None):
 
     if logger is None:
         logger = tmlogger
@@ -87,7 +89,7 @@ def _show_apertures(coords, aperture=None, sky=None,
         xs = cx + aperture * np.cos(theta)
         ys = cy + aperture * np.sin(theta)
         ax.fill(xs, ys,
-                edgecolor=ap_color, color=ap_color,
+                color=ap_color, edgecolor=ap_color,
                 alpha=alpha)
 
         xs = cx + np.outer(sky, np.cos(theta))
@@ -95,8 +97,11 @@ def _show_apertures(coords, aperture=None, sky=None,
         xs[1, :] = xs[1, ::-1]
         ys[1, :] = ys[1, ::-1]
         ax.fill(np.ravel(xs), np.ravel(ys),
-                edgecolor=sk_color, color=sk_color,
+                color=sk_color, edgecolor=sk_color,
                 alpha=alpha)
+        rect = patches.Rectangle((cx-stamp_rad, cy-stamp_rad), 2*stamp_rad, 2*stamp_rad,
+                                 linewidth=1, edgecolor='white', facecolor='none')
+        ax.add_patch(rect)
 
         outer_sky = sky[1]
         ax.annotate(lab,
@@ -351,11 +356,12 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                         "pixels on first frame for target '{name}'"
                         .format(skip=skip, name=labels[trg_id]))
                 else:
+                    logger.warning(f"Large jump ({cx}, {cy}) -> ({ncx}, {ncy}). Stamprad: {stamp_rad} pix")
                     logger.warning(
                         "Large jump of {skip:.1f} pixels for {name} has "
-                        "occurred on {frame}"
+                        "occurred on frame #{frame_nmb}: {frame}"
                         .format(skip=skip, frame=astrofile,
-                                name=labels[trg_id]))
+                                name=labels[trg_id], frame_nmb=idx))
 
             last_frame_coords_xy.append([ncx, ncy])
 
@@ -390,11 +396,13 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
             ax.cla()
             f.show()
             dp.imshowz(d, axes=ax, force_show=False)
-            ax.set_ylabel('Frame #{}'.format(idx))
+            ax.set_ylabel(f'Frame #{idx}: {astrofile.basename()}')
             curr_center_xy = center_xy[:, to_store, :]
             on_click_action = [1]
 
             def onclick(event):
+                print(event.key)
+                print(event.inaxes==ax)
                 if event.inaxes != ax:
                     return
                 if event.key == 'right':  # frame is good
@@ -437,7 +445,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 n_flag = sum([idx in fl for fl in flag])
                 sk_color = n_flag and "gray{}0".format(9-n_flag) or 'w'
             _show_apertures(curr_center_xy, axes=ax, labels=int_labels,
-                            sk_color=sk_color, ap_color=ap_color)
+                            sk_color=sk_color, ap_color=ap_color, stamp_rad=stamp_rad)
             f.show()
             f.canvas.start_event_loop(timeout=-1)
             f.canvas.mpl_disconnect(cid)
@@ -710,8 +718,8 @@ class Photometry:
 
         # label list
         if isinstance(target_coords_xy, dict):
-            coords_user_xy = target_coords_xy.values()
-            labels = target_coords_xy.keys()
+            coords_user_xy = list(target_coords_xy.values())
+            labels = list(target_coords_xy.keys())
         elif isinstance(target_coords_xy, (list, tuple)):
             coords_user_xy = list(target_coords_xy)
         elif target_coords_xy is None:
