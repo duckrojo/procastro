@@ -17,6 +17,7 @@
 # Boston, MA  02110-1301, USA.
 #
 #
+import warnings
 
 from . import obscalc as ocalc
 
@@ -404,10 +405,13 @@ class Obsrv(ocalc.ObsCalc):
                       f'{float(self.params["current_moon_phase"]):.0f}%')
 
         if hasattr(self, 'transits'):
-            enter_transit = ((jd-et_out)*24
-                             - self.transit_info['length']/2)
-            exit_transit = ((jd-et_out)*24
-                            + self.transit_info['length']/2)
+            length = self.transit_info['length']
+            if length is None:
+                length = 1
+                warnings.warn(f"Length was not found in database, using default {length}")
+
+            enter_transit = ((jd-et_out)*24 - length/2)
+            exit_transit = ((jd-et_out)*24 + length/2)
             if enter_transit > exit_transit:
                 exit_transit += 24
             facecolor = '0.5'

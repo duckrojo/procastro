@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2013 Patricio Rojo
+# Copyright (C) 2021 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of version 2 of the GNU General
@@ -16,24 +16,18 @@
 # Boston, MA  02110-1301, USA.
 #
 
-
-from . import astrodir
-from .astrodir import *
-from . import astrofile
-from .astrofile import *
-from . import misc_arr
-from .misc_arr import *
-from . import misc_general
-from .misc_general import *
-from . import misc_graph
-from .misc_graph import *
-from . import misc_math
-from .misc_math import *
+from . import rawinfo
+from .rawinfo import *
+from . import orchestrator
+from .orchestrator import *
+from . import plotting
+from .plotting import *
 
 __all__ = []
-__all__ += astrodir.__all__
-__all__ += astrofile.__all__
-__all__ += misc_arr.__all__
-__all__ += misc_general.__all__
-__all__ += misc_graph.__all__
-__all__ += misc_math.__all__
+__all__ += rawinfo.__all__
+__all__ += orchestrator.__all__
+__all__ += plotting.__all__
+
+del rawinfo
+del orchestrator
+del plotting

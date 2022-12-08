@@ -23,6 +23,7 @@
 Data proc docstring
 """
 from . import astro
+from . import misc
 from . import core
 from .core import *
 #from . import timeseries
@@ -30,7 +31,7 @@ from .core import *
 import logging as _log
 
 
-__all__ = ['astro', 'dplogger']
+__all__ = ['astro', 'dplogger', 'misc']
 __all__ += core.__all__
 
 dplogger = _log.getLogger('dataproc')

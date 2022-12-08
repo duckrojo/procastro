@@ -1,4 +1,5 @@
 #
+#
 # Copyright (C) 2013 Patricio Rojo
 #
 # This program is free software; you can redistribute it and/or
@@ -15,25 +16,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor,
 # Boston, MA  02110-1301, USA.
 #
+#
 
-
-from . import astrodir
-from .astrodir import *
-from . import astrofile
-from .astrofile import *
-from . import misc_arr
-from .misc_arr import *
-from . import misc_general
-from .misc_general import *
-from . import misc_graph
-from .misc_graph import *
-from . import misc_math
-from .misc_math import *
+from . import logo_pato
+from .logo_pato import *
 
 __all__ = []
-__all__ += astrodir.__all__
-__all__ += astrofile.__all__
-__all__ += misc_arr.__all__
-__all__ += misc_general.__all__
-__all__ += misc_graph.__all__
-__all__ += misc_math.__all__
