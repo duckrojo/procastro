@@ -316,9 +316,9 @@ class ObsCalc(object):
         paths = [os.path.dirname(__file__)+'/coo.txt',
                  os.path.expanduser("~")+'/.coostars'
                  ]
-        self._target = dpa.read_coordinates(target,
-                                            coo_files=paths,
-                                            equinox=self.params["equinox"])
+        self._target = dpa.find_target(target,
+                                       coo_files=paths,
+                                       equinox=self.params["equinox"])
 
         print("Star at RA/DEC: {0:s}/{1:s}"
               .format(self._target.ra.to_string(sep=':'),

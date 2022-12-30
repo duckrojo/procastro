@@ -15,7 +15,7 @@ a = AvailableAt('La Silla Observatory',
 # a.run_day('2022-07-18').plot()
 # a.run_day('2022-07-19').plot()
 # a.run_day('2022-07-20').plot()
-a.run_day('2022-09-12').plot()
+a.run_day('2022-11-6').plot()
 #a.run_day('2022-08-23').plot()
 #a.run_day('2022-08-23').plot()
 

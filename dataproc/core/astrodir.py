@@ -838,7 +838,7 @@ class AstroDir(object):
         ----------
         target: str
             Target keyword for JD storage
-        source: str
+        source: str or list
             Location of the input value on UT format
 
         See Also

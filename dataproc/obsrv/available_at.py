@@ -17,6 +17,22 @@ __all__ = ['AvailableAt']
 def to_hms(jd):
     return Time(jd, format='jd').to_value('iso', 'date_hms')[11:20]
 
+
+def two_slopes(values, grades, ref_values):
+    is_top = (values > ref_values[1]) * 1
+    grades = np.array(grades)
+    ref_values = np.array(ref_values)
+
+    ref_grade = grades[is_top]
+    ref_percent = ref_values[is_top]
+    slope = (grades[1 + is_top] - grades[is_top]) / (ref_values[1 + is_top] - ref_values[is_top])
+
+    grade = (values - ref_percent) * slope + ref_grade
+    grade *= (grade > 0)
+    grade = (grade < grades[2]) * (grade - grades[2]) + grades[2]
+
+    return grade
+
 def query_full_exoplanet_db():
     exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
     resultset = exo_service.search(
@@ -230,7 +246,7 @@ class AvailableAt:
 
     def vmag_filter(self, planets_df):
         no_filter_data = planets_df['sy_vmag'] == 0
-        planets_df['sy_vmag'][no_filter_data] = planets_df['sy_gmag'][no_filter_data]
+        planets_df.loc[:, 'sy_vmag'].where(~no_filter_data, other=planets_df['sy_gmag'][no_filter_data], inplace=True)
         return planets_df[planets_df['sy_vmag'] > self.vmag_min_ix]
 
     def star_and_end_night(self, precision):
@@ -309,38 +325,29 @@ class AvailableAt:
         planets_df = self.selected_planets
         planets_df['delta_i_baseline'] = planets_df['transit_i'] - planets_df['start_observation']
         planets_df['delta_f_baseline'] = planets_df['end_observation'] - planets_df['transit_f']
-        planets_df['delta_i_baseline'] = np.where(self.min_baseline_ix < planets_df['delta_i_baseline'],
-                                                  planets_df['delta_i_baseline'], 0.0)
-        planets_df['delta_f_baseline'] = np.where(self.min_baseline_ix < planets_df['delta_f_baseline'],
-                                                  planets_df['delta_f_baseline'], 0.0)
+        planets_df.loc[:, 'delta_i_baseline'].where(planets_df['delta_i_baseline'] > self.min_baseline_ix,
+                                                    other=0.0, inplace=True)
+        planets_df.loc[:, 'delta_f_baseline'].where(planets_df['delta_f_baseline'] > self.min_baseline_ix,
+                                                    other=0.0, inplace=True)
         planets_df = planets_df.query('delta_i_baseline!=0.0 or delta_f_baseline!=0.0')
         return planets_df
 
     def transit_percent_rank(self):
+
         planets_df_input = self.baseline_percent_filter
+
+
+        transit_observation_percent = np.array(planets_df_input['transit_observation_percent'])
+
         min_transit_percent = self.min_transit_percent
         min_transit_percent_ix = self.min_transit_percent_ix
-        max_transit_percent = planets_df_input['transit_observation_percent'].max()
-        if max_transit_percent > 1.0:
-            max_transit_percent = 1.0
-        delta_grade_1 = min_transit_percent - min_transit_percent_ix
-        delta_grade_2 = max_transit_percent - min_transit_percent
-        planets_df_input['transit_percent_grade'] = np.where(
-            planets_df_input['transit_observation_percent'] < min_transit_percent_ix,
-            0, planets_df_input['transit_observation_percent'])
-        planets_df_input['transit_percent_grade'] = np.where(
-            (planets_df_input['transit_observation_percent'] >= min_transit_percent_ix) &
-            (planets_df_input['transit_observation_percent'] < min_transit_percent),
-            5 * (planets_df_input['transit_observation_percent'] - min_transit_percent_ix) / delta_grade_1,
-            planets_df_input['transit_observation_percent'])
-        planets_df_input['transit_percent_grade'] = np.where(
-            (planets_df_input['transit_observation_percent'] >= min_transit_percent),
-            (5 * (planets_df_input['transit_observation_percent'] - min_transit_percent) / delta_grade_2) + 5,
-            planets_df_input['transit_observation_percent'])
-        planets_df_input['transit_percent_grade'] = np.where(planets_df_input['transit_percent_grade'] > 10.0, 10.0,
-                                                             planets_df_input['transit_percent_grade'])
+
+        planets_df_input.loc[:, 'transit_percent_grade'] = two_slopes(transit_observation_percent,
+                                                                      [0, 5, 10],
+                                                                      [min_transit_percent_ix, min_transit_percent, 1])
 
         return planets_df_input
+
 
     def baseline_percent_rank(self):
         planets_df_input = self.baseline_percent_filter
@@ -370,6 +377,13 @@ class AvailableAt:
         min_obs_ix = self.min_obs_ix
         min_obs = self.min_obs
         max_obs = self.max_obs
+
+        # transit_altitude = np.array(planets_df_input['closest_transit_altitudes'])
+        #
+        # planets_df_input.loc[:, 'altitude_grade'] = two_slopes(transit_observation_percent,
+        #                                                               [0, 5, 10],
+        #                                                               [min_transit_percent_ix, min_transit_percent, 1])
+
         delta_alt_1 = min_obs - min_obs_ix
         delta_alt_2 = max_obs - min_obs
         closest_transit_altitude_ndarray = np.array([])
@@ -379,19 +393,19 @@ class AvailableAt:
             local_frame = AltAz(obstime=closest_transit, location=self.observatory)
             from_icrs_to_alt_az = self.selected_planets.loc[i, :]['star_coords'].transform_to(local_frame).alt.degree
             closest_transit_altitude_ndarray = np.append(closest_transit_altitude_ndarray, from_icrs_to_alt_az)
-        planets_df_input['closest_transit_altitudes'] = closest_transit_altitude_ndarray
-        planets_df_input['altitude_grade'] = np.where(planets_df_input['closest_transit_altitudes'] <= min_obs_ix,
-                                                      0, planets_df_input['closest_transit_altitudes'])
-        planets_df_input['altitude_grade'] = np.where((planets_df_input['altitude_grade'] > min_obs_ix) &
-                                                      (planets_df_input['altitude_grade'] <= min_obs),
-                                                      5 * (planets_df_input[
-                                                               'altitude_grade'] - min_obs_ix) / delta_alt_1,
+        planets_df_input.loc[:, 'closest_transit_altitudes'] = closest_transit_altitude_ndarray
+        planets_df_input.loc[:, 'altitude_grade'] = np.where(planets_df_input['closest_transit_altitudes']
+                                                             <= min_obs_ix,
+                                                             0, planets_df_input['closest_transit_altitudes'])
+        planets_df_input.loc[:, 'altitude_grade'] = np.where((planets_df_input['altitude_grade'] > min_obs_ix) &
+                                                             (planets_df_input['altitude_grade'] <= min_obs),
+                                                             5 * (planets_df_input['altitude_grade'] - min_obs_ix) / delta_alt_1,
                                                       planets_df_input['altitude_grade'])
-        planets_df_input['altitude_grade'] = np.where(planets_df_input['altitude_grade'] >= min_obs,
+        planets_df_input.loc[:, 'altitude_grade'] = np.where(planets_df_input['altitude_grade'] >= min_obs,
                                                       (5 * (planets_df_input[
                                                                 'altitude_grade'] - min_obs) / delta_alt_2) + 5,
                                                       planets_df_input['altitude_grade'])
-        planets_df_input['altitude_grade'] = np.where(planets_df_input['altitude_grade'] > 10, 10,
+        planets_df_input.loc[:, 'altitude_grade'] = np.where(planets_df_input['altitude_grade'] > 10, 10,
                                                       planets_df_input['altitude_grade'])
         return planets_df_input
 

@@ -21,12 +21,13 @@
 __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'blackbody', 'getfilter', 'applyfilter',
            'filter_conversion', 'planeteff',
-           'read_coordinates',
+           'find_target', 'moon_distance'
            ]
 
 import astropy.constants as apc
 import astropy.coordinates as apcoo
 import astropy.units as apu
+import astropy.time as apt
 import numpy as np
 import glob
 import os.path as path
@@ -43,7 +44,32 @@ except ImportError:
     aqs = None
 
 
-def read_coordinates(target, coo_files=None, return_pm=False, equinox='J2000', extra_info=None, verbose=False):
+def moon_distance(target, location=None, time=None):
+    """Returns the distance of moon to target
+
+    Parameters
+    -------------
+    location: apcoo.EarthLocation
+        If None uses CTIO observatory
+    time: apc.Time
+        If None uses now().
+    """
+
+    target = find_target(target)
+    if location is None:
+        location = "ctio"
+    if not isinstance(location, apcoo.EarthLocation):
+        location = apcoo.EarthLocation.of_site(location)
+
+    if time is None:
+        time = apt.Time.now()
+    if not isinstance(time, apt.Time):
+        time = apt.Time(time)
+
+    return apcoo.get_moon(time, location=location).separation(target)
+
+
+def find_target(target, coo_files=None, return_pm=False, equinox='J2000', extra_info=None, verbose=False):
     """
     Obtain coordinates from a target, that can be specified in various formats.
 
