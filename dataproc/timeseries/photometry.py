@@ -163,6 +163,8 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
 
     astrofile = sci_files[frame]
     d = astrofile.reader()
+    if ccd_lims_xy is None:
+        ccd_lims_xy = [0, d.shape[1], 0, d.shape[0]]
     d = d[ccd_lims_xy[2]:ccd_lims_xy[3], ccd_lims_xy[0]:ccd_lims_xy[1]]
 
     if isinstance(mdark, np.ndarray):
@@ -813,7 +815,7 @@ class Photometry:
 
     def photometry(self, aperture=None, sky=None,
                    deg=None, max_counts=None,
-                   outer_ap=None):
+                   outer_ap=None, verbose=True):
         """
         Verifies parameters given and applies photometry through cpu_phot
 
@@ -868,7 +870,7 @@ class Photometry:
                 "radius ({})".format(self.sky[1],
                                      self.stamp_rad))
 
-        ts = self.cpu_phot()
+        ts = self.cpu_phot(verbose=verbose)
         return ts
 
     def remove_from(self, idx):
@@ -940,7 +942,7 @@ class Photometry:
                                                                     single_in_list=True)))]
         self._astrodir += sci_files
 
-    def cpu_phot(self):
+    def cpu_phot(self, verbose=True):
         """
         Calculates the CPU photometry for all frames
         #TODO improve this docstring
@@ -980,9 +982,10 @@ class Photometry:
         all_fwhm = np.zeros([nt, ns])
         all_excess = np.zeros([na, nt, ns])
 
-        print("Processing CPU photometry for {0} targets: "
-              .format(len(self.sci_stamps)), end='')
-        sys.stdout.flush()
+        if verbose:
+            print("Processing CPU photometry for {0} targets: "
+                  .format(len(self.sci_stamps)), end='')
+            sys.stdout.flush()
         for label, target, centers_xy, target_idx \
             in zip(self.labels,
                    self.sci_stamps,
@@ -1091,30 +1094,32 @@ class Photometry:
                                             ron=self.ron)
                     all_err[ap_idx, target_idx, epochs_idx] = error
 
-            print('X', end='')
-            sys.stdout.flush()
+            if verbose:
+                print('X', end='')
+                sys.stdout.flush()
 
-        print('')
+        if verbose:
+            print('')
         errors = {}
         information = {'centers_xy': self.coords_new_xy, 'fwhm': all_fwhm}
         for ap in aperture:
             ap_idx = aperture.index(ap)
-            information['sky_poisson_ap{:d}'.format(int(ap))] = all_sky_poisson[ap_idx, :, :]
-            information['sky_std_ap{:d}'.format(int(ap))] = all_sky_std[ap_idx, :, :]
-            information['flux_ap{:d}'.format(int(ap))] = all_phot[ap_idx, :, :]
-            information['mom2_mag_ap{:d}'.format(int(ap), )] = all_mom2[ap_idx, :, :]
-            information['mom3_mag_ap{:d}'.format(int(ap), )] = all_mom3[ap_idx, :, :]
-            information['mom3_ang_ap{:d}'.format(int(ap), )] = all_moma[ap_idx, :, :]
-            information['peak_ap{:d}'.format(int(ap))] = all_phot[ap_idx, :, :]
-            information['excess_ap{:d}'.format(int(ap))] = all_excess[ap_idx, :, :]
-            errors['flux_ap{:d}'.format(int(ap))] = all_err[ap_idx, :, :]
+            information[f'sky_poisson_ap{ap:.1f}'] = all_sky_poisson[ap_idx, :, :]
+            information[f'sky_std_ap{ap:.1f}'] = all_sky_std[ap_idx, :, :]
+            information[f'flux_ap{ap:.1f}'] = all_phot[ap_idx, :, :]
+            information[f'mom2_mag_ap{ap:.1f}'] = all_mom2[ap_idx, :, :]
+            information[f'mom3_mag_ap{ap:.1f}'] = all_mom3[ap_idx, :, :]
+            information[f'mom3_ang_ap{ap:.1f}'] = all_moma[ap_idx, :, :]
+            information[f'peak_ap{ap:.1f}'] = all_phot[ap_idx, :, :]
+            information[f'excess_ap{ap:.1f}'] = all_excess[ap_idx, :, :]
+            errors[f'flux_ap{ap:.1f}'] = all_err[ap_idx, :, :]
 
         # TODO: make a nicer epoch passing
         return TimeSeries(information,
                           errors,
                           labels=self.labels,
                           epoch=[self.epoch[e] for e in range(len(self.epoch)) if e in self.indexing],
-                          default_info='flux_ap{:d}'.format(int(aperture[0])),
+                          default_info=f'flux_ap{aperture[0]:.1f}',
                           )
 
     def last_coordinates(self, pos=None):
@@ -1506,7 +1511,8 @@ class Photometry:
 
         _show_apertures(coords, aperture=self.aperture, sky=self.sky,
                         axes=ax, labels=annotate and self.labels or None,
-                        sk_color=sk_color, ap_color=ap_color, alpha=alpha)
+                        sk_color=sk_color, ap_color=ap_color, alpha=alpha,
+                        stamp_rad=self.stamp_rad)
         ax.set_ylabel("Frame #{}{}".format(frame, reference != frame
                                            and f", apertures from #{reference}"
                                            or ""))

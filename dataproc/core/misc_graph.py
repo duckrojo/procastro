@@ -180,6 +180,31 @@ def prep_canvas(axes=None, title=None,
     return fig, ax
 
 
+class _imshowz_binding():
+    def __init__(self, image):
+        self.image = image
+        self.cid = {}
+        self.outs = {'coordinates_xy': [], }
+
+        self.connect()
+        self.image.figure.show()
+
+    def disconnect(self):
+        for cid in self.cid.values():
+            self.image.figure.canvas.mpl_disconnect(cid)
+
+    def connect(self):
+         self.cid['key_press'] = self.image.figure.canvas.mpl_connect('key_press_event', self.on_key_press)
+
+    def on_key_press(self, event):
+        if event.key == 'm':
+            self.outs['coordinates_xy'].append([event.xdata, event.ydata])
+        if event.key == 'x':
+            self.image.axes.set_xlim(list(self.image.axes.get_xlim())[::-1])
+        if event.key == 'y':
+            self.image.axes.set_ylim(list(self.image.axes.get_ylim())[::-1])
+
+
 def imshowz(data,
             axes=None, title=None,
             ytitle=None, xtitle=None,
@@ -189,7 +214,7 @@ def imshowz(data,
             rotate=0, invertx=False, inverty=False,
             origin='lower', force_new=False,
             trim_data=False, force_show=True,
-            extent=None,
+            extent=None, interactive=False,
             **kwargs):
     """
     Plots data using the zscale algorithm to fix the min and max contrast
@@ -250,6 +275,12 @@ def imshowz(data,
 
     data = prep_data_plot(data, **kwargs)
 
+    if interactive:
+        import matplotlib
+        #        if not matplotlib.is_interactive():
+        #            raise ImportError(f"Selected matplotlib backend ({matplotlib.get_backend()}) is not interactive ")
+        plt.ioff()
+
     if extent is not None and xlim is not None and ylim is not None:
         raise ValueError(
             "If extents is specified for imshowz, then xlim and ylim "
@@ -288,13 +319,13 @@ def imshowz(data,
         xlim = [0, data.shape[1]-1]
         ylim = [0, data.shape[0]-1]
 
-    if invertx:
-        data = data[:, ::-1]
-        x1, x0 = x0, x1
-
-    if inverty:
-        data = data[::-1, :]
-        y0, y1 = y1, y0
+    # if invertx:
+    #     data = data[:, ::-1]
+    #     x1, x0 = x0, x1
+    #
+    # if inverty:
+    #     data = data[::-1, :]
+    #     y0, y1 = y1, y0
 
     # Find the contrast
     if minmax is None:
@@ -317,12 +348,23 @@ def imshowz(data,
     if colorbar:
         fig.colorbar(imag)
 
+    if invertx:
+        xlim = xlim[::-1]
+    if inverty:
+        ylim = ylim[::-1]
+
     ax.set_xlim(xlim)
     ax.set_ylim(ylim)
 
-    if force_show:
+    outs = {'lims': [mn, mx]}
+    if interactive:
+        handler = _imshowz_binding(imag)
+        outs['interactive'] = handler.outs
+        outs['handler'] = handler
+    elif force_show:
         plt.show()
-    return mn, mx
+
+    return outs
 
 
 def figaxes_xdate(x, axes=None, overwrite=False):

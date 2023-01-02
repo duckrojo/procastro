@@ -1043,6 +1043,7 @@ class AstroFile(object):
 
         """
         newhd = {}
+        target = target.lower()
         if isinstance(source, list) is True:
             newhd[target] = apt.Time(self[source[0]]+"T"+self[source[1]]).jd
         else:
