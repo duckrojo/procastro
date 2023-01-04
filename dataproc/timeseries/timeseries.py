@@ -21,6 +21,18 @@
 import numpy as np
 import dataproc as dp
 
+def vspan_plot(vspan, ax):
+    if isinstance(vspan, (list, tuple, np.ndarray)):
+        if len(vspan) == 2 and isinstance(vspan[0], (int, float)):
+            vspan = [{'range': vspan}]
+        elif not isinstance(vspan[0], dict):
+            raise ValueError("vspan needs to be a dict, a 2-number array, or a list of dicts")
+    elif isinstance(vspan, dict):
+        vspan = [vspan]
+    for vs in vspan:
+        ax.axvspan(*vs['range'], facecolor="gray" if 'facecolor' not in vs.keys() else vs['facecolor'],
+                   alpha=0.5)
+
 
 class TimeSeries:
     """
@@ -322,7 +334,7 @@ class TimeSeriesSingle:
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
     def plot(self, label=None, axes=None, normalize=False, save=None,
-             overwrite=False, fmt_time="MJD", title="TimeSeries Data"):
+             clear=True, fmt_time="MJD", title="TimeSeries Data"):
         """
         Display the timeseries data: flux (with errors) as function of mjd
 
@@ -335,7 +347,8 @@ class TimeSeriesSingle:
         axes : int, plt.Figure, plt.Axes
         save : str, optional
             Filename where the plot will be saved
-        overwrite : bool, optional
+        clear : bool, optional
+             Clear previous axes info
         fmt_time : str, optional
             Specify a format for epoch time like "JD", by default it's "MJD"
         title : str, optional
@@ -346,7 +359,7 @@ class TimeSeriesSingle:
             Displays plot if 'save' set to None
         """
         import matplotlib.pyplot as plt
-        fig, ax = dp.figaxes(axes, overwrite=overwrite)
+        fig, ax = dp.figaxes(axes, clear=clear)
 
         if label is None:
             disp = self.labels
@@ -369,15 +382,11 @@ class TimeSeriesSingle:
 
         ax.set_title(title)
         ax.set_xlabel(fmt_time)
-        if normalize:
-            ax.set_ylabel("Normalized flux")
-        else:
-            ax.set_ylabel("Flux")
+        ax.set_ylabel(f"{'Normalized ' if normalize else ''}Flux")
 
         ax.legend()
         if save is not None:
             plt.savefig(save)
-
         else:
             plt.show()
 
@@ -443,9 +452,9 @@ class TimeSeriesSingle:
             x2 = sector[1]
         return self.epoch[x1:x2]
 
-    def plot_ratio(self, label=None, axes=None, fmt='x',
+    def plot_ratio(self, label=None, axes=None, fmt='x', title="",
                    grouping=None, sector=None, save=None,
-                   overwrite=False):
+                   clear=True, vspan=None, show=True):
         """
         Plots data ratio
 
@@ -459,10 +468,11 @@ class TimeSeriesSingle:
         sector :
         save : str, optional
             Filename of image file where the plot will be saved
-        overwrite : bool, optional
+        clear : bool, optional
+            Clear the axes content if needed
         """
         import matplotlib.pyplot as plt
-        fig, ax = dp.figaxes(axes, overwrite=overwrite)
+        fig, ax = dp.figaxes(axes, clear=clear)
 
         ratio, ratio_error, s, erbm = self.get_ratio(sector=sector)
 
@@ -495,13 +505,19 @@ class TimeSeriesSingle:
 
         ax.errorbar(self.JD(sector=sector), ratio, yerr=ratio_error,
                     label=label, fmt='o-')
-        ax.set_title("Flux Ratio of {}".format(self.labels[0]))
+        if title:
+            ax.set_title(title)
+        else:
+            ax.set_title("Flux Ratio of {}".format(self.labels[0]))
         ax.set_xlabel("JD")
         ax.set_ylabel("Flux Ratio")
+        if vspan is not None:
+            vspan_plot(vspan, ax)
+
         plt.tight_layout()
         if save is not None:
             plt.savefig(save)
-        else:
+        elif show:
             plt.show()
 
     # todo reimplement save_to_file

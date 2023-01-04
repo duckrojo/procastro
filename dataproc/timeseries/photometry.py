@@ -24,7 +24,7 @@ import dataproc as dp
 import numpy as np
 import sys
 import os.path
-from .timeseries import TimeSeries
+from .timeseries import TimeSeries, vspan_plot
 import matplotlib.pyplot as plt
 import logging
 
@@ -60,7 +60,7 @@ tmlogger.addHandler(handler_console)
 def _show_apertures(coords, aperture=None, sky=None,
                     axes=None, sk_color='w', ap_color='w',
                     n_points=30, alpha=0.5, labels=None, logger=None,
-                    stamp_rad=None):
+                    stamp_rad=None, clear=True):
 
     if logger is None:
         logger = tmlogger
@@ -72,7 +72,7 @@ def _show_apertures(coords, aperture=None, sky=None,
         logger.warning("Using default sky of 15-20 pixels")
         sky = [15, 20]
 
-    f, ax = dp.figaxes(axes, overwrite=False)
+    f, ax = dp.figaxes(axes, clear=clear)
     for p in [pp for pp in ax.patches]:
         # noinspection PyArgumentList
         p.remove()
@@ -755,11 +755,14 @@ class Photometry:
         # rough aperture photometry performed
         if brightest is None:
             flxs = []
-            for trg in coords_user_xy:
+            for trgx, trgy in coords_user_xy:
                 data = sci_files[0].reader()
+                if not (0 < trgy < data.shape[0]) and not (0 < trgx < data.shape[1]):
+                    raise ValueError(
+                        f"Given coordinates ({trgx}, {trgy}) is beyond data size ({data.shape[1]}, {data.shape[0]})")
                 stamp = dp.subarray(data,
                                     dp.subcentroid(data,
-                                                   (trg[1], trg[0]),
+                                                   (trgy, trgx),
                                                    stamp_rad),
                                     stamp_rad)
                 d = dp.radial(stamp, (stamp_rad, stamp_rad))
@@ -1141,7 +1144,7 @@ class Photometry:
 
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None, frame=0,
-                           recenter=True, save=None, overwrite=False):
+                           recenter=True, save=None, clear=True, vspan=None):
         """
         Plots a Radial Profile from the data using dataproc.radialprofile
 
@@ -1158,12 +1161,12 @@ class Photometry:
             If True, tragets will be tracked as they move
         save : str, optional
             Path where the plot will be saved
-        overwrite : bool, True
+        clear : bool, True
         """
 
         colors = ['kx', 'rx', 'bx', 'gx', 'k^', 'r^', 'b^', 'g^', 'ko', 'ro',
                   'bo', 'go']
-        fig, ax = dp.figaxes(axes, overwrite=overwrite)
+        fig, ax = dp.figaxes(axes, clear=clear)
 
         ax.cla()
         ax.set_title('Radial profile')
@@ -1199,6 +1202,9 @@ class Photometry:
                                       coords_xy[frame][0]-stamp_rad+center[0],
                                       coords_xy[frame][1]-stamp_rad+center[1]),
                         )
+
+        if vspan is not None:
+            vspan_plot(vspan, ax)
         prop = {}
         if legend_size is not None:
             prop['size'] = legend_size
@@ -1218,7 +1224,7 @@ class Photometry:
 
     def showstamp(self, target=None, stamp_rad=None, axes=None,
                   first=0, last=-1, n_show=None, ncol=None, annotate=True,
-                  imshow=None, save=None, overwrite=False):
+                  imshow=None, save=None, clear=True):
         """
         Show the star at the same position for the different frames
 
@@ -1242,7 +1248,7 @@ class Photometry:
         imshow :
         save : str, optional
             Filename where the plot will be saved
-        overwrite : bool, optional
+        clear : bool, optional
         """
         if target is None:
             target = 0
@@ -1278,7 +1284,7 @@ class Photometry:
             ypos = 1+(pos_idx//ncol)*(stamp_d+2)
             array[ypos:ypos+stamp_d, xpos: xpos+stamp_d] = data
 
-        f_stamp, ax_stamp = dp.figaxes(axes, overwrite=overwrite)
+        f_stamp, ax_stamp = dp.figaxes(axes, clear=clear)
         dp.imshowz(array, axes=ax_stamp, force_show=False)
         if annotate:
             for idx in range(first, last+1):
@@ -1360,7 +1366,7 @@ class Photometry:
                 ap_color='w', sk_color='LightCyan',
                 alpha=0.6, axes=None, reference=None,
                 annotate=True, cnt=None, interactive=True,
-                save=None, overwrite=False, ccd_lims_xy=None, mdark=None,
+                save=None, clear=True, ccd_lims_xy=None, mdark=None,
                 mflat=None, **kwargs):
 
         """
@@ -1384,13 +1390,14 @@ class Photometry:
             Enables interactive mode
         save : str, optional
             Filename of image where the plot will be saved to.
-        overwrite: bool, optional
+        clear: bool, optional
+            Clear previous axes content
         ccd_lims_xy : list
             List containing the ccd limits
         mdark :
         mflat :
         """
-        f, ax = dp.figaxes(axes, overwrite=overwrite)
+        f, ax = dp.figaxes(axes, clear=clear)
         ax.cla()
         if mdark is None:
             mdark = 0.0
@@ -1512,7 +1519,7 @@ class Photometry:
         _show_apertures(coords, aperture=self.aperture, sky=self.sky,
                         axes=ax, labels=annotate and self.labels or None,
                         sk_color=sk_color, ap_color=ap_color, alpha=alpha,
-                        stamp_rad=self.stamp_rad)
+                        stamp_rad=self.stamp_rad, clear=False)
         ax.set_ylabel("Frame #{}{}".format(frame, reference != frame
                                            and f", apertures from #{reference}"
                                            or ""))
