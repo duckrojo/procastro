@@ -367,7 +367,7 @@ def imshowz(data,
     return outs
 
 
-def figaxes_xdate(x, axes=None, overwrite=False):
+def figaxes_xdate(x, axes=None, clear=True):
     """
     Returns the figure and axes with a properly formatted date X-axis.
 
@@ -376,7 +376,7 @@ def figaxes_xdate(x, axes=None, overwrite=False):
     x : astropy.Time, datetime.datetime, float
         Time data used for the x axis. If its a float, then assumes JD
     axes : int, plt.Figure, plt.Axes, optional
-    overwrite : bool, optional
+    clear: bool, optional
 
     Returns
     -------
@@ -384,7 +384,7 @@ def figaxes_xdate(x, axes=None, overwrite=False):
     """
     import matplotlib.dates as md
 
-    f, ax = dp.figaxes(axes, overwrite=overwrite)
+    f, ax = dp.figaxes(axes, clear=clear)
     if isinstance(x, apt.Time):
         retx = x.plot_date
     elif isinstance(x, datetime.datetime):
@@ -411,7 +411,7 @@ def figaxes_xdate(x, axes=None, overwrite=False):
     return f, ax, retx
 
 
-def figaxes(axes=None, forcenew=True, overwrite=False) -> (plt.Figure, plt.Axes):
+def figaxes(axes=None, forcenew=True, clear=True) -> (plt.Figure, plt.Axes):
     """
     Function that accepts a variety of canvas formats and returns the output
     ready for use with matplotlib
@@ -420,8 +420,9 @@ def figaxes(axes=None, forcenew=True, overwrite=False) -> (plt.Figure, plt.Axes)
     ----------
     axes : int, plt.Figure, plt.Axes
     forcenew : bool, optional
-        If true starts a new axes when axes=None instead of using last figure
-    overwrite : bool, optional
+        If true starts a new axes when axes=None (and only then) instead of using last figure
+    clear: bool, optional
+        Delete previous axes content, if any
 
     Returns
     -------
@@ -435,25 +436,26 @@ def figaxes(axes=None, forcenew=True, overwrite=False) -> (plt.Figure, plt.Axes)
             fig, ax = plt.subplots(num=plt.gcf().number)
     elif isinstance(axes, int):
         fig = plt.figure(axes)
-        if overwrite or len(fig.axes) == 0:
+        if clear or len(fig.axes) == 0:
             fig.clf()
             ax = fig.add_subplot(111)
         else:
             ax = fig.axes[0]
     elif isinstance(axes, plt.Figure):
-        if overwrite:
-            axes.clf()
-        ax = axes.add_subplot(111)
         fig = axes
+        if clear:
+            fig.clf()
+        if len(fig.axes)==0:
+            ax = fig.add_subplot(111)
+        ax = fig.axes[0]
     elif isinstance(axes, plt.Axes):
         ax = axes
+        if clear:
+            ax.cla()
         fig = axes.figure
     else:
         raise ValueError("Given value for axes ({0:s}) is not"
                          "recognized".format(axes,))
-
-    if overwrite:
-        ax.cla()
 
     return fig, ax
 
