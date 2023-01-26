@@ -157,6 +157,11 @@ class TimeSeries:
         ratio, ratio_error, sigma, err_m = self._tss[info].get_ratio(**kwargs)
         return ratio, ratio_error, sigma, err_m
 
+    def ignore_with_outliers(self, info=None, min=None, max=None):
+        if info is None:
+            info = self.default_info
+        return self._tss[info].ignore_with_outliers(min, max)
+
     def plot_ratio(self, info=None, **kwargs):
         """
         Execute .plot_ratio() on the default TimeSeriesSingle
@@ -252,7 +257,22 @@ class TimeSeriesSingle:
     def has_errors(self):
         return len(self.errors) > 0
 
-    # todo: implement ignore channels
+    def ignore_with_outliers(self, min=None, max=None):
+        ignored = []
+        for chan in range(self.n_channels()):
+            if self.groups[chan] == 1:
+                continue
+            if min is not None and np.any(self[chan]<min):
+                self.groups[chan] = 3
+                ignored.append(chan)
+                continue
+            if max is not None and np.any(self[chan]>max):
+                self.groups[chan] = 3
+                ignored.append(chan)
+                continue
+
+        return ignored
+
     def set_main(self, target, ignore=None):
         """
         Set target channel as group #1, and all other channels as group #2
@@ -266,6 +286,9 @@ class TimeSeriesSingle:
         """
         target = self._search_channel(target)
         self.groups[:] = 2
+        if ignore is not None:
+            for out in ignore:
+                self.groups[out] = 3
         self.groups[target] = 1
         return self
 
@@ -334,7 +357,7 @@ class TimeSeriesSingle:
             raise ValueError("Unrecognized combine operation '{}'".format(op))
 
     def plot(self, label=None, axes=None, normalize=False, save=None,
-             clear=True, fmt_time="MJD", title="TimeSeries Data"):
+             clear=True, fmt_time="MJD", title="TimeSeries Data", show=None):
         """
         Display the timeseries data: flux (with errors) as function of mjd
 
@@ -358,6 +381,9 @@ class TimeSeriesSingle:
         None
             Displays plot if 'save' set to None
         """
+
+        if show is None:
+            show = save is None
         import matplotlib.pyplot as plt
         fig, ax = dp.figaxes(axes, clear=clear)
 
@@ -387,7 +413,7 @@ class TimeSeriesSingle:
         ax.legend()
         if save is not None:
             plt.savefig(save)
-        else:
+        if show:
             plt.show()
 
     def get_ratio(self, label=None, axes=None, sector=None):
@@ -416,8 +442,8 @@ class TimeSeriesSingle:
         """
         ratio = self[-1] / self[-2]
 
-        ratio_error = ratio * np.sqrt((self.grp_errors(1) / self[-1]) ** 2 +
-                                      (self.grp_errors(2) / self[-2]) ** 2)
+        ratio_error = np.absolute(ratio) * np.sqrt((self.grp_errors(1) / self[-1]) ** 2 +
+                                                   (self.grp_errors(2) / self[-2]) ** 2)
 
         x1 = 0
         x2 = len(ratio)
@@ -454,7 +480,7 @@ class TimeSeriesSingle:
 
     def plot_ratio(self, label=None, axes=None, fmt='x', title="",
                    grouping=None, sector=None, save=None,
-                   clear=True, vspan=None, show=True):
+                   clear=True, vspan=None, show=None):
         """
         Plots data ratio
 
@@ -471,6 +497,9 @@ class TimeSeriesSingle:
         clear : bool, optional
             Clear the axes content if needed
         """
+
+        if show is None:
+            show = save is None
         import matplotlib.pyplot as plt
         fig, ax = dp.figaxes(axes, clear=clear)
 
@@ -517,7 +546,7 @@ class TimeSeriesSingle:
         plt.tight_layout()
         if save is not None:
             plt.savefig(save)
-        elif show:
+        if show:
             plt.show()
 
     # todo reimplement save_to_file

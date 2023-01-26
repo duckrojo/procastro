@@ -181,7 +181,9 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
                 "Skipping calibration given to Photometry() because "
                 "calibration files\nwere included in AstroFile: {}"
                 .format(astrofile))
-        d = (d - mdark) / mflat
+        else:
+            d = (d - mdark) / mflat
+
     return d
 
 
@@ -397,7 +399,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
             skip_interactive = False
             ax.cla()
             f.show()
-            dp.imshowz(d, axes=ax, force_show=False)
+            dp.imshowz(d, axes=ax, show=False)
             ax.set_ylabel(f'Frame #{idx}: {astrofile.basename()}')
             curr_center_xy = center_xy[:, to_store, :]
             on_click_action = [1]
@@ -1144,7 +1146,7 @@ class Photometry:
 
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
                            legend_size=None, frame=0,
-                           recenter=True, save=None, clear=True, vspan=None):
+                           recenter=True, save=None, clear=True, vspan=None, show=None):
         """
         Plots a Radial Profile from the data using dataproc.radialprofile
 
@@ -1163,6 +1165,9 @@ class Photometry:
             Path where the plot will be saved
         clear : bool, True
         """
+
+        if show is None:
+            show = save is None
 
         colors = ['kx', 'rx', 'bx', 'gx', 'k^', 'r^', 'b^', 'g^', 'ko', 'ro',
                   'bo', 'go']
@@ -1219,12 +1224,12 @@ class Photometry:
         plt.tight_layout()
         if save is not None:
             plt.savefig(save)
-        else:
+        if show:
             plt.show()
 
     def showstamp(self, target=None, stamp_rad=None, axes=None,
                   first=0, last=-1, n_show=None, ncol=None, annotate=True,
-                  imshow=None, save=None, clear=True):
+                  imshow=None, save=None, clear=True, show=None):
         """
         Show the star at the same position for the different frames
 
@@ -1250,6 +1255,8 @@ class Photometry:
             Filename where the plot will be saved
         clear : bool, optional
         """
+        if show is None:
+            show = save is None
         if target is None:
             target = 0
         elif isinstance(target, str):
@@ -1285,7 +1292,7 @@ class Photometry:
             array[ypos:ypos+stamp_d, xpos: xpos+stamp_d] = data
 
         f_stamp, ax_stamp = dp.figaxes(axes, clear=clear)
-        dp.imshowz(array, axes=ax_stamp, force_show=False)
+        dp.imshowz(array, axes=ax_stamp, show=False)
         if annotate:
             for idx in range(first, last+1):
                 pos_idx = idx - first
@@ -1310,7 +1317,7 @@ class Photometry:
         plt.tight_layout()
         if save is not None:
             plt.savefig(save)
-        else:
+        if show:
             plt.show()
 
     def plot_drift(self, target=None, axes=None):
@@ -1366,8 +1373,7 @@ class Photometry:
                 ap_color='w', sk_color='LightCyan',
                 alpha=0.6, axes=None, reference=None,
                 annotate=True, cnt=None, interactive=True,
-                save=None, clear=True, ccd_lims_xy=None, mdark=None,
-                mflat=None, **kwargs):
+                save=None, clear=True, ccd_lims_xy=None, show=None, **kwargs):
 
         """
         Plots the image from the fits file, after being processed using the
@@ -1397,17 +1403,15 @@ class Photometry:
         mdark :
         mflat :
         """
+        if show is None:
+            show = save is None
         f, ax = dp.figaxes(axes, clear=clear)
         ax.cla()
-        if mdark is None:
-            mdark = 0.0
-        if mflat is None:
-            mflat = 1.0
-        d = _get_calibration(self._astrodir, frame=frame, mdark=mdark,
-                             mflat=mflat, ccd_lims_xy=ccd_lims_xy)
+        d = _get_calibration(self._astrodir, frame=frame, mdark=self.mdark,
+                             mflat=self.mflat, ccd_lims_xy=ccd_lims_xy)
 
         dp.imshowz(d, axes=ax,
-                   force_show=False, **kwargs)
+                   show=False, **kwargs)
 
         if reference is None:
             reference = frame
@@ -1526,5 +1530,5 @@ class Photometry:
         plt.tight_layout()
         if save is not None:
             plt.savefig(save)
-        else:
+        if show:
             plt.show()

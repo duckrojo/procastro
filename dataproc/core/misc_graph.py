@@ -213,8 +213,9 @@ def imshowz(data,
             ticks=True, colorbar=False,
             rotate=0, invertx=False, inverty=False,
             origin='lower', force_new=False,
-            trim_data=False, force_show=True,
+            trim_data=False,
             extent=None, interactive=False,
+            save=None, show=None,
             **kwargs):
     """
     Plots data using the zscale algorithm to fix the min and max contrast
@@ -272,6 +273,8 @@ def imshowz(data,
     int, int :
         Min and max contrast values
     """
+    if show is None:
+        show = save is None
 
     data = prep_data_plot(data, **kwargs)
 
@@ -361,8 +364,11 @@ def imshowz(data,
         handler = _imshowz_binding(imag)
         outs['interactive'] = handler.outs
         outs['handler'] = handler
-    elif force_show:
+    if show:
         plt.show()
+
+    if save is not None:
+        fig.savefig(save)
 
     return outs
 
