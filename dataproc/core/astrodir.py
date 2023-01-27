@@ -16,8 +16,6 @@
 # Boston, MA  02110-1301, USA.
 #
 #
-from __future__ import print_function, division
-
 __all__ = ['AstroDir']
 
 import os
@@ -31,8 +29,9 @@ import sys
 from astropy.utils.exceptions import AstropyUserWarning
 
 import logging
+logging.basicConfig(level=logging.INFO)
 io_logger = logging.getLogger('dataproc.io')
-
+io_logger.propagate = False
 
 class AstroDir(object):
     """Collection of AstroFile objects.
@@ -122,8 +121,8 @@ class AstroDir(object):
                         if nf:
                             files.append(nf)
                     except IOError:
-                        warnings.warn(f"Warning: File {nf.basename()} could"
-                                      f"not be read, skipping")
+                        io_logger.warning(f"Warning: File {nf.basename()} could"
+                                          f"not be read, skipping")
 
                 nf = False
             else:
@@ -135,8 +134,8 @@ class AstroDir(object):
                 if nf:
                     files.append(nf)
             except IOError:
-                warnings.warn(f"Warning: File {nf.basename()} could not "
-                              f"be read, or HDU {hdud} empty... skipping")
+                io_logger.warning(f"Warning: File {nf.basename()} could not "
+                                  f"be read, or HDU {hdud} empty... skipping")
 
         self.files = files
         self.props = {}
@@ -275,7 +274,12 @@ class AstroDir(object):
                                      "(it must include all bads)")
 
                 fdir = [f for b, f in zip(item, self) if b]
-                return AstroDir(fdir)
+
+                ad = AstroDir(fdir)
+                ad.props = self.props.copy()
+                ad.path = self.path
+
+                return ad
 
         # if string, return as getheaderval
         if isinstance(item, str):
@@ -323,7 +327,7 @@ class AstroDir(object):
             ret.append(af.stats(*args, verbose_heading=verbose_heading,
                                 extra_headers=extra_headers))
             verbose_heading = False
-        return ret
+        return np.array(ret)
 
     def filter(self, *args, **kwargs):
         """

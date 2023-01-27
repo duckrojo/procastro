@@ -30,7 +30,9 @@ import numpy as np
 import os.path as path
 import astropy.io.fits as pf
 
-iologger = logging.getLogger('dataproc.io')
+logging.basicConfig(level=logging.INFO)
+io_logger = logging.getLogger('dataproc.io')
+io_logger.propagate = False
 
 
 def _numerize_other(method):
@@ -107,7 +109,7 @@ def _fits_writer(filename, data, header=None):
     """
     if header is None:
         header = pf.Header()
-        iologger.warning(
+        io_logger.warning(
             "No header provided to save on disk, using a default empty header"
             "for '{}'".format(filename))
     header['history'] = "Saved by dataproc v{} on {}".format(dp.__version__,
@@ -203,7 +205,7 @@ def _fits_setheader(_filename, **kwargs):
             hdulist = pf.open(_filename, 'update')
             fits = hdulist[hdu]
         except IOError:
-            iologger.warning(
+            io_logger.warning(
                 "Read-only filesystem or file not found. "
                 "Header update of '{0:s}' will not remain "
                 "on disk.".format(', '.join(kwargs.keys())))
@@ -388,9 +390,9 @@ class AstroFile(object):
     def __new__(cls, *args, **kwargs):
         """
         If passed an AstroFile, then do not create a new instance, just pass
-        that one
+        that one. If passed None, return None
         """
-        if args and isinstance(args[0], AstroFile):
+        if args and (isinstance(args[0], AstroFile) or args[0] is None):
             return args[0]
 
         return super(AstroFile, cls).__new__(cls)
@@ -410,7 +412,7 @@ class AstroFile(object):
         self.header_cache = self._geth[self.type](self.filename)
         if isinstance(header, dict):
             for k, v in header.items():
-                self.header_cache = v
+                self.header_cache[0][k] = v
 
         if hduh is None:
             hduh = hdu
@@ -419,9 +421,8 @@ class AstroFile(object):
         self._hduh = hduh
         self._hdud = hdud
 
-        self.calib = AstroCalib(mbias, mflat,
-                                mbias_header=mbias_header,
-                                mflat_header=mflat_header,
+        self.calib = AstroCalib(dp.AstroFile(mbias, header=mbias_header),
+                                dp.AstroFile(mflat, header=mflat_header),
                                 auto_trim=auto_trim)
 
     def add_bias(self, mbias):
@@ -612,7 +613,7 @@ class AstroFile(object):
                                 "It has to be a dictionary with the casting "
                                 "function as key (e.g. 'str')")
             elif isinstance(request, dict):
-                keys = request.keys()
+                keys = list(request.keys())
                 if len(keys) != 1:
                     raise NotImplementedError(
                         "Only a single key (casting) per filtering function "
@@ -654,7 +655,7 @@ class AstroFile(object):
                 elif f[:3] == 'gt':
                     greater_than = True
                 else:
-                    iologger.warning(f"Function '{f}' not recognized in "
+                    io_logger.warning(f"Function '{f}' not recognized in "
                                      f"filtering, ignoring")
 
             # print("r:%s h:%s m:%i f:%s" %(request, header_val,
@@ -769,7 +770,8 @@ class AstroFile(object):
             return ret
 
     @_checkfilename
-    def reader(self, *args, **kwargs):
+    def reader(self, *args,
+               skip_calib=False, hdud=None, hdu=None, **kwargs):
         """
         Read astro data and return it calibrated if provided
 
@@ -779,16 +781,16 @@ class AstroFile(object):
         ----------
         hdu, hdud: int, optional
             hdu slot to be read
-        rawdata : bool, optional
+        skip_calib : bool, optional
             If True returns data without calibration
 
         """
         tp = self.type
 
-        hdu = kwargs.pop('hdud', None)
+        if hdud is not None:
+            hdu = hdud
         if hdu is None:
-            hdu = kwargs.pop('hdu', self._hdud)
-        kwargs.pop('hdu', None)
+            hdu = self._hdud
 
         if not tp:
             return False
@@ -803,9 +805,7 @@ class AstroFile(object):
                              "in file {file}?\n available: {hdus}"
                              .format(hdu=hdu,
                                      file=self.filename,
-                                     hdus=self.reader(hdu=-1)))
-        if 'rawdata' in kwargs and kwargs['rawdata']:
-            return data
+                                     hdus=self.reader(hdu=-1, skip_calib=True)))
 
         # transform into CCDData
         # ccddata = ndd.CCDData(data, unit=self.unit, meta=self.header_cache,
@@ -814,11 +814,12 @@ class AstroFile(object):
         #                                           + data*self.gain)
         #                                           / self.gain))
 
-        if self.has_calib():
-            return self.calib.reduce(data,
+        if self.has_calib() and not skip_calib:
+            data = self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
                                      ffilter=self[self.calib.filter_keyword],
-                                     header=self.readheader())
+                                     header=self.readheader()[self._hduh])
+
 
         return data
 
@@ -959,11 +960,14 @@ class AstroFile(object):
         return self.reader() * other
 
     def __len__(self):
-        return len(self.reader())
+        return len(self.reader(skip_calib=True))
+
+    def __bool__(self):
+        return len(self.reader(skip_calib=True)) > 0
 
     @property
     def shape(self):
-        return self.reader().shape
+        return self.reader(skip_calib=True).shape
 
     def stats(self, *args, **kwargs):
         """
@@ -1025,7 +1029,10 @@ class AstroFile(object):
         for h in extra_headers:
             ret.append(self[h])
 
-        return ret
+        if len(ret) == 1:
+            return ret[0]
+        else:
+            return ret
 
     def jd_from_ut(self, target='jd', source='date-obs'):
         """
@@ -1186,17 +1193,21 @@ class AstroCalib(object):
                  filter_keyword='filter',
                  auto_trim=None):
 
-        # Itss always created false, if the add_*() has something, then its
+        # Its always created false, if the add_*() has something, then its
         # turned true.
         self.has_bias = self.has_flat = False
 
         self.mbias = {}
         self.mflat = {}
+        self.mbias_header = None
+        self.mflat_header = None
+
         self.exptime_keyword = exptime_keyword
         self.filter_keyword = filter_keyword
         self.add_bias(mbias, mbias_header=mbias_header)
         self.add_flat(mflat, mflat_header=mflat_header)
-        self.auto_trim = auto_trim
+        if auto_trim is not None:
+            self.auto_trim = auto_trim.lower()
 
     def add_bias(self, mbias, mbias_header=None):
         """
@@ -1309,55 +1320,56 @@ class AstroCalib(object):
         bias = self.mbias[exptime]
 
         mintrim = np.array([0, data.shape[0], 0, data.shape[1]])
-        calib_arrays = [flat, bias, data]
 
-        if self.auto_trim is not None:
+        in_data = [data]
+        if self.auto_trim is not None and self.auto_trim in header.keys():
+            trim = [np.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
+                                       header[self.auto_trim]
+                                       ).group(1, 2, 3, 4)).astype(int)[np.array([2, 3, 0, 1])]
+                    ]
+            for label in ['flat', 'bias']:
+                tdata = vars()[label]
+                in_data.append(tdata)
+
+                theader = getattr(self, f'm{label}_header')
+                if theader is not None:
+                    theader = theader[0]
+
+                if theader is None or self.auto_trim not in theader.keys():
+                    if not isinstance(tdata, (int, float)):
+                        io_logger.warning(f"Trim info {self.auto_trim} found on"
+                                          f" science frames but not in {label} frames... ignoring")
+                    trim.append(trim[0])
+                else:
+                    trim.append( np.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
+                                                    theader[self.auto_trim]
+                                                    ).group(1, 2, 3, 4)).astype(int)[np.array([2, 3, 0, 1])])
+
+            common_trim = (np.array(trim)*np.array([1,-1,1,-1])).max(0)*np.array([1,-1,1,-1])
+
             out_data = []
-
-            # TODO: Do not use array size to compare trimsec, but array
-            #       section instead.
-            for tdata, theader, label in zip(calib_arrays,
-                                             [self.mflat_header,
-                                              self.mbias_header,
-                                              header],
-                                             ["master flat",
-                                              "master bias",
-                                              "data"]):
-
-                if isinstance(tdata, (float, int)):
+            for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trim):
+                #reacommodating to use the same operators both sides of the array
+                delta = trim*np.array([1, -1, 1, -1]) - common_trim*np.array([1, -1, 1, -1])
+                # if np.any(delta < 0):
+                #     raise ValueError(f"Trim section of {label} [{self.auto_trim}: {','.join(trim.astype(str))}]"
+                #                      f" is not fully inside the"
+                #                      f" trim section of the data  [{self.auto_trim}: {','.join(trim_target.astype(str))}],"
+                #                      f" cannot proceed")
+                if np.all(delta == 0):
                     out_data.append(tdata)
-                    continue
+                else:
+                    delta = list(delta)
+                    # if there is no triming at the end of the array
+                    delta[1] = None if delta[1]==0 else delta[1]
+                    delta[3] = None if delta[3]==0 else delta[3]
 
-                if theader is not None and self.auto_trim in theader:
+                    out_data.append(tdata[delta[0]:delta[1], delta[2]:delta[3]])
 
-                    trim = np.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
-                                              theader[self.auto_trim])
-                                    .group(1, 2, 3, 4))[np.array([2, 3, 0, 1])]
-                    trim = [int(t) for t in trim]
-                    # Note the "-1" at the end since fits specifies indices
-                    # from 1 and not from 0
-                    trim[0] -= 1
-                    trim[2] -= 1
-                    logging.warning("Adjusting size of {} to [{}:{}, {}:{}] "
-                                    " (from [{}, {}])".format(label,
-                                                              trim[0], trim[1],
-                                                              trim[2], trim[3],
-                                                              tdata.shape[0],
-                                                              tdata.shape[1]))
-                    tdata = tdata[mintrim[0]:mintrim[1], mintrim[2]:mintrim[3]]
-                    if len(trim) != 4:
-                        logging.warning(
-                            "Auto trim field '{}' with invalid format in "
-                            "{} ({}). Using full array size."
-                            .format(self.auto_trim,
-                                    label,
-                                    theader[self.auto_trim]))
+                    logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim}: "
+                                 f"({','.join(trim.astype(str))}) -> ({','.join(common_trim.astype(str))})]")
 
-                out_data.append(tdata)
-
-            data = out_data[0]
-            flat = out_data[1]
-            bias = out_data[2]
+            data, flat, bias = out_data
 
         debias = data - bias
         deflat = debias / flat
