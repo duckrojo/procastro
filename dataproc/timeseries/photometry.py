@@ -55,6 +55,7 @@ handler_console.setLevel(PROGRESS)
 formatter_console = logging.Formatter('%(message)s')
 handler_console.setFormatter(formatter_console)
 tmlogger.addHandler(handler_console)
+tmlogger.propagate = False
 
 
 def _show_apertures(coords, aperture=None, sky=None,
@@ -179,7 +180,7 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
         if astrofile.has_calib():
             logger.warning(
                 "Skipping calibration given to Photometry() because "
-                "calibration files\nwere included in AstroFile: {}"
+                "calibration files were included in AstroFile: {}"
                 .format(astrofile))
         else:
             d = (d - mdark) / mflat
@@ -646,7 +647,7 @@ class Photometry:
     def __init__(self, sci_files, target_coords_xy, offsets_xy=None, idx0=0,
                  aperture=None, sky=None, mdark=None, mflat=None,
                  stamp_rad=30, outer_ap=1.2,
-                 max_skip=8, max_counts=50000, recenter=True,
+                 max_skip=8, max_counts=50000, min_counts=4000, recenter=True,
                  epoch='JD', labels=None, brightest=None,
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
@@ -683,12 +684,13 @@ class Photometry:
         self.ron = ron
         self.stamp_rad = stamp_rad
         self.max_counts = max_counts
+        self.min_counts = min_counts
         self.recenter = recenter
         self.max_skip = max_skip
         self.ccd_lims_xy = ccd_lims_xy
 
         if logfile is None:
-            tmlogger.propagate = True
+            tmlogger.propagate = False
             self._logger = tmlogger
         else:
             tmlogger.propagate = False
@@ -713,8 +715,7 @@ class Photometry:
             self._logger.addHandler(handler)
 
             print("Detailed logging redirected to {}".format(logfile))
-        self._logger.info(
-            "dataproc.timeseries.Photometry execution on: {sci_files}")
+        self._logger.info(f"dataproc.timeseries.Photometry execution on: {sci_files}")
 
         sci_files = dp.AstroDir(sci_files)
 
@@ -818,8 +819,11 @@ class Photometry:
     def set_max_counts(self, counts):
         self.max_counts = counts
 
+    def set_min_counts(self, counts):
+        self.min_counts = counts
+
     def photometry(self, aperture=None, sky=None,
-                   deg=None, max_counts=None,
+                   deg=None, max_counts=None, min_counts=None,
                    outer_ap=None, verbose=True):
         """
         Verifies parameters given and applies photometry through cpu_phot
@@ -845,6 +849,8 @@ class Photometry:
             self.deg = deg
         if max_counts is not None:
             self.set_max_counts(self.max_counts)
+        if min_counts is not None:
+            self.set_min_counts(self.min_counts)
         if outer_ap is not None:
             self.surrounding_ap_limit = outer_ap
 
@@ -1066,12 +1072,13 @@ class Photometry:
                 for ap_idx in range(len(aperture)):
                     ap = aperture[ap_idx]
                     psf = res[d < ap]
-                    if (psf > self.max_counts).any():
-                        logging.warning(
-                            "Object {} on frame #{} has counts above the "
-                            "threshold ({})".format(label,
-                                                    self.indexing[non_ignore_idx],
-                                                    self.max_counts))
+                    if psf.max() > self.max_counts:
+                        logging.warning(f"Object {label} on frame #{self.indexing[non_ignore_idx]} has "
+                                        f"counts ({psf.max()}) above the threshold ({self.max_counts})")
+
+                    if psf.max() < self.min_counts:
+                        logging.warning(f"Object {label} on frame #{self.indexing[non_ignore_idx]} has "
+                                        f"its maximum counts ({psf.max()}) below the threshold ({self.min_counts})")
 
                     all_sky_std[ap_idx, target_idx, epochs_idx] = float(sky_std)
                     all_sky_poisson[ap_idx, target_idx, epochs_idx] = float(sky_poisson)
