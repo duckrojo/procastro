@@ -1,5 +1,5 @@
 import pytest
-from ..astro import read_coordinates, get_transit_ephemeris
+from ..astro import find_target, get_transit_ephemeris
 import os
 
 
@@ -7,22 +7,22 @@ import os
 def test_read_coordinates():
     # Paths to test:
     # A: SkyCoords obtains RA and DEC correctly
-    sky = read_coordinates("1:12:43.2 +1:12:43")
+    sky = find_target("1:12:43.2 +1:12:43")
 
     # B: SkyCoord fails | File contains RA and DEC associated to target name
     file = os.path.join(os.path.dirname(__file__), "transit_test.txt")
-    sky = read_coordinates("CoRoT_18_b", coo_files=file)
+    sky = find_target("CoRoT_18_b", coo_files=file)
 
     assert sky.ra.value == 98.17240708333331
     assert sky.dec.value == -0.03159027777777778
 
     # C: SkyCoord and File fails | Simbad query finds target string
-    sky = read_coordinates("42 Dra b", coo_files=file)
+    sky = find_target("42 Dra b", coo_files=file)
     assert sky.ra.value == 276.49640958333333
     assert sky.dec.value == 65.56347305555555
     # D: All fail
     with pytest.raises(ValueError):         # Catches expected error
-        sky = read_coordinates("test", coo_files=file)
+        sky = find_target("test", coo_files=file)
 
 
 def test_get_transit_ephemeris():

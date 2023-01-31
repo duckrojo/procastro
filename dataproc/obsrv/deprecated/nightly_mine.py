@@ -84,7 +84,7 @@ class observation_night(object):
         obs.lon = str(latlon[1])  # Similary, assigns the longitude to object "obs"
 
         obs.elevation = 0   # Assigns the elevation to object "obs"
-        obs.epoch = str(self.params["equinox"]) # Assings the epoch to object "obs"
+        obs.epochs = str(self.params["equinox"]) # Assings the epoch to object "obs"
 
         print("Selected (lat, lon): (%s, %s)" %(latlon[0],latlon[1]))
 
