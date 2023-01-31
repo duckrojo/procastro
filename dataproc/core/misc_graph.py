@@ -20,7 +20,8 @@
 
 
 __all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
-           'imshowz', 'figaxes_xdate', 'figaxes',
+           'imshowz', 'figaxes_xdate', 'figaxes', 'set_plot_props',
+           'vspan_plot'
            ]
 
 import astropy.time as apt
@@ -29,6 +30,55 @@ import dataproc as dp
 import matplotlib.pyplot as plt
 import astropy.io.fits as pf
 import numpy as np
+
+
+def vspan_plot(ax, vspan):
+    if isinstance(vspan, (list, tuple, np.ndarray)):
+        if len(vspan) == 2 and isinstance(vspan[0], (int, float)):
+            vspan = [{'range': vspan}]
+        elif not isinstance(vspan[0], dict):
+            raise ValueError("vspan needs to be a dict, a 2-number array, or a list of dicts")
+    elif isinstance(vspan, dict):
+        vspan = [vspan]
+    for vs in vspan:
+        ax.axvspan(*vs['range'], facecolor="gray" if 'facecolor' not in vs.keys() else vs['facecolor'],
+                   alpha=0.5)
+
+
+def set_plot_props(ax, xlim=None, ylim=None,
+                   legend_dict=None, save=None, show=None,
+                   vspan=None, title=None):
+    """Set some standard properties for plot"""
+
+    dp.vspan_plot(ax, vspan)
+
+    if show is None:
+        show = save is None
+
+    if title is not None:
+        ax.set_title(title)
+
+    if legend_dict is not None:
+        if 'loc' not in legend_dict.keys():
+            legend_dict['loc'] = 1
+        ax.legend(**legend_dict)
+
+    if xlim is not None:
+        if isinstance(xlim, (int, float)):
+            ax.set_xlim([0, xlim])
+        else:
+            ax.set_xlim(xlim)
+    if ylim is not None:
+        if isinstance(ylim, (int, float)):
+            ax.set_ylim([0, ylim])
+        else:
+            ax.set_ylim(ylim)
+
+    plt.tight_layout()
+    if save is not None:
+        ax.figure.savefig(save)
+    if show:
+        ax.figure.show()
 
 
 def plot_accross(data,

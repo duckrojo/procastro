@@ -588,7 +588,7 @@ class AstroFile(object):
 
         for filter_keyword, request in kwargs.items():
             functions = []
-            # By default is not comparing match, but rather equality
+            # By default, it is not comparing match, but rather equality
             match = False
             exists = True
 
@@ -744,7 +744,7 @@ class AstroFile(object):
             # If first argument is tuple use those values as searches
             if isinstance(args[0], (list, tuple)):
                 args = args[0]
-            # If its a string, separate by commas
+            # If it is a string, separate by commas
             elif isinstance(args[0], str):
                 args = args[0].split(',')
 
@@ -754,9 +754,12 @@ class AstroFile(object):
         hdr = self.header_cache[hdu]
         ret = []
         for k in args:
-            k_lc = k.lower().strip()
+            k = k.strip()
+            k_lc = k.lower()
             if k_lc in hdr:
                 ret.append(cast(hdr[k_lc]))
+            if k in hdr:
+                ret.append(cast(hdr[k]))
             elif k_lc == "basename":
                 ret.append(path.basename(self.filename))
             elif k_lc == "dirname":
@@ -1206,8 +1209,7 @@ class AstroCalib(object):
         self.filter_keyword = filter_keyword
         self.add_bias(mbias, mbias_header=mbias_header)
         self.add_flat(mflat, mflat_header=mflat_header)
-        if auto_trim is not None:
-            self.auto_trim = auto_trim.lower()
+        self.auto_trim = None if auto_trim is None else auto_trim.lower()
 
     def add_bias(self, mbias, mbias_header=None):
         """
