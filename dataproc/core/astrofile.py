@@ -758,7 +758,7 @@ class AstroFile(object):
             k_lc = k.lower()
             if k_lc in hdr:
                 ret.append(cast(hdr[k_lc]))
-            if k in hdr:
+            elif k in hdr:
                 ret.append(cast(hdr[k]))
             elif k_lc == "basename":
                 ret.append(path.basename(self.filename))
