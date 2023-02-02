@@ -55,15 +55,15 @@ class TestPhotometry(object):
             broken.photometry()
 
         broken.stamp_radius = 25
-        broken.aperture = [1.0]
+        broken._apertures = [1.0]
         with pytest.raises(ValueError):     #Aperture > Sky
             broken.photometry()
 
-        broken.aperture = None
+        broken._apertures = None
         with pytest.raises(ValueError):     #Aperture is None
             broken.photometry()
 
-        broken.aperture = [7.5]
+        broken._apertures = [7.5]
         broken.sky = None
         with pytest.raises(ValueError):     #Aperture is None
             broken.photometry()

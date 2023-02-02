@@ -17,6 +17,9 @@
 #
 #
 from typing import Optional, Tuple, List, Union
+from collections.abc import Sequence
+
+TwoValues = Tuple[float, float]
 
 # noinspection PyUnresolvedReferences
 from matplotlib import patches
@@ -625,10 +628,6 @@ class Photometry:
     """
 
     def __init__(self, sci_files, target_coords_xy, offsets_xy=None, idx0=0,
-                 aperture=None,
-                 sky: Optional[Union[Tuple[float, float], List[float, float]]] = None,
-                 skies: Optional[Union[Tuple[Tuple[float, float], ...],
-                                       List[List[float, float]], ...]] = None,
                  mdark=None, mflat=None,
                  stamp_rad=30, outer_ap=1.2,
                  max_skip=8, max_counts=50000, min_counts=4000, recenter=True,
@@ -637,7 +636,11 @@ class Photometry:
                  logfile=None, ignore=None, extra=None,
                  interactive=False):
 
-        self.last_ts = None
+        # initialized elsewhere
+        self._last_ts = None
+        self._skies = None
+        self._apertures = None
+
         if isinstance(epoch, str):
             self.epochs = sci_files.getheaderval(epoch)
         elif hasattr(epoch, '__iter__'):
@@ -647,22 +650,7 @@ class Photometry:
                 "Epoch must be an array of dates in julian date, or a "
                 "header's keyword  for the Julian date of the observation")
 
-        # Following as default used to find the brightest star.
-        # Otherwise, they are not used until .photometry(), which can override
-        # them
-        if aperture is None:
-            aperture = stamp_rad / 4.0
-        if skies is not None:
-            self.skies = skies
-            sky = skies[0]
-        else:
-            if sky is None:
-                sky = [int(stamp_rad * 0.6), int(stamp_rad * 0.8)]
-            self.skies = [sky]
         self.surrounding_ap_limit = outer_ap
-        self.aperture = aperture
-
-        self.sky = sky
 
         if extra is None:
             extra = []
@@ -759,8 +747,8 @@ class Photometry:
                                                    stamp_rad),
                                     stamp_rad)
                 d = dp.radial(stamp, (stamp_rad, stamp_rad))
-                sky_val = np.median(stamp[(d < sky[1]) * (d > sky[0])])
-                flxs.append((stamp[d < aperture] - sky_val).sum())
+                sky_val = np.median(stamp[(d < stamp_rad) * (d > stamp_rad-5)])
+                flxs.append((stamp[d < stamp_rad/2] - sky_val).sum())
             brightest = np.argmax(flxs)
         self.brightest = brightest
 
@@ -813,7 +801,7 @@ class Photometry:
         self.min_counts = counts
 
     def photometry(self,
-                   aperture=None, sky=None, skies=None,
+                   aperture, sky=None, skies=None,
                    deg=None, max_counts=None, min_counts=None,
                    outer_ap=None, verbose=True,
                    ) -> ts.TimeSeries:
@@ -830,18 +818,23 @@ class Photometry:
         outer_ap :
             Outer ring as a fraction of aperture, to report surrounding region
         """
-        if aperture is not None:
-            if isinstance(aperture, (int, float)):
-                self.aperture = [aperture]
-            elif isinstance(aperture, (list, tuple)):
-                self.aperture = aperture
+        # make sure that aperture and sky values are compatible.
 
-        if skies is not None:
-            self.skies = skies
-        if sky is not None:
-            self.sky = sky
-        else:
-            self.sky = self.skies[0]
+
+        if skies is None:
+            if sky is None:
+                raise ValueError("Both sky and skies for .photometry() cannot be None")
+            skies = [sky]
+
+        if isinstance(aperture, (int, float)):
+            self._apertures = [aperture]
+        elif isinstance(aperture, (list, tuple, np.ndarray)):
+            self._apertures = aperture
+
+        max_aperture = np.max(aperture)
+        skies = [(sky1 if sky1>max_aperture else max_aperture+2, sky2) for sky1, sky2 in skies]
+        self._skies = skies
+
         if deg is not None:
             self.deg = deg
         if max_counts is not None:
@@ -851,7 +844,7 @@ class Photometry:
         if outer_ap is not None:
             self.surrounding_ap_limit = outer_ap
 
-        if self.aperture is None or self.sky is None:
+        if self._apertures is None or self._skies is None:
             raise ValueError(
                 "ERROR: aperture photometry parameters are incomplete. Either "
                 "aperture photometry radius or sky annulus were not giving. "
@@ -859,20 +852,19 @@ class Photometry:
                 "photometry(aperture=a, sky=s) or define aperture "
                 "and sky when initializing Photometry object.")
 
-        if any([self.aperture[i] > self.stamp_rad
-                for i in range(len(self.aperture))]):
+        if any([self._apertures[i] > self.stamp_rad
+                for i in range(len(self._apertures))]):
             raise ValueError(
                 "Aperture photometry ({}) shouldn't be higher than radius of "
-                "stamps ({})".format(self.aperture,
+                "stamps ({})".format(self._apertures,
                                      self.stamp_rad))
-        if any([self.sky[0] < self.aperture[i]
-                for i in range(len(self.aperture))]):
+        if np.min(np.array(self._skies), 0)[0] < np.max(self._apertures):
             raise ValueError(
                 "Aperture photometry ({}) shouldn't be higher than inner sky "
-                "radius ({})".format(self.aperture,
+                "radius ({})".format(self._apertures,
                                      self.sky[0]))
 
-        if self.stamp_rad < self.sky[1]:
+        if self.stamp_rad < np.max(np.array(self._skies), 0)[1]:
             raise ValueError(
                 "External radius of sky ({}) shouldn't be higher than stamp "
                 "radius ({})".format(self.sky[1],
@@ -880,7 +872,7 @@ class Photometry:
 
         ts = self.cpu_phot(verbose=verbose)
         
-        self.last_ts = ts
+        self._last_ts = ts
         return ts
 
     def remove_from(self, idx):
@@ -973,23 +965,21 @@ class Photometry:
         """
         import scipy.optimize as op
 
-        if isinstance(self.aperture, (list, tuple)):
-            aperture = self.aperture
+        if isinstance(self._apertures, (list, tuple, np.ndarray)):
+            aperture = self._apertures
         else:
-            aperture = [self.aperture]
+            aperture = [self._apertures]
 
-        ns = len(self.indexing)
-        nt = len(self.coords_new_xy)
+        nt, ns, ny, ny = self.sci_stamps.shape
 
-        skies = self.sky
+        skies = self._skies
 
-        data_store = {}
+        data_store = {} #"considered": np.array(self.indexing*1)}
 
         if verbose:
             print("Processing CPU photometry for {0} targets: "
                   .format(len(self.sci_stamps)), end='')
             sys.stdout.flush()
-        nt = len(self.labels)
         ref_labels = ['target'] + [f'ref{i:d}' for i in range(1, nt)]
         for label, ref_label, target, centers_xy, target_idx in zip(self.labels,
                                                                     ref_labels,
@@ -997,139 +987,127 @@ class Photometry:
                                                                     self.coords_new_xy,
                                                                     range(nt)):  # For each target
 
-            fwhm_gs = []
-            for ap in aperture:
-                for sky in skies:
+
+            # n_epoch, 2
+            center_stamp_xy = np.array(centers_xy) % 1 + np.array([self.stamp_rad, self.stamp_rad])[None, :]
+            xx, yy = np.mgrid[0:target.shape[2], 0: target.shape[1]]
+            dx = xx[None, :, :] - center_stamp_xy[:, 0][:, None, None]
+            dy = yy[None, :, :] - center_stamp_xy[:, 1][:, None, None]
+            d = np.sqrt( dx*dx + dy*dy)
+
+            data_store[f"centerx_{ref_label}"] = np.array(centers_xy)[self.indexing, 0]
+            data_store[f"centery_{ref_label}"] = np.array(centers_xy)[self.indexing, 1]
+
+            for sky in skies:
+                masked_sky = np.ma.array(target, mask=(d>sky[0])*(d<sky[1]))
+                sky_std = masked_sky.std(axis=(1,2))
+                sky_avg = np.ma.median(masked_sky, axis=(1,2))
+                n_pix_sky = np.ma.count_masked(masked_sky, axis=(1, 2))
+                for ap in aperture:
                     apsky_label = f"ap{ap:.1f}_ski{sky[0]:.1f}_sko{sky[1]:.1f}"
 
-                    sky_stds = {str(apsky_label): []}
-                    sky_poissons = {str(apsky_label): []}
-                    phots = {str(apsky_label): []}
-                    peaks = {str(apsky_label): []}
-                    excesses = {str(apsky_label): []}
-                    mom2s = {str(apsky_label): []}
-                    mom3s = {str(apsky_label): []}
-                    momas = {str(apsky_label): []}
-                    errs = {str(apsky_label): []}
+                    skyless = target - sky_avg[:, None, None]
+                    ap_mask = d < ap
+                    masked_ap = np.ma.array(skyless, mask=ap_mask)
+                    flux = masked_ap.sum(axis=(1,2))
+                    n_pix_ap = np.ma.count_masked(masked_ap, axis=(1,2))
 
-            for data, center_xy, non_ignore_idx, epochs_idx \
-                    in zip(target, centers_xy, self.indexing, range(ns)):
-                cx, cy = center_xy
+                    var_flux = flux / self.gain
+                    var_sky = sky_std ** 2 * n_pix_ap * (1 + n_pix_ap.astype(float)) / n_pix_sky
+                    var_total = var_sky + var_flux + self.ron * self.ron * n_pix_ap
+                    error = np.sqrt(var_total)
 
-                # Stamps are already centered, only decimals could be different
-                cnt_stamp = [self.stamp_rad + cy % 1, self.stamp_rad + cx % 1]
+                    excess = np.ma.array(skyless, mask=(ap < d) * (d < self.surrounding_ap_limit * ap)).sum(axis=(1, 2))
+                    peak = masked_ap.max(axis=(1,2))
 
-                # Preparing arrays for photometry
-                d = dp.radial(data, cnt_stamp)
-                dy, dx = data.shape
-                y, x = np.mgrid[-cnt_stamp[0]:dy - cnt_stamp[0],
-                                -cnt_stamp[1]:dx - cnt_stamp[1]]
+                    data_store[f'flux_{ref_label}_{apsky_label}'] = flux[self.indexing]
+                    data_store[f'err_flux_{ref_label}_{apsky_label}'] = error[self.indexing]
+                    data_store[f'peak_{ref_label}_{apsky_label}'] = peak[self.indexing]
+                    data_store[f'excess_{ref_label}_{apsky_label}'] = excess[self.indexing]
 
+                    skew_x = (masked_ap*(masked_ap>0) * (dx ** 3)).sum(axis=(1,2))
+                    skew_y = (masked_ap*(masked_ap>0) * (dy ** 3)).sum(axis=(1,2))
+                    mom2   = (masked_ap*(masked_ap>0) * d*d      ).sum(axis=(1,2))
+                    mom3m = np.sqrt(skew_x * skew_x + skew_y * skew_y)
+                    mom3a = np.arctan2(skew_y, skew_x)
 
-                # Compute sky correction
-                for sky in skies:
-                    idx = (d > sky[0]) * (d < sky[1])
-                    if self.deg == -1:
-                        fit = np.median(data[idx])
-                    elif self.deg >= 0:
-                        err_func = lambda coef, xx, yy, zz: (dp.bipol(coef, xx, yy) - zz).flatten()
-                        coef0 = np.zeros((self.deg, self.deg))
-                        coef0[0, 0] = data[idx].mean()
-                        fit, cov, info, mesg, success = \
-                            op.leastsq(err_func,
-                                       coef0.flatten(),
-                                       args=(x[idx], y[idx], data[idx]),
-                                       full_output=True)
-                    else:
-                        raise ValueError(
-                            "Invalid degree '{}' to fit sky".format(self.deg))
+                    data_store[f'mom2_{ref_label}_{apsky_label}'] = mom2[self.indexing]
+                    data_store[f'mom3m_{ref_label}_{apsky_label}'] = mom3m[self.indexing]
+                    data_store[f'mom3a_{ref_label}_{apsky_label}'] = mom3a[self.indexing]
 
-                    # Apply sky subtraction
-                    n_pix_sky = idx.sum()
-                    if self.deg == -1:
-                        sky_fit = fit
-                    elif self.deg >= 0:
-                        sky_fit = dp.bipol(fit, x, y)
-                    else:
-                        raise ValueError(
-                            f"Invalid degree '{self.deg}' to fit sky")
+            too_much_mask = peak > self.max_counts
+            too_little_mask = peak < self.min_counts
+            for mask, lab, thresh in ((too_much_mask, "above", self.max_counts),
+                                      (too_little_mask, "below", self.min_counts)):
+                n_mask = mask[self.indexing].sum()
+                if n_mask:
+                    logging.warning(f"Object {label} on frame{'s' if n_mask > 1 else ''}"
+                                    f" {', '.join(np.arange(ns)[self.indexing][mask[self.indexing]].astype(str))} "
+                                    f"ha{'ve' if n_mask > 1 else 's'} "
+                                    f"counts {lab} the threshold ({thresh})")
 
-                    sky_std = (data - sky_fit)[idx].std()
-                    sky_poisson = np.sqrt(np.mean(data[idx]) / self.gain)
-                    res = data - sky_fit  # minus sky
-
-                    # Following to compute FWHM by fitting gaussian
-                    res2 = res[d < sky[1]].ravel()
-                    d2 = d[d < sky[1]].ravel()
-                    to_fit = lambda dd, h, sigma: h * dp.gauss(dd, sigma, ndim=1)
-                    try:
-                        sig, cov = op.curve_fit(to_fit,
-                                                d2,
-                                                res2,
-                                                sigma=1 / np.sqrt(np.absolute(res2)),
-                                                p0=[max(res2), 3])
-                    except RuntimeError:
-                        sig = np.array([0, 0, 0])
-                    fwhm_g = 2.355 * sig[1]
-
-                    fwhm_gs.append(fwhm_g)
-
-                    # now photometry
-                    for ap in aperture:
-                        psf = res[d < ap]
-                        apsky_label = f"ap{ap:.1f}_ski{sky[0]:.1f}_sko{sky[1]:.1f}"
-                        if psf.max() > self.max_counts:
-                            logging.warning(f"Object {label} on frame #{self.indexing[non_ignore_idx]} has "
-                                            f"counts ({psf.max()}) above the threshold ({self.max_counts})")
-
-                        if psf.max() < self.min_counts:
-                            logging.warning(f"Object {label} on frame #{self.indexing[non_ignore_idx]} has "
-                                            f"its maximum counts ({psf.max()}) below the threshold ({self.min_counts})")
-
-                        phot = float(psf.sum())
-                        sky_stds[apsky_label].append(float(sky_std))
-                        sky_poissons[apsky_label].append(float(sky_poisson))
-                        phots[apsky_label].append(phot)
-                        peaks[apsky_label].append(float(psf.max()))
-                        excesses[apsky_label].append(float(res[(d < (self.surrounding_ap_limit * ap)) *
-                                                     (d > ap)].sum()))
-
-                        dx = x - cnt_stamp[1]
-                        dy = y - cnt_stamp[0]
-                        res_pos = res * (res > 0)
-
-                        skew_x = np.sum((res_pos * (dx ** 3))[d < ap])
-                        skew_y = np.sum((res_pos * (dy ** 3))[d < ap])
-
-                        mom2s[apsky_label].append(float(np.sum((res_pos * (d ** 2))[d < ap])))
-                        mom3s[apsky_label].append(np.sqrt(skew_x ** 2 + skew_y ** 2))
-                        momas[apsky_label].append(np.arctan2(skew_y, skew_x))
-
-                        # now the error
-                        if self.gain is None:
-                            error = None
-                        else:
-                            n_pix_ap = (d < ap).sum()
-                            error = _phot_error(phot, sky_std, n_pix_ap,
-                                                n_pix_sky, self.gain,
-                                                ron=self.ron)
-                        errs[apsky_label].append(error)
-
-            data_store[f'fwhm_{ref_label}'] = fwhm_gs
-            data_store[f'centerx_{ref_label}'] = centers_xy[:, 0]
-            data_store[f'centery_{ref_label}'] = centers_xy[:, 1]
-            for ap in aperture:
-                apsky_label = f"ap{ap:.1f}_ski{sky[0]:.1f}_sko{sky[1]:.1f}"
-                data_store[f'skystd_{ref_label}_{apsky_label}'] = sky_stds
-                data_store[f'skypsn_{ref_label}_{apsky_label}'] = sky_poissons
-                data_store[f'phot_{ref_label}_{apsky_label}'] = phots
-                data_store[f'err_phot_{ref_label}_{apsky_label}'] = errs
-                data_store[f'peak_{ref_label}_{apsky_label}'] = peaks
-                data_store[f'excess_{ref_label}_{apsky_label}'] = excesses
-                data_store[f'mom2_{ref_label}_{apsky_label}'] = mom2s
-                data_store[f'mom3m_{ref_label}_{apsky_label}'] = mom3s
-                data_store[f'mom3a_{ref_label}_{apsky_label}'] = momas
-
+            # for data, center_xy, non_ignore_idx, epochs_idx \
+            #         in zip(target, centers_xy, self.indexing, range(ns)):
+            #     cx, cy = center_xy
+            #
+            #     # Stamps are already centered, only decimals could be different
+            #     cnt_stamp = [self.stamp_rad + cy % 1, self.stamp_rad + cx % 1]
+            #
+            #     # Preparing arrays for photometry
+            #     d = dp.radial(data, cnt_stamp)
+            #     dy, dx = data.shape
+            #     y, x = np.mgrid[-cnt_stamp[0]:dy - cnt_stamp[0],
+            #                     -cnt_stamp[1]:dx - cnt_stamp[1]]
+            #
+            #
+            #     # Compute sky correction
+            #     for sky in skies:
+            #         idx = (d > sky[0]) * (d < sky[1])
+            #         if self.deg == -1:
+            #             fit = np.median(data[idx])
+            #         elif self.deg >= 0:
+            #             err_func = lambda coef, xx, yy, zz: (dp.bipol(coef, xx, yy) - zz).flatten()
+            #             coef0 = np.zeros((self.deg, self.deg))
+            #             coef0[0, 0] = data[idx].mean()
+            #             fit, cov, info, mesg, success = \
+            #                 op.leastsq(err_func,
+            #                            coef0.flatten(),
+            #                            args=(x[idx], y[idx], data[idx]),
+            #                            full_output=True)
+            #         else:
+            #             raise ValueError(
+            #                 "Invalid degree '{}' to fit sky".format(self.deg))
+            #
+            #         # Apply sky subtraction
+            #         n_pix_sky = idx.sum()
+            #         if self.deg == -1:
+            #             sky_fit = fit
+            #         elif self.deg >= 0:
+            #             sky_fit = dp.bipol(fit, x, y)
+            #         else:
+            #             raise ValueError(
+            #                 f"Invalid degree '{self.deg}' to fit sky")
+            #
+            #         sky_std = (data - sky_fit)[idx].std()
+            #         sky_poisson = np.sqrt(np.mean(data[idx]) / self.gain)
+            #         res = data - sky_fit  # minus sky
+            #
+            #         # Following to compute FWHM by fitting gaussian
+            #         res2 = res[d < sky[1]].ravel()
+            #         d2 = d[d < sky[1]].ravel()
+            #         to_fit = lambda dd, h, sigma: h * dp.gauss(dd, sigma, ndim=1)
+            #         try:
+            #             sig, cov = op.curve_fit(to_fit,
+            #                                     d2,
+            #                                     res2,
+            #                                     sigma=1 / np.sqrt(np.absolute(res2)),
+            #                                     p0=[max(res2), 3])
+            #         except RuntimeError:
+            #             sig = np.array([0, 0, 0])
+            #         fwhm_g = 2.355 * sig[1]
+            #
+            #         fwhm_gs.append(fwhm_g)
+            #
             if verbose:
                 print('X', end='')
                 sys.stdout.flush()
@@ -1141,7 +1119,7 @@ class Photometry:
                              data=data_store)
     
     def infos_available(self):
-        ts = self.last_ts
+        ts = self._last_ts
         ret = []
         for a in ts.colnames:
             fields = a.split("_", 3)
@@ -1487,7 +1465,7 @@ class Photometry:
             n_coords, n_ref_label, n_ref_xy = coords_n_cnt(ref, cnt_tmp)
             # noinspection PyUnusedLocal
             store[:] = [n_ref_label, n_ref_xy]
-            _show_apertures(coords, aperture=self.aperture, sky=self.sky,
+            _show_apertures(coords, aperture=self._apertures, sky=self.sky,
                             axes=ax, labels=annotate and self.labels or None,
                             sk_color=sk_color, ap_color=ap_color, alpha=alpha)
             ax.set_ylabel("Frame #{}{}"
@@ -1517,7 +1495,7 @@ class Photometry:
             f.canvas.mpl_connect('button_press_event', _onclick)
             f.canvas.mpl_connect('key_press_event', _onkey)
 
-        _show_apertures(coords, aperture=self.aperture, sky=self.sky,
+        _show_apertures(coords, aperture=self._apertures, sky=self.sky,
                         axes=ax, labels=annotate and self.labels or None,
                         sk_color=sk_color, ap_color=ap_color, alpha=alpha,
                         stamp_rad=self.stamp_rad, clear=False)
