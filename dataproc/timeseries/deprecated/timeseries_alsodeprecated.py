@@ -21,18 +21,6 @@
 import numpy as np
 import dataproc as dp
 
-def vspan_plot(vspan, ax):
-    if isinstance(vspan, (list, tuple, np.ndarray)):
-        if len(vspan) == 2 and isinstance(vspan[0], (int, float)):
-            vspan = [{'range': vspan}]
-        elif not isinstance(vspan[0], dict):
-            raise ValueError("vspan needs to be a dict, a 2-number array, or a list of dicts")
-    elif isinstance(vspan, dict):
-        vspan = [vspan]
-    for vs in vspan:
-        ax.axvspan(*vs['range'], facecolor="gray" if 'facecolor' not in vs.keys() else vs['facecolor'],
-                   alpha=0.5)
-
 
 class TimeSeries:
     """

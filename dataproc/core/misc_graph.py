@@ -21,7 +21,7 @@
 
 __all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
            'imshowz', 'figaxes_xdate', 'figaxes', 'set_plot_props',
-           'vspan_plot'
+           'vspan_plot', 'fill_between',
            ]
 
 import astropy.time as apt
@@ -45,12 +45,32 @@ def vspan_plot(ax, vspan):
                    alpha=0.5)
 
 
+def fill_between(ax,
+                 bottom=None, top=None,
+                 ylabel=None, facecolor=None,
+                 **kwargs):
+    if bottom is None and top is None:
+        return
+    if bottom is None:
+        bottom *= 0
+    if top is None:
+        top *= max(bottom)
+    ax2 = ax.twinx()
+    ax2.fill_between(ax.get_lines()[0].get_xdata,
+                     bottom, top, **kwargs)
+    ax2.set_ylabel(ylabel, color=facecolor)
+    ax2.tick_params('y', colors=facecolor)
+    ax2.set_ylim([bottom.min() - 0.1,
+                  top.max() + 0.1])
+
+
 def set_plot_props(ax, xlim=None, ylim=None,
                    legend_dict=None, save=None, show=None,
-                   vspan=None, title=None):
+                   vspan=None, title=None, fill_between=None,
+                   ):
     """Set some standard properties for plot"""
-
     dp.vspan_plot(ax, vspan)
+    dp.fill_between(ax, **fill_between)
 
     if show is None:
         show = save is None

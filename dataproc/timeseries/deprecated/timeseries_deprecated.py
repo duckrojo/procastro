@@ -21,7 +21,7 @@
 from __future__ import print_function,division
 
 
-raise DeprecationWarning("Use timeseries.py instead.")
+raise DeprecationWarning("Use timeseries_alsodeprecated.py instead.")
 
 
 import sys
@@ -488,7 +488,7 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
 
 
     def plot_radialprofile(self, targets=None, xlim=None, axes=1,
-                           legend_size=None,
+                           legend_size=None, save=None, show=None,
                            **kwargs):
         """Plot Radial Profile from data using radialprofile() function
         :param target: Target spoecification for recentering. Either an integer for specifc target, or a 2-element list for x/y coordinates.
@@ -525,12 +525,16 @@ class TimeseriesExamine(astroplot.AstroPlot, astrocalc.AstroCalc):
         ax.legend(loc=1, prop=prop)
 
         if xlim is not None:
-            if isinstance(xlim, (int,float)):
-                ax.set_xlim([0,xlim])
+            if isinstance(xlim, (int, float)):
+                ax.set_xlim([0, xlim])
             else:
                 ax.set_xlim(xlim)
 
-        fig.show()
+        plt.tight_layout()
+        if save is not None:
+            plt.savefig(save)
+        if show:
+            plt.show()
 
 
         

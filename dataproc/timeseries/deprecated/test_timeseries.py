@@ -1,4 +1,4 @@
-from ..timeseries import TimeSeries
+from dataproc.timeseries.deprecated.timeseries_alsodeprecated import TimeSeries
 from numpy.testing import assert_equal, assert_almost_equal
 from unittest.mock import patch
 import matplotlib.pyplot as plt
