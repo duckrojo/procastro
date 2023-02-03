@@ -1374,6 +1374,8 @@ class AstroCalib(object):
             data, flat, bias = out_data
 
         debias = data - bias
-        deflat = debias / flat
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            deflat = debias / flat
 
         return deflat
