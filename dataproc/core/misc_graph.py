@@ -21,8 +21,10 @@
 
 __all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
            'imshowz', 'figaxes_xdate', 'figaxes', 'set_plot_props',
-           'vspan_plot', 'fill_between',
+           'fill_between',
            ]
+
+import warnings
 
 import astropy.time as apt
 import datetime
@@ -30,20 +32,10 @@ import dataproc as dp
 import matplotlib.pyplot as plt
 import astropy.io.fits as pf
 import numpy as np
+from typing import Optional, Tuple, List, Union
+from collections.abc import Sequence
 
-
-def vspan_plot(ax, vspan):
-    if isinstance(vspan, (list, tuple, np.ndarray)):
-        if len(vspan) == 2 and isinstance(vspan[0], (int, float)):
-            vspan = [{'range': vspan}]
-        elif not isinstance(vspan[0], dict):
-            raise ValueError("vspan needs to be a dict, a 2-number array, or a list of dicts")
-    elif isinstance(vspan, dict):
-        vspan = [vspan]
-    for vs in vspan:
-        ax.axvspan(*vs['range'], facecolor="gray" if 'facecolor' not in vs.keys() else vs['facecolor'],
-                   alpha=0.5)
-
+TwoValues = Tuple[float, float]
 
 def fill_between(ax,
                  bottom=None, top=None,
@@ -52,11 +44,11 @@ def fill_between(ax,
     if bottom is None and top is None:
         return
     if bottom is None:
-        bottom *= 0
+        bottom = top*0
     if top is None:
         top *= max(bottom)
     ax2 = ax.twinx()
-    ax2.fill_between(ax.get_lines()[0].get_xdata,
+    ax2.fill_between(ax.get_lines()[0].get_xdata(),
                      bottom, top, **kwargs)
     ax2.set_ylabel(ylabel, color=facecolor)
     ax2.tick_params('y', colors=facecolor)
@@ -65,12 +57,23 @@ def fill_between(ax,
 
 
 def set_plot_props(ax, xlim=None, ylim=None,
-                   legend_dict=None, save=None, show=None,
-                   vspan=None, title=None, fill_between=None,
+                   legend_dict=None,
+                   save=None, show=None, close=True,
+                   title=None, fill_between=None,
+                   ax_method=None, vspan: Optional[TwoValues]=None,
                    ):
     """Set some standard properties for plot"""
-    dp.vspan_plot(ax, vspan)
-    dp.fill_between(ax, **fill_between)
+    if ax_method is None:
+        ax_method = {}
+    if vspan is not None and 'vspan' not in ax_method.keys():
+        ax_method['axvspan'] = {'xmin': vspan[0], 'xmax': vspan[1]}
+    for method, method_kwargs in ax_method.items():
+        if not isinstance(method_kwargs, list):
+            method_kwargs = [method_kwargs]
+        for kw in method_kwargs:
+            getattr(ax, method)(**kw)
+    if fill_between is not None:
+        dp.fill_between(ax, **fill_between)
 
     if show is None:
         show = save is None
@@ -81,7 +84,9 @@ def set_plot_props(ax, xlim=None, ylim=None,
     if legend_dict is not None:
         if 'loc' not in legend_dict.keys():
             legend_dict['loc'] = 1
-        ax.legend(**legend_dict)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore","")
+            ax.legend(**legend_dict)
 
     if xlim is not None:
         if isinstance(xlim, (int, float)):
@@ -99,6 +104,8 @@ def set_plot_props(ax, xlim=None, ylim=None,
         ax.figure.savefig(save)
     if show:
         ax.figure.show()
+    if close:
+        plt.close(ax.figure)
 
 
 def plot_accross(data,
