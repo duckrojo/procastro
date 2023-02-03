@@ -183,6 +183,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 mdark=None, mflat=None, labels=None, recenter=True,
                 offsets_xy=None, logger=None, ignore=None, brightest=0,
                 max_change_allowed=None, interactive=False, idx0=0,
+                verbose=True,
                 ):
     """
     ...
@@ -277,8 +278,8 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     center_xy = np.zeros([len(target_coords_xy), ngood, 2])
 
     center_user_xy = [[xx, yy] for xx, yy in target_coords_xy]
-    logger.log(PROGRESS,
-               " Obtaining stamps for {} files: ".format(ngood))
+    if verbose:
+        print(" Obtaining stamps for {} files: ".format(ngood))
 
     if interactive:
         f, ax = dp.figaxes()
@@ -634,7 +635,7 @@ class Photometry:
                  epoch='JD', labels=None, brightest=None,
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
-                 interactive=False):
+                 interactive=False, verbose=True):
 
         # initialized elsewhere
         self._last_ts = None
@@ -775,6 +776,7 @@ class Photometry:
                                          brightest=brightest,
                                          idx0=idx0,
                                          interactive=interactive,
+                                         verbose=verbose,
                                          )
 
         self.extra_header = extra
@@ -862,12 +864,12 @@ class Photometry:
             raise ValueError(
                 "Aperture photometry ({}) shouldn't be higher than inner sky "
                 "radius ({})".format(self._apertures,
-                                     self.sky[0]))
+                                     ", ".join([s[0] for s in self._skies])))
 
         if self.stamp_rad < np.max(np.array(self._skies), 0)[1]:
             raise ValueError(
                 "External radius of sky ({}) shouldn't be higher than stamp "
-                "radius ({})".format(self.sky[1],
+                "radius ({})".format(", ".join([s[1] for s in self._skies]),
                                      self.stamp_rad))
 
         ts = self.cpu_phot(verbose=verbose)
@@ -980,7 +982,7 @@ class Photometry:
             print("Processing CPU photometry for {0} targets: "
                   .format(len(self.sci_stamps)), end='')
             sys.stdout.flush()
-        ref_labels = ['target'] + [f'ref{i:d}' for i in range(1, nt)]
+        ref_labels = [self.labels[0]] + [f'ref{i:d}' for i in range(1, nt)]
         for label, ref_label, target, centers_xy, target_idx in zip(self.labels,
                                                                     ref_labels,
                                                                     self.sci_stamps,
@@ -1109,7 +1111,7 @@ class Photometry:
             #         fwhm_gs.append(fwhm_g)
             #
             if verbose:
-                print('X', end='')
+                print('X', end='', flush=True)
                 sys.stdout.flush()
 
         if verbose:
@@ -1122,6 +1124,8 @@ class Photometry:
         ts = self._last_ts
         ret = []
         for a in ts.colnames:
+            if a=='time':
+                continue
             fields = a.split("_", 3)
             field = fields[0]
             if field == "err":
@@ -1148,7 +1152,7 @@ class Photometry:
                 for k in range(len(self.labels))}
 
     def plot_radialprofile(self, targets=None, axes=1, frame=0,
-                           recenter=True, clear=True, vspan=None, **kwargs):
+                           recenter=True, clear=True, **kwargs):
         """
         Plots a Radial Profile from the data using dataproc.radialprofile
 
@@ -1352,7 +1356,7 @@ class Photometry:
                 ap_color='w', sk_color='LightCyan',
                 alpha=0.6, axes=None, reference=None,
                 annotate=True, cnt=None, interactive=True,
-                clear=True, **kwargs):
+                clear=True, show=False, **kwargs):
         """
         Plots the image from the fits file, after being processed using the
         zscale Algorithm
@@ -1465,7 +1469,7 @@ class Photometry:
             n_coords, n_ref_label, n_ref_xy = coords_n_cnt(ref, cnt_tmp)
             # noinspection PyUnusedLocal
             store[:] = [n_ref_label, n_ref_xy]
-            _show_apertures(coords, aperture=self._apertures, sky=self.sky,
+            _show_apertures(coords, aperture=self._apertures, sky=self._skies[0],
                             axes=ax, labels=annotate and self.labels or None,
                             sk_color=sk_color, ap_color=ap_color, alpha=alpha)
             ax.set_ylabel("Frame #{}{}"
@@ -1495,7 +1499,7 @@ class Photometry:
             f.canvas.mpl_connect('button_press_event', _onclick)
             f.canvas.mpl_connect('key_press_event', _onkey)
 
-        _show_apertures(coords, aperture=self._apertures, sky=self.sky,
+        _show_apertures(coords, aperture=self._apertures, sky=self._skies[0],
                         axes=ax, labels=annotate and self.labels or None,
                         sk_color=sk_color, ap_color=ap_color, alpha=alpha,
                         stamp_rad=self.stamp_rad, clear=False)
@@ -1504,4 +1508,4 @@ class Photometry:
                                            or ""))
 
         plt.tight_layout()
-        dp.set_plot_props(ax, **kwargs)
+        dp.set_plot_props(ax, show=show, **kwargs)
