@@ -806,6 +806,11 @@ class AvailableAt:
         iterative_delta_midnight_times = pd.DataFrame(
             self.stars_altitudes_.apply(lambda x: self.iterative_delta_midnight(x), axis=0))
         iterative_delta_midnight_times.dropna(inplace=True)
+        no_linear_aproximation_required_planets = iterative_delta_midnight_times[
+            iterative_delta_midnight_times == True].dropna()
+        no_linear_aproximation_required_planets_altitudes = self.stars_altitudes_.loc[:,
+                                                            list(no_linear_aproximation_required_planets.index)]
+        iterative_delta_midnight_times = iterative_delta_midnight_times[iterative_delta_midnight_times != True].dropna()
         self.stars_altitudes_ = self.stars_altitudes_.loc[:, list(iterative_delta_midnight_times.index)]
         self.selected_planets = self.selected_planets.loc[list(iterative_delta_midnight_times.index), :]
         times = pd.DataFrame(iterative_delta_midnight_times.loc[:, 0].values,
@@ -933,7 +938,11 @@ class AvailableAt:
         start = time.time()
         observation_times_1 = self.altitudes_1.apply(lambda x: self.start_and_end_observation_times(x), axis=0)
         observation_times_2 = self.altitudes_2.apply(lambda x: self.start_and_end_observation_times(x), axis=0)
-        observation_times = pd.concat([observation_times_1, observation_times_2], axis=1).sort_index(axis=1)
+        no_linear_aproximation_required_planets_observartion_times = no_linear_aproximation_required_planets_altitudes \
+            .apply(lambda x: self.start_and_end_observation_times(x), axis=0)
+        observation_times = pd.concat(
+            [observation_times_1, observation_times_2, no_linear_aproximation_required_planets_observartion_times],
+            axis=1).sort_index(axis=1).dropna()
         end = time.time()
         print('termina start_and_end_observation___, tiempo total: ' + str(end - start))
         self.selected_planets['start_observation'] = observation_times.iloc[0, :]
