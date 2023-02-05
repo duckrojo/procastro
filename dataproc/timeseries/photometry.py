@@ -805,7 +805,7 @@ class Photometry:
     def photometry(self,
                    aperture, sky=None, skies=None,
                    deg=None, max_counts=None, min_counts=None,
-                   outer_ap=None, verbose=True,
+                   outer_ap=None, verbose=True, progress_indicator=None,
                    ) -> ts.TimeSeries:
         """
         Verifies parameters given and applies photometry through cpu_phot
@@ -872,7 +872,7 @@ class Photometry:
                 "radius ({})".format(", ".join([s[1] for s in self._skies]),
                                      self.stamp_rad))
 
-        ts = self.cpu_phot(verbose=verbose)
+        ts = self.cpu_phot(verbose=verbose, progress_indicator=progress_indicator)
         
         self._last_ts = ts
         return ts
@@ -946,7 +946,7 @@ class Photometry:
                                                                     single_in_list=True)))]
         self._astrodir += sci_files
 
-    def cpu_phot(self, verbose=True):
+    def cpu_phot(self, verbose=True, progress_indicator=None):
         """
         Calculates the CPU photometry for all frames
         #TODO improve this docstring
@@ -967,6 +967,8 @@ class Photometry:
         """
         import scipy.optimize as op
 
+        if progress_indicator is None:
+            progress_indicator = 'X' if verbose else ''
         if isinstance(self._apertures, (list, tuple, np.ndarray)):
             aperture = self._apertures
         else:
@@ -1110,8 +1112,8 @@ class Photometry:
             #
             #         fwhm_gs.append(fwhm_g)
             #
-            if verbose:
-                print('X', end='', flush=True)
+            if progress_indicator:
+                print(progress_indicator, end='', flush=True)
                 sys.stdout.flush()
 
         if verbose:
@@ -1336,7 +1338,7 @@ class Photometry:
                        'mode': "expand",
                        'borderaxespad': 0.,
                        'prop': {'size': 8}}
-        dp.set_plot_props(ax, legend_dict=legend_dict, **kwargs)
+        dp.set_plot_props(ax, legend=legend_dict, **kwargs)
 
     def plot_extra(self, x_id=None, axes=None):
         """

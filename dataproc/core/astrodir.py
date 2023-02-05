@@ -480,7 +480,7 @@ class AstroDir(object):
                 .format(", ".join(np.array(check_unique)[lens > 1])))
 
         for af in self:
-            data = af.reader()
+            data = af.reader().astype(float)
             if normalize:
                 data /= data[normalize_region].mean()
             group_key = af[group_by]

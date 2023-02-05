@@ -57,7 +57,7 @@ def fill_between(ax,
 
 
 def set_plot_props(ax, xlim=None, ylim=None,
-                   legend_dict=None,
+                   legend: Union[dict, bool] = None,
                    save=None, show=None, close=True,
                    title=None, fill_between=None,
                    ax_method=None, vspan: Optional[TwoValues]=None,
@@ -81,12 +81,10 @@ def set_plot_props(ax, xlim=None, ylim=None,
     if title is not None:
         ax.set_title(title)
 
-    if legend_dict is not None:
-        if 'loc' not in legend_dict.keys():
-            legend_dict['loc'] = 1
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore","")
-            ax.legend(**legend_dict)
+    if legend is not None:
+        if 'loc' not in legend.keys():
+            legend['loc'] = 1
+        ax.legend(**legend)
 
     if xlim is not None:
         if isinstance(xlim, (int, float)):
