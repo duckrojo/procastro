@@ -774,7 +774,8 @@ class AstroFile(object):
 
     @_checkfilename
     def reader(self, *args,
-               skip_calib=False, hdud=None, hdu=None, **kwargs):
+               skip_calib=False, hdud=None, hdu=None, verbose=True,
+               **kwargs):
         """
         Read astro data and return it calibrated if provided
 
@@ -821,7 +822,8 @@ class AstroFile(object):
             data = self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
                                      ffilter=self[self.calib.filter_keyword],
-                                     header=self.readheader()[self._hduh])
+                                     header=self.readheader()[self._hduh],
+                                     verbose=verbose)
 
 
         return data
@@ -1280,7 +1282,7 @@ class AstroCalib(object):
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, ffilter=None, header=None):
+    def reduce(self, data, exptime=None, ffilter=None, header=None, verbose=True):
         """
         Process given "data" using the bias and flat contained in this instance
 
@@ -1368,8 +1370,9 @@ class AstroCalib(object):
 
                     out_data.append(tdata[delta[0]:delta[1], delta[2]:delta[3]])
 
-                    logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim}: "
-                                 f"({','.join(trim.astype(str))}) -> ({','.join(common_trim.astype(str))})]")
+                    if verbose:
+                        logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim}: "
+                                     f"({','.join(trim.astype(str))}) -> ({','.join(common_trim.astype(str))})]")
 
             data, flat, bias = out_data
 

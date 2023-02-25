@@ -139,7 +139,7 @@ def _prep_offset(start, offsets, ignore):
 
 
 def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
-                     logger=None, skip_calib=False):
+                     logger=None, skip_calib=False, verbose_procdata=True):
     """
     If files were not calibrated in AstroFile, then  generate calibrated data
     from a specified frame
@@ -165,7 +165,7 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
         logger = tmlogger
 
     astrofile = sci_files[frame]
-    d = astrofile.reader()
+    d = astrofile.reader(verbose=verbose_procdata)
 
     if not skip_calib:
         if astrofile.has_calib():
@@ -183,7 +183,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 mdark=None, mflat=None, labels=None, recenter=True,
                 offsets_xy=None, logger=None, ignore=None, brightest=0,
                 max_change_allowed=None, interactive=False, idx0=0,
-                verbose=True,
+                verbose=True, verbose_procdata=True,
                 ):
     """
     ...
@@ -303,7 +303,8 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         d = _get_calibration(sci_files,
                              frame=idx, mdark=mdark, mflat=mflat,
                              logger=logger,
-                             skip_calib=skip_calib)
+                             skip_calib=skip_calib,
+                             verbose_procdata=verbose_procdata)
         astrofile = sci_files[idx]
         off = offsets_xy[idx]
 
@@ -635,7 +636,9 @@ class Photometry:
                  epoch='JD', labels=None, brightest=None,
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
-                 interactive=False, verbose=True):
+                 interactive=False, verbose=True,
+                 verbose_procdata=True,
+                 ):
 
         # initialized elsewhere
         self._last_ts = None
@@ -738,7 +741,7 @@ class Photometry:
         if brightest is None:
             flxs = []
             for trgx, trgy in coords_user_xy:
-                data = sci_files[0].reader()
+                data = sci_files[0].reader(verbose=verbose_procdata)
                 if not (0 < trgy < data.shape[0]) and not (0 < trgx < data.shape[1]):
                     raise ValueError(
                         f"Given coordinates ({trgx}, {trgy}) is beyond data size ({data.shape[1]}, {data.shape[0]})")
@@ -777,6 +780,7 @@ class Photometry:
                                          idx0=idx0,
                                          interactive=interactive,
                                          verbose=verbose,
+                                         verbose_procdata=verbose_procdata,
                                          )
 
         self.extra_header = extra
@@ -1003,7 +1007,7 @@ class Photometry:
             data_store[f"centery_{ref_label}"] = np.array(centers_xy)[self.indexing, 1]
 
             for sky in skies:
-                masked_sky = np.ma.array(target, mask=(d>sky[0])*(d<sky[1]))
+                masked_sky = np.ma.array(target, mask=(d<sky[0])+(d>sky[1]))
                 sky_std = masked_sky.std(axis=(1,2))
                 sky_avg = np.ma.median(masked_sky, axis=(1,2))
                 n_pix_sky = np.ma.count_masked(masked_sky, axis=(1, 2))
@@ -1011,7 +1015,7 @@ class Photometry:
                     apsky_label = f"ap{ap:.1f}_ski{sky[0]:.1f}_sko{sky[1]:.1f}"
 
                     skyless = target - sky_avg[:, None, None]
-                    ap_mask = d < ap
+                    ap_mask = d > ap
                     masked_ap = np.ma.array(skyless, mask=ap_mask)
                     flux = masked_ap.sum(axis=(1,2))
                     n_pix_ap = np.ma.count_masked(masked_ap, axis=(1,2))
@@ -1021,7 +1025,7 @@ class Photometry:
                     var_total = var_sky + var_flux + self.ron * self.ron * n_pix_ap
                     error = np.sqrt(var_total)
 
-                    excess = np.ma.array(skyless, mask=(ap < d) * (d < self.surrounding_ap_limit * ap)).sum(axis=(1, 2))
+                    excess = np.ma.array(skyless, mask=(ap > d) + (d > self.surrounding_ap_limit * ap)).sum(axis=(1, 2))
                     peak = masked_ap.max(axis=(1,2))
 
                     data_store[f'flux_{ref_label}_{apsky_label}'] = flux[self.indexing]
@@ -1045,56 +1049,16 @@ class Photometry:
                                       (too_little_mask, "below", self.min_counts)):
                 n_mask = mask[self.indexing].sum()
                 if n_mask:
-                    logging.warning(f"Object {label} on frame{'s' if n_mask > 1 else ''}"
+                    logging.warning(f"Object {label}"
+                                    f" ha{'ve' if n_mask > 1 else 's'}"
+                                    f" counts {lab} the threshold ({thresh})"
+                                    f" on frame{'s' if n_mask > 1 else ''}"
                                     f" {', '.join(np.arange(ns)[self.indexing][mask[self.indexing]].astype(str))} "
-                                    f"ha{'ve' if n_mask > 1 else 's'} "
-                                    f"counts {lab} the threshold ({thresh})")
+                                    )
 
             # for data, center_xy, non_ignore_idx, epochs_idx \
             #         in zip(target, centers_xy, self.indexing, range(ns)):
-            #     cx, cy = center_xy
             #
-            #     # Stamps are already centered, only decimals could be different
-            #     cnt_stamp = [self.stamp_rad + cy % 1, self.stamp_rad + cx % 1]
-            #
-            #     # Preparing arrays for photometry
-            #     d = dp.radial(data, cnt_stamp)
-            #     dy, dx = data.shape
-            #     y, x = np.mgrid[-cnt_stamp[0]:dy - cnt_stamp[0],
-            #                     -cnt_stamp[1]:dx - cnt_stamp[1]]
-            #
-            #
-            #     # Compute sky correction
-            #     for sky in skies:
-            #         idx = (d > sky[0]) * (d < sky[1])
-            #         if self.deg == -1:
-            #             fit = np.median(data[idx])
-            #         elif self.deg >= 0:
-            #             err_func = lambda coef, xx, yy, zz: (dp.bipol(coef, xx, yy) - zz).flatten()
-            #             coef0 = np.zeros((self.deg, self.deg))
-            #             coef0[0, 0] = data[idx].mean()
-            #             fit, cov, info, mesg, success = \
-            #                 op.leastsq(err_func,
-            #                            coef0.flatten(),
-            #                            args=(x[idx], y[idx], data[idx]),
-            #                            full_output=True)
-            #         else:
-            #             raise ValueError(
-            #                 "Invalid degree '{}' to fit sky".format(self.deg))
-            #
-            #         # Apply sky subtraction
-            #         n_pix_sky = idx.sum()
-            #         if self.deg == -1:
-            #             sky_fit = fit
-            #         elif self.deg >= 0:
-            #             sky_fit = dp.bipol(fit, x, y)
-            #         else:
-            #             raise ValueError(
-            #                 f"Invalid degree '{self.deg}' to fit sky")
-            #
-            #         sky_std = (data - sky_fit)[idx].std()
-            #         sky_poisson = np.sqrt(np.mean(data[idx]) / self.gain)
-            #         res = data - sky_fit  # minus sky
             #
             #         # Following to compute FWHM by fitting gaussian
             #         res2 = res[d < sky[1]].ravel()
