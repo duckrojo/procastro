@@ -33,6 +33,7 @@ import logging
 import astropy.timeseries as ts
 import astropy.time as apt
 
+__all__ = ['Photometry']
 
 class FilterMessage(logging.Filter):
     def add_needle(self, needle):
@@ -474,8 +475,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         print('{}{}'.format(msg, idx % 10 == 9
                             and (idx % 100 == 99 and '=' or ':')
                             or '.'),
-              end='')
-        sys.stdout.flush()
+              end='', flush=True)
 
         stat = 0
         to_store += 1
@@ -995,7 +995,6 @@ class Photometry:
                                                                     self.coords_new_xy,
                                                                     range(nt)):  # For each target
 
-
             # n_epoch, 2
             center_stamp_xy = np.array(centers_xy) % 1 + np.array([self.stamp_rad, self.stamp_rad])[None, :]
             xx, yy = np.mgrid[0:target.shape[2], 0: target.shape[1]]
@@ -1007,10 +1006,13 @@ class Photometry:
             data_store[f"centery_{ref_label}"] = np.array(centers_xy)[self.indexing, 1]
 
             for sky in skies:
+                if sky[0] >= sky[1]:
+                    continue
                 masked_sky = np.ma.array(target, mask=(d<sky[0])+(d>sky[1]))
                 sky_std = masked_sky.std(axis=(1,2))
                 sky_avg = np.ma.median(masked_sky, axis=(1,2))
                 n_pix_sky = np.ma.count_masked(masked_sky, axis=(1, 2))
+
                 for ap in aperture:
                     apsky_label = f"ap{ap:.1f}_ski{sky[0]:.1f}_sko{sky[1]:.1f}"
 
@@ -1025,23 +1027,31 @@ class Photometry:
                     var_total = var_sky + var_flux + self.ron * self.ron * n_pix_ap
                     error = np.sqrt(var_total)
 
-                    excess = np.ma.array(skyless, mask=(ap > d) + (d > self.surrounding_ap_limit * ap)).sum(axis=(1, 2))
+                    excess = np.ma.array(skyless,
+                                         mask=(ap > d) + (d > self.surrounding_ap_limit * ap)).sum(axis=(1, 2))
                     peak = masked_ap.max(axis=(1,2))
+
+                    if ap > sky[0]:
+                        continue
 
                     data_store[f'flux_{ref_label}_{apsky_label}'] = flux[self.indexing]
                     data_store[f'err_flux_{ref_label}_{apsky_label}'] = error[self.indexing]
                     data_store[f'peak_{ref_label}_{apsky_label}'] = peak[self.indexing]
                     data_store[f'excess_{ref_label}_{apsky_label}'] = excess[self.indexing]
 
+                    mom2   = (masked_ap*(masked_ap>0) * d*d      ).sum(axis=(1,2))
+
                     skew_x = (masked_ap*(masked_ap>0) * (dx ** 3)).sum(axis=(1,2))
                     skew_y = (masked_ap*(masked_ap>0) * (dy ** 3)).sum(axis=(1,2))
-                    mom2   = (masked_ap*(masked_ap>0) * d*d      ).sum(axis=(1,2))
                     mom3m = np.sqrt(skew_x * skew_x + skew_y * skew_y)
                     mom3a = np.arctan2(skew_y, skew_x)
+
+                    kurt = (masked_ap*(masked_ap>0) * (d ** 4)).sum(axis=(1,2))
 
                     data_store[f'mom2_{ref_label}_{apsky_label}'] = mom2[self.indexing]
                     data_store[f'mom3m_{ref_label}_{apsky_label}'] = mom3m[self.indexing]
                     data_store[f'mom3a_{ref_label}_{apsky_label}'] = mom3a[self.indexing]
+                    data_store[f'mom4_{ref_label}_{apsky_label}'] = kurt[self.indexing]
 
             too_much_mask = peak > self.max_counts
             too_little_mask = peak < self.min_counts

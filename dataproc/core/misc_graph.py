@@ -47,13 +47,18 @@ def fill_between(ax,
         bottom = top*0
     if top is None:
         top *= max(bottom)
+    if isinstance(top, float):
+        top = np.array([top] * len(bottom))
+    if isinstance(bottom, float):
+        bottom = np.array([bottom] * len(top))
     ax2 = ax.twinx()
     ax2.fill_between(ax.get_lines()[0].get_xdata(),
                      bottom, top, **kwargs)
     ax2.set_ylabel(ylabel, color=facecolor)
     ax2.tick_params('y', colors=facecolor)
-    ax2.set_ylim([bottom.min() - 0.1,
-                  top.max() + 0.1])
+    margin = 0.05*(top.max() - bottom.min())
+    ax2.set_ylim([bottom.min() - margin,
+                  top.max() + margin])
 
 
 def set_plot_props(ax, xlim=None, ylim=None,

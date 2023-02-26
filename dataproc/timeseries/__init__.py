@@ -18,17 +18,8 @@
 #
 #
 
-import types
+from . import photometry
+from .photometry import *
 
-modules = ['photometry']
-
-for modulename in modules:
-    module = __import__(modulename, globals(), locals(), [], 1)
-#    module = reload(module)
-    for v in dir(module):
-        if v[0] == '_' or isinstance(getattr(module, v), types.ModuleType):
-            continue
-        globals()[v] = getattr(module, v)
-    del module
-
-del modules, modulename, types
+__all__ = []
+__all__ += photometry.__all__

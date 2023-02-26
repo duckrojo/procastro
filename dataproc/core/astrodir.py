@@ -80,7 +80,7 @@ class AstroDir(object):
         If passed an AstroDir, then do not create a new instance, just pass
         that one
         """
-        if args and isinstance(args[0], AstroDir):
+        if args and isinstance(args[0], AstroDir) and len(kwargs) == 0:
             return args[0]
 
         return super(AstroDir, cls).__new__(cls)
@@ -96,6 +96,9 @@ class AstroDir(object):
         import glob
         import os.path as pth
         files = []
+
+        if hasattr(self, "files"):
+            return
 
         if hduh is None:
             hduh = hdu
