@@ -7,6 +7,8 @@ import astropy.time as apt
 import astropy.units as u
 import matplotlib.axes
 import pyvo as vo
+import pyvo.dal.exceptions
+
 import dataproc as dp
 import matplotlib as mpl
 import numpy as np
@@ -25,10 +27,19 @@ def query_full_exoplanet_db(force_reload=False, reload_days=7):
             return pd.read_pickle(file)
 
     exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
-    resultset = exo_service.search(
-        f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
-        f"FROM exo_tap.pscomppars "
-        f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 ")
+    try:
+        resultset = exo_service.search(
+            f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
+            f"FROM exo_tap.pscomppars "
+            f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 ")
+    except pyvo.dal.exceptions.DALFormatError:
+        if os.path.isfile(file):
+            days_since = (time.time() - os.path.getmtime(file)) / 3600 / 24
+            print(f"Cannot connect to the Exoplanet Archive Database, "
+                  f"using cached version instead ({days_since:.1f} days old)")
+            return pd.read_pickle(file)
+        else:
+            raise ConnectionError("Cannot connect to the Exoplanet Archive dabatase")
     planets_df = resultset.to_table().to_pandas()
     planets_df.to_pickle(file)
 
@@ -369,6 +380,7 @@ class Nightly:
              altitude_separation: float = 70,
              ax: Union[matplotlib.axes.Axes, matplotlib.figure.Figure, int] = None,
              mark_ra: Optional[TwoTuple] = None,
+             colorbar: bool = False,    # todo: enable this once rank is working
              ):
         """
         Plots the altitudes of the encountered exoplanet's stars for the given date with information about the
@@ -376,6 +388,7 @@ class Nightly:
 
          Parameters
          ----------
+             colorbar
              mark_ra: (float, float)
                 RA region to mark in output plot
              ax: matplotlib.Axes, matplotlib.Figure, int
@@ -451,9 +464,13 @@ class Nightly:
 
             cum_altitude += altitude_separation
 
-        f.colorbar(mappable=scalar_mappable, ticks=[0, 5, 10],
-                   location='right', orientation='vertical', shrink=0.5)
-        ax.set_xlabel(f'Planetary transits from "{self._observatory_name}"', fontsize=20)
+        if colorbar:
+            cax = f.add_axes([0.18, 0.55, 0.06, 0.3])
+            f.colorbar(mappable=scalar_mappable, ticks=[0, 5, 10],
+                       cax=cax, orientation='vertical', shrink=0.5,
+                       #location='right',
+                       )
+        ax.set_xlabel(f'Planetary transits at "{self._observatory_name}" for the night after {self._date}', fontsize=13)
         delta_night = self._end_night.jd - self._start_night.jd
         ticks = [self._start_night.jd - 0.15 * delta_night, self._start_night.jd, self._end_night.jd,
                  self._end_night.jd + 0.2 * delta_night]
@@ -461,7 +478,7 @@ class Nightly:
         ax.set_xticklabels(["", str(self._start_night.value), str(self._end_night.value), ""])
         ax.set_yticks(altitude_separation*np.arange(len(self._planets)))
         ax.set_yticklabels(filtered_planets['pl_name'])
-        plt.setp(ax.yaxis.get_majorticklabels(), rotation=-5, va="bottom")
+        plt.setp(ax.yaxis.get_majorticklabels(), rotation=5, va="bottom")
         ax.grid(visible=True, axis="y")
         ax2 = ax.twiny()
         lims = apt.Time(ax.get_xlim(), format='jd').sidereal_time("apparent", self._observatory).value
@@ -482,13 +499,3 @@ class Nightly:
 if __name__ == '__main__':
     a = Nightly("lasilla")
     a.plot("2023-05-01")
-
-    # WASP-121. 10.5. 23:02-02:36
-    # GJ486. 11.39. 3:34-6:28
-    # TOI-4342 04:50-09:01
-
-    # missing
-    K2-376, wasp192, wasp46, wasp164, GJ1252,KEP
-    # GJ367
-    # GJ1252
-    #
