@@ -1,5 +1,4 @@
 import os.path
-import pickle
 
 import astropy.coordinates as apc
 import matplotlib.pyplot as plt
@@ -19,7 +18,9 @@ from typing import Union, Optional, Tuple
 TwoTuple = Tuple[float, float]
 
 
-def query_full_exoplanet_db(force_reload=False, reload_days=7):
+def query_full_exoplanet_db(force_reload: bool = False,
+                            reload_days: float = 7
+                            ):
     file = "exodb.pickle"
     if not force_reload and os.path.isfile(file):
         days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
@@ -49,9 +50,10 @@ def query_full_exoplanet_db(force_reload=False, reload_days=7):
 def _choose(dataframe: pd.DataFrame,
             field1: str,
             field2: Union[str, float],
-            return_max: bool = True):
+            return_max: bool = True
+            ) -> list:
     """Choose the maximum or minimum between two columns or between a column and a scalar"""
-    ret = dataframe[field1]
+    ret = dataframe[field1].copy()
     if isinstance(field2, (int, float)):
         field2 = np.ones(len(ret)) * field2
     else:
@@ -62,7 +64,7 @@ def _choose(dataframe: pd.DataFrame,
     else:
         ret.mask(~two_over_one, field2[~two_over_one], inplace=True)
 
-    return ret
+    return list(ret)
 
 
 class Nightly:
@@ -186,7 +188,8 @@ class Nightly:
         self._date = date
         self._civil_midday = apt.Time(date) + 12 * u.hour - (int(self._observatory.lon.degree / 15)) * u.hour
         the_day = self._civil_midday + np.linspace(0, 24, n_points) * u.hour
-        sun_alt = apc.get_sun(the_day).transform_to(apc.AltAz(obstime=the_day, location=self._observatory)).alt.degree
+        sun_alt = np.array(apc.get_sun(the_day).transform_to(apc.AltAz(obstime=the_day, location=self._observatory)
+                                                             ).alt.degree)
         above = list(sun_alt > self._constraints['night_angle'])
         start_night_idx = above.index(False)
         self._start_night = the_day[start_night_idx]
@@ -199,22 +202,22 @@ class Nightly:
         planets = self._planets
         closest_transit_n = (((self._civil_midday.jd + 0.5 - planets['pl_tranmid']) /
                               planets['pl_orbper']) + 0.5).astype('int')
-        planets['closest_transit'] = planets['pl_tranmid'] + closest_transit_n * planets['pl_orbper']
-        planets.loc[:, 'pl_trandur'].mask(planets['pl_trandur'] == 0.0, self._constraints['default_duration'],
-                                           inplace=True)
-        planets['transit_i'] = planets['closest_transit'] - (planets['pl_trandur'] / 48)
-        planets['transit_f'] = planets['closest_transit'] + (planets['pl_trandur'] / 48)
-        planets['pl_trandur'].fillna(self._constraints['default_duration'], inplace=True)
-        planets['sy_pmra'].fillna(0, inplace=True)
-        planets['sy_pmdec'].fillna(0, inplace=True)
+        self._planets['closest_transit'] = planets['pl_tranmid'] + closest_transit_n * planets['pl_orbper']
+        self._planets['pl_trandur'].mask(planets['pl_trandur'] == 0.0, self._constraints['default_duration'],
+                                         inplace=True)
+        self._planets['transit_i'] = planets['closest_transit'] - (planets['pl_trandur'] / 48)
+        self._planets['transit_f'] = planets['closest_transit'] + (planets['pl_trandur'] / 48)
+        self._planets['pl_trandur'].fillna(self._constraints['default_duration'], inplace=True)
+        self._planets['sy_pmra'].fillna(0, inplace=True)
+        self._planets['sy_pmdec'].fillna(0, inplace=True)
 
         pm_right_ascension = planets['sy_pmra'] * u.mas / u.yr
         pm_declination = planets['sy_pmdec'] * u.mas / u.yr
         coords = apc.SkyCoord(planets['ra'] * u.degree, planets['dec'] * u.degree,
                               frame='icrs', pm_ra_cosdec=pm_right_ascension, pm_dec=pm_declination,
                               equinox=equinox_db)
-        planets['star_coords'] = coords
-        planets['moon_separation'] = np.array(self._moon_coord.separation(coords))
+        self._planets['star_coords'] = coords
+        self._planets['moon_separation'] = np.array(self._moon_coord.separation(coords))
 
         self._stage = 0
 
@@ -235,7 +238,7 @@ class Nightly:
         return (np.arccos(cos_ha)*u.radian).to(u.hourangle)
 
     def _ephemeris(self):
-        planets = self._planets
+        planets = self._planets.copy()
 
         skycoords = apc.SkyCoord(list(planets['star_coords']))
         hour_angle_sets = self._hour_angle_for_altitude(skycoords, self._constraints['altitude_min'])
@@ -251,10 +254,9 @@ class Nightly:
         planets['end_observation'] = _choose(planets, 'end_observation', self._end_night.jd, return_max=False)
         planets['end_observation'] = _choose(planets, 'end_observation', 'starset', return_max=False)
 
-        self._planets = planets
+        self._planets = planets.copy()
 
-
-    ################################3
+    # ###############################
     #
     # FILTERING
 
@@ -263,7 +265,7 @@ class Nightly:
             self._planets = self._planets_all.copy()
             self._filter_pre_ephemeris()
             self._ephemeris()
-            self._planets_after_pre_filter = self._planets
+            self._planets_after_pre_filter = self._planets.copy()
             self._filter_post_ephemeris()
 
         if self._stage == 1:
@@ -311,7 +313,7 @@ class Nightly:
 
         stars_with_posibilites[to_be_checked] = possible
 
-        self._planets = planets[stars_with_posibilites]
+        self._planets = planets[stars_with_posibilites].copy()
 
     def _max_altitude_filter(self):
         """Filters out stars that never reach the minimum altitude"""
@@ -326,58 +328,61 @@ class Nightly:
 
         self._planets = planets.query(f'delta_i_baseline>@self._constraints["baseline_min"]/24'
                                       f' {"or" if self._constraints["baseline_both"] else "and"} '
-                                      f'delta_f_baseline>@self._constraints["baseline_min"]/24')
+                                      f'delta_f_baseline>@self._constraints["baseline_min"]/24'
+                                      ).copy()
 
     def _closest_transit_filter(self):
-        planets = self._planets
-        delta_transit_jd = apt.Time(planets['closest_transit'], format='jd') - self._civil_midday + 12 * u.hour
-        self._planets = planets[-0.5 <= (delta_transit_jd < 0.5)]
+        delta_transit_jd = apt.Time(self._planets['closest_transit'], format='jd') - self._civil_midday + 12 * u.hour
+        self._planets = self._planets[-0.5 <= (delta_transit_jd.to(u.day).value < 0.5)]
 
     def _moon_separation_filter(self):
-        planets = self._planets
-        self._planets = planets.query('moon_separation > @self._constraints["moon_separation_min"]')
+        self._planets = self._planets.query('moon_separation > @self._constraints["moon_separation_min"]'
+                                            )
 
     def _vmag_filter(self):
-        planets = self._planets
-        self._planets = planets.query('sy_vmag > @self._constraints["vmag_min"] and '
-                                      'sy_vmag < @self._constraints["vmag_max"]')
+        self._planets = self._planets.query('sy_vmag > @self._constraints["vmag_min"] and '
+                                            'sy_vmag < @self._constraints["vmag_max"]'
+                                            )
 
     def _transit_percent_twilight_filter(self):
         """filter for enough observable transit, considering only twilight"""
-        planets = self._planets
+        planets = self._planets.copy()
 
-        planets = planets.query('transit_i < @self._end_night.jd')
-        planets = planets.query('transit_f > @self._start_night.jd')
+        planets.query('transit_i < @self._end_night.jd', inplace=True)
+        planets.query('transit_f > @self._start_night.jd', inplace=True)
 
-        planets.loc[:, 'transit_i_twi'] = _choose(planets, 'transit_i', self._start_night.jd, return_max=True)
-        planets.loc[:, 'transit_f_twi'] = _choose(planets, 'transit_f', self._end_night.jd, return_max=False)
-        planets.loc[:, 'transit_twilight_percent'] = (planets['transit_f_twi'] -
-                                                      planets['transit_i_twi']) / (planets['pl_trandur'] / 24)
+        planets['transit_i_twi'] = _choose(planets, 'transit_i', self._start_night.jd, return_max=True)
+        planets['transit_f_twi'] = _choose(planets, 'transit_f', self._end_night.jd, return_max=False)
+        planets['transit_twilight_percent'] = (planets['transit_f_twi'] -
+                                               planets['transit_i_twi']) / (planets['pl_trandur'] / 24)
 
-        self._planets = planets.query('transit_twilight_percent > @self._constraints["transit_percent_min"]')
+        planets.query('transit_twilight_percent > @self._constraints["transit_percent_min"]',
+                      inplace=True)
+        self._planets = planets.copy()
 
     def _transit_percent_altitude_filter(self):
         """filter for enough observable transit, considering altitude and twilight"""
-        planets = self._planets
+        planets = self._planets.copy()
 
-        planets = planets.query('transit_i < end_observation')
-        planets = planets.query('transit_f > start_observation')
+        planets.query('transit_i < end_observation', inplace=True)
+        planets.query('transit_f > start_observation', inplace=True)
 
-        planets['transit_i_obs'] = _choose(planets, 'transit_i', 'start_observation', return_max=True)
-        planets['transit_f_obs'] = _choose(planets, 'transit_f', 'end_observation', return_max=False)
+        planets['transit_i_obs'] = _choose(planets.copy(), 'transit_i', 'start_observation', return_max=True)
+        planets['transit_f_obs'] = _choose(planets.copy(), 'transit_f', 'end_observation', return_max=False)
         planets['transit_observable_ratio'] = (planets['transit_f_obs'] -
                                                planets['transit_i_obs']) / (planets['pl_trandur'] / 24)
 
-        self._planets = planets.query('transit_observable_ratio > @self._constraints["transit_percent_min"]')
+        self._planets = planets.query('transit_observable_ratio > @self._constraints["transit_percent_min"]'
+                                      ).copy()
 
     ############################
     #
     # PLOTTING
 
     def plot(self, date,
-             precision: int = 100,
-             extend: bool = False,
-             altitude_separation: float = 70,
+             precision: int = 150,
+             extend: bool = True,
+             altitude_separation: float = 60,
              ax: Union[matplotlib.axes.Axes, matplotlib.figure.Figure, int] = None,
              mark_ra: Optional[TwoTuple] = None,
              colorbar: bool = False,    # todo: enable this once rank is working
@@ -388,6 +393,8 @@ class Nightly:
 
          Parameters
          ----------
+             date: str
+                Date for which to plot
              colorbar
              mark_ra: (float, float)
                 RA region to mark in output plot
@@ -418,8 +425,8 @@ class Nightly:
         scalar_mappable = mpl.cm.ScalarMappable(norm=grade_norm, cmap=cmap)
 
         for index, info in filtered_planets.iterrows():
-            transit_time = apt.Time(info['start_observation'], format='jd', scale='utc') \
-                           + np.linspace(0, (info['end_observation'] - info['start_observation']) * 24,
+            transit_time = apt.Time(info['starrise'], format='jd', scale='utc') \
+                           + np.linspace(0, (info['starset'] - info['starrise']) * 24,
                                          precision) * u.hour
             local_frame = apc.AltAz(obstime=transit_time, location=self._observatory)
 
@@ -429,20 +436,20 @@ class Nightly:
 
             transit_i_index = np.argmin(np.abs(jd - info['transit_i']))
             transit_f_index = np.argmin(np.abs(jd - info['transit_f']))
-            baseline_i_index = np.argmin(np.abs(jd - (info['transit_i'] - self._constraints['baseline_max'])))
-            baseline_f_index = np.argmin(np.abs(jd - (info['transit_f'] + self._constraints['baseline_max'])))
+            baseline_i_index = np.argmin(np.abs(jd - (info['transit_i'] - self._constraints['baseline_max']/24)))
+            baseline_f_index = np.argmin(np.abs(jd - (info['transit_f'] + self._constraints['baseline_max']/24)))
 
             if extend:
-                ax.fill_between(jd, altitudes, cum_altitude, color='yellow')
+                ax.fill_between(jd, altitudes, cum_altitude, color='lightblue', alpha=0.5)
 
             ax.fill_between(jd[transit_i_index:transit_f_index], altitudes[transit_i_index:transit_f_index],
-                            cum_altitude, color=cmap(info['rank']/10))
+                            cum_altitude, color=cmap(info['rank']/10), alpha=0.8)
             if baseline_i_index < transit_i_index:
                 ax.fill_between(jd[baseline_i_index:transit_i_index], altitudes[baseline_i_index:transit_i_index],
-                                cum_altitude, color='blue')
+                                cum_altitude, color='blue', alpha=0.8)
             if baseline_f_index > transit_f_index:
                 ax.fill_between(jd[transit_f_index:baseline_f_index], altitudes[transit_f_index:baseline_f_index],
-                                cum_altitude, color='blue')
+                                cum_altitude, color='blue', alpha=0.8)
 
             if info['transit_observable_ratio'] < 0.99999:
                 middle_index = (transit_i_index+transit_f_index)//2
@@ -452,13 +459,13 @@ class Nightly:
             ax.text(jd[baseline_f_index], cum_altitude,
                     s=f"{transit_time[baseline_f_index].iso[11:16]} - P{info['pl_orbper']:.1f}d",
                     fontsize=9)
-            ax.text(jd[baseline_f_index], cum_altitude + 25,
+            ax.text(jd[baseline_f_index], cum_altitude + altitude_separation//2,
                     s=f"{info['sy_vmag']}, {info['moon_separation']:.0f}$^\circ$",
                     fontsize=9)
             ax.text(jd[baseline_i_index], cum_altitude,
                     s=transit_time[baseline_i_index].iso[11:16],
                     fontsize=9, ha='right')
-            ax.text(jd[baseline_i_index], cum_altitude + 25,
+            ax.text(jd[baseline_i_index], cum_altitude + altitude_separation//2,
                     s=f"$\\delta$ {info['dec']:.1f}",
                     fontsize=9, ha='right')
 
@@ -468,7 +475,6 @@ class Nightly:
             cax = f.add_axes([0.18, 0.55, 0.06, 0.3])
             f.colorbar(mappable=scalar_mappable, ticks=[0, 5, 10],
                        cax=cax, orientation='vertical', shrink=0.5,
-                       #location='right',
                        )
         ax.set_xlabel(f'Planetary transits at "{self._observatory_name}" for the night after {self._date}', fontsize=13)
         delta_night = self._end_night.jd - self._start_night.jd
@@ -478,6 +484,8 @@ class Nightly:
         ax.set_xticklabels(["", str(self._start_night.value), str(self._end_night.value), ""])
         ax.set_yticks(altitude_separation*np.arange(len(self._planets)))
         ax.set_yticklabels(filtered_planets['pl_name'])
+        ax.set_xlim([self._start_night.jd - 0.15 * delta_night,
+                     self._end_night.jd + 0.2 * delta_night])
         plt.setp(ax.yaxis.get_majorticklabels(), rotation=5, va="bottom")
         ax.grid(visible=True, axis="y")
         ax2 = ax.twiny()
@@ -488,7 +496,7 @@ class Nightly:
         ax2.set_xlabel("Local Apparent Sidereal Time")
 
         if mark_ra is not None:
-            ax2.axvspan(mark_ra[0], mark_ra[1], alpha=0.4, color='gray')
+            ax2.axvspan(mark_ra[0], mark_ra[1], alpha=0.2, color='gray')
 
     def __getitem__(self, item):
         if item not in self._planets['pl_name']:
@@ -498,4 +506,7 @@ class Nightly:
 
 if __name__ == '__main__':
     a = Nightly("lasilla")
-    a.plot("2023-05-01")
+    a.plot("2023-05-03",
+           mark_ra=(8, 15),  # Highlighting a RA range can help identify TESS targets, among others
+           )
+

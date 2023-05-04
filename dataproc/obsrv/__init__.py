@@ -21,8 +21,8 @@
 
 from . import obsrv
 from .obsrv import *
-from . import available_at
-from .available_at import *
+from .deprecated import available_at
+from dataproc.obsrv.deprecated.available_at import *
 
 __all__ = []
 __all__ += obsrv.__all__
