@@ -38,6 +38,7 @@ def subarray(data, cyx, rad, padding=False, return_origpos=False):
 
     Parameters
     ----------
+    return_origpos: bool
     arr : array_like
         Original array
     cxy : tuple
@@ -141,9 +142,8 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     cy, cx = cyx
 
     for i in range(iters):
-        sub_array, (offy, offx) = subarray(sub_array, [cy, cx], stamprad,
+        sub_array, (offy, offx) = subarray(sub_array, (cy, cx), stamprad,
                                            padding=False, return_origpos=True)
-
         scy, scx = centroid(sub_array, medsub=medsub)
         cy = scy + offy
         cx = scx + offx
@@ -240,18 +240,21 @@ def radial_profile(data, cnt_xy=None, stamp_rad=None, recenter=False):
     # Use the whole data range if no stamp radius is given
     if stamp_rad is None:
         to_show = data
+        ux, uy = 0, 0
     else:
         to_show = subarray(data, [cy, cx], stamp_rad)
+        ux, uy = cx-stamp_rad, cy-stamp_rad
 
     if recenter:
         cy, cx = centroid(to_show)
-        if stamp_rad is not None:
-            to_show = subarray(data, [cy, cx], stamp_rad)
+        # if stamp_rad is not None:
+        #     to_show = subarray(data, [cy, cx], stamp_rad)
 
     d = radial(to_show, [cy, cx])
+
     x, y = sortmanynsp(d.flatten(), to_show.flatten())
 
-    return x, y, (cx, cy)
+    return x, y, (cx + ux, cy + uy)
 
 
 def zscale(img,  trim=0.05, contr=1, mask=None):

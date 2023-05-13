@@ -170,7 +170,7 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
 
     if not skip_calib:
         if astrofile.has_calib():
-            logger.warning(
+            logger.debug(
                 "Skipping calibration given to Photometry() because "
                 "calibration files were included in AstroFile: {}"
                 .format(astrofile))
@@ -280,7 +280,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
 
     center_user_xy = [[xx, yy] for xx, yy in target_coords_xy]
     if verbose:
-        print(" Obtaining stamps for {} files: ".format(ngood))
+        logger.info(" Obtaining stamps for {} files: ".format(ngood))
 
     if interactive:
         f, ax = dp.figaxes()
@@ -439,7 +439,8 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                 n_flag = sum([idx in fl for fl in flag])
                 sk_color = n_flag and "gray{}0".format(9 - n_flag) or 'w'
             _show_apertures(curr_center_xy, axes=ax, labels=int_labels,
-                            sk_color=sk_color, ap_color=ap_color, stamp_rad=stamp_rad)
+                            sk_color=sk_color, ap_color=ap_color, stamp_rad=stamp_rad,
+                            logger=logger)
             f.show()
             f.canvas.start_event_loop(timeout=-1)
             f.canvas.mpl_disconnect(cid)
@@ -514,44 +515,6 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
         logger.removeFilter(msg_filter)
 
     return indexing, all_cubes, center_xy
-
-
-def _phot_error(phot, sky_std, n_pix_ap, n_pix_sky, gain=None, ron=None):
-    """
-    Calculates the photometry error
-
-    Parameters
-    ----------
-    phot : float
-        Star flux
-    n_pix_ap : int
-        Number of pixels in the aperture
-    n_pix_sky: int
-        Number of pixels in the sky annulus
-    gain: float, optional
-        Telescope gain
-    ron: float, optional
-        Read-out-noise
-
-    Returns
-    -------
-    float
-    """
-
-    if ron is None:
-        logging.warning("Photometric error calculated without read-out-noise")
-        ron = 0.0
-
-    if gain is None:
-        logging.warning("Photometric error calculated without Gain")
-        gain = 1.0
-
-    var_flux = phot / gain
-    var_sky = sky_std ** 2 * n_pix_ap * (1 + float(n_pix_ap) / n_pix_sky)
-
-    var_total = var_sky + var_flux + ron * ron * n_pix_ap
-
-    return np.sqrt(var_total)
 
 
 class Photometry:
@@ -636,6 +599,7 @@ class Photometry:
                  epoch='JD', labels=None, brightest=None,
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
+                 logger=None,
                  interactive=False, verbose=True,
                  verbose_procdata=True,
                  ):
@@ -671,32 +635,35 @@ class Photometry:
         self.recenter = recenter
         self.max_skip = max_skip
 
-        if logfile is None:
-            tmlogger.propagate = False
-            self._logger = tmlogger
+        if logger is not None:
+            self._logger = logger
         else:
-            tmlogger.propagate = False
+            if logfile is None:
+                tmlogger.propagate = False
+                self._logger = tmlogger
+            else:
+                tmlogger.propagate = False
 
-            # use logger instance that includes filename to allow different
-            # instance of photometry with different loggers as long as they
-            # use different files
-            self._logger = logging.getLogger(
-                'dataproc.timeseries.{}'
-                .format(os.path.basename(logfile)
-                        .replace('.', '_')))
-            self._logger.setLevel(logging.INFO)
-            # in case of using same file name start new with loggers
-            for hnd_tmp in self._logger.handlers:
-                self._logger.removeHandler(hnd_tmp)
+                # use logger instance that includes filename to allow different
+                # instance of photometry with different loggers as long as they
+                # use different files
+                self._logger = logging.getLogger(
+                    'dataproc.timeseries.{}'
+                    .format(os.path.basename(logfile)
+                            .replace('.', '_')))
+                self._logger.setLevel(logging.INFO)
+                # in case of using same file name start new with loggers
+                for hnd_tmp in self._logger.handlers:
+                    self._logger.removeHandler(hnd_tmp)
 
-            handler = logging.FileHandler(logfile, 'w')
-            formatter = logging.Formatter("%(asctime)s: %(name)s "
-                                          "%(levelname)s: %(message)s")
-            handler.setFormatter(formatter)
-            handler.setLevel(logging.INFO)
-            self._logger.addHandler(handler)
+                handler = logging.FileHandler(logfile, 'w')
+                formatter = logging.Formatter("%(asctime)s: %(name)s "
+                                              "%(levelname)s: %(message)s")
+                handler.setFormatter(formatter)
+                handler.setLevel(logging.INFO)
+                self._logger.addHandler(handler)
 
-            print("Detailed logging redirected to {}".format(logfile))
+                print("Detailed logging redirected to {}".format(logfile))
         self._logger.info(f"dataproc.timeseries.Photometry execution on: {sci_files}")
 
         sci_files = dp.AstroDir(sci_files)
@@ -709,13 +676,8 @@ class Photometry:
             labels = list(target_coords_xy.keys())
         elif isinstance(target_coords_xy, (list, tuple)):
             coords_user_xy = list(target_coords_xy)
-        elif target_coords_xy is None:
-            # TODO: Implement interactive
-            raise NotImplementedError(
-                "Pia will eventually implement interactive coordinate "
-                "acquisition.")
         else:
-            raise TypeError("target_coords_xy type is invalid")
+            raise TypeError(f"target_coords_xy ({target_coords_xy}) type is invalid")
 
         try:
             if labels is None:
@@ -761,7 +723,7 @@ class Photometry:
                          "reference brightest '{}'."
                          .format(len(target_coords_xy),
                                  self.labels[brightest]))
-        tmlogger.info(
+        self._logger.info(
             "Initial coordinates {}"
             .format(", ".join([f"{lab} {coo}"
                                for lab, coo in zip(labels, coords_user_xy)])
@@ -1059,12 +1021,12 @@ class Photometry:
                                       (too_little_mask, "below", self.min_counts)):
                 n_mask = mask[self.indexing].sum()
                 if n_mask:
-                    logging.warning(f"Object {label}"
-                                    f" ha{'ve' if n_mask > 1 else 's'}"
-                                    f" counts {lab} the threshold ({thresh})"
-                                    f" on frame{'s' if n_mask > 1 else ''}"
-                                    f" {', '.join(np.arange(ns)[self.indexing][mask[self.indexing]].astype(str))} "
-                                    )
+                    self._logger.warning(f"Object {label}"
+                                         f" ha{'ve' if n_mask > 1 else 's'}"
+                                         f" counts {lab} the threshold ({thresh})"
+                                         f" on frame{'s' if n_mask > 1 else ''}"
+                                         f" {', '.join(np.arange(ns)[self.indexing][mask[self.indexing]].astype(str))} "
+                                        )
 
             # for data, center_xy, non_ignore_idx, epochs_idx \
             #         in zip(target, centers_xy, self.indexing, range(ns)):

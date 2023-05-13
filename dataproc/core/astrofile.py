@@ -409,7 +409,12 @@ class AstroFile(object):
 
         self.filename = filename
         self.type = self.checktype(*args, **kwargs)
-        self.header_cache = self._geth[self.type](self.filename)
+        try:
+            self.header_cache = self._geth[self.type](self.filename)
+        except OSError:
+            self.type = None
+            io_logger.warning("Omitting corrupt file")
+            return
         if isinstance(header, dict):
             for k, v in header.items():
                 self.header_cache[0][k] = v
@@ -968,7 +973,7 @@ class AstroFile(object):
         return len(self.reader(skip_calib=True))
 
     def __bool__(self):
-        return len(self.reader(skip_calib=True)) > 0
+        return self.type is not None and len(self.reader(skip_calib=True)) > 0
 
     @property
     def shape(self):

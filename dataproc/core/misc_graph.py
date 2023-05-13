@@ -19,7 +19,7 @@
 #
 
 
-__all__ = ['plot_accross', 'prep_data_plot', 'prep_canvas',
+__all__ = ['plot_accross', 'prep_data_plot',
            'imshowz', 'figaxes_xdate', 'figaxes', 'set_plot_props',
            'fill_between',
            ]
@@ -34,8 +34,10 @@ import astropy.io.fits as pf
 import numpy as np
 from typing import Optional, Tuple, List, Union
 from collections.abc import Sequence
+from dataproc.core.interactive_graphics import _imshowz_binding
 
 TwoValues = Tuple[float, float]
+
 
 def fill_between(ax,
                  bottom=None, top=None,
@@ -63,9 +65,11 @@ def fill_between(ax,
 
 def set_plot_props(ax, xlim=None, ylim=None,
                    legend: Union[dict, bool] = None,
-                   save=None, show=None, close=True,
+                   save=None, show=None, close=False,
                    title=None, fill_between=None,
-                   ax_method=None, vspan: Optional[TwoValues]=None,
+                   xlabel=None, ylabel=None,
+                   ax_method=None,
+                   vspan: Optional[TwoValues] = None,
                    ):
     """Set some standard properties for plot"""
     if ax_method is None:
@@ -83,8 +87,9 @@ def set_plot_props(ax, xlim=None, ylim=None,
     if show is None:
         show = save is None
 
-    if title is not None:
-        ax.set_title(title)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
     if legend is not None:
         if 'loc' not in legend.keys():
@@ -168,11 +173,9 @@ def plot_accross(data,
             "dimension ({1:d})".format(len(pos), len(data.shape)))
     pos = tuple([p is None and slice(None, None) or p for p in pos])
 
-    print(pos)
-
     accross = data[pos]
 
-    fig, ax = prep_canvas(axes, title, xtitle, ytitle)
+    fig, ax = dp.figaxes(axes)
 
     if xlim is not None:
         ax.set_xlim(xlim)
@@ -180,6 +183,7 @@ def plot_accross(data,
         ax.set_ylim(ylim)
 
     ax.plot(accross, label="ll")
+    dp.set_plot_props(title=title, xlabel=xtitle, ylabel=ytitle)
 
     return accross, data
 
@@ -228,66 +232,8 @@ def prep_data_plot(indata, **kwargs):
     return data
 
 
-def prep_canvas(axes=None, title=None,
-                ytitle=None, xtitle=None,
-                force_new=False,
-                ):
-    """
-    Sets the canvas for plotting
-
-    Parameters
-    ----------
-    axes : int, plt.Figure, plt.Axes, optional
-    title : str, optional
-    xtitle : str, optional
-    ytitle : str, optional
-    force_new : bool, optional
-        Whether to create a new plot if no axis has been specified
-
-    Returns
-    -------
-    Matplotlib figure and axes
-    """
-    fig, ax = figaxes(axes, force_new)
-
-    if title is not None:
-        ax.set_title(title)
-    if ytitle is not None:
-        ax.set_ylabel(ytitle)
-    if xtitle is not None:
-        ax.set_xlabel(xtitle)
-
-    return fig, ax
-
-
-class _imshowz_binding():
-    def __init__(self, image):
-        self.image = image
-        self.cid = {}
-        self.outs = {'coordinates_xy': [], }
-
-        self.connect()
-        self.image.figure.show()
-
-    def disconnect(self):
-        for cid in self.cid.values():
-            self.image.figure.canvas.mpl_disconnect(cid)
-
-    def connect(self):
-         self.cid['key_press'] = self.image.figure.canvas.mpl_connect('key_press_event', self.on_key_press)
-
-    def on_key_press(self, event):
-        if event.key == 'm':
-            self.outs['coordinates_xy'].append([event.xdata, event.ydata])
-        if event.key == 'x':
-            self.image.axes.set_xlim(list(self.image.axes.get_xlim())[::-1])
-        if event.key == 'y':
-            self.image.axes.set_ylim(list(self.image.axes.get_ylim())[::-1])
-
-
 def imshowz(data,
-            axes=None, title=None,
-            ytitle=None, xtitle=None,
+            axes=None,
             minmax=None, xlim=None, ylim=None,
             cxy=None, plot_rad=None,
             ticks=True, colorbar=False,
@@ -295,7 +241,7 @@ def imshowz(data,
             origin='lower', force_new=False,
             trim_data=False,
             extent=None, interactive=False,
-            save=None, show=None,
+            save=None, show=None, close=None,
             **kwargs):
     """
     Plots data using the zscale algorithm to fix the min and max contrast
@@ -309,10 +255,6 @@ def imshowz(data,
         Where to plot
     extent : optional
         Use this for limits to the drawing... no subarraying
-    title : string, optional
-        Figure Title
-    xtitle : string, optional
-    ytitle : string, optional
     minmax : 2 element list or tuple
         Force this values of contrast
     xlim : tuple, optional
@@ -341,7 +283,7 @@ def imshowz(data,
         Whether to create a new plot if no axis has been specified
     trim_data : bool, optional
         If true, it will plot the area delimited by xlim and ylim
-    force_show : bool, optional
+    show : bool, optional
         If true, it will call plt.show at  the end
     hdu : int, optional
         Which hdu to plot (Only if data is string or HDUList)
@@ -359,10 +301,8 @@ def imshowz(data,
     data = prep_data_plot(data, **kwargs)
 
     if interactive:
-        import matplotlib
-        #        if not matplotlib.is_interactive():
-        #            raise ImportError(f"Selected matplotlib backend ({matplotlib.get_backend()}) is not interactive ")
-        plt.ioff()
+        show = False
+        save = None
 
     if extent is not None and xlim is not None and ylim is not None:
         raise ValueError(
@@ -373,9 +313,6 @@ def imshowz(data,
         xlim = [0, data.shape[1]]
     if ylim is None:
         ylim = [0, data.shape[0]]
-
-    x0, x1 = 0, xlim[1]
-    y0, y1 = 0, ylim[1]
 
     if rotate:
         times = rotate/90
@@ -402,53 +339,44 @@ def imshowz(data,
         xlim = [0, data.shape[1]-1]
         ylim = [0, data.shape[0]-1]
 
-    # if invertx:
-    #     data = data[:, ::-1]
-    #     x1, x0 = x0, x1
-    #
-    # if inverty:
-    #     data = data[::-1, :]
-    #     y0, y1 = y1, y0
-
     # Find the contrast
     if minmax is None:
-        # [ylim[0]:ylim[1], xlim[0]:xlim[1]])
-        # only if trimmed, it will not use the whole image
         mn, mx = dp.zscale(data)
     else:
         mn, mx = minmax
 
-    fig, ax = prep_canvas(axes, title, ytitle, xtitle, force_new=force_new)
+    fig, ax = dp.figaxes(axes, force_new=force_new)
 
     # Draw in the canvas
     if extent is None:
-        extent = [x0, x1, y0, y1]
+        extent = [xlim[0], xlim[1], ylim[0], ylim[1]]
     imag = ax.imshow(data, vmin=mn, vmax=mx, origin=origin,
                      extent=extent, **kwargs)
-    if not ticks:
-        ax.xaxis.set_ticklabels([' ']*20)
-        ax.yaxis.set_ticklabels([' ']*20)
-    if colorbar:
-        fig.colorbar(imag)
-
     if invertx:
         xlim = xlim[::-1]
     if inverty:
         ylim = ylim[::-1]
 
-    ax.set_xlim(xlim)
-    ax.set_ylim(ylim)
+    if not ticks:
+        ax.xaxis.set_ticklabels([' '] * 20)
+        ax.yaxis.set_ticklabels([' '] * 20)
+
+    if colorbar:
+        fig.colorbar(imag)
+
+    kwargs |= {'xlim': xlim,
+               'ylim': ylim,
+               'save': save,
+               'show': show,
+               'close': close,
+               }
+    set_plot_props(ax, **kwargs)
 
     outs = {'lims': [mn, mx]}
     if interactive:
-        handler = _imshowz_binding(imag)
-        outs['interactive'] = handler.outs
+        handler = _imshowz_binding(data, ax)
+        outs['marks_xy'] = handler.outs['marks_xy']
         outs['handler'] = handler
-    if show:
-        plt.show()
-
-    if save is not None:
-        fig.savefig(save)
 
     return outs
 
@@ -497,15 +425,15 @@ def figaxes_xdate(x, axes=None, clear=True):
     return f, ax, retx
 
 
-def figaxes(axes=None, forcenew=True, clear=True) -> (plt.Figure, plt.Axes):
+def figaxes(axes=None, force_new=True, clear=True) -> (plt.Figure, plt.Axes):
     """
-    Function that accepts a variety of canvas formats and returns the output
+    Function that accepts a variety of axes specifications  and returns the output
     ready for use with matplotlib
 
     Parameters
     ----------
     axes : int, plt.Figure, plt.Axes
-    forcenew : bool, optional
+    force_new : bool, optional
         If true starts a new axes when axes=None (and only then) instead of using last figure
     clear: bool, optional
         Delete previous axes content, if any
@@ -515,7 +443,7 @@ def figaxes(axes=None, forcenew=True, clear=True) -> (plt.Figure, plt.Axes):
     Matplotlib.pyplot figure and axes
     """
     if axes is None:
-        if forcenew:
+        if force_new:
             fig, ax = plt.subplots()
         else:
             plt.gcf().clf()
@@ -531,7 +459,7 @@ def figaxes(axes=None, forcenew=True, clear=True) -> (plt.Figure, plt.Axes):
         fig = axes
         if clear:
             fig.clf()
-        if len(fig.axes)==0:
+        if len(fig.axes) == 0:
             ax = fig.add_subplot(111)
         ax = fig.axes[0]
     elif isinstance(axes, plt.Axes):
@@ -546,9 +474,6 @@ def figaxes(axes=None, forcenew=True, clear=True) -> (plt.Figure, plt.Axes):
     return fig, ax
 
 
-# def polygonxy(cxy, rad, npoints=20):
-#     angles = np.arange(npoints+1)*2*3.14159/npoints
-#     xx = cxy[0] + rad*np.cos(angles)
-#     yy = cxy[1] + rad*np.sin(angles)
+if __name__ == '__main__':
+    a = dp.imshowz('/home/raw/tramos//ctio09/20190827/20190827_043.fits.gz', interactive=True)
 
-#     return xx, yy
