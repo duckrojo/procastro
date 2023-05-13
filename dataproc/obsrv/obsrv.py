@@ -324,6 +324,32 @@ class Obsrv(ocalc.ObsCalc):
         return np.array(list(zip(self.transits,
                                  self.transits))).flatten()[np.argmin(dist)]
 
+    def plot_values(self, x, y, idx,
+                    rel_pos=1.0, abs_pos=None,
+                    color="black", marker=None):
+
+        ax = self.params["plot_ax-elev"]
+        altitude = y[idx].value
+        time = x[idx]
+        if abs_pos is None:
+            pos = rel_pos * altitude
+        else:
+            pos = abs_pos
+
+        if marker in ['x', '+', 'c', '.']:
+            ax.plot(time, altitude, marker, color=color)
+        if marker in ['-', '--', ':']:
+            ax.plot([time, time], [altitude, pos],
+                    ls=marker, color=color)
+
+        time_label = time
+        if time_label < 0:
+            time_label += 24
+        minutes = int(60 * (time_label % 1) + 0.5)
+        ax.annotate(f'{altitude:.1f}$^\circ$@ {int(time_label)}:{minutes:02d}UT',
+                    (time, pos),
+                    ha='center', va='top', color=color)
+
     def _plot_night(self, jd, ax):
 
         ax.cla()
@@ -336,7 +362,7 @@ class Obsrv(ocalc.ObsCalc):
 
         with apc.solar_system_ephemeris.set('builtin'):
 
-            n_hours = 50
+            n_hours = 200
             previous_24 = apt.Time(jd, format='jd') - np.arange(0, 1, 0.05)
             ref_at_night = previous_24[0]
             previous_midday_idx = np.argmax(apc.get_sun(
@@ -421,6 +447,14 @@ class Obsrv(ocalc.ObsCalc):
                 facecolor = 'red'
             _plot_poly(ax, [enter_transit, exit_transit],
                        [0, 0], [90, 90], facecolor=facecolor)
+
+            idx = np.argmin(np.abs(ut_hours + 1 - enter_transit))
+            self.plot_values(ut_hours, alt_target, idx, abs_pos=20, marker='-', color='red')
+            idx = np.argmin(np.abs(ut_hours - 1 - exit_transit))
+            self.plot_values(ut_hours, alt_target, idx, abs_pos=25, marker='-', color='red')
+
+        mm_idx = np.argmax(alt_target)
+        self.plot_values(ut_hours, alt_target, mm_idx, abs_pos=85, marker='+', color='blue')
 
         ax.figure.canvas.draw()
 

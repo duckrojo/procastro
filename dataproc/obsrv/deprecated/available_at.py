@@ -105,7 +105,9 @@ class AvailableAt:
         plots the altitudes of the avalaible exoplanets on the observatory location at the given date.
     """
 
-    def __init__(self, observatory, min_transit_percent=0.9, night_angle=-18, min_obs=30,
+    def __init__(self, observatory,
+                 min_transit_percent=0.9, min_transit_percent_ix=None,
+                 night_angle=-18, min_obs=30,
                  min_obs_ex=23.5,
                  max_obs=40.0, min_baseline_ex=0.01, max_baseline=0.04, min_baseline=0.02, moon_separation_min_ex=10,
                  moon_separation_min=20, moon_separation_max=50, vmag_min_ex=12.5):
@@ -153,7 +155,9 @@ class AvailableAt:
         self.utc_offset = (int(self.observatory.lon.degree / 15)) * u.hour
         # dejar todo en self.date_offset
         self.min_transit_percent = min_transit_percent
-        self.min_transit_percent_ix = self.min_transit_percent / 2
+        if min_transit_percent_ix is None:
+            min_transit_percent_ix = self.min_transit_percent / 2
+        self.min_transit_percent_ix = min_transit_percent_ix
         self.max_obs = max_obs
         self.min_obs = min_obs  # cambiar nombre a min_star_airmass
         self.min_obs_ix = min_obs_ex  # cambiar nombre a min_star_airmass_ix
@@ -806,6 +810,11 @@ class AvailableAt:
         iterative_delta_midnight_times = pd.DataFrame(
             self.stars_altitudes_.apply(lambda x: self.iterative_delta_midnight(x), axis=0))
         iterative_delta_midnight_times.dropna(inplace=True)
+        no_linear_aproximation_required_planets = iterative_delta_midnight_times[
+            iterative_delta_midnight_times == True].dropna()
+        no_linear_aproximation_required_planets_altitudes = self.stars_altitudes_.loc[:,
+                                                            list(no_linear_aproximation_required_planets.index)]
+        iterative_delta_midnight_times = iterative_delta_midnight_times[iterative_delta_midnight_times != True].dropna()
         self.stars_altitudes_ = self.stars_altitudes_.loc[:, list(iterative_delta_midnight_times.index)]
         self.selected_planets = self.selected_planets.loc[list(iterative_delta_midnight_times.index), :]
         times = pd.DataFrame(iterative_delta_midnight_times.loc[:, 0].values,
@@ -933,7 +942,11 @@ class AvailableAt:
         start = time.time()
         observation_times_1 = self.altitudes_1.apply(lambda x: self.start_and_end_observation_times(x), axis=0)
         observation_times_2 = self.altitudes_2.apply(lambda x: self.start_and_end_observation_times(x), axis=0)
-        observation_times = pd.concat([observation_times_1, observation_times_2], axis=1).sort_index(axis=1)
+        no_linear_aproximation_required_planets_observartion_times = no_linear_aproximation_required_planets_altitudes \
+            .apply(lambda x: self.start_and_end_observation_times(x), axis=0)
+        observation_times = pd.concat(
+            [observation_times_1, observation_times_2, no_linear_aproximation_required_planets_observartion_times],
+            axis=1).sort_index(axis=1).dropna()
         end = time.time()
         print('termina start_and_end_observation___, tiempo total: ' + str(end - start))
         self.selected_planets['start_observation'] = observation_times.iloc[0, :]
@@ -1026,6 +1039,9 @@ class AvailableAt:
                 axes.text(x_axis[baseline_i_index], altitudes_min[-1],
                           s=transit_time[baseline_i_index].iso[11:16],
                           fontsize=9, ha='right')
+                axes.text(x_axis[baseline_i_index], altitudes_min[-1] + 25,
+                          s=f"$\\alpha${info['ra']:.1f} $\\delta${info['dec']:.1f}",
+                          fontsize=9, ha='right')
             if extend==True:
                 axes.text(x_axis[len(x_axis)-1], altitudes_min[-1],
                           s=f"{transit_time[len(transit_time)-1].iso[11:16]} - "
@@ -1055,9 +1071,9 @@ def star_sidereal_time_to_local_hour(sun_ra, star_ra, midday):
     return star_time_in_utc
 
 
-available_exoplanets = AvailableAt('La Silla Observatory', min_obs_ex=25.0,
-                                   night_angle=-12)
-
-available_exoplanets.run_day('2023-05-10')
-available_exoplanets.plot()
+# available_exoplanets = AvailableAt('La Silla Observatory', min_obs_ex=25.0,
+#                                    night_angle=-12)
+#
+# #available_exoplanets.run_day('2023-05-10')
+# available_exoplanets.plot()
 #a.update(night_angle=-70)

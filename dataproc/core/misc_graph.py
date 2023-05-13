@@ -46,7 +46,7 @@ def fill_between(ax,
     if bottom is None and top is None:
         return
     if bottom is None:
-        bottom = top*0
+        bottom = top * 0
     if top is None:
         top *= max(bottom)
     if isinstance(top, float):
@@ -166,7 +166,7 @@ def plot_accross(data,
 
     # dt = data
     if not isinstance(pos, (list, tuple)):
-        pos = [None] + [0]*(len(data.shape)-2) + [pos]
+        pos = [None] + [0] * (len(data.shape) - 2) + [pos]
     if len(pos) != len(data.shape):
         raise TypeError(
             "pos (size: {0:d}) must have the same size as data array "
@@ -222,12 +222,12 @@ def prep_data_plot(indata, **kwargs):
         else:
             raise TypeError(
                 "Unrecognized type for input data: {0:s}"
-                .format(indata.__class__.__name__,))
+                .format(indata.__class__.__name__, ))
 
     if data is None:
         if error_msg is None:
             error_msg = indata
-        raise ValueError("Nothing to plot {0:s}".format(error_msg,))
+        raise ValueError("Nothing to plot {0:s}".format(error_msg, ))
 
     return data
 
@@ -315,19 +315,19 @@ def imshowz(data,
         ylim = [0, data.shape[0]]
 
     if rotate:
-        times = rotate/90
+        times = rotate / 90
         if times % 1 != 0:
             raise ValueError("rotate must be a multiple of 90")
         data = np.rot90(data, int(times))
         # TODO: update x0, x1, y0, y1
 
     if cxy is not None:
-        border_distance = [data.shape[1]-cxy[0], cxy[0],
-                           data.shape[0]-cxy[1], cxy[1]]
+        border_distance = [data.shape[1] - cxy[0], cxy[0],
+                           data.shape[0] - cxy[1], cxy[1]]
         if plot_rad is None:
             plot_rad = min(border_distance)
-        xlim = [cxy[0]-plot_rad, cxy[0]+plot_rad]
-        ylim = [cxy[1]-plot_rad, cxy[1]+plot_rad]
+        xlim = [cxy[0] - plot_rad, cxy[0] + plot_rad]
+        ylim = [cxy[1] - plot_rad, cxy[1] + plot_rad]
         xlim[0] *= xlim[0] > 0
         xlim[1] = (xlim[1] > data.shape[1]) and data.shape[1] or xlim[1]
         ylim[0] *= ylim[0] > 0
@@ -336,8 +336,8 @@ def imshowz(data,
     if trim_data:
         y0, y1, x0, x1 = ylim[0], ylim[1], xlim[0], xlim[1]
         data = data[y0: y1, x0: x1]
-        xlim = [0, data.shape[1]-1]
-        ylim = [0, data.shape[0]-1]
+        xlim = [0, data.shape[1] - 1]
+        ylim = [0, data.shape[0] - 1]
 
     # Find the contrast
     if minmax is None:
@@ -360,7 +360,6 @@ def imshowz(data,
     if not ticks:
         ax.xaxis.set_ticklabels([' '] * 20)
         ax.yaxis.set_ticklabels([' '] * 20)
-
     if colorbar:
         fig.colorbar(imag)
 
@@ -409,14 +408,14 @@ def figaxes_xdate(x, axes=None, clear=True):
         raise ValueError("Time format not understood")
 
     ax.xaxis_date()
-    tdelta = (retx[-1] - retx[0])*24*60
+    tdelta = (retx[-1] - retx[0]) * 24 * 60
     if tdelta < 4:  # If range is smaller than 4 minutes
         fmt = '%H:%M:%S'
-    elif tdelta < 8*60:  # If range is smaller than 8 hours
+    elif tdelta < 8 * 60:  # If range is smaller than 8 hours
         fmt = '%H:%M'
-    elif tdelta < 5*60*24:  # If range is smaller than 5 days
+    elif tdelta < 5 * 60 * 24:  # If range is smaller than 5 days
         fmt = '%Y-%b-%d %H:%M'
-    elif tdelta < 1*60*24*365:  # If range is smaller than 1 years
+    elif tdelta < 1 * 60 * 24 * 365:  # If range is smaller than 1 years
         fmt = '%Y %b'
     else:
         fmt = '%Y'
@@ -425,7 +424,11 @@ def figaxes_xdate(x, axes=None, clear=True):
     return f, ax, retx
 
 
-def figaxes(axes=None, force_new=True, clear=True) -> (plt.Figure, plt.Axes):
+def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
+            force_new: bool = True,
+            clear: bool = True,
+            **kwargs,
+            ) -> (plt.Figure, plt.Axes):
     """
     Function that accepts a variety of axes specifications  and returns the output
     ready for use with matplotlib
@@ -449,7 +452,7 @@ def figaxes(axes=None, force_new=True, clear=True) -> (plt.Figure, plt.Axes):
             plt.gcf().clf()
             fig, ax = plt.subplots(num=plt.gcf().number)
     elif isinstance(axes, int):
-        fig = plt.figure(axes)
+        fig = plt.figure(axes, **kwargs)
         if clear or len(fig.axes) == 0:
             fig.clf()
             ax = fig.add_subplot(111)
@@ -469,11 +472,10 @@ def figaxes(axes=None, force_new=True, clear=True) -> (plt.Figure, plt.Axes):
         fig = axes.figure
     else:
         raise ValueError("Given value for axes ({0:s}) is not"
-                         "recognized".format(axes,))
+                         "recognized".format(axes, ))
 
     return fig, ax
 
 
 if __name__ == '__main__':
     a = dp.imshowz('/home/raw/tramos//ctio09/20190827/20190827_043.fits.gz', interactive=True)
-
