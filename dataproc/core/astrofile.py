@@ -1064,7 +1064,10 @@ class AstroFile(object):
         if isinstance(source, list) is True:
             newhd[target] = apt.Time(self[source[0]]+"T"+self[source[1]]).jd
         else:
-            newhd[target] = apt.Time(self[source]).jd
+            try:
+                newhd[target] = apt.Time(self[source]).jd
+            except ValueError:
+                raise ValueError(f"File {self.filename} has invalid time specificiation")
         self.setheader(**newhd)
 
     def merger(self, start=1, end=None):
