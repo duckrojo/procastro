@@ -301,11 +301,19 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
     try_dedrift = True
     n_files = len(sci_files)
     while idx < n_files:
-        d = _get_calibration(sci_files,
-                             frame=idx, mdark=mdark, mflat=mflat,
-                             logger=logger,
-                             skip_calib=skip_calib,
-                             verbose_procdata=verbose_procdata)
+        try:
+            reduced_data = _get_calibration(sci_files,
+                                            frame=idx, mdark=mdark, mflat=mflat,
+                                            logger=logger,
+                                            skip_calib=skip_calib,
+                                            verbose_procdata=verbose_procdata)
+        except OSError:
+            logger.warning(f"Corrupt file {sci_files[idx].filename}, forcibly added to the ignore list")
+            if idx not in ignore:
+                ignore.append(idx)
+            idx += 1
+            continue
+
         astrofile = sci_files[idx]
         off = offsets_xy[idx]
 
@@ -320,10 +328,10 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
             cx, cy = prev_center_xy[trg_id][0] + off[0], \
                      prev_center_xy[trg_id][1] + off[1]
             if recenter:
-                ncy, ncx = dp.subcentroid(d, [cy, cx], stamp_rad)
+                ncy, ncx = dp.subcentroid(reduced_data, [cy, cx], stamp_rad)
             else:
                 ncy, ncx = cy, cx
-            if ncy < 0 or ncx < 0 or ncy > d.shape[0] or ncx > d.shape[1]:
+            if ncy < 0 or ncx < 0 or ncy > reduced_data.shape[0] or ncx > reduced_data.shape[1]:
                 # Following is necessary to keep indexing that does not
                 # consider skipped bad frames
                 af_names = [af.filename for af in sci_files]
@@ -334,7 +342,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
                     .format(af_names.index(astrofile.filename),
                             labels[trg_id], cx, cy,
                             ncx, ncy, off, astrofile))
-            cube[to_store] = dp.subarray(d, [ncy, ncx], stamp_rad,
+            cube[to_store] = dp.subarray(reduced_data, [ncy, ncx], stamp_rad,
                                          padding=True)
             center_xy[trg_id][to_store] = [ncx, ncy]
 
@@ -389,7 +397,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
             skip_interactive = False
             ax.cla()
             f.show()
-            dp.imshowz(d, axes=ax, show=False)
+            dp.imshowz(reduced_data, axes=ax, show=False)
             ax.set_ylabel(f'Frame #{idx}: {astrofile.basename()}')
             curr_center_xy = center_xy[:, to_store, :]
             on_click_action = [1]
@@ -620,9 +628,6 @@ class Photometry:
 
         self.surrounding_ap_limit = outer_ap
 
-        if extra is None:
-            extra = []
-
         if not isinstance(idx0, int):
             raise TypeError("Initial index can only be an integer")
 
@@ -664,7 +669,9 @@ class Photometry:
                 self._logger.addHandler(handler)
 
                 print("Detailed logging redirected to {}".format(logfile))
-        self._logger.info(f"dataproc.timeseries.Photometry execution on: {sci_files}")
+        newline = '\n  '
+        self._logger.info(f"dataproc.timeseries.Photometry execution on:\n"
+                          f"  {newline.join([f.filename for f in sci_files])}")
 
         sci_files = dp.AstroDir(sci_files)
 
@@ -745,16 +752,29 @@ class Photometry:
                                          verbose_procdata=verbose_procdata,
                                          )
 
-        self.extra_header = extra
+        if extra is None:
+            self.extra_header = {}
+            self.extras = {}
+        else:
+            if isinstance(extra, list):
+                self.extra_header = {k: k for k in extra}
+            elif isinstance(extra, dict):
+                self.extra_header = extra.copy()
+            elif isinstance(extra, 'str'):
+                self.extra_header = {extra: extra}
+            else:
+                raise TypeError(f"Header specification 'extra' ({extra}) was not understood. "
+                                f"It can be str, list, or dictionary (fits_value: column_value) ")
+            # Storing extras and frame_id with the original indexing.
+            self.extras = {x: [''] * idx0 + list(v)
+                           for x, v in zip(extra, zip(*sci_files.getheaderval(*self.extra_header.keys(),
+                                                                              single_in_list=True)))}
+
         self.mdark = mdark
         self.mflat = mflat
 
         # storing indexing only for those not ignored
         self.indexing = [idx + idx0 for idx in indexing]
-        # Storing extras and frame_id with the original indexing.
-        self.extras = {x: [''] * idx0 + list(v)
-                       for x, v in zip(extra, zip(*sci_files.getheaderval(*extra,
-                                                                          single_in_list=True)))}
         if idx0:
             raise NotImplementedError(
                 "Having a value of idx0 uses lots of memory on dummy AstroDir "
@@ -879,7 +899,7 @@ class Photometry:
 
         if ignore is None:
             ignore = []
-        extra = self.extra_header
+        extra = self.extra_header.keys()
 
         ignore, offset_list = _prep_offset(start_frame, offsets_xy, ignore)
         last_coords = [coords[-1] for coords in self.coords_new_xy]
@@ -944,7 +964,7 @@ class Photometry:
 
         skies = self._skies
 
-        data_store = {} #"considered": np.array(self.indexing*1)}
+        data_store = {}
 
         if verbose:
             print("Processing CPU photometry for {0} targets: "
@@ -964,8 +984,8 @@ class Photometry:
             dy = yy[None, :, :] - center_stamp_xy[:, 1][:, None, None]
             d = np.sqrt( dx*dx + dy*dy)
 
-            data_store[f"centerx_{ref_label}"] = np.array(centers_xy)[self.indexing, 0]
-            data_store[f"centery_{ref_label}"] = np.array(centers_xy)[self.indexing, 1]
+            data_store[f"centerx_{ref_label}"] = np.array(centers_xy)[:, 0]
+            data_store[f"centery_{ref_label}"] = np.array(centers_xy)[:, 1]
 
             for sky in skies:
                 if sky[0] >= sky[1]:
@@ -996,10 +1016,10 @@ class Photometry:
                     if ap > sky[0]:
                         continue
 
-                    data_store[f'flux_{ref_label}_{apsky_label}'] = flux[self.indexing]
-                    data_store[f'err_flux_{ref_label}_{apsky_label}'] = error[self.indexing]
-                    data_store[f'peak_{ref_label}_{apsky_label}'] = peak[self.indexing]
-                    data_store[f'excess_{ref_label}_{apsky_label}'] = excess[self.indexing]
+                    data_store[f'flux_{ref_label}_{apsky_label}'] = flux
+                    data_store[f'err_flux_{ref_label}_{apsky_label}'] = error
+                    data_store[f'peak_{ref_label}_{apsky_label}'] = peak
+                    data_store[f'excess_{ref_label}_{apsky_label}'] = excess
 
                     mom2   = (masked_ap*(masked_ap>0) * d*d      ).sum(axis=(1,2))
 
@@ -1010,22 +1030,22 @@ class Photometry:
 
                     kurt = (masked_ap*(masked_ap>0) * (d ** 4)).sum(axis=(1,2))
 
-                    data_store[f'mom2_{ref_label}_{apsky_label}'] = mom2[self.indexing]
-                    data_store[f'mom3m_{ref_label}_{apsky_label}'] = mom3m[self.indexing]
-                    data_store[f'mom3a_{ref_label}_{apsky_label}'] = mom3a[self.indexing]
-                    data_store[f'mom4_{ref_label}_{apsky_label}'] = kurt[self.indexing]
+                    data_store[f'mom2_{ref_label}_{apsky_label}'] = mom2
+                    data_store[f'mom3m_{ref_label}_{apsky_label}'] = mom3m
+                    data_store[f'mom3a_{ref_label}_{apsky_label}'] = mom3a
+                    data_store[f'mom4_{ref_label}_{apsky_label}'] = kurt
 
             too_much_mask = peak > self.max_counts
             too_little_mask = peak < self.min_counts
             for mask, lab, thresh in ((too_much_mask, "above", self.max_counts),
                                       (too_little_mask, "below", self.min_counts)):
-                n_mask = mask[self.indexing].sum()
+                n_mask = mask.sum()
                 if n_mask:
                     self._logger.warning(f"Object {label}"
                                          f" ha{'ve' if n_mask > 1 else 's'}"
                                          f" counts {lab} the threshold ({thresh})"
                                          f" on frame{'s' if n_mask > 1 else ''}"
-                                         f" {', '.join(np.arange(ns)[self.indexing][mask[self.indexing]].astype(str))} "
+                                         f" {', '.join(self.indexing[mask].astype(str))} "
                                         )
 
             # for data, center_xy, non_ignore_idx, epochs_idx \
@@ -1052,10 +1072,14 @@ class Photometry:
                 print(progress_indicator, end='', flush=True)
                 sys.stdout.flush()
 
+        data_store |= {self.extra_header[k]: [self.extras[k][i] for i in self.indexing]
+                       for k in self.extra_header.keys()}
+        data_store |= {"indexing": self.indexing}
+
         if verbose:
             print('')
 
-        return ts.TimeSeries(time=apt.Time(self.epochs, format='jd'),
+        return ts.TimeSeries(time=apt.Time([self.epochs[i] for i in self.indexing], format='jd'),
                              data=data_store)
     
     def infos_available(self):

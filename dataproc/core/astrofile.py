@@ -715,12 +715,14 @@ class AstroFile(object):
         return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
     @_checkfilename
-    def getheaderval(self, *args, **kwargs):
+    def getheaderval(self, *args, single_in_list=False, **kwargs):
         """
         Get header value for each of the fields specified in args.
 
         Parameters
         ----------
+        single_in_list: bool
+          returns a 1 element list if given one element.
         args : list, tuple
           One string per argument, or a list as a single argument:
           getheaderval(field1,field2,...) or
@@ -772,7 +774,7 @@ class AstroFile(object):
             else:
                 ret.append(None)
 
-        if len(ret) == 1:
+        if len(ret) == 1 and not single_in_list:
             return ret[0]
         else:
             return ret
@@ -906,27 +908,27 @@ class AstroFile(object):
     @_checksortkey
     def __lt__(self, other):
         return self.getheaderval(self.sortkey) < \
-               other.getheaderval(self.sortkey)
+            other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __le__(self, other):
         return self.getheaderval(self.sortkey) <= \
-               other.getheaderval(self.sortkey)
+            other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __gt__(self, other):
         return self.getheaderval(self.sortkey) > \
-               other.getheaderval(self.sortkey)
+            other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __eq__(self, other):
         return self.getheaderval(self.sortkey) == \
-               other.getheaderval(self.sortkey)
+            other.getheaderval(self.sortkey)
 
     @_checksortkey
     def __ne__(self, other):
         return self.getheaderval(self.sortkey) != \
-               other.getheaderval(self.sortkey)
+            other.getheaderval(self.sortkey)
 
     # Object Arithmetic
     @_numerize_other
@@ -973,7 +975,7 @@ class AstroFile(object):
         return len(self.reader(skip_calib=True))
 
     def __bool__(self):
-        return self.type is not None and len(self.reader(skip_calib=True)) > 0
+        return self.type is not None
 
     @property
     def shape(self):

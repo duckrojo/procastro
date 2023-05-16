@@ -202,7 +202,7 @@ class AstroDir(object):
 
     def sort(self, *args, **kwargs):
         """
-        Sorts AstroFile instances depending on the given header fields.
+        Sorts AstroFile instances inplace depending on the given header fields.
         After sorting the contents the method will return a pointer to this
         AstroDir.
 
@@ -238,7 +238,7 @@ class AstroDir(object):
         for f in self:
             f.add_sortkey(hdrfld)
         self.files.sort()
-        return self
+        return None
 
     def __repr__(self):
         return "<AstroFile container: {0:s}>".format(self.files.__repr__(),)
@@ -268,6 +268,15 @@ class AstroDir(object):
     #     if isinstance(other, )
 
     def __getitem__(self, item):
+
+        # if an integer, return that astrofile
+        if isinstance(item, (int, np.integer)):
+            return self.files[item]  # .__getitem__(item)
+
+        # if string, return as getheaderval
+        if isinstance(item, str):
+            return self.getheaderval(item)
+
         # imitate indexing on boolean array as in scipy.
         if isinstance(item, np.ndarray):
             if item.dtype == 'bool':
@@ -284,16 +293,17 @@ class AstroDir(object):
 
                 return ad
 
-        # if string, return as getheaderval
-        if isinstance(item, str):
-            return self.getheaderval(item)
-
         # if slice, return a new astrodir
-        elif isinstance(item, slice):
+        if isinstance(item, slice):
             return AstroDir(self.files.__getitem__(item))
 
-        # otherwise, use a list
-        return self.files[item]  # .__getitem__(item)
+        # else asume list of integers, then return an Astrodir with those indices
+        try:
+            return AstroDir([self[i] for i in item])
+        except TypeError:
+            pass
+
+        raise TypeError(f"item ({item}) is not of a valid type: np.array of booleans, int, str, iterable of ints")
 
     def __len__(self):
         return len(self.files)
