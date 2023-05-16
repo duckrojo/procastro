@@ -846,7 +846,7 @@ class AstroDir(object):
             return ret[0]
         # todo: return AstroFile
 
-    def jd_from_ut(self, target='jd', source='date-obs'):
+    def jd_from_ut(self, target='jd', source='date-obs', return_only_clean=False):
         """
         Add jd in header's cache to keyword 'target' using ut on keyword
         'source'
@@ -862,10 +862,17 @@ class AstroDir(object):
         --------
         dataproc.AstroFile.jd_from_ut : For individual file implementation
         """
-        for af in self:
-            af.jd_from_ut(target, source)
+        corrupt = np.ones(len(self)) == 0
+        for i, af in enumerate(self):
+            try:
+                af.jd_from_ut(target, source)
+            except ValueError as msg:
+                if not return_only_clean:
+                    raise ValueError("You might want to try return_only_clean=True in jd_from_ut()\n"+str(msg))
+                io_logger.info(f"Removing file {af.filename} with corrupt timestamp ({af[source]})")
+                corrupt[i] = True
 
-        return self
+        return self[~corrupt]
 
     def merger(self, start=1, end=None, verbose=None):
         """
