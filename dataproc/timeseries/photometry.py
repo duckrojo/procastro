@@ -1045,7 +1045,7 @@ class Photometry:
                                          f" ha{'ve' if n_mask > 1 else 's'}"
                                          f" counts {lab} the threshold ({thresh})"
                                          f" on frame{'s' if n_mask > 1 else ''}"
-                                         f" {', '.join(self.indexing[mask].astype(str))} "
+                                         f" {', '.join(np.array(self.indexing)[mask].astype(str))} "
                                         )
 
             # for data, center_xy, non_ignore_idx, epochs_idx \
