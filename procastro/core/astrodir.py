@@ -359,7 +359,7 @@ class AstroDir(object):
 
         Returns
         -------
-        dataproc.AstroDir
+        procastro.AstroDir
             Copy containing the files which were not discarded.
 
         See Also

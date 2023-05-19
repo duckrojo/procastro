@@ -147,7 +147,7 @@ def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
 
     Parameters
     ----------
-    sci_files: dataproc.AstroDir
+    sci_files: procastro.AstroDir
     frame: frame To calibrate, first frame by default
     mdark: array_like, dict or AstroFile, optional
         Master dark/bias
@@ -191,7 +191,7 @@ def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
 
     Parameters
     ----------
-    sci_files : dataproc.AstroDir
+    sci_files : procastro.AstroDir
     target_coords_xy: List
         List containing each target coordinates.
         ([[t1x, t1y], [t2x, t2y], ...])
@@ -548,7 +548,7 @@ class Photometry:
 
     Parameters
     ----------
-    sci_files : dataproc.AstroDir
+    sci_files : procastro.AstroDir
     target_coords_xy : List
         List containing each target coordinates.
         ([[t1x, t1y], [t2x, t2y], ...])

@@ -314,7 +314,7 @@ class AstroFile(object):
 
     Parameters
     ----------
-    filename : str or dataproc.AstroFile
+    filename : str or procastro.AstroFile
         If AstroFile, then it does not duplicate the information,
         but uses that object directly.
     mbias : dict indexed by exposure time, array or AstroFile, optional
