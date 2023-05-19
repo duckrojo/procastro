@@ -14,7 +14,7 @@ requirements = ["wheel", "sphinx", "astropy", "astroquery", "numpy", "scipy", "m
 
 # Setup script
 setup(
-    name="dataproc",     # Distribution name
+    name="procastro",     # Distribution name
     version="0.0.8",           # Version name, remember to always update the version number after each release, otherwise an error will occur during deployment 
     author="Patricio Rojo",
     author_email="pato@das.uchile.cl",

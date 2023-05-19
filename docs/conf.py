@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'dataproc'
+project = 'procastro'
 copyright = '2020, Patricio Rojo'
 author = 'Patricio Rojo'
 
