@@ -23,7 +23,6 @@
 Data proc docstring
 """
 from . import astro
-from . import misc
 from . import core
 from .core import *
 #from . import timeseries
@@ -31,7 +30,7 @@ from .core import *
 import logging as _log
 
 
-__all__ = ['astro', 'dplogger', 'misc']
+__all__ = ['astro', 'dplogger']
 __all__ += core.__all__
 
 dplogger = _log.getLogger('procastro')
@@ -40,21 +39,4 @@ _formatter = _log.Formatter('%(name)s (%(module)s.%(funcName)s) %(levelname)s: %
 _ch.setFormatter(_formatter)
 dplogger.addHandler(_ch)
 
-#causes conflict on pycharms the following
-#core = reload(core)
-
-# import types
-# __import__('core', globals(), locals(), [], 1)
-
-# for v in dir(core):
-#     if v[0] == '_' or isinstance(getattr(core,v), types.ModuleType):
-#         continue
-#     globals()[v] = getattr(core, v)
-
-# del core
-# del types
-# del v
-
-__version__ = "0.07"
-
-#from core import *
+__version__ = "0.0.9"
