@@ -1,8 +1,8 @@
 
-dataproc
-========
+procastro
+=========
 
 .. toctree::
    :maxdepth: 4
 
-   dataproc
+   procastro

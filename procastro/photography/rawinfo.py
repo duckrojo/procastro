@@ -84,7 +84,7 @@ Container of image information class
         return len(self._raw_files)
 
     def __repr__(self):
-        return f"<dataproc.photography: {len(self)} RawFiles>"
+        return f"<procastro.photography: {len(self)} RawFiles>"
 
     def __getitem__(self, item):
         if isinstance(item, int):

@@ -1,53 +1,53 @@
-dataproc.core package
+procastro.core package
 =====================
 
 Submodules
 ----------
 
-dataproc.core.astrodir module
+procastro.core.astrodir module
 -----------------------------
 
-.. automodule:: dataproc.core.astrodir
+.. automodule:: procastro.core.astrodir
    :members:
    :undoc-members:
    :show-inheritance:
 
-dataproc.core.astrofile module
+procastro.core.astrofile module
 ------------------------------
 
-.. automodule:: dataproc.core.astrofile
+.. automodule:: procastro.core.astrofile
    :members:
    :undoc-members:
    :show-inheritance:
 
-dataproc.core.misc\_arr module
+procastro.core.misc\_arr module
 ------------------------------
 
-.. automodule:: dataproc.core.misc_arr
+.. automodule:: procastro.core.misc_arr
    :members:
    :undoc-members:
    :show-inheritance:
 
-dataproc.core.misc\_general module
+procastro.core.misc\_general module
 ----------------------------------
 
-.. automodule:: dataproc.core.misc_general
+.. automodule:: procastro.core.misc_general
    :members:
    :undoc-members:
    :show-inheritance:
 
-dataproc.core.misc\_graph module
+procastro.core.misc\_graph module
 --------------------------------
 
-.. automodule:: dataproc.core.misc_graph
+.. automodule:: procastro.core.misc_graph
    :members:
    :undoc-members:
    :show-inheritance:
 
-dataproc.core.misc\_math module
+procastro.core.misc\_math module
 -------------------------------
 
-.. automodule:: dataproc.core.misc_math
+.. automodule:: procastro.core.misc_math
    :members:
    :undoc-members:
    :show-inheritance:
@@ -56,7 +56,7 @@ dataproc.core.misc\_math module
 Module contents
 ---------------
 
-.. automodule:: dataproc.core
+.. automodule:: procastro.core
    :members:
    :undoc-members:
    :show-inheritance:

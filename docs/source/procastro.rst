@@ -1,4 +1,4 @@
-dataproc package
+procastro package
 ================
 
 Subpackages
@@ -6,15 +6,15 @@ Subpackages
 
 .. toctree::
 
-   dataproc.astro
-   dataproc.core
-   dataproc.obsrv
-   dataproc.timeseries
+   procastro.astro
+   procastro.core
+   procastro.obsrv
+   procastro.timeseries
 
 Module contents
 ---------------
 
-.. automodule:: dataproc
+.. automodule:: procastro
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,13 +1,13 @@
-dataproc.astro package
+procastro.astro package
 ======================
 
 Submodules
 ----------
 
-dataproc.astro.astro module
+procastro.astro.astro module
 ---------------------------
 
-.. automodule:: dataproc.astro.astro
+.. automodule:: procastro.astro.astro
    :members:
    :undoc-members:
    :show-inheritance:
@@ -16,7 +16,7 @@ dataproc.astro.astro module
 Module contents
 ---------------
 
-.. automodule:: dataproc.astro
+.. automodule:: procastro.astro
    :members:
    :undoc-members:
    :show-inheritance:

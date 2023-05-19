@@ -1,21 +1,21 @@
-dataproc.obsrv package
+procastro.obsrv package
 ======================
 
 Submodules
 ----------
 
-dataproc.obsrv.obscalc module
+procastro.obsrv.obscalc module
 -----------------------------
 
-.. automodule:: dataproc.obsrv.obscalc
+.. automodule:: procastro.obsrv.obscalc
    :members:
    :undoc-members:
    :show-inheritance:
 
-dataproc.obsrv.obsrv module
+procastro.obsrv.obsrv module
 ---------------------------
 
-.. automodule:: dataproc.obsrv.obsrv
+.. automodule:: procastro.obsrv.obsrv
    :members:
    :undoc-members:
    :show-inheritance:
@@ -24,7 +24,7 @@ dataproc.obsrv.obsrv module
 Module contents
 ---------------
 
-.. automodule:: dataproc.obsrv
+.. automodule:: procastro.obsrv
    :members:
    :undoc-members:
    :show-inheritance:
