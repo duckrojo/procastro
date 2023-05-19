@@ -1,10 +1,10 @@
-# dataproc
+# procastro
 
 ## Installation
 
 You can download the current development version by cloning this repository
 
-	$ git clone https://github.com/duckrojo/dataproc 
+	$ git clone https://github.com/duckrojo/procastro 
 
 ## Testing
 
@@ -22,7 +22,7 @@ docs directory
 
 ## Dependencies
 
-dataproc supports python version 3.6 or higher, it currently depends on the following libraries: 
+procastro supports python version 3.6 or higher, it currently depends on the following libraries: 
 
 * astropy 
 * numpy 
