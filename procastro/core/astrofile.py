@@ -24,6 +24,8 @@ import logging
 from functools import wraps as _wraps
 import warnings
 import re
+from pathlib import PurePath, Path
+
 import procastro as pa
 import astropy.time as apt
 import numpy as np
@@ -121,8 +123,7 @@ def _fits_writer(filename, data, header=None):
 def _fits_verify(filename, ffilter=None, hdu=0):
     """
     Verifies that the given file has the expected extensions of fit files
-    Accepted extensions: 'fits', 'fit', 'ftsc', 'fts', 'fitsgz',
-                         'fitgz', 'fitszip', 'fitzip'
+    Accepted extensions: 'fits', 'fit', 'ftsc', 'fts' with or without the 'gz' compression
 
     Parameters
     ----------
@@ -137,14 +138,14 @@ def _fits_verify(filename, ffilter=None, hdu=0):
     -------
     bool
     """
-    if not isinstance(filename, str):
+    filename = Path(filename)
+    if not isinstance(filename, PurePath):
         return False
 
-    single_extension = filename.lower().split('.')[-1] in ['fits', 'fit',
-                                                           'ftsc', 'fts']
-    double_extension = ''.join(filename.lower()
-                               .split('.')[-2:]) in ['fitsgz', 'fitgz', 'ftsgz']
-    if single_extension or double_extension:
+    suffixes = filename.suffixes
+    if suffixes[-1] in ['.gz']:
+        suffixes.pop()
+    if suffixes[-1].lower() in ['.fits', '.fit', '.ftsc', '.fts']:
         if ffilter is None:
             return True
         h = pf.getheader(filename, hdu)

@@ -1,306 +1,411 @@
-import matplotlib.pyplot as plt
+import os.path
+from pathlib import Path
+
 import matplotlib
 from matplotlib import patches
+from matplotlib.backend_bases import KeyEvent
 import numpy as np
 import procastro as pa
+from functools import wraps as _wraps
+import configparser as cp
+import re
 
-from typing import Optional, Tuple, Union
+from typing import Optional, Callable, Any
+TwoValues = tuple[float, float]
+FunctionArgs = tuple[Callable, list[Any]]
+FunctionArgsKw = tuple[Callable, list[Any], dict]
 
 
-class _imshowz_binding:
-    def set_radial_props(self,
-                         color: str = 'red',
-                         alpha: float = 0.5,
-                         stamp_rad: int = 0,
-                         stamp_percent: int = 5,
-                         ):
-        """
+def _to_str_tuple(value):
+    value = re.sub(' *, *', ',', value)
+    if ',' in value:
+        return value.split(',')
 
-        Parameters
-        ----------
-        alpha
-        color: str or (str, ...)
-           colors of circle's mark if more marks than options, keeps repeating last one
-        stamp_rad: int
-           stamp radius to compute the centroid, if zero then compute from  stamp_percent
-        stamp_percent: int
-           size of stamp in percent of the whole image array, only use if stamp_rad==0
-        """
-        self._radial_props['color'] = color
-        self._radial_props['alpha'] = alpha
+    return value,
 
-        if stamp_rad == 0:
-            xx, yy = self.image.shape
-            stamp_rad = int(stamp_percent * max(xx, yy) / 200)
-        self._radial_props['stamp_rad'] = stamp_rad
 
-    def set_projection_props(self,
-                             length_percent: int = 15,  # size of circle' radius in percent
-                             length_pixels: int = 0,  # size of circle' radius in percent
-                             color: str = 'red',
-                             alpha: float = 0.5,
-                             combine_op: str = 'sum',
-                             width: int = 1,
+def _pre_process(method):
+    """Apply pre-process to data, this allows general treatment of 3D, 2D functions and others"""
+    # pre_process: Union[None,
+    #                    Callable, tuple[Callable],
+    #                    FunctionArgs, FunctionArgsKw] = None,  # This is fully processed
+    #                                                           # by the decorator
+    @_wraps(method)
+    def wrapper(instance, data, *args, **kwargs):
+        pre_process = kwargs.pop('pre_process')
+        if pre_process is None:
+            pass
+        elif isinstance(pre_process, tuple):
+            pp_args = []
+            pp_kwargs = {}
+            if len(pre_process) > 1:
+                pp_args = pre_process[1]
+                if len(pre_process) == 3:
+                    pp_kwargs = pre_process[2]
+                elif len(pre_process) > 3:
+                    raise TypeError(f"pre_process keyword tuple ({pre_process}) has too many components"
+                                    f"Expected: (Callable), (Callable, List), or (Callable, List, Dict)")
+            data = pre_process[0](data, *pp_args, **pp_kwargs)
+        else:
+            raise TypeError(f"pre_process keyword type {pre_process} is not correct. "
+                            f"Expected: None, Callable, (Callable), (Callable, List), or (Callable, List, Dict)")
+        return method(instance, data, *args, **kwargs)
+
+    return wrapper
+
+
+class BindingsFunctions:
+    def __init__(self):
+        self._config_file = None
+        self._key_options = None
+        self._axes_aux = None
+        self._axes_2d = None
+        self._data_2d = None
+
+        self._config = cp.ConfigParser()
+        self._temporal_artist = []
+        self._mark_patches = []
+        self._cid = {}
+
+        self._stamp_mark = None
+        self._stamp_radial = None
+        self._projection_length = None
+
+    def set_axes_2d(self, ax):
+        self._axes_2d = ax
+
+    def set_axes_aux(self, ax):
+        self._axes_aux = ax
+
+    def set_data_2d(self, data):
+        self._data_2d = data
+        self._stamp_mark = self._rad_from_pix_percent('mark')
+        self._stamp_radial = self._rad_from_pix_percent('radial_profile')
+        self._projection_length = self._rad_from_pix_percent('projection', prop='length')
+
+    def _rad_from_pix_percent(self, param, prop='stamp'):
+        if self._config[param].getint(f'{prop}_pix') == 0:
+            yy, xx = self._data_2d.shape
+            return int(self._config[param].getint(f'{prop}_percent') * max(xx, yy) / 200)
+        return self._config[param].getint(f'{prop}_pix')
+
+    def _mark_temporal_in_2d(self,
+                             props,
+                             mark=None,
+                             box=None,
                              ):
-        """
+        if self._axes_2d is None:
+            return
+        if self._temporal_artist:
+            while True:
+                try:
+                    t = self._temporal_artist.pop()
+                except IndexError:
+                    break
+                t.remove()
+        if mark is not None:
+            self._temporal_artist.extend(self._axes_2d.plot(mark[0], mark[1], 'x',
+                                                            color=props['mark_color'],
+                                                            alpha=props.getfloat('mark_alpha'),
+                                                            )
+                                         )
+        if box is not None:
+            self._temporal_artist.append(self._axes_2d.fill_between(box[0:2], [box[2]] * 2, y2=[box[3]] * 2,
+                                                                    color=props['mark_color'],
+                                                                    alpha=props.getfloat('mark_alpha'),
+                                                                    )
+                                         )
 
-        Parameters
-        ----------
-        alpha: float
-           transparency
-        length_percent: int
-           length of projection in percentage
-        length_pixels: int
-           length of projection in pixels. If zero, then use length_percent
-        width: int
-           width of projection in pixels. values are cobined with combine_op
-        color: str
-           colors of projection mark
-        combine_op: str
-           operations for combination along width
-        """
-        self._projection_props['color'] = color
-        self._projection_props['width'] = width
-        self._projection_props['alpha'] = alpha
-        self._projection_props['combine_op'] = combine_op
-        if length_pixels == 0:
-            xx, yy = self.image.shape
-            length_pixels = int(length_percent * max(xx, yy) / 200)
-        self._projection_props['length'] = length_pixels
+        self._axes_2d.figure.canvas.draw_idle()
 
-    def set_centroid_props(self,
-                           radius: int = 2,  # size of circle' radius in percent
-                           color: Union[str, Tuple[str, ...]] = ('black', 'red'),
-                           alpha: float = 0.3,  # alpha of mark
-                           rounding: int = 1,  # number of decimals for rounding of mark coordinates
-                           stamp_rad: int = 0,
-                           stamp_percent: int = 5,
+    def _load_config(self,
+                     file: Optional[str] = None,
+                     reset: bool = False):
+        if file is not None:
+            file = Path(file).expanduser()
+        if file is None or not file.exists() or reset:
+            self._config.read(os.path.dirname(__file__) + '/interactive.cfg')
+            print("Configuration file not found or forced reset: loaded factory defaults")
+            if file is not None and not file.exists():
+                print(f"  * first time use detected, saving config to allow easy user edit *")
+                self._save_config(file)
+        else:
+            self._config.read(file)
+            print(f"Loaded configuration from: {'factory defaults' if file is None else file}")
+
+    def _save_config(self,
+                     file: str,
+                     ):
+        file = Path(file).expanduser()
+        with open(file, 'w') as configfile:
+            self._config.write(configfile)
+        print(f"Saved configuration to: {file}")
+
+    ############################
+    # start-end interactive mode
+    #
+    ############################
+
+    def disconnect(self):
+        print("... exiting interactive mode")
+        self._axes_2d.figure.canvas.stop_event_loop()
+        for cid in self._cid.values():
+            self._axes_2d.figure.canvas.mpl_disconnect(cid)
+
+    def connect(self, axes_2d, axes_aux):
+        self._axes_2d = axes_2d
+        self._axes_aux = axes_aux
+        self._cid['key_press'] = axes_2d.figure.canvas.mpl_connect('key_press_event', self._on_key_press)
+        axes_2d.figure.canvas.draw_idle()
+        axes_aux.figure.show()
+
+        print("Entering interactive mode ('?' for help)")
+        axes_2d.figure.canvas.start_event_loop()
+
+    def _on_key_press(self, event):
+        self._options_choose(event)
+
+    ############################
+    # Callable functions
+    #
+    ############################
+
+    def plot_radial_from_2d(self,
+                            event,
+                            recenter: bool = True,
+                            ):
+        """"Plot radial profile after optional recenter"""
+        cxy = (event.xdata, event.ydata)
+        props = self._config['radial_profile']
+
+        # prepare data
+        rpx, rpy, cxy = pa.radial_profile(self._data_2d, cnt_xy=cxy,
+                                          stamp_rad=self._stamp_radial,
+                                          recenter=recenter)
+        # plot data
+        self._axes_aux.cla()
+        self._axes_aux.plot(rpx, rpy, props['marker'],
+                            color=props['color'], alpha=props.getfloat('alpha'))
+        pa.set_plot_props(self._axes_aux,
+                          title="radial profile",
+                          xlabel="distance to center",
+                          ylabel=f'center at ({cxy[0]:.1f}, {cxy[1]:.1f})')
+        self._axes_aux.figure.canvas.draw_idle()
+
+        # mark temporal
+        self._mark_temporal_in_2d(props, mark=cxy)
+
+    def plot_vprojection_from_2d(self, event):
+        cxy = (event.xdata, event.ydata)
+        props = self._config['projection']
+        self.plot_projection_from_2d(cxy[0], cxy[1],
+                                     props.getint('width'),
+                                     self._projection_length,
+                                     props['combine_op'],
+                                     1)
+
+    def plot_hprojection_from_2d(self, event):
+        cxy = (event.xdata, event.ydata)
+        props = self._config['projection']
+        self.plot_projection_from_2d(cxy[0], cxy[1],
+                                     self._projection_length,
+                                     props.getint('width'),
+                                     props['combine_op'],
+                                     0)
+
+    def plot_projection_from_2d(self, x, y, lx, ly, op, op_row):
+        props = self._config['projection']
+        labels = ['horizontal', 'vertical']
+        proj_label = ['column', 'row']
+
+        x = int(x) - lx//2
+        y = int(y) - ly//2
+        if op_row == 0:
+            index = np.arange(x, x+lx)
+            width = ly
+        else:
+            index = np.arange(y, y+ly)
+            width = lx
+        region = self._data_2d[y:y+ly, x:x+lx]
+
+        projection = getattr(region, op)(axis=op_row)
+        if width > 1:
+            ylabel = f"{op} of {width} {proj_label[1-op_row]}s around {x if op_row else y:d}"
+        else:
+            ylabel = f"{'column' if op_row else 'row'}  {x if op_row else y:d}"
+        self._axes_aux.cla()
+        self._axes_aux.plot(index, projection, props['marker'],
+                            color=props['color'], alpha=props.getfloat('alpha'),
+                            )
+        pa.set_plot_props(self._axes_aux,
+                          title=f"{labels[op_row]} projection",
+                          xlabel=f"{proj_label[op_row]}",
+                          ylabel=ylabel)
+
+        self._mark_temporal_in_2d(props,
+                                  box=[x, x+lx, y, y+ly],
+                                  )
+
+    def return_mark_from_2d(self, event, marks=None, recenter=True, decimals=None):
+        cxy = (event.xdata, event.ydata)
+        props = self._config['mark']
+
+        yy, xx = self._data_2d.shape
+        if recenter:
+            cxy = pa.subcentroid_xy(self._data_2d, cxy, self._stamp_mark)
+
+        radius = props.getint('radius') * max(xx, yy) / 100
+        if decimals is None:
+            decimals = props.getint('rounding_user')
+
+        xy = (round(cxy[0], decimals), round(cxy[1], decimals))
+
+        colors = _to_str_tuple(props['color'])
+
+        idx = len(getattr(self, marks))
+        color = colors[idx] if idx < len(colors) else colors[-1]
+
+        circ = patches.Circle(xy,
+                              radius=radius,
+                              alpha=props.getfloat('mark_alpha'),
+                              color=color)
+        self._mark_patches.append(circ)
+        self._axes_2d.add_patch(circ)
+        self._axes_2d.figure.canvas.draw_idle()
+
+        return xy
+
+    # noinspection PyUnusedLocal
+    def delete_marks_from_2d(self,
+                             event: KeyEvent,
+                             field: str = ''):
+        for p in self._mark_patches:
+            p.remove()
+        setattr(self, field, [])
+        self._mark_patches = []
+        self._axes_2d.figure.canvas.draw_idle()
+
+    # noinspection PyUnusedLocal
+    def vertical_flip_2d(self,
+                         event: KeyEvent,
+                         ):
+        self._axes_2d.set_ylim(list(self._axes_2d.get_ylim())[::-1])
+        self._axes_2d.figure.canvas.draw_idle()
+
+    # noinspection PyUnusedLocal
+    def horizontal_flip_2d(self,
+                           event: KeyEvent,
                            ):
-        """
+        self._axes_2d.set_xlim(list(self._axes_2d.get_xlim())[::-1])
+        self._axes_2d.figure.canvas.draw_idle()
 
-        Parameters
-        ----------
-        radius: int
-           size of circle' radius in percent
-        color: str or (str, ...)
-           colors of circle's mark if more marks than options, keeps repeating last one
-        alpha: float
-           transparency
-        rounding: int
-           number of decimals for rounding of mark coordinates
-        stamp_rad: int
-           stamp radius to compute the centroid, if zero then compute from  stamp_percent
-        stamp_percent: int
-           size of stamp in percent of the whole image array, only use if stamp_rad==0
-        """
-        self._centroid_props['radius'] = radius
-        if isinstance(color, str):
-            color = (color,)
-        self._centroid_props['color'] = color
-        self._centroid_props['alpha'] = alpha
-        self._centroid_props['rounding'] = rounding
+    # noinspection PyUnusedLocal
+    def terminate(self,
+                  event: KeyEvent):
+        self.disconnect()
 
-        if stamp_rad == 0:
-            xx, yy = self.image.shape
-            stamp_rad = int(stamp_percent * max(xx, yy) / 200)
-        self._centroid_props['stamp_rad'] = stamp_rad
+    # noinspection PyUnusedLocal
+    def save_config(self,
+                    event: KeyEvent,
+                    file: str,
+                    ):
+        self._save_config(file)
 
-    def set_mark_props(self,
-                       radius: int = 2,  # size of circle' radius in percent
-                       color: Union[str, Tuple[str, ...]] = ('black', 'red'),  # colors of circle's mark if more marks than options, keeps repeating last one
-                       alpha: float = 0.3,  # alpha of mark
-                       rounding: int = 0,   # number of decimals for rounding of mark coordinates
-                       ):
-        """
+    # noinspection PyUnusedLocal
+    def load_config(self,
+                    event: KeyEvent,
+                    file: Optional[str] = None,
+                    reset: bool = False):
+        self._load_config(file=file, reset=reset)
 
-        Parameters
-        ----------
-        radius: int
-           size of circle' radius in percent
-        color: str or (str, ...)
-           colors of circle's mark if more marks than options, keeps repeating last one
-        alpha: float
-           transparency
-        rounding: int
-           number of decimals for rounding of mark coordinates
-        """
-        self._mark_props['radius'] = radius
-        if isinstance(color, str):
-            color = (color, )
-        self._mark_props['color'] = color
-        self._mark_props['alpha'] = alpha
-        self._mark_props['rounding'] = rounding
+    ####################
+    # Functions for handling hotkey options
+    #
+    #####################
+
+    def options_add(self, key, doc, fcn, kwargs, ret):
+        if key in self._key_options.keys():
+            raise ValueError(f"Key '{key}' has already been added for '{doc}', cannot add it for '{doc}'")
+        self._key_options[key] = (doc, fcn, kwargs, ret)
+
+    # noinspection PyUnusedLocal
+    def _options_help(self,
+                      event: KeyEvent):
+        print("Available hotkeys:")
+        for key, (doc, fcn, kwargs, ret) in self._key_options.items():
+            print(f"+ {key}: {doc}")
+
+    def _options_choose(self,
+                        event: KeyEvent):
+        for key, (doc, fcn, kwargs, ret) in self._key_options.items():
+            if event.key == key:
+                if ret is None:
+                    getattr(self, fcn)(event, **kwargs)
+                else:
+                    getattr(self, ret).append(getattr(self, fcn)(event, **kwargs))
+
+    def options_reset_config(self, save_config=None, no_config=False):
+        if not no_config:
+            self._config_file = save_config
+            self._load_config(self._config_file)
+
+        self._key_options = {}
+
+        self.options_add('?', "Hotkey help", "_options_help", {}, None)
+
+        if save_config is not None:
+            self.options_add('L', 'load saved configuration', 'load_config',
+                             {'file': save_config}, None)
+            self.options_add('S', 'save configuration', 'save_config',
+                             {'file': save_config}, None)
+            self.options_add('F', 'load default configuration from factory', 'load_config',
+                             {'file': save_config, 'reset': True}, None)
+
+
+class BindingsImshowz(BindingsFunctions):
 
     def __init__(self,
                  image: np.ndarray,
                  axes: matplotlib.figure.Figure,
-                 mark_props: Optional[dict] = None,
-                 centroid_props: Optional[dict] = None,
-                 radial_props: Optional[dict] = None,
-                 projection_props: Optional[dict] = None,
+                 config_file: str = "~/.imshowzrc",
                  ):
+        super(BindingsImshowz, self).__init__()
+
+        self._marks_xy = []
+
+        self.options_reset_config(save_config=config_file)
+
+        self.options_add('r', 'radial prbofile', 'plot_radial_from_2d',
+                         {}, None)
+        self.options_add('h', 'horizontal projection', 'plot_hprojection_from_2d',
+                         {}, None)
+        self.options_add('v', 'vertical projection', 'plot_vprojection_from_2d',
+                         {}, None)
+        self.options_add('m', 'mark a new position', 'return_mark_from_2d',
+                         {'recenter': False, 'marks': '_marks_xy',
+                          'decimals': self._config['mark'].getint('rounding_user'),
+                          },
+                         '_marks_xy')
+        self.options_add('c', 'mark a new position after centering', 'return_mark_from_2d',
+                         {'recenter': True, 'marks': '_marks_xy',
+                          'decimals': self._config['mark'].getint('rounding_centroid'),
+                          },
+                         '_marks_xy')
+        self.options_add('d', 'delete all marks', 'delete_marks_from_2d',
+                         {'field': '_marks_xy'},
+                         None)
+        self.options_add('x', 'flip X-axis', 'horizontal_flip_2d',
+                         {}, None)
+        self.options_add('y', 'flip Y-axis', 'vertical_flip_2d',
+                         {}, None)
+        self.options_add('q', 'terminate interactive imshow', 'terminate',
+                         {}, None)
+
+        self.set_data_2d(image)
 
         f, ax = pa.figaxes()
-        self.ax_extra = ax
 
-        self.image = image
-        self.axes = axes
-        self.cid = {}
-        self.outs = {'marks_xy': [],
-                     }
-        self._temporal_artist = None
+        self.connect(axes, ax)
 
-        self._mark_props = {}
-        self._centroid_props = {}
-        self._radial_props = {}
-        self._projection_props = {}
-
-        if mark_props is None:
-            mark_props = {}
-        if centroid_props is None:
-            centroid_props = {}
-        if radial_props is None:
-            radial_props = {}
-        if projection_props is None:
-            projection_props = {}
-
-        self.set_mark_props(**mark_props)
-        self.set_centroid_props(**centroid_props)
-        self.set_radial_props(**radial_props)
-        self.set_projection_props(**projection_props)
-
-        self.connect()
-        self.axes.figure.canvas.draw_idle()
-        self.axes.figure.show()
-        print("Entering interactive mode ('?' for help)")
-        self.axes.figure.canvas.start_event_loop()
-
-    def disconnect(self):
-        print ("... exiting interactive mode")
-        self.axes.figure.canvas.stop_event_loop()
-        for cid in self.cid.values():
-            self.axes.figure.canvas.mpl_disconnect(cid)
-
-    def connect(self):
-        self.cid['key_press'] = self.axes.figure.canvas.mpl_connect('key_press_event', self._on_key_press)
-
-    def _on_key_press(self, event):
-        lims = self.axes.get_xlim()
-        dx = lims[1] - lims[0]
-        lims = self.axes.get_ylim()
-        dy = lims[1] - lims[0]
-
-        canvas = self.axes.figure.canvas
-
-        def store_draw_mark(x, y, props):
-            radius = props['radius'] * max(dx, dy) / 100
-            colors = props['color']
-            alpha = props['alpha']
-            decimals = props['rounding']
-
-            xy = (round(x, decimals), round(y, decimals))
-
-            n_marks = len(self.outs['marks_xy'])
-            color = colors[n_marks] if n_marks < len(colors) else colors[-1]
-            self.outs['marks_xy'].append(xy)
-
-            circ = patches.Circle(xy, radius=radius, alpha=alpha, color=color)
-            self.axes.add_patch(circ)
-            canvas.draw_idle()
-
-        def draw_projection(x, y, lx, ly, op, op_row):
-            x = int(x) - lx//2
-            y = int(y) - ly//2
-            if op_row == 0:
-                index = np.arange(x, x+lx)
-                width = ly
-            else:
-                index = np.arange(y, y+ly)
-                width = lx
-            region = self.image[y:y+ly, x:x+lx]
-
-            projection = getattr(region, op)(axis=op_row)
-            if width > 1:
-                ylabel = f"{op} of {width} {'columns' if op_row else 'rows'} around {x if op_row else y:d}"
-            else:
-                ylabel = f"{'column' if op_row else 'row'}  {x if op_row else y:d}"
-            self.ax_extra.cla()
-            self.ax_extra.plot(index, projection)
-            pa.set_plot_props(self.ax_extra,
-                              title=f"{'vertical' if op_row else 'horizontal'} projection",
-                              xlabel=f"{'row' if op_row else 'column'}",
-                              ylabel=ylabel)
-
-            if self._temporal_artist:
-                for tmp in self._temporal_artist:
-                    tmp.remove()
-            self._temporal_artist = self.axes.fill_between([x, x+lx], [y]*2, y2=[y+ly]*2,
-                                                           color=self._projection_props['color'],
-                                                           alpha=self._projection_props['alpha'],
-                                                           )
-            if not isinstance(self._temporal_artist, list):
-                self._temporal_artist = [self._temporal_artist]
-
-            self.axes.figure.canvas.draw_idle()
-
-        if event.key == 'r':   # plot radial profile
-            rpx, rpy, cxy = pa.radial_profile(self.image, cnt_xy=(event.xdata, event.ydata),
-                                              stamp_rad=self._radial_props['stamp_rad'],
-                                              recenter=True)
-            self.ax_extra.cla()
-            self.ax_extra.plot(rpx, rpy, 'x')
-            pa.set_plot_props(self.ax_extra, title="radial profile",
-                              xlabel="distance to center",
-                              ylabel=f'center at ({cxy[0]:.1f}, {cxy[1]:.1f})')
-            self.ax_extra.figure.show()
-            if self._temporal_artist:
-                for t in self._temporal_artist:
-                    t.remove()
-            self._temporal_artist = self.axes.plot(cxy[0], cxy[1], 'x',
-                                                   color=self._radial_props['color'],
-                                                   alpha=self._radial_props['alpha'],
-                                                   )
-            self.axes.figure.canvas.draw_idle()
-
-        if event.key == 'm':   # obtain data coordinates at mouse point
-            store_draw_mark(event.xdata, event.ydata, self._mark_props)
-        if event.key == 'c':  # obtain data coordinates at mouse point
-            stamp_rad = self._centroid_props['stamp_rad']
-            yy, xx = pa.subcentroid(self.image, (event.ydata, event.xdata), stamp_rad)
-            store_draw_mark(xx, yy, self._centroid_props)
-        if event.key == 'd':   # reset marks
-            for p in self.axes.patches:
-                p.remove()
-            self.outs['marks_xy'] = []
-            canvas.draw_idle()
-        if event.key == 'x':   # invert X
-            self.axes.set_xlim(list(self.axes.get_xlim())[::-1])
-            self.axes.figure.canvas.draw_idle()
-        if event.key == 'y':   # invert Y
-            self.axes.set_ylim(list(self.axes.get_ylim())[::-1])
-            self.axes.figure.canvas.draw_idle()
-        if event.key == 'h':   # project horizontally
-            draw_projection(event.xdata, event.ydata,
-                            self._projection_props['length'],
-                            self._projection_props['width'],
-                            self._projection_props['combine_op'], 0)
-        if event.key == 'v':   # project horizontally
-            draw_projection(event.xdata, event.ydata,
-                            self._projection_props['width'],
-                            self._projection_props['length'],
-                            self._projection_props['combine_op'], 1)
-        if event.key == 'q':
-            self.disconnect()
-
-        if event.key == '?':
-            print(f"'m'ark a new position"
-                  f"'c'entroid mark a new position"
-                  f"'d'elete the marks"
-                  f"'r'adial profile"
-                  f"'h'orizontal projection"
-                  f"'v'ertical projection"
-                  f"invert 'x' axis'"
-                  f"invert 'y' axis'"
-                  f"'q'uit the interactive mode"
-                  )
-
+    def get_marks(self):
+        return self._marks_xy

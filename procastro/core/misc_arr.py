@@ -21,7 +21,7 @@
 
 __all__ = ['sigmask', 'zscale', 'expandlims', 'axis_from_fits',
            'fluxacross', 'subarray',
-           'centroid', 'subcentroid', 'subcentroidxy',
+           'centroid', 'subcentroid', 'subcentroid_xy',
            'azimuth', 'radial', 'radial_profile',
            ]
 
@@ -151,7 +151,7 @@ def subcentroid(arr, cyx, stamprad, medsub=True, iters=1):
     return cy, cx
 
 
-def subcentroidxy(arr, cxy, stamprad, medsub=True, iters=1):
+def subcentroid_xy(arr, cxy, stamprad, medsub=True, iters=1):
     """
     Returns the centroid after a number of iterations, order by xy
 

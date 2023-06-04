@@ -34,10 +34,11 @@ import astropy.io.fits as pf
 import numpy as np
 from typing import Optional, Tuple, List, Union
 from collections.abc import Sequence
-from procastro.core.interactive_graphics import _imshowz_binding
+from procastro.core.interactive_graphics import BindingsImshowz
+from pathlib import Path, PurePath
 
 TwoValues = Tuple[float, float]
-
+FileCompat = Union[str, PurePath, 'pa.AstroFile']
 
 def fill_between(ax,
                  bottom=None, top=None,
@@ -232,7 +233,7 @@ def prep_data_plot(indata, **kwargs):
     return data
 
 
-def imshowz(data,
+def imshowz(data: FileCompat,
             axes=None,
             minmax=None, xlim=None, ylim=None,
             cxy=None, plot_rad=None,
@@ -371,10 +372,10 @@ def imshowz(data,
                }
     set_plot_props(ax, **kwargs)
 
-    outs = {'lims': [mn, mx]}
+    outs = {'vlims': [mn, mx]}
     if interactive:
-        handler = _imshowz_binding(data, ax)
-        outs['marks_xy'] = handler.outs['marks_xy']
+        handler = BindingsImshowz(data, ax)
+        outs['marks_xy'] = handler.get_marks()
         outs['handler'] = handler
 
     return outs
@@ -478,4 +479,4 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
 
 
 if __name__ == '__main__':
-    a = pa.imshowz('/home/raw/tramos//ctio09/20190827/20190827_043.fits.gz', interactive=True)
+    a = pa.imshowz(Path.home().joinpath('Documents', 'test.fits.gz'), interactive=True)
