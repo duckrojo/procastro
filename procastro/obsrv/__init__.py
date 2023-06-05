@@ -21,9 +21,9 @@
 
 from . import obsrv
 from .obsrv import *
-from .deprecated import available_at
-from procastro.obsrv.deprecated.available_at import *
+from . import nightly
+from .nightly import *
 
 __all__ = []
 __all__ += obsrv.__all__
-__all__ += available_at.__all__
+__all__ += nightly.__all__

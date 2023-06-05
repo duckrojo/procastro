@@ -19,6 +19,7 @@
 #
 
 import os.path
+from pathlib import Path
 
 import astropy.coordinates as apc
 import matplotlib.pyplot as plt
@@ -37,11 +38,12 @@ from typing import Union, Optional, Tuple
 
 TwoTuple = Tuple[float, float]
 
+__all__ = ['query_full_exoplanet_db', 'Nightly']
 
 def query_full_exoplanet_db(force_reload: bool = False,
                             reload_days: float = 7
                             ):
-    file = "exodb.pickle"
+    file = Path("~/.procastro.exodb.pickle").expanduser()
     if not force_reload and os.path.isfile(file):
         days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
         if days_since < reload_days:
