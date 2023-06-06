@@ -147,7 +147,7 @@ class AstroDir(object):
                               mflat_header=mflat_header)
 
         for f in files:
-            # Allows some of the files to keep their calibration
+            # Allows some files to keep their calibration
             if calib_force or not f.has_calib():  #
                 # AstroFile are created with an empty calib by default, which
                 # is overwritten here.
@@ -404,7 +404,7 @@ class AstroDir(object):
         Returns
         -------
         List of integers or tuples
-            Type depends if a single value or multiple tuples were given
+            Type depends on whether a single value or multiple tuples were given
 
         """
 
@@ -428,7 +428,7 @@ class AstroDir(object):
             pass
 
         warnings.resetwarnings()
-        return ret
+        return np.array(ret)
 
     def setheader(self, **kwargs):
         """
