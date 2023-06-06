@@ -1,3 +1,6 @@
+#[build-system]
+#build-backend = "flit_core.buildapi"
+#requires = ["flit_core >=3.8.0,<4"]
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
@@ -6,7 +9,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "procastro"
 authors = [
-  {name = "Patricio Rojo", email = ""},
+  {name = "Patricio Rojo", email = "pato@das.uchile.cl"},
 ]
 description = "framework to process astronomical data files"
 readme = "README.md"
@@ -15,6 +18,15 @@ keywords = ["astronomy", "data files"]
 license = {text = "BSD-3-Clause"}
 dependencies = ["sphinx", "astropy", "astroquery", "numpy", "scipy", "matplotlib", "exifread", "rawpy", "pandas"]
 dynamic = ['version']
+
+[tool.setuptools.packages.find]
+where = ["."]  # list of folders that contain the packages (["."] by default)
+include = ["procastro"]  # package names should match these glob patterns (["*"] by default)
+#exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
+#namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+
+#[tools.setuptools]
+#packages = ["procastro"]
 
 [tool.setuptools.dynamic]
 version = {attr = "procastro.__version__"}
