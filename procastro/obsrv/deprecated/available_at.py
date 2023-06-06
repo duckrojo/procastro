@@ -969,8 +969,8 @@ class AvailableAt:
         Plots the altitudes of the encountered exoplanet's stars for the given date with information about the
         observation
 
-         Parameters
-         ----------
+        Parameters
+        ----------
              precision : int
                 the number of altitudes points to plot between the start and the end of the stars' observation
              extend : bool , optional

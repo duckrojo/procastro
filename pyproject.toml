@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "procastro"
+authors = [
+  {name = "Patricio Rojo", email = ""},
+]
+description = "framework to process astronomical data files"
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["astronomy", "data files"]
+license = {text = "BSD-3-Clause"}
+dependencies = ["sphinx", "astropy", "astroquery", "numpy", "scipy", "matplotlib", "exifread", "rawpy", "pandas"]
+dynamic = ['version']
+
+[tool.setuptools.dynamic]
+version = {attr = "procastro.__version__"}
+
+[project.urls]
+"Homepage" = "https://github.com/duckrojo/procastro"
+"Bug Tracker" = "https://github.com/duckrojo/procastro/issues"

@@ -486,37 +486,19 @@ class AstroFile(object):
 
     def plot(self, *args, **kwargs):
         """
-        Generates a 1D plot based on a cross section of the current data.
+        Generates a 1D plot based on a cross-section of the current data.
 
-        Uses parameters from procastro.plot()
-        ---------
-        axes: int, plt.Figure, plt.Axes, optional
-        title: str, optional
-        xlim : tuple, optional
-            Section of the x-axis to plot
-        ylim : tuple, optional
-            Section of the y-axis to plot
-        ticks : bool, optional
-            Whether to display the ticks
-        colorbar: bool, optional
-            Wheteher to use a colorbar
-        hdu : int, optional
-            HDU to plot
-        rotate : int, optional
-        pos : int, optional
-        forcenew : bool, optional
-            Whether to create a new plot if no axis has been specified
+        Parameters
+        ----------
+        args: list
+            unnamed arguments passed to procastro.plot()
+        kwargs: dict
+            named arguments passed to procastro.plot()
 
         Returns
         -------
-        array_like, array_like
-            A copy of the data used and the 1D array used for the plot
 
-        See Also
-        --------
-        misc_graph.plot_accross
         """
-
         return pa.plot_accross(self.reader(), *args, **kwargs)
 
     def add_sortkey(self, key):
