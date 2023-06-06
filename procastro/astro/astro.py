@@ -239,9 +239,7 @@ def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
     ValueError
         If a data field does not match the specified format
     """
-    paths = [os.path.expanduser("~") + os.path.sep +'.transits',
-             os.path.expanduser("~") + os.path.sep.join(['', '.config', 'obsrv', 'transits']),
-             direc + os.path.sep + 'transits.txt',
+    paths = [pa.file_from_procastro_dir("transits.txt")
              ]
 
     tr_epoch = None
@@ -252,6 +250,7 @@ def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
             open_file = open(transit_filename)
 
             override = []
+            print(transit_filename)
             for line in open_file.readlines():
                 if line[0] == '#' or len(line) < 3:
                     continue

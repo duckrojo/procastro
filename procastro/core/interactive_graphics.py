@@ -2,7 +2,10 @@ import os.path
 from pathlib import Path
 
 import matplotlib
+matplotlib.rcParams['keymap.xscale'].remove('L')
+matplotlib.rcParams['keymap.quit'].remove('q')
 from matplotlib import patches
+from matplotlib import pyplot as plt
 from matplotlib.backend_bases import KeyEvent
 import numpy as np
 import procastro as pa
@@ -55,8 +58,9 @@ def _pre_process(method):
 
 
 class BindingsFunctions:
-    def __init__(self):
-        self._config_file = None
+    def __init__(self,
+                 config_file = "interactive.cfg"):
+        self._config_file = config_file
         self._key_options = None
         self._axes_aux = None
         self._axes_2d = None
@@ -119,24 +123,18 @@ class BindingsFunctions:
         self._axes_2d.figure.canvas.draw_idle()
 
     def _load_config(self,
-                     file: Optional[str] = None,
                      reset: bool = False):
-        if file is not None:
-            file = Path(file).expanduser()
-        if file is None or not file.exists() or reset:
-            self._config.read(os.path.dirname(__file__) + '/interactive.cfg')
-            print("Configuration file not found or forced reset: loaded factory defaults")
-            if file is not None and not file.exists():
-                print(f"  * first time use detected, saving config to allow easy user edit *")
-                self._save_config(file)
+        if reset:
+            self._config.read(pa.default_for_procastro_dir(self._config_file))
+            print("Forced reset: loaded factory defaults")
         else:
+            file = pa.file_from_procastro_dir(self._config_file)
             self._config.read(file)
-            print(f"Loaded configuration from: {'factory defaults' if file is None else file}")
+            print(f"Loaded configuration from: {file}")
 
     def _save_config(self,
-                     file: str,
                      ):
-        file = Path(file).expanduser()
+        file = pa.file_from_procastro_dir(self._config_file)
         with open(file, 'w') as configfile:
             self._config.write(configfile)
         print(f"Saved configuration to: {file}")
@@ -303,20 +301,20 @@ class BindingsFunctions:
     def terminate(self,
                   event: KeyEvent):
         self.disconnect()
+        plt.close(self._axes_aux.figure.number)
+        plt.close(self._axes_2d.figure.number)
 
     # noinspection PyUnusedLocal
     def save_config(self,
                     event: KeyEvent,
-                    file: str,
                     ):
-        self._save_config(file)
+        self._save_config()
 
     # noinspection PyUnusedLocal
     def load_config(self,
                     event: KeyEvent,
-                    file: Optional[str] = None,
                     reset: bool = False):
-        self._load_config(file=file, reset=reset)
+        self._load_config(reset=reset)
 
     ####################
     # Functions for handling hotkey options
@@ -344,22 +342,19 @@ class BindingsFunctions:
                 else:
                     getattr(self, ret).append(getattr(self, fcn)(event, **kwargs))
 
-    def options_reset_config(self, save_config=None, no_config=False):
-        if not no_config:
-            self._config_file = save_config
-            self._load_config(self._config_file)
+    def options_reset_config(self):
+        self._load_config()
 
         self._key_options = {}
 
         self.options_add('?', "Hotkey help", "_options_help", {}, None)
 
-        if save_config is not None:
-            self.options_add('L', 'load saved configuration', 'load_config',
-                             {'file': save_config}, None)
-            self.options_add('S', 'save configuration', 'save_config',
-                             {'file': save_config}, None)
-            self.options_add('F', 'load default configuration from factory', 'load_config',
-                             {'file': save_config, 'reset': True}, None)
+        self.options_add('L', 'load saved configuration', 'load_config',
+                         {}, None)
+        self.options_add('S', 'save configuration', 'save_config',
+                         {}, None)
+        self.options_add('F', 'load default configuration from factory', 'load_config',
+                         {'reset': True}, None)
 
 
 class BindingsImshowz(BindingsFunctions):
@@ -367,13 +362,13 @@ class BindingsImshowz(BindingsFunctions):
     def __init__(self,
                  image: np.ndarray,
                  axes: matplotlib.figure.Figure,
-                 config_file: str = "~/.imshowzrc",
+                 config_file: str = "interactive.cfg",
                  ):
         super(BindingsImshowz, self).__init__()
 
         self._marks_xy = []
 
-        self.options_reset_config(save_config=config_file)
+        self.options_reset_config()
 
         self.options_add('r', 'radial prbofile', 'plot_radial_from_2d',
                          {}, None)

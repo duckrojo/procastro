@@ -18,44 +18,79 @@
 #
 #
 
-__all__ = ['sortmanynsp', 'sortmany', 'accept_object_name'
+__all__ = ['sortmanynsp', 'sortmany', 'accept_object_name',
+           'file_from_procastro_dir', 'default_for_procastro_dir',
            ]
+
+from pathlib import Path
+from shutil import copy2
 
 import numpy as np
 import operator as op
 import warnings
 import re
 
+procastro_dir = Path("~/.procastrorc/").expanduser()
+procastro_dir.mkdir(exist_ok=True)
 
-def accept_object_name(name, target):
+
+def default_for_procastro_dir(file: str,
+                              ):
+    return Path(__file__).parent.joinpath("..", "defaults", file)
+
+
+def file_from_procastro_dir(file: str,
+                            start_with_default: bool = True):
+    full_file = procastro_dir.joinpath(file)
+    default_file = default_for_procastro_dir(file)
+    if start_with_default and not full_file.exists() and default_file.exists():
+        copy2(default_file, full_file)
+    return full_file
+
+
+def accept_object_name(name1, name2, planet_match=False, binary_match=False):
     """
-    Parses an astronomical object's name and checks if its similar to a
-    specific 'target'
+    Check if two astronomical names are the same, case independently and punctuation independent.
+    Binary stars are identified by upper case. Planets are identified from lower case b onwards.
 
     Parameters
     ----------
-    name : str
-        Name of object
-    target : str
-        Name of object to be compared with
+    binary_match: bool
+        if True, then names must match binary identification (e.g. Gliese81A != gliese81B)
+    planet_match: bool
+        if True, then names must match planet identification (e.g. ProxCen b != ProxCen c)
+    name1 : str
+        Name of object1
+    name2 : str
+        Name of object1
 
     Returns
     -------
     bool
     """
-    name = name.replace(r'\\', '\\\\')
-    name = name.replace('+', r'\+')
-    name = name.replace('{', r'\{')
-    name = name.replace('}', r'\}')
-    name = name.replace('[', r'\[')
-    name = name.replace(']', r'\]')
-    name = name.replace('*', r'\*')
-    name = name.replace('?', r'\?')
-    if '__' in name:
-        mandatory, optional = name.split('__')
-        name = f"{mandatory}(?:{optional})?"
-    name = name.replace('_', '[- ]?').lower()
-    return re.search(name, target.lower()) is not None
+
+    def name_items(name: str) -> tuple[str, str, str, str]:
+        astro_name_re = re.compile(r"(?:(?:([a-zA-Z][a-zA-Z0-9]*?)-)|([a-zA-Z]+))[-_ ]?(\d*)([A-Z]*)[ _]?([b-z]*)")
+        n_alternate_catalogs = 2  # how many catalog name version are matched (2: "Name|NameNumber-")
+
+        items = astro_name_re.match(name).groups()
+        catalog = None
+        for n in range(n_alternate_catalogs):
+            if catalog is None:
+                catalog = items[n]
+
+        return catalog, *items[n_alternate_catalogs:]
+
+    catalog1, number1, binary1, planet1 = name_items(name1)
+    catalog2, number2, binary2, planet2 = name_items(name2)
+
+    if catalog1.lower() != catalog2.lower() or number1 != number2:
+        return False
+    if binary_match and binary1 != binary2:
+        return False
+    if planet_match and planet1 != planet2:
+        return False
+    return True
 
 
 def sortmanynsp(*arr):
