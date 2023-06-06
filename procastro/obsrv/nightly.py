@@ -40,10 +40,11 @@ TwoTuple = Tuple[float, float]
 
 __all__ = ['query_full_exoplanet_db', 'Nightly']
 
+
 def query_full_exoplanet_db(force_reload: bool = False,
                             reload_days: float = 7
                             ):
-    file = Path("~/.procastro.exodb.pickle").expanduser()
+    file = pa.file_from_procastro_dir("exodb.pickle")
     if not force_reload and os.path.isfile(file):
         days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
         if days_since < reload_days:
@@ -413,21 +414,21 @@ class Nightly:
         Plots the altitudes of the encountered exoplanet's stars for the given date with information about the
         observation
 
-         Parameters
-         ----------
-             date: str
+        Parameters
+        ----------
+            date: str
                 Date for which to plot
-             colorbar
-             mark_ra: (float, float)
+            colorbar
+            mark_ra: (float, float)
                 RA region to mark in output plot
-             ax: matplotlib.Axes, matplotlib.Figure, int
+            ax: matplotlib.Axes, matplotlib.Figure, int
                 axes where plot will be produced
-             precision : int
+            precision : int
                 the number of altitudes points to plot between the start and the end of the stars' observation
-             extend : bool , optional
+            extend : bool , optional
                 if True is given , then the plot will have only the transit's interval of the observation. If not,
                 then the plot will have the complete observations.
-             altitude_separation : float
+            altitude_separation : float
                 separation in degrees between vertical altitude curves
 
         Returns
