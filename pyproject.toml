@@ -1,36 +1,35 @@
-#[build-system]
-#build-backend = "flit_core.buildapi"
-#requires = ["flit_core >=3.8.0,<4"]
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
-
-[project]
+[tool.poetry]
 name = "procastro"
-authors = [
-  {name = "Patricio Rojo", email = "pato@das.uchile.cl"},
-]
-description = "framework to process astronomical data files"
+version = "0.0.0"
+description = "Framework to process astronomical data files"
+authors = ["Patricio Rojo <pato@das.uchile.cl>"]
+license = "BSD-3-Clause"
 readme = "README.md"
-requires-python = ">=3.9"
-keywords = ["astronomy", "data files"]
-license = {text = "BSD-3-Clause"}
-dependencies = ["sphinx", "astropy", "astroquery", "numpy", "scipy", "matplotlib", "exifread", "rawpy", "pandas"]
-dynamic = ['version']
 
-[tool.setuptools.packages.find]
-where = ["."]  # list of folders that contain the packages (["."] by default)
-include = ["procastro"]  # package names should match these glob patterns (["*"] by default)
-#exclude = ["my_package.tests*"]  # exclude packages matching these glob patterns (empty by default)
-#namespaces = false  # to disable scanning PEP 420 namespaces (true by default)
+[tool.poetry-dynamic-versioning]
+enable = true
 
-#[tools.setuptools]
-#packages = ["procastro"]
+[tool.poetry-dynamic-versioning.substitution]
 
-[tool.setuptools.dynamic]
-version = {attr = "procastro.__version__"}
 
-[project.urls]
-"Homepage" = "https://github.com/duckrojo/procastro"
-"Bug Tracker" = "https://github.com/duckrojo/procastro/issues"
+[tool.poetry.dependencies]
+python = "^3.9"
+asdf-astropy = "^0.4.0"
+Sphinx = { version = "4.2.0", optional = true }
+sphinx-rtd-theme = { version = "1.0.0", optional = true }
+sphinxcontrib-napoleon = { version = "0.7", optional = true }
+
+[tool.poetry.extras]
+docs = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-napoleon"]
+
+[tool.poetry.group.dev.dependencies]
+astropy = "^5.3"
+numpy = "^1.23.2"
+astroquery = "^0.4.6"
+scipy = "^1.10.1"
+matplotlib = "^3.7.1"
+pandas = "^2.0.2"
+
+[build-system]
+requires = ["poetry-core", "poetry-dynamic-versioning"]
+build-backend = "poetry_dynamic_versioning.backend"

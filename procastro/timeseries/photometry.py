@@ -541,10 +541,14 @@ class Photometry:
 
     Attributes
     ----------
-    surrounding_ap_limit : Limit to compute excess flux for a given aperture
-    coord_user_xy : Stores original coordinates given by the user
-    extra_header : Name of header item given 'extra'
-    extras : Values fiven by 'extra' dict
+    surrounding_ap_limit :
+       Limit to compute excess flux for a given aperture
+    coord_user_xy :  List[TwoValues]
+       Stores original coordinates given by the user
+    extra_header :
+       Name of header item given 'extra'
+    extras :
+        Values given by 'extra' dict
 
     Parameters
     ----------
