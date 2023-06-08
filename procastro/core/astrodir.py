@@ -36,7 +36,7 @@ io_logger.propagate = False
 class AstroDir(object):
     """Collection of AstroFile objects.
 
-    Several recursive methods that are applied to each AstroFile are available
+    Collection can be indexed, filtered, and has several recursive methods that are applied to each AstroFile are available
 
     Attributes
     ----------
