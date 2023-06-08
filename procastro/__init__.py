@@ -20,7 +20,7 @@
 #
 
 """
-Data proc docstring
+Framework to easily handle multiple astronomy data files
 """
 from . import astro
 from . import core
