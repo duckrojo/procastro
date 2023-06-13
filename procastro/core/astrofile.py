@@ -23,10 +23,10 @@ __all__ = ['AstroFile', 'AstroCalib']
 import logging
 from functools import wraps as _wraps
 import warnings
-import re
 from pathlib import PurePath, Path
 
 import procastro as pa
+from .internal_functions import trim_to_python, common_trim_fcn, extract_common
 import astropy.time as apt
 import numpy as np
 import os.path as path
@@ -195,7 +195,7 @@ def _fits_setheader(_filename, **kwargs):
     Returns
     -------
     bool
-        True if succesfull
+        True if successful
     """
     hdu = ('hdu' in kwargs and [kwargs['hdu']] or [0])[0]
 
@@ -246,7 +246,7 @@ def _array_write(filename, **kwargs):
 
 
 def _array_setheader(filename, **kwargs):
-    warnings.warn( "Saving an np.array type is not implemented yet: only saving in memory for now ",
+    warnings.warn("Saving an np.array type is not implemented yet: only saving in memory for now ",
                    UserWarning)
     return None
 
@@ -427,9 +427,18 @@ class AstroFile(object):
         self._hduh = hduh
         self._hdud = hdud
 
+        self.auto_trim = auto_trim
+
         self.calib = AstroCalib(pa.AstroFile(mbias, header=mbias_header),
                                 pa.AstroFile(mflat, header=mflat_header),
                                 auto_trim=auto_trim)
+
+    def get_trims(self):
+        """"Get trim limits, returning in python-style YX"""
+        if self.auto_trim is None:
+            return None
+
+        return trim_to_python(self[self.auto_trim])
 
     def add_bias(self, mbias):
         """
@@ -801,20 +810,12 @@ class AstroFile(object):
                                      file=self.filename,
                                      hdus=self.reader(hdu=-1, skip_calib=True)))
 
-        # transform into CCDData
-        # ccddata = ndd.CCDData(data, unit=self.unit, meta=self.header_cache,
-        #                       uncertainty=ndd.StdDevUncertainty(
-        #                                   np.sqrt(self.ron*self.ron
-        #                                           + data*self.gain)
-        #                                           / self.gain))
-
         if self.has_calib() and not skip_calib:
             data = self.calib.reduce(data,
                                      exptime=self[self.calib.exptime_keyword],
                                      ffilter=self[self.calib.filter_keyword],
-                                     header=self.readheader()[self._hduh],
+                                     data_trim=self.get_trims(),  # header=self.read_headers()[self._hduh],
                                      verbose=verbose)
-
 
         return data
 
@@ -829,7 +830,7 @@ class AstroFile(object):
         return self.calib.has_flat or self.calib.has_bias
 
     @_checkfilename
-    def readheader(self, *args, **kwargs):
+    def read_headers(self, *args, **kwargs):
         """
         Reads header from the file
 
@@ -1174,9 +1175,9 @@ class AstroCalib(object):
         Master Flat
     exptime_keyword : str, optional
         Header item name containing the exposure time of te frames
-    mbias_header : astropy.io.fits.Header
+    mbias_header : astropy.io.fits.Header, optional
         Header of the master bias
-    mflat_header : astropy.io.fits.Header
+    mflat_header : astropy.io.fits.Header, optional
         Header of the master bias
     filter_keyword : str, optional
     auto_trim : str
@@ -1202,9 +1203,10 @@ class AstroCalib(object):
 
         self.exptime_keyword = exptime_keyword
         self.filter_keyword = filter_keyword
+        self.auto_trim_keyword = None if auto_trim is None else auto_trim.lower()
+
         self.add_bias(mbias, mbias_header=mbias_header)
         self.add_flat(mflat, mflat_header=mflat_header)
-        self.auto_trim = None if auto_trim is None else auto_trim.lower()
 
     def add_bias(self, mbias, mbias_header=None):
         """
@@ -1236,7 +1238,7 @@ class AstroCalib(object):
         elif isinstance(mbias,
                         pa.AstroFile):
             self.mbias[-1] = mbias.reader()
-            self.mbias_header = mbias.readheader()
+            self.mbias_header = mbias.read_headers()
         else:
             raise ValueError("Master Bias supplied was not recognized.")
 
@@ -1268,14 +1270,14 @@ class AstroCalib(object):
         elif isinstance(mflat,
                         pa.AstroFile):
             self.mflat[''] = mflat.reader()
-            self.mflat_header = mflat.readheader()
+            self.mflat_header = mflat.read_headers()
         elif isinstance(mflat,
                         (int, float, np.ndarray)):
             self.mflat[''] = mflat
         else:
             raise ValueError("Master Flat supplied was not recognized.")
 
-    def reduce(self, data, exptime=None, ffilter=None, header=None, verbose=True):
+    def reduce(self, data, exptime=None, ffilter=None, data_trim=None, verbose=True):
         """
         Process given "data" using the bias and flat contained in this instance
 
@@ -1319,11 +1321,8 @@ class AstroCalib(object):
         mintrim = np.array([0, data.shape[0], 0, data.shape[1]])
 
         in_data = [data]
-        if self.auto_trim is not None and self.auto_trim in header.keys():
-            trim = [np.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
-                                       header[self.auto_trim]
-                                       ).group(1, 2, 3, 4)).astype(int)[np.array([2, 3, 0, 1])]
-                    ]
+        if data_trim is not None:
+            trim = [self.get_trims()]
             for label in ['flat', 'bias']:
                 tdata = vars()[label]
                 in_data.append(tdata)
@@ -1332,40 +1331,24 @@ class AstroCalib(object):
                 if theader is not None:
                     theader = theader[0]
 
-                if theader is None or self.auto_trim not in theader.keys():
+                if theader is None or self.auto_trim_keyword not in theader.keys():
                     if not isinstance(tdata, (int, float)):
-                        io_logger.warning(f"Trim info {self.auto_trim} found on"
+                        io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
                                           f" science frames but not in {label} frames... ignoring")
                     trim.append(trim[0])
                 else:
-                    trim.append( np.array(re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]',
-                                                    theader[self.auto_trim]
-                                                    ).group(1, 2, 3, 4)).astype(int)[np.array([2, 3, 0, 1])])
+                    trim.append(trim_to_python(self[self.auto_trim_keyword]))
 
-            common_trim = (np.array(trim)*np.array([1,-1,1,-1])).max(0)*np.array([1,-1,1,-1])
+            common_trim = common_trim_fcn(trim)
 
             out_data = []
             for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trim):
-                #reacommodating to use the same operators both sides of the array
-                delta = trim*np.array([1, -1, 1, -1]) - common_trim*np.array([1, -1, 1, -1])
-                # if np.any(delta < 0):
-                #     raise ValueError(f"Trim section of {label} [{self.auto_trim}: {','.join(trim.astype(str))}]"
-                #                      f" is not fully inside the"
-                #                      f" trim section of the data  [{self.auto_trim}: {','.join(trim_target.astype(str))}],"
-                #                      f" cannot proceed")
-                if np.all(delta == 0):
-                    out_data.append(tdata)
-                else:
-                    delta = list(delta)
-                    # if there is no triming at the end of the array
-                    delta[1] = None if delta[1]==0 else delta[1]
-                    delta[3] = None if delta[3]==0 else delta[3]
+                out, trimmed = extract_common(tdata, trim, common_trim)
+                out_data.append(out)
 
-                    out_data.append(tdata[delta[0]:delta[1], delta[2]:delta[3]])
-
-                    if verbose:
-                        logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim}: "
-                                     f"({','.join(trim.astype(str))}) -> ({','.join(common_trim.astype(str))})]")
+                if trimmed and verbose:
+                    logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim_keyword}: "
+                                 f"({','.join(trim.astype(str))}) -> ({','.join(common_trim.astype(str))})]")
 
             data, flat, bias = out_data
 

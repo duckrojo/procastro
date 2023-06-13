@@ -112,7 +112,7 @@ class TestAstroFile(object):
         filename = os.path.join(self.path, "file.fits")
         data = pf.getheader(filename)
         empty.load(filename, data)
-        assert empty.readheader() == self.file.readheader()
+        assert empty.read_headers() == self.file.read_headers()
         with pytest.raises(ValueError):
             empty.load(filename, data)
 

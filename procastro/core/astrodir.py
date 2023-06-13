@@ -22,6 +22,7 @@ import os
 import re
 
 import procastro as pa
+from .internal_functions import trim_to_python, common_trim_fcn, extract_common
 import numpy as np
 import warnings
 import copy
@@ -440,7 +441,8 @@ class AstroDir(object):
         return self
 
     def get_datacube(self, normalize_region=None, normalize=False,
-                     verbose=False, check_unique=None, group_by=None):
+                     verbose=False, check_unique=None, group_by=None,
+                     trim_area_warn = 0.25):
         """
         Generates a data cube with the data of each AstroFile.
 
@@ -477,6 +479,7 @@ class AstroDir(object):
                 normalize_region = slice(None)
 
         grouped_data = {}
+        grouped_trims = {}
 
         # check uniqueness... first get the number of unique header values for
         # each requested keyword and then complain if any greater than 1
@@ -499,7 +502,9 @@ class AstroDir(object):
             group_key = af[group_by]
             if group_key not in grouped_data.keys():
                 grouped_data[group_key] = []
+                grouped_trims[group_key] = []
             grouped_data[group_key].append(data)
+            grouped_trims[group_key].append(af.get_trims())
 
             if verbose:
                 print(".", end='')
@@ -511,8 +516,36 @@ class AstroDir(object):
                              "grouped_data only if group_by was None. "
                              "In such case, it should have been alone.")
 
+        # first loop for warnings only
         for g in grouped_data:
-            grouped_data[g] = np.stack(grouped_data[g])
+            unique_trims = set(grouped_trims[g])
+            common_trim = common_trim_fcn(grouped_trims[g])
+            common_trim_area = (common_trim[1] - common_trim[0])*(common_trim[3] - common_trim[2])
+
+            if len(unique_trims) > 1:
+                for trim in unique_trims:
+                    trim_area = (trim[1] - trim[0])*(trim[3] - trim[2])
+                    if trim_area > (1 + trim_area_warn)*common_trim_area:
+                        io_logger.warning(f"Trim section ({trim}) is"
+                                          f" {100*(common_trim/common_trim_area-1)}% larger than"
+                                          f" common area({common_trim})")
+
+        # second loop applies trim
+        for g in grouped_data:
+            common_trim = common_trim_fcn(grouped_trims[g])
+            trim_data = []
+
+            for data, trim in grouped_data[g], grouped_trims[g]:
+                if trim is None:
+                    trim = [1, data.shape[0], 1, data.shape[1]]
+
+                out, trimmed = extract_common(data, trim, common_trim)
+                if trimmed and verbose:
+                    logging.info(f"Adjusting to minimum common trim: "
+                                 f"[({trim}) -> ({common_trim})]")
+                trim_data.append(out)
+
+            grouped_data[g] = np.stack(trim_data)
 
         if verbose:
             print("")
