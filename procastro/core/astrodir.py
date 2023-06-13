@@ -204,8 +204,7 @@ class AstroDir(object):
     def sort(self, *args, **kwargs):
         """
         Sorts AstroFile instances inplace depending on the given header fields.
-        After sorting the contents the method will return a pointer to this
-        AstroDir.
+        After sorting the contents the method will return None to avoid problems
 
         Parameters
         ----------
@@ -225,7 +224,7 @@ class AstroDir(object):
         hdrfld = False
 
         for a in args:
-            if self.getheaderval(a):
+            if None not in self.getheaderval(a):
                 hdrfld = a
                 break
         if not hdrfld:
