@@ -6,10 +6,10 @@
 Welcome to procastro's documentation!
 =====================================
 
-**Creating spare time for astronomers handling data everywhere**
+**Saving time for astronomers handling data everywhere**
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
    quickstart
