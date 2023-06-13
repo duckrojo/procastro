@@ -6,16 +6,21 @@
 Welcome to procastro's documentation!
 =====================================
 
+**Creating spare time for astronomers handling data everywhere**
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
    quickstart
+   API reference <source/procastro>
 
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
+
+
+.. * :ref:`modindex`

@@ -1,23 +1,34 @@
 procastro package
 =================
 
-Subpackages
------------
-
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
+   :caption: Contents:
 
-   procastro.astro
-   procastro.core
-   procastro.obsrv
-   procastro.photography
-   procastro.tests
-   procastro.timeseries
+   quickstart
+   API reference <source/procastro>
+
 
 Module contents
 ---------------
 
 .. automodule:: procastro
-   :members:
+   :members:  AstroFile, AstroCalib, AstroDir
+   :member-order: bysource
    :undoc-members:
    :show-inheritance:
+
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 2
+
+   procastro.astro
+   procastro.obsrv
+   procastro.photography
+   procastro.timeseries
+
+
+
