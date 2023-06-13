@@ -5,6 +5,8 @@ description = "Framework to process astronomical data files"
 authors = ["Patricio Rojo <pato@das.uchile.cl>"]
 license = "BSD-3-Clause"
 readme = "README.md"
+documentation = "https://procastro.readthedocs.io/en/latest/"
+repository = "https://github.com/duckrojo/procastro"
 
 [tool.poetry-dynamic-versioning]
 enable = true
