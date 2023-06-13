@@ -1,0 +1,12 @@
+ads==0.12.3
+astropy==5.1
+astroquery==0.4.6
+ExifRead==3.0.0
+matplotlib==3.5.3
+numpy==1.23.2
+pandas==1.5.3
+pytest==7.3.1
+pyvo==1.3
+rawpy==0.17.2
+scipy==1.9.1
+numpydoc==1.5.0
