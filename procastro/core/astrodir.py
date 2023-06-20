@@ -534,7 +534,7 @@ class AstroDir(object):
             common_trim = common_trim_fcn(grouped_trims[g])
             trim_data = []
 
-            for data, trim in grouped_data[g], grouped_trims[g]:
+            for data, trim in zip(grouped_data[g], grouped_trims[g]):
                 if trim is None:
                     trim = [1, data.shape[0], 1, data.shape[1]]
 
