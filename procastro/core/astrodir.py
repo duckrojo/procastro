@@ -549,7 +549,7 @@ class AstroDir(object):
         if verbose:
             print("")
 
-        return grouped_data
+        return grouped_data, common_trim
 
     def pixel_xy(self, xx, yy, normalize_region=None, normalize=False,
                  check_unique=None, group_by=None):
@@ -582,7 +582,7 @@ class AstroDir(object):
         data_dict = self.get_datacube(normalize_region=normalize_region,
                                       normalize=normalize,
                                       check_unique=check_unique,
-                                      group_by=group_by)
+                                      group_by=group_by)[0]
 
         groupers = sorted(data_dict.keys())
         ret = [data_dict[g][:, yy, xx] for g in groupers]
@@ -632,7 +632,7 @@ class AstroDir(object):
                                       normalize=normalize,
                                       verbose=verbose,
                                       check_unique=check_unique,
-                                      group_by=group_by)
+                                      group_by=group_by)[0]
 
         if verbose:
             print("Median combining{}".format(group_by
@@ -698,7 +698,7 @@ class AstroDir(object):
                                       normalize=normalize,
                                       verbose=verbose,
                                       check_unique=check_unique,
-                                      group_by=group_by)
+                                      group_by=group_by)[0]
 
         if verbose:
             print("Mean combining{}".format(group_by
@@ -763,7 +763,7 @@ class AstroDir(object):
 
         data_dict = self.get_datacube(verbose=verbose,
                                       check_unique=check_unique,
-                                      group_by=group_by)
+                                      group_by=group_by)[0]
 
         if verbose:
             print("Linear interpolating{}"
@@ -850,7 +850,7 @@ class AstroDir(object):
                                       normalize=normalize,
                                       verbose=verbose,
                                       check_unique=check_unique,
-                                      group_by=group_by)
+                                      group_by=group_by)[0]
 
         if verbose:
             print("Obtaining "
