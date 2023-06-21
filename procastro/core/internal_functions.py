@@ -7,6 +7,10 @@ def trim_to_python(value):
     return int(result[2]), int(result[3]), int(result[0]), int(result[1])
 
 
+def python_to_trim(trim):
+    return '['+ str(trim[2]) +':' + str(trim[3]) +',' + str(trim[0]) + ':' + str(trim[1]) + ']'
+
+
 def common_trim_fcn(trim_all):
     trim = [t for t in trim_all if t is not None]
     result = (np.array(trim) * np.array([1, -1, 1, -1])).max(0)
