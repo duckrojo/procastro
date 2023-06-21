@@ -1337,7 +1337,7 @@ class AstroCalib(object):
                                           f" science frames but not in {label} frames... ignoring")
                     trim.append(trim[0])
                 else:
-                    trim.append(trim_to_python(self[self.auto_trim_keyword]))
+                    trim.append(trim_to_python(theader[self.auto_trim_keyword]))
 
             common_trim = common_trim_fcn(trim)
 
@@ -1351,9 +1351,8 @@ class AstroCalib(object):
 
                 if trimmed and verbose:
                     logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim_keyword}: "
-                                 f"({','.join(trim.astype(str))}) -> ({','.join(common_trim.astype(str))})]")
-
-            data, flat, bias = out_data
+                                 f"({str(trim)}) -> ({str(common_trim)})]")
+            data, bias, flat = out_data
 
         debias = data - bias
         with warnings.catch_warnings():
