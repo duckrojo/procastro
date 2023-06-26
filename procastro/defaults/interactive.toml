@@ -1,0 +1,58 @@
+[tool]
+# Tools configuration
+    [tool.radial_profile]
+    mark_data = "puntual"
+    mark_exam = "x"
+
+    [tool.projection]
+    #length_ can be specificed in percent, if pixels is not there, or 0
+    length_percent = 20
+    width = 1
+    combine_op = "sum"
+    mark_exam = "x"
+    mark_data = "rect"
+
+    [tool.marking]
+    alpha = 0.3
+    # size of circle' radius in percent
+    radius = 2
+    # color of mfirst, second, etc mark. Last keeps repeating
+    color = "black, red"
+    # number of decimals for rounding of mark coordinates
+    rounding_centroid = 1
+    rounding_user = 0
+
+    [tool.zoom]
+    mark_data = "rect"
+    colormap = "viridis"
+    facecolor_light = "white"
+    facecolor_dark = "black"
+    fontsize = 6
+        [tool.zoom.stat]
+        color = "red"
+        from_border = 0.1
+        linewidth = 1
+        alpha = 0.8
+
+[mark]
+# This are the configs for marks on original map
+    [mark.puntual]
+    color = "red"
+    marker = "x"
+    alpha = 0.5
+
+    [mark.x]
+    color = "black"
+    marker = "x"
+    alpha = 1
+
+    [mark.rect]
+    color = "red"
+    alpha = 0.5
+
+
+[stamp]
+# stamp for all the puntual tools
+percent = 5
+pixels = 0
+

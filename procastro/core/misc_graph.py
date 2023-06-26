@@ -30,15 +30,16 @@ import astropy.time as apt
 import datetime
 import procastro as pa
 import matplotlib.pyplot as plt
+import matplotlib
 import astropy.io.fits as pf
 import numpy as np
-from typing import Optional, Tuple, List, Union
-from collections.abc import Sequence
+from typing import Optional, Tuple, Union
 from procastro.core.interactive_graphics import BindingsImshowz
 from pathlib import Path, PurePath
 
 TwoValues = Tuple[float, float]
 FileCompat = Union[str, PurePath, 'pa.AstroFile']
+
 
 def fill_between(ax,
                  bottom=None, top=None,
@@ -59,15 +60,15 @@ def fill_between(ax,
                      bottom, top, **kwargs)
     ax2.set_ylabel(ylabel, color=facecolor)
     ax2.tick_params('y', colors=facecolor)
-    margin = 0.05*(top.max() - bottom.min())
-    ax2.set_ylim([bottom.min() - margin,
-                  top.max() + margin])
+    margin = 0.05*(np.amax(top) - np.amin(bottom))
+    ax2.set_ylim([np.amin(bottom) - margin,
+                  np.amax(top) + margin])
 
 
 def set_plot_props(ax, xlim=None, ylim=None,
                    legend: Union[dict, bool] = None,
                    save=None, show=None, close=False,
-                   title=None, fill_between=None,
+                   title=None, fill_between_kwargs=None,
                    xlabel=None, ylabel=None,
                    ax_method=None,
                    vspan: Optional[TwoValues] = None,
@@ -82,8 +83,8 @@ def set_plot_props(ax, xlim=None, ylim=None,
             method_kwargs = [method_kwargs]
         for kw in method_kwargs:
             getattr(ax, method)(**kw)
-    if fill_between is not None:
-        pa.fill_between(ax, **fill_between)
+    if fill_between_kwargs is not None:
+        pa.fill_between(ax, **fill_between_kwargs)
 
     if show is None:
         show = save is None
@@ -108,7 +109,7 @@ def set_plot_props(ax, xlim=None, ylim=None,
         else:
             ax.set_ylim(ylim)
 
-    plt.tight_layout()
+    # plt.tight_layout()
     if save is not None:
         ax.figure.savefig(save)
     if show:
@@ -179,12 +180,12 @@ def plot_accross(data,
     fig, ax = pa.figaxes(axes)
 
     if xlim is not None:
-        ax.set_xlim(xlim)
+        ax.set_xlim(*xlim)
     if ylim is not None:
-        ax.set_ylim(ylim)
+        ax.set_ylim(*ylim)
 
     ax.plot(accross, label="ll")
-    pa.set_plot_props(title=title, xlabel=xtitle, ylabel=ytitle)
+    pa.set_plot_props(ax, title=title, xlabel=xtitle, ylabel=ytitle)
 
     return accross, data
 
@@ -233,8 +234,12 @@ def prep_data_plot(indata, **kwargs):
     return data
 
 
+NonInteractiveAxes = Union[None, int, matplotlib.axes.Axes, matplotlib.figure.Figure]
+InteractiveAxes = Union[None, int, tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]]
+
+
 def imshowz(data: FileCompat,
-            axes=None,
+            axes: Union[InteractiveAxes, NonInteractiveAxes] = None,
             minmax=None, xlim=None, ylim=None,
             cxy=None, plot_rad=None,
             ticks=True, colorbar=False,
@@ -301,9 +306,32 @@ def imshowz(data: FileCompat,
 
     data = prep_data_plot(data, **kwargs)
 
+    ax_exam = None
     if interactive:
         show = False
         save = None
+        colorbar = False
+
+        # if axes is None, then create a double axes. overwriting or not the last figure according to force_new
+        if axes is None:
+            fig = plt.figure(figsize=(16, 8))
+            gs = fig.add_gridspec(2, 2, height_ratios=(12, 1),
+                                  left=0.05, right=0.95, top=0.95, bottom=0.05,
+                                  wspace=0.05, hspace=0.15)
+            ax = fig.add_subplot(gs[0, 0])
+            ax_exam = fig.add_subplot(gs[0, 1])
+        elif isinstance(axes, int):
+            fig, ax = pa.figaxes(axes, force_new=force_new, nrows=1, ncols=2)
+            if len(fig.axes) < 2:
+                raise ValueError(f"Specified figure #{axes} does not have the required two axes for interactive mode")
+            ax_exam = fig.axes[1]
+        elif isinstance(axes, list) and len(axes) == 2 and isinstance(axes[0], matplotlib.axes.Axes):
+            ax, ax_exam = axes
+            fig = ax.figure
+        else:
+            raise ValueError(f"Invalid axes specification for interactive mode: {axes}")
+    else:
+        fig, ax = pa.figaxes(axes, force_new=force_new)
 
     if extent is not None and xlim is not None and ylim is not None:
         raise ValueError(
@@ -346,8 +374,6 @@ def imshowz(data: FileCompat,
     else:
         mn, mx = minmax
 
-    fig, ax = pa.figaxes(axes, force_new=force_new)
-
     # Draw in the canvas
     if extent is None:
         extent = [xlim[0], xlim[1], ylim[0], ylim[1]]
@@ -374,7 +400,9 @@ def imshowz(data: FileCompat,
 
     outs = {'vlims': [mn, mx]}
     if interactive:
-        handler = BindingsImshowz(data, ax)
+        handler = BindingsImshowz(data, axes_data=ax, axes_exam=ax_exam,
+                                  colorbar_data=fig.add_subplot(gs[1,0]),
+                                  colorbar_exam=fig.add_subplot(gs[1,1]))
         outs['marks_xy'] = handler.get_marks()
         outs['handler'] = handler
 
@@ -428,6 +456,9 @@ def figaxes_xdate(x, axes=None, clear=True):
 def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
             force_new: bool = True,
             clear: bool = True,
+            figsize: Optional[Tuple[int, int]] = None,
+            nrows: int = 1,
+            ncols: int = 1,
             **kwargs,
             ) -> (plt.Figure, plt.Axes):
     """
@@ -436,7 +467,11 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
 
     Parameters
     ----------
-    axes : int, plt.Figure, plt.Axes
+    axes : int, plt.Figure, plt.Axes, None
+        If axes is None, and multi col/row setup is requested, then it returns an array as in add_subplots().
+        Otherwise, it always returns just one Axes instance.
+    figsize : (int, int), optional
+        Size of figure, only valid for new figures (axes=None)
     force_new : bool, optional
         If true starts a new axes when axes=None (and only then) instead of using last figure
     clear: bool, optional
@@ -448,34 +483,36 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
     """
     if axes is None:
         if force_new:
-            fig, ax = plt.subplots()
+            fig, axs = plt.subplots(nrows, ncols,
+                                    figsize=figsize)
         else:
             plt.gcf().clf()
-            fig, ax = plt.subplots(num=plt.gcf().number)
+            fig, axs = plt.subplots(nrows, ncols,
+                                    figsize=figsize, num=plt.gcf().number, )
     elif isinstance(axes, int):
         fig = plt.figure(axes, **kwargs)
         if clear or len(fig.axes) == 0:
             fig.clf()
-            ax = fig.add_subplot(111)
+            axs = fig.add_subplot(nrows, ncols, 1)
         else:
-            ax = fig.axes[0]
+            axs = fig.axes[0]
     elif isinstance(axes, plt.Figure):
         fig = axes
         if clear:
             fig.clf()
         if len(fig.axes) == 0:
-            ax = fig.add_subplot(111)
-        ax = fig.axes[0]
+            fig.add_subplot(nrows, ncols, 1)
+        axs = fig.axes[0]
     elif isinstance(axes, plt.Axes):
-        ax = axes
+        axs = axes
         if clear:
-            ax.cla()
+            axs.cla()
         fig = axes.figure
     else:
         raise ValueError("Given value for axes ({0:s}) is not"
                          "recognized".format(axes, ))
 
-    return fig, ax
+    return fig, axs
 
 
 if __name__ == '__main__':
