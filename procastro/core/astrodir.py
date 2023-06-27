@@ -22,7 +22,7 @@ import os
 import re
 
 import procastro as pa
-from .internal_functions import trim_to_python, common_trim_fcn, extract_common
+from .internal_functions import trim_to_python, common_trim_fcn, extract_common, python_to_trim
 import numpy as np
 import warnings
 import copy
@@ -113,9 +113,7 @@ class AstroDir(object):
         else:
             file_n_dir = path
         for f in file_n_dir:
-            if isinstance(f, pa.AstroFile):
-                nf = copy.deepcopy(f)
-            elif pth.isdir(f):
+            if isinstance(f, str) and pth.isdir(f):
                 for sf in os.listdir(f):
                     nf = pa.AstroFile(f + '/' + sf,
                                       hduh=hduh,
@@ -263,10 +261,6 @@ class AstroDir(object):
 
         return pa.AstroDir(self.files + other_af)
 
-    # def __eq__(self, other):
-    #     # as in scipy
-    #     if isinstance(other, )
-
     def __getitem__(self, item):
 
         # if an integer, return that astrofile
@@ -390,7 +384,7 @@ class AstroDir(object):
         """
         return joinchr.join([b.basename() for b in self])
 
-    def getheaderval(self, *args, **kwargs):
+    def getheaderval(self, *args, cast=None, single_in_list=False, hdu=0):
         """
         Gets the header values specified in 'args' from each file.
         A function can be specified to be used over the returned values for
@@ -408,24 +402,13 @@ class AstroDir(object):
 
         """
 
-        if 'cast' in kwargs:
-            cast = kwargs['cast']
-        else:
+        if cast is None:
             def cast(x): return x
 
         warnings.filterwarnings("once",
                                 "non-standard convention",
                                 AstropyUserWarning)
-        ret = [f.getheaderval(*args, cast=cast, **kwargs) for f in self]
-        try:
-            while True:
-                idx = ret.index(None)
-                logging.warning("Removing file with defective header "
-                                "from AstroDir")
-                self.files.pop(idx)
-                ret.pop(idx)
-        except ValueError:
-            pass
+        ret = [f.getheaderval(*args, cast=cast, single_in_list=single_in_list, hdu=hdu) for f in self]
 
         warnings.resetwarnings()
         return np.array(ret)
@@ -494,8 +477,15 @@ class AstroDir(object):
                 "Header(s) {} are not unique in the input dataset"
                 .format(", ".join(np.array(check_unique)[lens > 1])))
 
+        correct = []
         for af in self:
-            data = af.reader().astype(float)
+            try:
+                data = af.reader().astype(float)
+            except IOError:
+                correct.append(False)
+                continue
+            correct.append(True)
+
             if normalize:
                 data /= data[normalize_region].mean()
             group_key = af[group_by]
@@ -509,6 +499,16 @@ class AstroDir(object):
                 print(".", end='')
                 sys.stdout.flush()
 
+        try:
+            while True:
+                idx = correct.index(False)
+                logging.warning(f"Removing file with defective data "
+                                f"from AstroDir: {self.files[idx].basename}")
+                self.files.pop(idx)
+                correct.pop(idx)
+        except ValueError:
+            pass
+
         if None in grouped_data and len(grouped_data) > 1:
             # TODO: check error message
             raise ValueError("Panic. None should have been key of "
@@ -519,6 +519,9 @@ class AstroDir(object):
         for g in grouped_data:
             unique_trims = set(grouped_trims[g])
             common_trim = common_trim_fcn(grouped_trims[g])
+            if common_trim is None:
+                io_logger.warning("Auto-Trim section not defined or not found in all objects, using full frames only")
+                break
             common_trim_area = (common_trim[1] - common_trim[0])*(common_trim[3] - common_trim[2])
 
             if len(unique_trims) > 1:
@@ -532,24 +535,59 @@ class AstroDir(object):
         # second loop applies trim
         for g in grouped_data:
             common_trim = common_trim_fcn(grouped_trims[g])
-            trim_data = []
 
-            for data, trim in zip(grouped_data[g], grouped_trims[g]):
-                if trim is None:
-                    trim = [1, data.shape[0], 1, data.shape[1]]
+            if common_trim is None:
+                grouped_data[g] = np.array(grouped_data[g])
+            else:
+                trim_data = []
 
-                out, trimmed = extract_common(data, trim, common_trim)
-                if trimmed and verbose:
-                    logging.info(f"Adjusting to minimum common trim: "
-                                 f"[({trim}) -> ({common_trim})]")
-                trim_data.append(out)
+                for data, trim in zip(grouped_data[g], grouped_trims[g]):
 
-            grouped_data[g] = np.stack(trim_data)
+                    out, trimmed = extract_common(data, trim, common_trim)
+                    if trimmed and verbose:
+                        logging.info(f"Adjusting to minimum common trim: "
+                                     f"[({trim}) -> ({common_trim})]")
+                    trim_data.append(out)
+
+                grouped_data[g] = np.stack(trim_data)
 
         if verbose:
             print("")
 
         return grouped_data
+    
+    def common_trim(self,
+                    group_by=None,
+                    return_as_fits=False,
+                    ):
+        """Computes minimum common trim area
+
+        Parameters
+        ----------
+        return_as_fits: bool
+            If True return string in standard FITS format, otherwise a np.array.
+        group_by : str
+            Header field for grouping the files
+        """
+        trims = {}        
+        common_trim = {}
+        for af in self:
+            try:
+                group_key = af[group_by]
+            except IOError:
+                continue
+            if group_key not in trims.keys():
+                trims[group_key] = []
+            trims[group_key].append(af.get_trims())
+        for group in trims.keys():
+            common_trim[group] = common_trim_fcn(trims[group])
+
+        if return_as_fits:
+            ret = {}
+            for key, val in common_trim.items():
+                ret[key] = python_to_trim(val)
+            return ret
+        return common_trim
 
     def pixel_xy(self, xx, yy, normalize_region=None, normalize=False,
                  check_unique=None, group_by=None):

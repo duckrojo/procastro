@@ -869,7 +869,7 @@ class Photometry:
 
     def remove_from(self, idx):
         """
-        Removes file of index 'idx' from the list of frames to be processed
+        Removes file from index 'idx' owwards, from the list of frames to be processed
 
         idx : int
         """
@@ -930,10 +930,9 @@ class Photometry:
 
         last_idx = self.indexing[-1] + 1
         self.indexing += [idx + last_idx for idx in indexing]
-        # noinspection PyUnusedLocal
-        dummy = [self.extras[x].extend(v)
-                 for x, v in zip(extra, zip(*sci_files.getheaderval(*extra,
-                                                                    single_in_list=True)))]
+
+        [self.extras[x].extend(v) for x, v in zip(extra, zip(*sci_files.getheaderval(*extra,
+                                                                                     single_in_list=True)))]
         self._astrodir += sci_files
 
     def cpu_phot(self, verbose=True, progress_indicator=None):

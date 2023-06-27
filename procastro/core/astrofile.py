@@ -25,6 +25,7 @@ from functools import wraps as _wraps
 import warnings
 from pathlib import PurePath, Path
 
+import astropy.io.fits
 import procastro as pa
 from .internal_functions import trim_to_python, common_trim_fcn, extract_common
 import astropy.time as apt
@@ -50,32 +51,11 @@ def _numerize_other(method):
 
     return wrapper
 
-
 #######################
 #
 # FITS handling of AstroFile
 #
 ##################################
-
-# def _fits_header(filename, hdu=0):
-#     """
-#     Read fits header.
-#
-#     Parameters
-#     ----------
-#     hdu: int, optional
-#         HDU slot to be read
-#
-#     Returns
-#     -------
-#     Header Object of the specified hdu
-#     """
-#
-#     hdu_list = pf.open(filename)
-#     ret = hdu_list[hdu].header
-#     hdu_list.close()
-#     return ret
-
 
 def _fits_reader(filename, hdu=0):
     """
@@ -138,7 +118,10 @@ def _fits_verify(filename, ffilter=None, hdu=0):
     -------
     bool
     """
-    filename = Path(filename)
+    try:
+        filename = Path(filename)
+    except TypeError:
+        return False
     if not isinstance(filename, PurePath):
         return False
 
@@ -236,7 +219,6 @@ def _fits_setheader(_filename, **kwargs):
 #
 ####################################
 
-
 def _array_reader(array, **kwargs):
     return array
 
@@ -259,7 +241,6 @@ def _array_verify(array, **kwargs):
     if isinstance(array, np.ndarray):
         return True
     return False
-
 
 #############################
 #
@@ -316,8 +297,7 @@ class AstroFile(object):
     Parameters
     ----------
     filename : str or procastro.AstroFile
-        If AstroFile, then it does not duplicate the information,
-        but uses that object directly.
+        If AstroFile, then it does not read header again, but all new kwargs are applied.
     mbias : dict indexed by exposure time, array or AstroFile, optional
         Default Master bias
     mflat : dict indexed by filter name, array or AstroFile, optional
@@ -393,7 +373,7 @@ class AstroFile(object):
         If passed an AstroFile, then do not create a new instance, just pass
         that one. If passed None, return None
         """
-        if args and (isinstance(args[0], AstroFile) or args[0] is None):
+        if args and ((isinstance(args[0], AstroFile) and len(kwargs)==0) or args[0]) is None:
             return args[0]
 
         return super(AstroFile, cls).__new__(cls)
@@ -405,18 +385,26 @@ class AstroFile(object):
                  auto_trim=None, header=None,
                  *args, **kwargs):
 
+        self.calib = None
         if isinstance(filename, AstroFile):
-            return
+            self.filename = filename.filename
+            self.type = filename.type
+            self.header_cache = filename.header_cache
 
-        self.filename = filename
-        self.type = self.checktype(*args, **kwargs)
-        try:
-            self.header_cache = self._geth[self.type](self.filename)
-        except OSError:
-            self.type = None
-            io_logger.warning("Omitting corrupt file")
-            return
-        if isinstance(header, dict):
+            if all(v is None for v in [mbias, mbias_header, mflat, mflat_header, auto_trim]):
+                self.calib = filename.calib
+        else:
+            self.filename = filename
+
+            self.type = self.checktype(*args, **kwargs)
+            try:
+                self.header_cache = self._geth[self.type](self.filename)
+            except OSError:
+                self.type = None
+                io_logger.warning("Omitting corrupt file")
+                return
+
+        if isinstance(header, (dict, astropy.io.fits.Header)):
             for k, v in header.items():
                 self.header_cache[0][k] = v
 
@@ -426,17 +414,23 @@ class AstroFile(object):
             hdud = hdu
         self._hduh = hduh
         self._hdud = hdud
+        self._corrupt = False
 
         self.auto_trim = auto_trim
 
-        self.calib = AstroCalib(pa.AstroFile(mbias, header=mbias_header),
-                                pa.AstroFile(mflat, header=mflat_header),
-                                auto_trim=auto_trim)
+        if self.calib is None:
+            self.calib = AstroCalib(pa.AstroFile(mbias, header=mbias_header),
+                                    pa.AstroFile(mflat, header=mflat_header),
+                                    auto_trim=auto_trim)
+
+
 
     def get_trims(self):
         """"Get trim limits, returning in python-style YX"""
         if self.auto_trim is None:
             return None
+        
+        # TODO: include minimum common area with AstroCalib
 
         return trim_to_python(self[self.auto_trim])
 
@@ -475,19 +469,11 @@ class AstroFile(object):
 
         Returns
         -------
-        str
-            "array" : If AstroFile represents a scipy array
-            "fits" : If AstroFile points to an existing .fits file
-            None : Otherwise
+        str: identified by its own filetype identifier
         """
         if not hasattr(self, 'filename'):
             return None
-        # if not isinstance(self.filename, str):
-        #     return None
-        # elif self.filename is None:
-        #     return "array"
-        # if exists and not path.isfile(self.filename):
-        #     return None
+
         for k in self._ids.keys():
             if self._ids[k](self.filename, *args, **kwargs):
                 return k
@@ -707,7 +693,7 @@ class AstroFile(object):
         return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
     @_checkfilename
-    def getheaderval(self, *args, single_in_list=False, **kwargs):
+    def getheaderval(self, *args, single_in_list=False, cast=None, hdu=0):
         """
         Get header value for each of the fields specified in args.
 
@@ -736,8 +722,16 @@ class AstroFile(object):
 
         tp = self.type
 
-        cast = kwargs.pop('cast', lambda x: x)
-        hdu = kwargs.pop('hdu', self._hduh)
+        if self._corrupt:
+            if single_in_list:
+                return [None]
+            else:
+                return None
+
+        if hdu is None:
+            hdu = self._hduh
+        if cast is None:
+            def cast(x): return x
 
         if len(args) == 1:
             # If first argument is tuple use those values as searches
@@ -795,12 +789,16 @@ class AstroFile(object):
         if hdu is None:
             hdu = self._hdud
 
+        if self._corrupt:
+            raise IOError("File data corrupt")
+
         if not tp:
             return False
 
         data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
 
         if data is None:  # File with no data / corrupt
+            self._corrupt = True
             raise IOError(f"Empty or corrupt file {self.filename} or HDU {hdu}")
 
         if 'hdu' in kwargs and kwargs['hdu'] < 0:
@@ -880,7 +878,8 @@ class AstroFile(object):
         If key is string, it returns either a one element or a list of headers.
         Otherwise, it returns an index to its data content
         """
-
+        if self._corrupt:
+            raise IOError("File data declared as corrupt")
         if key is None:
             return None
         elif isinstance(key, str):
@@ -1318,8 +1317,6 @@ class AstroCalib(object):
         flat = self.mflat[ffilter]
         bias = self.mbias[exptime]
 
-        mintrim = np.array([0, data.shape[0], 0, data.shape[1]])
-
         in_data = [data]
         if data_trim is not None:
             trim = [data_trim]
@@ -1331,13 +1328,14 @@ class AstroCalib(object):
                 if theader is not None:
                     theader = theader[0]
 
-                if theader is None or self.auto_trim_keyword not in theader.keys():
+                if (theader is None or
+                    self.auto_trim_keyword not in theader.keys()):
                     if not isinstance(tdata, (int, float)):
                         io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
                                           f" science frames but not in {label} frames... ignoring")
                     trim.append(trim[0])
                 else:
-                    trim.append(trim_to_python(theader[self.auto_trim_keyword]))
+                    trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
 
             common_trim = common_trim_fcn(trim)
 

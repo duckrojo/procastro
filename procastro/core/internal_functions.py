@@ -8,17 +8,24 @@ def trim_to_python(value):
 
 
 def python_to_trim(trim):
-    return '['+ str(trim[2]) +':' + str(trim[3]) +',' + str(trim[0]) + ':' + str(trim[1]) + ']'
+    if trim is None:
+        return None
+    return f'[{str(trim[2])}:{str(trim[3])},{str(trim[0])}:{str(trim[1])}]'
 
 
 def common_trim_fcn(trim_all):
     trim = [t for t in trim_all if t is not None]
+    if not len(trim):
+        return None
     result = (np.array(trim) * np.array([1, -1, 1, -1])).max(0)
     return result[0], -result[1], result[2], -result[3]
 
 
 def extract_common(tdata, trim, common_trim):
     # reacommodating to use the same operators both sides of the array
+    if trim is None:
+        return tdata, False
+
     delta = trim * np.array([1, -1, 1, -1]) - common_trim * np.array([1, -1, 1, -1])
     if np.all(delta == 0):
         return tdata, False
