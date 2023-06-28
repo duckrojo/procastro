@@ -1318,25 +1318,28 @@ class AstroCalib(object):
         bias = self.mbias[exptime]
 
         in_data = [data]
-        if data_trim is not None:
+        if data_trim is None:
+            trim = [1, data.shape[1], 1, data.shape[0]]
+        else:
             trim = [data_trim]
-            for label in ['bias', 'flat']:
-                tdata = vars()[label]
-                in_data.append(tdata)
 
-                theader = getattr(self, f'm{label}_header')
-                if theader is not None:
-                    theader = theader[0]
+        for label in ['bias', 'flat']:
+            tdata = vars()[label]
+            in_data.append(tdata)
 
-                if (theader is None or
-                    self.auto_trim_keyword not in theader.keys()):
-                    if not isinstance(tdata, (int, float)):
-                        io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
-                                          f" science frames but not in {label} frames... ignoring")
-                    trim.append(trim[0])
-                else:
-                    trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
+            theader = getattr(self, f'm{label}_header')
+            if theader is not None:
+                theader = theader[0]
 
+            if theader is None or self.auto_trim_keyword not in theader.keys():
+                if not isinstance(tdata, (int, float)):
+                    io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
+                                      f" science frames but not in {label} frames... ignoring")
+                trim.append(trim[0])
+            else:
+                trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
+
+        if len(set(trim)) != 1:
             common_trim = common_trim_fcn(trim)
 
             out_data = []
