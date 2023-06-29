@@ -1318,39 +1318,41 @@ class AstroCalib(object):
         bias = self.mbias[exptime]
 
         in_data = [data]
-        if data_trim is not None:
+        mintrim = (1, data.shape[1], 1, data.shape[0])
+        if data_trim is None:
+            trim = [mintrim]
+        else:
             trim = [data_trim]
-            for label in ['bias', 'flat']:
-                tdata = vars()[label]
-                in_data.append(tdata)
 
-                theader = getattr(self, f'm{label}_header')
-                if theader is not None:
-                    theader = theader[0]
+        for label in ['bias', 'flat']:
+            tdata = vars()[label]
+            in_data.append(tdata)
+            theader = getattr(self, f'm{label}_header')
+            if theader is not None:
+                theader = theader[0]
+            if (theader is None or
+                self.auto_trim_keyword not in theader.keys()):
+                if not isinstance(tdata, (int, float)):
+                    io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
+                                      f" science frames but not in {label} frames... ignoring")
+                trim.append(mintrim)
+            else:
+                trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
 
-                if (theader is None or
-                    self.auto_trim_keyword not in theader.keys()):
-                    if not isinstance(tdata, (int, float)):
-                        io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
-                                          f" science frames but not in {label} frames... ignoring")
-                    trim.append(trim[0])
-                else:
-                    trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
+        common_trim = common_trim_fcn(trim)
 
-            common_trim = common_trim_fcn(trim)
+        out_data = []
+        for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trim):
+            if isinstance(tdata, (int,float)): # if tdata is bias = 0 or flat = 1.0, dont trim
+                out_data.append(tdata)
+            else:
+                out, trimmed = extract_common(tdata, trim, common_trim)
+                out_data.append(out)
 
-            out_data = []
-            for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trim):
-                if isinstance(tdata, (int,float)): # if tdata is bias = 0 or flat = 1.0, dont trim
-                    out_data.append(tdata)
-                else:
-                    out, trimmed = extract_common(tdata, trim, common_trim)
-                    out_data.append(out)
-
-                if trimmed and verbose:
-                    logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim_keyword}: "
-                                 f"({str(trim)}) -> ({str(common_trim)})]")
-            data, bias, flat = out_data
+            if trimmed and verbose:
+                logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim_keyword}: "
+                             f"({str(trim)}) -> ({str(common_trim)})]")
+        data, bias, flat = out_data
 
         debias = data - bias
         with warnings.catch_warnings():
