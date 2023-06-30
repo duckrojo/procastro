@@ -1318,7 +1318,7 @@ class AstroCalib(object):
 
         in_data = [data]
         if data_trim is None:
-            trim = [(1, data.shape[1], 1, data.shape[0])]
+            trim = [(1, data.shape[0], 1, data.shape[1])]
         else:
             trim = [data_trim]
 
@@ -1334,7 +1334,10 @@ class AstroCalib(object):
                 if not isinstance(tdata, (int, float)):
                     io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
                                       f" science frames but not in {label} frames... ignoring")
-                trim.append(trim[0])
+                    label_trim = (1, data.shape[0], 1, data.shape[1])
+                else:
+                    label_trim = trim[0]
+                trim.append(label_trim)
             else:
                 trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
 
