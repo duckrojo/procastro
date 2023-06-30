@@ -1335,7 +1335,7 @@ class AstroCalib(object):
                 if not isinstance(tdata, (int, float)):
                     io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
                                       f" science frames but not in {label} frames... ignoring")
-                trim.append(mintrim)
+                trim.append(trim[0])
             else:
                 trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
 
