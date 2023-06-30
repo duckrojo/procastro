@@ -693,7 +693,7 @@ class AstroFile(object):
         return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
     @_checkfilename
-    def getheaderval(self, *args, single_in_list=False, cast=None, hdu=0):
+    def getheaderval(self, *args, single_in_list=False, cast=None, hdu=None):
         """
         Get header value for each of the fields specified in args.
 
@@ -728,8 +728,7 @@ class AstroFile(object):
             else:
                 return None
 
-        if hdu is None:
-            hdu = self._hduh
+        hdu = self._hduh
         if cast is None:
             def cast(x): return x
 
