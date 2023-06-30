@@ -1319,7 +1319,7 @@ class AstroCalib(object):
 
         in_data = [data]
         if data_trim is None:
-            trim = [1, data.shape[1], 1, data.shape[0]]
+            trim = [(1, data.shape[1], 1, data.shape[0])]
         else:
             trim = [data_trim]
 
