@@ -693,7 +693,7 @@ class AstroFile(object):
         return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
     @_checkfilename
-    def getheaderval(self, *args, single_in_list=False, cast=None, hdu=0):
+    def getheaderval(self, *args, single_in_list=False, cast=None, hdu=None):
         """
         Get header value for each of the fields specified in args.
 
@@ -728,8 +728,7 @@ class AstroFile(object):
             else:
                 return None
 
-        if hdu is None:
-            hdu = self._hduh
+        hdu = self._hduh
         if cast is None:
             def cast(x): return x
 
@@ -1319,7 +1318,8 @@ class AstroCalib(object):
 
         in_data = [data]
         if data_trim is None:
-            trim = [(1, data.shape[1], 1, data.shape[0])]
+            io_logger.warning("Trim info not found on science frames... using full figure instead")
+            trim = [(1, data.shape[0], 1, data.shape[1])]
         else:
             trim = [data_trim]
 
@@ -1333,9 +1333,13 @@ class AstroCalib(object):
 
             if theader is None or self.auto_trim_keyword not in theader.keys():
                 if not isinstance(tdata, (int, float)):
-                    io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
-                                      f" science frames but not in {label} frames... ignoring")
-                trim.append(trim[0])
+
+                    io_logger.warning(f"Trim info {self.auto_trim_keyword} not found on {label} frames..."
+                                      f"using full figure instead")
+                    label_trim = (1, data.shape[0], 1, data.shape[1])
+                else:
+                    label_trim = trim[0]
+                trim.append(label_trim)
             else:
                 trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
 
