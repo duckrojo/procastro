@@ -1,4 +1,3 @@
-import os.path
 from pathlib import Path
 
 import matplotlib
@@ -19,13 +18,22 @@ from typing import Optional, Callable, Any
 
 matplotlib.rcParams['keymap.xscale'].remove('L')
 matplotlib.rcParams['keymap.quit'].remove('q')
+matplotlib.rcParams['keymap.save'].remove('s')
 
 TwoValues = tuple[float, float]
 FunctionArgs = tuple[Callable, list[Any]]
 FunctionArgsKw = tuple[Callable, list[Any], dict]
 
 
-def _to_str_tuple(value):
+def _clear_axes(*axes):
+    """Clear examination area for a new plot, and its colorbar if there is any"""
+    for ax in axes:
+        ax.cla()
+        ax.set_aspect("auto")
+        ax.yaxis.tick_right()
+
+
+def _csv_str_to_tuple(value):
     value = re.sub(' *, *', ',', value)
     if ',' in value:
         return value.split(',')
@@ -66,7 +74,7 @@ def _pre_process(method):
 class BindingsFunctions:
     def __init__(self, axes_data,
                  axes_exam,
-                 config_file,
+                 config_file='interactive.toml',
                  cb_data=None,
                  cb_exam=None,
                  ):
@@ -84,9 +92,28 @@ class BindingsFunctions:
         self._colorbar_data = cb_data
         self._colorbar_exam = cb_exam
 
+        self._options_history = []
+
     def set_data_2d(self,
-                    data: np.ndarray):
+                    data: np.ndarray,
+                    imshow_kwargs: Optional[dict] = None):
+        """Set data content for internal treatment of key bindings.
+        Due to variety of contrasts This function does not plot the data, only its colorbar if such axes exists.
+
+        Parameters
+        ----------
+        data:
+           NumPy array with data
+        imshow_kwargs: dict, optional
+           If not None, then call imshow with the given dictionary as keyword arguments. If None, no imshow() is called.
+
+        """
+
         self._data_2d = data
+        if imshow_kwargs is not None:
+            self._axes_2d.cla()
+            self._axes_2d.imshow(data, **imshow_kwargs)
+
         if self._colorbar_data is not None:
             fig = self._axes_2d.figure
             fig.colorbar(self._axes_2d.get_images()[0],
@@ -191,17 +218,26 @@ class BindingsFunctions:
     ############################
 
     def clear_exam(self):
-        """Clear examination area for a new plot, and its colorbar if there is any"""
+        """Clear exam area for a new plot, and its colorbar if there is any"""
         axes = [self._axes_exam]
         if self._colorbar_exam is not None:
-            # ims = self._axes_exam.get_images()
-            # if len(ims)>0:
-            #     ims[0].colorbar.remove()
             axes.append(self._colorbar_exam)
-        for ax in axes:
-            ax.cla()
-            ax.set_aspect("auto")
-            ax.yaxis.tick_right()
+        _clear_axes(*axes)
+
+    def clear_data(self):
+        """Clear data area for a new plot, and its colorbar if there is any"""
+        axes = [self._axes_2d]
+        if self. _colorbar_data is not None:
+            axes.append(self._colorbar_data)
+        _clear_axes(*axes)
+
+    @property
+    def axes_data(self):
+        return self._axes_2d
+
+    @property
+    def axes_exam(self):
+        return self._axes_exam
 
     def zoom_stamp_2d(self,
                       event,
@@ -403,7 +439,7 @@ class BindingsFunctions:
 
         xy = (round(cxy[0], decimals), round(cxy[1], decimals))
 
-        colors = _to_str_tuple(props['color'])
+        colors = _csv_str_to_tuple(props['color'])
 
         idx = len(getattr(self, marks))
         color = colors[idx] if idx < len(colors) else colors[-1]
@@ -444,10 +480,13 @@ class BindingsFunctions:
 
     # noinspection PyUnusedLocal
     def terminate(self,
-                  event: KeyEvent):
+                  event: Optional[KeyEvent],
+                  close_plot: bool = True,
+                  ):
         self.disconnect()
-        plt.close(self._axes_exam.figure.number)
-        plt.close(self._axes_2d.figure.number)
+        if close_plot:
+            plt.close(self._axes_exam.figure.number)
+            plt.close(self._axes_2d.figure.number)
 
     # noinspection PyUnusedLocal
     def save_config(self,
@@ -466,7 +505,14 @@ class BindingsFunctions:
     #
     #####################
 
-    def options_add(self, key, doc, fcn, kwargs, ret):
+    @property
+    def options_last(self):
+        """return the key of last option called"""
+        return self._options_history[-1]
+
+    def options_add(self, key, doc, fcn,
+                    kwargs: dict = None,
+                    ret: Optional[str] = None):
         """Add a new hotkey binding, it can overwrite only those given by default in .options_reset_config()
 
         Parameters
@@ -475,17 +521,22 @@ class BindingsFunctions:
           Single character string
         doc: str
           Documentation for the hotkey
-        fcn: str
-          Function from BindingsFunctions to be called
+        fcn: str, callable
+          Function from BindingsFunctions to be called if str; otherwise, a callable static function that
+           receives event
         kwargs: dict
           Keyword arguments for to use in fcn() beyond the Event
-        ret:
-          Attribute of self defined in child class, typically used to return a value
+        ret: str, optional
+          Attribute of self defined in child class, return from fcn will be appended to this list
         """
         overwritable = ['S', 'L', 'F', '?']
+        if kwargs is None:
+            kwargs = {}
 
         if key in self._key_options.keys() and key not in overwritable:
             raise ValueError(f"Key '{key}' has already been added for '{doc}', cannot add it for '{doc}'")
+        if isinstance(fcn, str):
+            fcn = getattr(self, fcn)
         self._key_options[key] = (doc, fcn, kwargs, ret)
 
     # noinspection PyUnusedLocal
@@ -500,25 +551,26 @@ class BindingsFunctions:
         for key, (doc, fcn, kwargs, ret) in self._key_options.items():
             if event.key == key:
                 if ret is None:
-                    getattr(self, fcn)(event, **kwargs)
+                    fcn(event, **kwargs)
                 else:
-                    getattr(self, ret).append(getattr(self, fcn)(event, **kwargs))
+                    getattr(self, ret).append(fcn(event, **kwargs))
 
-    def options_reset_config(self):
+        self._options_history.append(event.key)
+
+    def options_reset(self, config_options=True, help_option=True):
         """Loads config file and add default config saving/loading options
 
         """
         self._load_config()
-
         self._key_options = {}
-        self.options_add('?', "hotkey help", "_options_help", {}, None)
-        self.options_add('L', f"reload configuration from '{pa.file_from_procastro_dir(self._config_file)}'",
-                         'load_config',
-                         {}, None)
-        self.options_add('S', 'save configuration', 'save_config',
-                         {}, None)
-        self.options_add('F', 'load default configuration from factory', 'load_config',
-                         {'reset': True}, None)
+
+        if help_option:
+            self.options_add('?', "hotkey help", "_options_help", {}, None)
+        if config_options:
+            self.options_add('L', f"reload configuration from '{pa.file_from_procastro_dir(self._config_file)}'",
+                             'load_config', {}, None)
+            self.options_add('S', 'save configuration', 'save_config', {}, None)
+            self.options_add('F', 'load default configuration from factory', 'load_config', {'reset': True}, None)
 
 
 class BindingsImshowz(BindingsFunctions):
@@ -539,50 +591,38 @@ class BindingsImshowz(BindingsFunctions):
         f.show()
 
         super(BindingsImshowz, self).__init__(axes_data, axes_exam,
-                                              config_file,
+                                              config_file=config_file,
                                               cb_data=colorbar_data,
                                               cb_exam=colorbar_exam,
                                               )
 
-        self.options_reset_config()
+        self.options_reset()
 
         self._marks_xy = []
 
-        self.options_add('r', 'radial profile', 'plot_radial_from_2d',
-                         {}, None)
-        self.options_add('9', 'zoom with radius 9', 'zoom_stamp_2d',
-                         {'scale': 'linear', 'stamp_rad': 9}, None)
-        self.options_add('5', 'zoom with radius 5', 'zoom_stamp_2d',
-                         {'scale': 'linear', 'stamp_rad': 5, 'text': True}, None)
-        self.options_add('z', 'zoom into stamp', 'zoom_stamp_2d',
-                         {'scale': 'original'}, None)
+        self.options_add('r', 'radial profile', 'plot_radial_from_2d')
+        self.options_add('9', 'zoom with radius 9', 'zoom_stamp_2d', {'scale': 'linear', 'stamp_rad': 9})
+        self.options_add('5', 'zoom with radius 5', 'zoom_stamp_2d', {'scale': 'linear', 'stamp_rad': 5, 'text': True})
+        self.options_add('z', 'zoom into stamp', 'zoom_stamp_2d', {'scale': 'original'})
         self.options_add('Z', 'zoom into stamp, recomputing scale by zscale in stamp', 'zoom_stamp_2d',
-                         {'scale': 'zscale'}, None)
+                         {'scale': 'zscale'})
         self.options_add('X', 'zoom into stamp, recomputing scale linearly in the stamp', 'zoom_stamp_2d',
-                         {'scale': 'linear'}, None)
-        self.options_add('h', 'horizontal projection', 'plot_hprojection_from_2d',
-                         {}, None)
-        self.options_add('v', 'vertical projection', 'plot_vprojection_from_2d',
-                         {}, None)
-        self.options_add('m', 'mark a new position', 'return_mark_from_2d',
-                         {'recenter': False, 'marks': '_marks_xy',
-                          'decimals': self._config['tool']['marking']['rounding_user'],
-                          },
-                         '_marks_xy')
+                         {'scale': 'linear'})
+        self.options_add('h', 'horizontal projection', 'plot_hprojection_from_2d')
+        self.options_add('v', 'vertical projection', 'plot_vprojection_from_2d')
+        self.options_add('m', 'mark a new position', 'return_mark_from_2d', {'recenter': False, 'marks': '_marks_xy',
+                                                                             'decimals':
+                                                                                 self._config['tool']['marking'][
+                                                                                     'rounding_user'],
+                                                                             }, '_marks_xy')
         self.options_add('c', 'mark a new position after centering', 'return_mark_from_2d',
                          {'recenter': True, 'marks': '_marks_xy',
                           'decimals': self._config['tool']['marking']['rounding_centroid'],
-                          },
-                         '_marks_xy')
-        self.options_add('d', 'delete all marks', 'delete_marks_from_2d',
-                         {'field': '_marks_xy'},
-                         None)
-        self.options_add('x', 'flip X-axis', 'horizontal_flip_2d',
-                         {}, None)
-        self.options_add('y', 'flip Y-axis', 'vertical_flip_2d',
-                         {}, None)
-        self.options_add('q', 'terminate interactive imshow', 'terminate',
-                         {}, None)
+                          }, '_marks_xy')
+        self.options_add('d', 'delete all marks', 'delete_marks_from_2d', {'field': '_marks_xy'})
+        self.options_add('x', 'flip X-axis', 'horizontal_flip_2d')
+        self.options_add('y', 'flip Y-axis', 'vertical_flip_2d')
+        self.options_add('q', 'terminate interactive imshow', 'terminate')
 
         self.set_data_2d(image)
         self.connect()

@@ -16,12 +16,8 @@
 # Boston, MA  02110-1301, USA.
 #
 #
-from typing import Optional, Tuple, List, Union
-from collections.abc import Sequence
+import matplotlib.backend_bases
 
-TwoValues = Tuple[float, float]
-
-# noinspection PyUnresolvedReferences
 from matplotlib import patches
 
 import procastro as pa
@@ -32,8 +28,14 @@ import matplotlib.pyplot as plt
 import logging
 import astropy.timeseries as ts
 import astropy.time as apt
+from ..core.interactive_graphics import BindingsFunctions
+from typing import Optional, Union
+
+TwoValues = tuple[float, float]
+
 
 __all__ = ['Photometry']
+
 
 class FilterMessage(logging.Filter):
     def add_needle(self, needle):
@@ -117,7 +119,7 @@ def _show_apertures(coords, aperture=None, sky=None,
                     fontsize=20)
 
 
-def _prep_offset(start, offsets, ignore):
+def _prep_offset(offsets, ignore):
     if ignore is None:
         ignore = []
     if offsets is None:
@@ -125,7 +127,6 @@ def _prep_offset(start, offsets, ignore):
     else:
         offset_list = np.zeros([max(offsets.keys()) + 1, 2])
         for k, v in offsets.items():
-            k -= start
             if k < 0:
                 continue
             elif isinstance(v, (list, tuple)) and len(v) == 2:
@@ -139,390 +140,102 @@ def _prep_offset(start, offsets, ignore):
     return ignore, offset_list
 
 
-def _get_calibration(sci_files, frame=0, mdark=None, mflat=None,
-                     logger=None, skip_calib=False, verbose_procdata=True):
-    """
-    If files were not calibrated in AstroFile, then  generate calibrated data
-    from a specified frame
+class _interactive(BindingsFunctions):
 
-    Parameters
-    ----------
-    sci_files: procastro.AstroDir
-    frame: frame To calibrate, first frame by default
-    mdark: array_like, dict or AstroFile, optional
-        Master dark/bias
-    mflat: array_like, dict or AstroFile, optional
-        Master flat
-    logger: bool
-        Toggles logging
-    skip_calib: If this is True, there will be no calibration.
+    def __init__(self,
+                 stamp_rad: int,
+                 labels: list[str],
+                 brightest: int = 0,
+                 logger: logging.Logger = None,
+                 ):
 
-    Returns
-    -------
-    array_like :
-        Calibrated file data
-    """
-    if logger is None:
-        logger = tmlogger
-
-    astrofile = sci_files[frame]
-    d = astrofile.reader(verbose=verbose_procdata)
-
-    if not skip_calib:
-        if astrofile.has_calib():
-            logger.debug(
-                "Skipping calibration given to Photometry() because "
-                "calibration files were included in AstroFile: {}"
-                .format(astrofile))
-        else:
-            d = (d - mdark) / mflat
-
-    return d
-
-
-def _get_stamps(sci_files, target_coords_xy, stamp_rad, maxskip,
-                mdark=None, mflat=None, labels=None, recenter=True,
-                offsets_xy=None, logger=None, ignore=None, brightest=0,
-                max_change_allowed=None, interactive=False, idx0=0,
-                verbose=True, verbose_procdata=True,
-                ):
-    """
-    ...
-
-    Parameters
-    ----------
-    sci_files : procastro.AstroDir
-    target_coords_xy: List
-        List containing each target coordinates.
-        ([[t1x, t1y], [t2x, t2y], ...])
-    stamp_rad : int
-        Radius of the stamp used
-    maxskip : int
-        Maximum distance allowed between target and stamp center, a longer
-        skip will toggle a warning.
-    mdark :
-        Master dark/bias to be used
-    mflat :
-        Master Flat to be used
-    labels : String list, optional
-        List containing the names of each target
-    recenter : bool, optional
-        If True, the stamp will readjust its position each frame, following
-        the target's movement
-    offset_xy : List, optional
-
-    logger : bool
-        If True, enables logger output
-    ignore : int list, optional
-        List with the indeces of frames to be ignored
-    brightest : int, optional
-        Index of the brightest target
-    max_change_allowed :
-    interactive : bool, optional
-        Enables interactive mode. See Notes below.
-    idx0 : int, optional
-        Index of the first frame
-
-    Notes
-    -----
-    Interactive Mode:
-    Enbling this setting gives manual control over the reduction process,
-    the following commands are available:
-        * Left and Right keys : Change to previous/next frame
-        * c : Recenter stamps based on mouse position
-        * d : Ignore current frame
-        * g : Keep going until a major drift occurs
-        * q : Exit interactive mode and stop the process
-
-    Frames can be flagged by pressing 1-9
-
-    Returns
-    -------
-
-    """
-
-    if ignore is None:
-        ignore = []
-
-    skip_interactive = True
-
-    ngood = len(sci_files)
-
-    if max_change_allowed is None:
-        max_change_allowed = stamp_rad
-
-    if labels is None:
-        labels = range(len(target_coords_xy))
-
-    tmp = np.zeros([len(sci_files), 2])
-    if offsets_xy is None:
-        offsets_xy = tmp
-    elif len(offsets_xy) < len(sci_files):
-        tmp[:len(offsets_xy), :] = offsets_xy
-        offsets_xy = tmp
-    del tmp
-
-    if logger is None:
-        logger = tmlogger
-
-    skip_calib = False
-    if mdark is None and mflat is None:
-        skip_calib = True
-    if mdark is None:
-        mdark = 0.0
-    if mflat is None:
-        mflat = 1.0
-
-    all_cubes = np.zeros([len(target_coords_xy), ngood,
-                          stamp_rad * 2 + 1, stamp_rad * 2 + 1])
-    indexing = [0] * ngood
-    center_xy = np.zeros([len(target_coords_xy), ngood, 2])
-
-    center_user_xy = [[xx, yy] for xx, yy in target_coords_xy]
-    if verbose:
-        logger.info(" Obtaining stamps for {} files: ".format(ngood))
-
-    if interactive:
-        f, ax = pa.figaxes()
-        int_labels = [''] * len(labels)
-        int_labels[brightest] = 'REF'
-        flag = {}
+        f, axes = pa.figaxes()
         msg_filter = FilterMessage().add_needle('Using default ')
-        logger.addFilter(msg_filter)
+        # logger.addFilter(msg_filter)
         print("Entering interactive mode:\n"
               " 'd'elete frame, re'c'enter apertures, flag '1'-'9', 'q'uit, "
               "keep 'g'oing until drift, <- prev frame, -> next frame")
-        skip_interactive = False
 
-    to_store = 0
-    stat = 0
-    previous_distance = None
-    idx = 0
-    try_dedrift = True
-    n_files = len(sci_files)
-    while idx < n_files:
-        try:
-            reduced_data = _get_calibration(sci_files,
-                                            frame=idx, mdark=mdark, mflat=mflat,
-                                            logger=logger,
-                                            skip_calib=skip_calib,
-                                            verbose_procdata=verbose_procdata)
-        except OSError:
-            logger.warning(f"Corrupt file {sci_files[idx].filename}, forcibly added to the ignore list")
-            if idx not in ignore:
-                ignore.append(idx)
-            idx += 1
-            continue
+        super(_interactive, self).__init__(axes, None)
 
-        astrofile = sci_files[idx]
-        off = offsets_xy[idx]
+        self._prev_brightest_xy: Optional[TwoValues] = None
+        self._offset_xy: Optional[TwoValues] = None
+        self._ignored: Optional[bool] = None
+        self._move: Optional[int] = 0
+        self._idx: Optional[int] = None
 
-        last_frame_coords_xy = []
-        indexing[to_store] = idx
-        if to_store:
-            prev_center_xy = center_xy[:, to_store - 1, :]
-        else:
-            prev_center_xy = center_user_xy
+        self.labels = [''] * len(labels)
+        self.labels[brightest] = 'REF'
+        self.stamp_rad = stamp_rad
+        self._logger = logger
+        self._logger_msg_filter = msg_filter
 
-        for cube, trg_id in zip(all_cubes, range(len(labels))):
-            cx, cy = prev_center_xy[trg_id][0] + off[0], \
-                     prev_center_xy[trg_id][1] + off[1]
-            if recenter:
-                ncy, ncx = pa.subcentroid(reduced_data, [cy, cx], stamp_rad)
-            else:
-                ncy, ncx = cy, cx
-            if ncy < 0 or ncx < 0 or ncy > reduced_data.shape[0] or ncx > reduced_data.shape[1]:
-                # Following is necessary to keep indexing that does not
-                # consider skipped bad frames
-                af_names = [af.filename for af in sci_files]
-                raise ValueError(
-                    "Centroid for frame #{} falls outside data for target {}. "
-                    " Initial/final center was: [{:.2f}, {:.2f}]/[{:.2f}, "
-                    "{:.2f}] Offset: {}\n{}"
-                    .format(af_names.index(astrofile.filename),
-                            labels[trg_id], cx, cy,
-                            ncx, ncy, off, astrofile))
-            cube[to_store] = pa.subarray(reduced_data, [ncy, ncx], stamp_rad,
-                                         padding=True)
-            center_xy[trg_id][to_store] = [ncx, ncy]
+        self.options_add('left', "Return to previous frame", "_move", {'step': -1})
+        self.options_add('right', "Advance to next frame", "_move", {'step': 1})
+        self.options_add('q', "Abort", "_move", {'step': None})
+        self.options_add('i', "Toggle ignore for this frame", "_add_to_ignore")
+        self.options_add('c', 'Recenter the brightest', "_recenter")
+        self.options_add('g', 'Keep going until next drift', "_skip_interactive")
 
-            if off.sum() > 0:
-                stat |= 2
+    def close(self):
+        self._logger.removeFilter(self._logger_msg_filter)
+        self.terminate(None)
 
-            skip = np.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
-            if skip > maxskip:
-                stat |= 1
-                if idx == 0:
-                    logger.warning(
-                        "Position of user coordinates adjusted by {skip:.1f} "
-                        "pixels on first frame for target '{name}'"
-                        .format(skip=skip, name=labels[trg_id]))
-                else:
-                    logger.warning(f"Large jump ({cx}, {cy}) -> ({ncx}, {ncy}). Stamprad: {stamp_rad} pix")
-                    logger.warning(
-                        "Large jump of {skip:.1f} pixels for {name} has "
-                        "occurred on frame #{frame_nmb}: {frame}"
-                        .format(skip=skip, frame=astrofile,
-                                name=labels[trg_id], frame_nmb=idx))
+    # noinspection PyUnusedLocal
+    def _skip_interactive(self,
+                          event: Optional[matplotlib.backend_bases.Event],
+                          ):
+        self._move = 1
+        self._skip = True
+        self.terminate(None, False)
 
-            last_frame_coords_xy.append([ncx, ncy])
+    # noinspection PyUnusedLocal
+    def _set_move(self,
+                  event: Optional[matplotlib.backend_bases.Event],
+                  step: Optional[int],
+                  ):
+        self._move = step
+        self._skip = False
+        if step is not None:
+            self.terminate(None, False)
 
-        distance_to_brightest_vector = \
-            np.array(last_frame_coords_xy) \
-            - np.array(last_frame_coords_xy[brightest])
+    def new_frame(self, data, filename, idx, ignored, offset_xy, prev_brightest_xy, centers):
+        self.clear_data()
+        self._move = 0
+        ax = self.axes_data
+        pa.imshowz(data, axes=ax, show=False)
+        ax.set_ylabel(f'Frame #{idx}: {filename}')
 
-        distance_to_brightest = \
-            np.sqrt((distance_to_brightest_vector * distance_to_brightest_vector)
-                    .sum(1))
-        if previous_distance is None:
-            previous_distance = distance_to_brightest
-        else:
-            change = np.absolute(distance_to_brightest - previous_distance)
-            max_change = max(change)
-            if max_change > max_change_allowed and idx not in ignore:
-                if try_dedrift:
-                    # todo: attempt an auto dedrift
-                    raise NotImplementedError("Still need to add try_dedrift")
-                    # try_dedrift = False
-                    # continue
-                else:
-                    stat |= 4
-                    logger.warning(
-                        "Found star drifting from brightest by {:.1f} pixels "
-                        "between consecutive frames for target {}."
-                        .format(max_change,
-                                labels[list(change).index(max_change)]))
+        self._prev_brightest_xy = prev_brightest_xy
+        self._idx = idx
+        self._ignored = ignored
+        self._offset_xy = offset_xy
 
-        if interactive and (not skip_interactive or stat & 4):
-            skip_interactive = False
-            ax.cla()
-            f.show()
-            pa.imshowz(reduced_data, axes=ax, show=False)
-            ax.set_ylabel(f'Frame #{idx}: {astrofile.basename()}')
-            curr_center_xy = center_xy[:, to_store, :]
-            on_click_action = [1]
+        ap_color = sk_color = 'w'
+        if ignored:
+            ap_color = sk_color = 'r'
+        elif offset_xy.sum():
+            ap_color = 'b'
+        _show_apertures(centers, axes=ax, labels=self.labels,
+                        sk_color=sk_color, ap_color=ap_color, stamp_rad=self.stamp_rad,
+                        logger=self._logger)
 
-            def onclick(event):
-                print(event.key)
-                print(event.inaxes == ax)
-                if event.inaxes != ax:
-                    return
-                if event.key == 'right':  # frame is good
-                    pass
-                elif event.key == 'q':
-                    logger.log(PROGRESS, "User canceled stamp acquisition")
-                    on_click_action[0] = -10
-                elif event.key == 'left':  # previous frame
-                    on_click_action[0] = -1
-                elif event.key == 'd':  # ignore this frame
-                    if idx in ignore:
-                        ignore.pop(ignore.index(idx))
-                    else:
-                        ignore.append(idx)
-                    on_click_action[0] = 0
-                elif event.key == 'c':  # Fix the jump (offset)
-                    prev_cnt_bright = center_xy[brightest][to_store - 1]
-                    offsets_xy[idx] = [event.xdata - prev_cnt_bright[0],
-                                       event.ydata - prev_cnt_bright[1]]
-                    on_click_action[0] = 0
-                elif event.key == 'g':
-                    on_click_action[0] = 10
-                elif '9' >= event.key >= '1':  # flag the frame
-                    d_idx = str(int(event.key))
-                    if d_idx not in flag:
-                        flag[d_idx] = []
-                    flag[d_idx].append(idx)
-                    return
-                else:
-                    return
-                event.inaxes.figure.canvas.stop_event_loop()
+        self.connect()
 
-            cid = f.canvas.mpl_connect('key_press_event', onclick)
-            ap_color = sk_color = 'w'
-            if idx in ignore:
-                ap_color = sk_color = 'r'
-            elif off.sum():
-                ap_color = 'b'
-            else:
-                n_flag = sum([idx in fl for fl in flag])
-                sk_color = n_flag and "gray{}0".format(9 - n_flag) or 'w'
-            _show_apertures(curr_center_xy, axes=ax, labels=int_labels,
-                            sk_color=sk_color, ap_color=ap_color, stamp_rad=stamp_rad,
-                            logger=logger)
-            f.show()
-            f.canvas.start_event_loop(timeout=-1)
-            f.canvas.mpl_disconnect(cid)
+        return self._move, self._skip, self._ignored, self._offset_xy
 
-            if on_click_action[0] == -1:
-                if not idx:
-                    continue
-                idx -= 1
-                if idx not in ignore:
-                    to_store -= 1
-                continue
-            elif on_click_action[0] == 0:
-                continue
-            elif on_click_action[0] == 10:  # continue until drift detected
-                skip_interactive = True
-            elif on_click_action[0] == -10:
-                break
+    # noinspection PyUnusedLocal
+    def _add_to_ignore(self, event):
+        self._ignored = not self._ignored
+        self._set_move(None, 0)
 
-        if idx in ignore:
-            stat |= 8
-            idx += 1
-            continue
+    def _recenter(self, event):
+        self._offset_xy = (event.xdata - self._prev_brightest_xy[0],
+                           event.ydata - self._prev_brightest_xy[1])
+        self._set_move(None, 0)
 
-        msg = ''
-        if stat & 8:  # skipped at least 1
-            msg += 'S'
-        if stat & 2:  # offset applied
-            msg += "O"
-        if stat & 1:  # jump of a target
-            msg += "J"
-        if stat & 4:  # drift from brightest
-            msg += "D"
-        print('{}{}'.format(msg, idx % 10 == 9
-                            and (idx % 100 == 99 and '=' or ':')
-                            or '.'),
-              end='', flush=True)
-
-        stat = 0
-        to_store += 1
-        idx += 1
-        try_dedrift = False
-
-    all_cubes = all_cubes[:, :to_store, :, :]
-    indexing = indexing[:to_store]
-    center_xy = center_xy[:, :to_store, :]
-    print('')
-    logger.log(PROGRESS, "Skipped {} flagged frames".format(ngood - to_store))
-
-    if interactive:
-        _show_apertures(curr_center_xy, axes=ax, labels=labels,
-                        sk_color=sk_color, ap_color=ap_color)
-        f.show()
-        print("offsets_xy = {", end='')
-        for idx in range(len(offsets_xy)):
-            if idx in ignore:
-                print("{:d}:0, ".format(idx + idx0), end='')
-            elif offsets_xy[idx].sum() != 0:
-                print("{:d}: [{:.0f}, {:.0f}],\n              "
-                      .format(idx + idx0,
-                              offsets_xy[idx][0],
-                              offsets_xy[idx][1]),
-                      end="")
-        print("}")
-        print("flags = {")
-        for i in range(1, 10):
-            if str(i) in flag:
-                print("{:d}: {},"
-                      .format(i,
-                              list(np.array(list(set(flag[str(i)])))
-                                   + idx0)))
-        print("}")
-        logger.removeFilter(msg_filter)
-
-    return indexing, all_cubes, center_xy
+    def __bool__(self):
+        return True
 
 
 class Photometry:
@@ -543,8 +256,6 @@ class Photometry:
     ----------
     surrounding_ap_limit :
        Limit to compute excess flux for a given aperture
-    coord_user_xy :  List[TwoValues]
-       Stores original coordinates given by the user
     extra_header :
        Name of header item given 'extra'
     extras :
@@ -553,16 +264,10 @@ class Photometry:
     Parameters
     ----------
     sci_files : procastro.AstroDir
-    target_coords_xy : List
+    target_coords_xy : list
         List containing each target coordinates.
         ([[t1x, t1y], [t2x, t2y], ...])
     offsets_xy : List, optional
-    idx0 : int, optional
-        Index of the first frame
-    aperture :
-        Aperture photometry radius
-    sky : 2-element list
-        Inner and outer radius for sky annulus
     mdark : dict indexed by exposure time, array or AstroFile
         Master dark/bias to be used
     mflat : dict indexed by filter name, array or AstroFile
@@ -592,7 +297,8 @@ class Photometry:
         If set, logger will save its output on this file
     ignore : List, optional
         Indeces of frames to be ignored
-    extra :
+    extra : str, list, dict
+        Indicates the extra headers that are to be stored in the output timeseries
     interactive : bool, optional
         Enables interactive mode
 
@@ -604,7 +310,7 @@ class Photometry:
 
     """
 
-    def __init__(self, sci_files, target_coords_xy, offsets_xy=None, idx0=0,
+    def __init__(self, sci_files, target_coords_xy, offsets_xy=None,
                  mdark=None, mflat=None,
                  stamp_rad=30, outer_ap=1.2,
                  max_skip=8, max_counts=50000, min_counts=4000, recenter=True,
@@ -612,14 +318,17 @@ class Photometry:
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
                  logger=None,
-                 interactive=False, verbose=True,
-                 verbose_procdata=True,
+                 interactive=False,
+                 verbose=True, verbose_procdata=True,
                  ):
 
         # initialized elsewhere
         self._last_ts = None
         self._skies = None
         self._apertures = None
+        self.indexing = None
+        self.sci_stamps = None
+        self.coords_new_xy = None
 
         if isinstance(epoch, str):
             self.epochs = sci_files.getheaderval(epoch)
@@ -632,9 +341,6 @@ class Photometry:
 
         self.surrounding_ap_limit = outer_ap
 
-        if not isinstance(idx0, int):
-            raise TypeError("Initial index can only be an integer")
-
         self.deg = deg
         self.gain = gain
         self.ron = ron
@@ -643,6 +349,11 @@ class Photometry:
         self.min_counts = min_counts
         self.recenter = recenter
         self.max_skip = max_skip
+        self.max_drift = stamp_rad/2
+        sci_files = pa.AstroDir(sci_files, mbias=mdark, mflat=mflat)
+        self._astrodir = sci_files
+
+        ignore, offset_list = _prep_offset(offsets_xy, ignore)
 
         if logger is not None:
             self._logger = logger
@@ -677,10 +388,6 @@ class Photometry:
         self._logger.info(f"procastro.timeseries.Photometry execution on:\n"
                           f"  {newline.join([f.filename for f in sci_files])}")
 
-        sci_files = pa.AstroDir(sci_files)
-
-        ignore, offset_list = _prep_offset(idx0, offsets_xy, ignore)
-
         # label list
         if isinstance(target_coords_xy, dict):
             coords_user_xy = list(target_coords_xy.values())
@@ -705,7 +412,6 @@ class Photometry:
                              "specified as dictionary or as a list of 2 "
                              "elements, not: {}"
                              .format(str(target_coords_xy), ))
-
         self.labels = labels
         self.coords_user_xy = coords_user_xy
 
@@ -740,21 +446,12 @@ class Photometry:
                                for lab, coo in zip(labels, coords_user_xy)])
                     ))
 
-        indexing, self.sci_stamps, \
-        self.coords_new_xy = _get_stamps(sci_files, self.coords_user_xy,
-                                         self.stamp_rad, maxskip=max_skip,
-                                         mdark=mdark, mflat=mflat,
-                                         recenter=recenter,
-                                         labels=labels,
-                                         offsets_xy=offset_list,
-                                         logger=self._logger,
-                                         ignore=ignore,
-                                         brightest=brightest,
-                                         idx0=idx0,
-                                         interactive=interactive,
-                                         verbose=verbose,
-                                         verbose_procdata=verbose_procdata,
-                                         )
+        self._get_stamps(ignore,
+                         offset_list,
+                         interactive=interactive,
+                         verbose=verbose,
+                         verbose_procdata=verbose_procdata,
+                         )
 
         if extra is None:
             self.extra_header = {}
@@ -764,27 +461,202 @@ class Photometry:
                 self.extra_header = {k: k for k in extra}
             elif isinstance(extra, dict):
                 self.extra_header = extra.copy()
-            elif isinstance(extra, 'str'):
+            elif isinstance(extra, str):
                 self.extra_header = {extra: extra}
             else:
                 raise TypeError(f"Header specification 'extra' ({extra}) was not understood. "
                                 f"It can be str, list, or dictionary (fits_value: column_value) ")
             # Storing extras and frame_id with the original indexing.
-            self.extras = {x: [''] * idx0 + list(v)
+            self.extras = {x: list(v)
                            for x, v in zip(extra, zip(*sci_files.getheaderval(*self.extra_header.keys(),
                                                                               single_in_list=True)))}
 
-        self.mdark = mdark
-        self.mflat = mflat
-
         # storing indexing only for those not ignored
-        self.indexing = [idx + idx0 for idx in indexing]
-        if idx0:
-            raise NotImplementedError(
-                "Having a value of idx0 uses lots of memory on dummy AstroDir "
-                "to put before sci_files... needs to e investigated.  In the"
-                "meantime idx0 is disabled.")
-        self._astrodir = sci_files
+
+    def _get_stamps(self, ignore, offsets_xy,
+                    interactive=False,
+                    verbose=True, verbose_procdata=True,
+                    ):
+        """
+        ...
+
+        Parameters
+        ----------
+        offsets_xy : List or numpy.ndarray, optional
+
+        ignore : int list, optional
+            List with the indexes of frames to be ignored
+        interactive : bool, optional
+            Enables interactive mode. See Notes below.
+
+        Notes
+        -----
+        Interactive Mode:
+        Enbling this setting gives manual control over the reduction process,
+        the following commands are available:
+            * Left and Right keys : Change to previous/next frame
+            * c : Recenter stamps based on mouse position
+            * i : De/ignore current frame
+            * g : Keep going until a major drift occurs
+            * q : Exit interactive mode and stop the process
+
+        Frames can be flagged by pressing 1-9
+
+        Returns
+        -------
+
+        """
+
+        if ignore is None:
+            ignore = []
+
+        max_change_allowed = self.max_drift
+        n_targets = len(self.coords_user_xy)
+        stamp_rad = self.stamp_rad
+        sci_files = self._astrodir
+        max_skip = self.max_skip
+        recenter = self.recenter
+        logger = self._logger
+        labels = self.labels
+
+        n_files = len(sci_files)
+
+        tmp = np.zeros([n_files, 2])
+        if offsets_xy is None:
+            offsets_xy = tmp
+
+        all_centers_xy = np.zeros([n_targets, n_files, 2])
+        all_cubes = np.zeros([n_targets, n_files, stamp_rad * 2 + 1, stamp_rad * 2 + 1])
+        indexing = [-1] * n_files
+
+        if verbose:
+            logger.info(" Obtaining stamps for {} files: ".format(n_files))
+
+        if interactive:
+            interactive = _interactive(stamp_rad, labels, logger=logger, brightest=self.brightest)
+
+        prev_centers_xy = [(xx, yy) for xx, yy in self.coords_user_xy]
+        previous_distance = None
+        skip_interactive = False
+        to_store = 0
+        idx = 0
+
+        while idx < n_files:
+            filename = sci_files[idx].filename
+            off = offsets_xy[idx]
+
+            offseted = np.abs(off).sum() > 0
+            ignored = idx in ignore
+
+            try:
+                reduced_data = sci_files[idx].reader(verbose=verbose_procdata)
+            except OSError:
+                logger.warning(f"Corrupt file {sci_files[idx].filename}, forcibly added to the ignore list")
+                if not ignored:
+                    ignore.append(idx)
+                idx += 1
+                continue
+
+            last_coords_xy = []
+            centers_xy = []
+            cubes = []
+
+            long_skip = False
+            for label, prev_center_xy in zip(labels, prev_centers_xy):
+                cx, cy = prev_center_xy[0] + off[0], prev_center_xy[1] + off[1]
+                if recenter:
+                    ncy, ncx = pa.subcentroid(reduced_data, [cy, cx], stamp_rad)
+                else:
+                    ncy, ncx = cy, cx
+                if ncy < 0 or ncx < 0 or ncy > reduced_data.shape[0] or ncx > reduced_data.shape[1]:
+                    raise ValueError(f"Centroid for frame #{idx}({filename}) falls outside data"
+                                     f" for target {label}. Initial/final center was:"
+                                     f" [{cx:.2f}, {cy:.2f}]/[{ncx:.2f}, {ncy:.2f}] Offset: {off}")
+                cubes.append(pa.subarray(reduced_data, [ncy, ncx], stamp_rad, padding=True))
+                centers_xy.append((ncx, ncy))
+
+                skip = np.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
+                if skip > max_skip:
+                    long_skip = True
+                    logger.warning(f"Large jump ({cx}, {cy}) -> ({ncx}, {ncy}). Stamprad: {stamp_rad} pix")
+                    logger.warning(f"Large jump of {skip:.1f} pixels for {label} has occurred "
+                                   f"on frame #{idx}{'(User Coordinates!)' if not idx else ''}: {filename}")
+                last_coords_xy.append([ncx, ncy])
+
+            last_coords_xy = np.array(last_coords_xy)
+            centers_xy = np.array(centers_xy)
+            cubes = np.array(cubes)
+
+            drifting = False
+            distance_to_brightest_vector = last_coords_xy - last_coords_xy[self.brightest][None, :]
+            distance_to_brightest = np.sqrt((distance_to_brightest_vector ** 2).sum(1))
+            if previous_distance is not None:
+                change = np.absolute(distance_to_brightest - previous_distance)
+                max_change = max(change)
+                if max_change > max_change_allowed and not ignored:
+                    drifting = True
+                    logger.warning(f"Found star drifting from brightest by {max_change:.1f} pixels "
+                                   f"between consecutive frames for target {labels[np.argmax(max_change)]}."
+                                   )
+
+            step = 1
+            if interactive and (not skip_interactive or drifting):
+                step, skip_interactive, ignored, offset = interactive.new_frame(reduced_data, filename,
+                                                                                idx, ignored, off,
+                                                                                prev_centers_xy[self.brightest],
+                                                                                centers_xy)
+                offsets_xy[idx] = offset
+                if ignored and idx not in ignore:
+                    ignore.append(idx)
+                elif not ignored and idx in ignore:
+                    ignore.pop(idx)
+
+            if step < 1:
+                continue
+
+            indexing[to_store] = idx
+            all_cubes[:, to_store, :, :] = cubes
+            all_centers_xy[:, to_store, :] = centers_xy
+
+            msg = ''
+            if idx in ignore:  # skipped at least 1
+                msg += 'S'
+            if offseted:  # drift applied
+                msg += "O"
+            if long_skip:  # jump of a target
+                msg += "J"
+            if drifting:  # drift from brightest
+                msg += "D"
+            symbol = '=' if idx % 100 == 99 else (':' if idx % 10 == 9 else '.')
+            print(f'{msg}{symbol}', end='', flush=True)
+
+            prev_centers_xy = centers_xy
+            previous_distance = distance_to_brightest
+            to_store += 1
+            idx += step
+
+        print('')
+        logger.log(PROGRESS, "Skipped {} flagged frames".format(n_files - to_store))
+
+        offsets_out_xy = {}
+        for idx in range(len(offsets_xy)):
+            if idx in ignore:
+                offsets_out_xy[idx] = 0
+            elif offsets_xy[idx].sum() != 0:
+                offsets_out_xy[idx] = offsets_xy[idx]
+
+        dict_union = ',\n     '
+        if interactive:
+            print("This interactive run was equivalent to use the keyword:")
+            print("offsets_xy = {\n"
+                  f"{dict_union.join([f'{k}: {v}' for k, v in offsets_out_xy.items()])}"
+                  ",\n    }")
+
+            interactive.terminate(None)
+
+        self.sci_stamps = all_cubes[:, :to_store, :, :]
+        self.indexing = indexing[:to_store]
+        self.coords_new_xy = all_centers_xy[:, :to_store, :]
 
     def set_max_counts(self, counts):
         self.max_counts = counts
@@ -802,6 +674,10 @@ class Photometry:
 
         Parameters
         ----------
+        verbose
+        progress_indicator
+        min_counts
+        skies
         aperture :
         sky :
         deg :
@@ -811,7 +687,6 @@ class Photometry:
             Outer ring as a fraction of aperture, to report surrounding region
         """
         # make sure that aperture and sky values are compatible.
-
 
         if skies is None:
             if sky is None:
@@ -824,7 +699,7 @@ class Photometry:
             self._apertures = aperture
 
         max_aperture = np.max(aperture)
-        skies = [(sky1 if sky1>max_aperture else max_aperture+2, sky2) for sky1, sky2 in skies]
+        skies = [(sky1 if sky1 > max_aperture else max_aperture+2, sky2) for sky1, sky2 in skies]
         self._skies = skies
 
         if deg is not None:
@@ -862,10 +737,10 @@ class Photometry:
                 "radius ({})".format(", ".join([s[1] for s in self._skies]),
                                      self.stamp_rad))
 
-        ts = self.cpu_phot(verbose=verbose, progress_indicator=progress_indicator)
+        ts_return = self.cpu_phot(verbose=verbose, progress_indicator=progress_indicator)
         
-        self._last_ts = ts
-        return ts
+        self._last_ts = ts_return
+        return ts_return
 
     def remove_from(self, idx):
         """
@@ -883,57 +758,6 @@ class Photometry:
         for v in self.extras.keys():
             self.extras[v] = self.extras[v][:idx]
         self._astrodir = self._astrodir[:idx]
-
-    def append(self, sci_files, offsets_xy=None, ignore=None):
-        """
-        Adds more files to photometry
-
-        Parameters
-        ----------
-        offsets_xy:
-        sci_files: str, optional
-            Path ton directory where the data is located
-        ignore:
-            Keeps the same zero from original serie
-
-        """
-
-        sci_files = pa.AstroDir(sci_files)
-        start_frame = len(self._astrodir)
-
-        if ignore is None:
-            ignore = []
-        extra = self.extra_header.keys()
-
-        ignore, offset_list = _prep_offset(start_frame, offsets_xy, ignore)
-        last_coords = [coords[-1] for coords in self.coords_new_xy]
-        brightest = self.brightest
-
-        indexing, \
-        sci_stamps, coords_new_xy = _get_stamps(sci_files,
-                                                last_coords,
-                                                self.stamp_rad,
-                                                maxskip=self.max_skip,
-                                                mdark=self.mdark,
-                                                mflat=self.mflat,
-                                                recenter=self.recenter,
-                                                labels=self.labels,
-                                                offsets_xy=offset_list,
-                                                logger=self._logger,
-                                                ignore=ignore,
-                                                brightest=brightest)
-        self.sci_stamps = np.concatenate((self.sci_stamps, sci_stamps),
-                                         axis=1)
-        self.coords_new_xy = np.concatenate((self.coords_new_xy,
-                                             coords_new_xy),
-                                            axis=1)
-
-        last_idx = self.indexing[-1] + 1
-        self.indexing += [idx + last_idx for idx in indexing]
-
-        [self.extras[x].extend(v) for x, v in zip(extra, zip(*sci_files.getheaderval(*extra,
-                                                                                     single_in_list=True)))]
-        self._astrodir += sci_files
 
     def cpu_phot(self, verbose=True, progress_indicator=None):
         """
@@ -954,7 +778,6 @@ class Photometry:
         procastro.TimeSeries : Object used to store the output
 
         """
-        import scipy.optimize as op
 
         if progress_indicator is None:
             progress_indicator = 'X' if verbose else ''
@@ -985,17 +808,18 @@ class Photometry:
             xx, yy = np.mgrid[0:target.shape[2], 0: target.shape[1]]
             dx = xx[None, :, :] - center_stamp_xy[:, 0][:, None, None]
             dy = yy[None, :, :] - center_stamp_xy[:, 1][:, None, None]
-            d = np.sqrt( dx*dx + dy*dy)
+            d = np.sqrt(dx*dx + dy*dy)
 
             data_store[f"centerx_{ref_label}"] = np.array(centers_xy)[:, 0]
             data_store[f"centery_{ref_label}"] = np.array(centers_xy)[:, 1]
 
+            peak = 0
             for sky in skies:
                 if sky[0] >= sky[1]:
                     continue
-                masked_sky = np.ma.array(target, mask=(d<sky[0])+(d>sky[1]))
-                sky_std = masked_sky.std(axis=(1,2))
-                sky_avg = np.ma.median(masked_sky, axis=(1,2))
+                masked_sky = np.ma.array(target, mask=(d < sky[0])+(d > sky[1]))
+                sky_std = masked_sky.std(axis=(1, 2))
+                sky_avg = np.ma.median(masked_sky, axis=(1, 2))
                 n_pix_sky = np.ma.count_masked(masked_sky, axis=(1, 2))
 
                 for ap in aperture:
@@ -1004,8 +828,8 @@ class Photometry:
                     skyless = target - sky_avg[:, None, None]
                     ap_mask = d > ap
                     masked_ap = np.ma.array(skyless, mask=ap_mask)
-                    flux = masked_ap.sum(axis=(1,2))
-                    n_pix_ap = np.ma.count_masked(masked_ap, axis=(1,2))
+                    flux = masked_ap.sum(axis=(1, 2))
+                    n_pix_ap = np.ma.count_masked(masked_ap, axis=(1, 2))
 
                     var_flux = flux / self.gain
                     var_sky = sky_std ** 2 * n_pix_ap * (1 + n_pix_ap.astype(float)) / n_pix_sky
@@ -1014,7 +838,7 @@ class Photometry:
 
                     excess = np.ma.array(skyless,
                                          mask=(ap > d) + (d > self.surrounding_ap_limit * ap)).sum(axis=(1, 2))
-                    peak = masked_ap.max(axis=(1,2))
+                    peak = masked_ap.max(axis=(1, 2))
 
                     if ap > sky[0]:
                         continue
@@ -1024,14 +848,14 @@ class Photometry:
                     data_store[f'peak_{ref_label}_{apsky_label}'] = peak
                     data_store[f'excess_{ref_label}_{apsky_label}'] = excess
 
-                    mom2   = (masked_ap*(masked_ap>0) * d*d      ).sum(axis=(1,2))
+                    mom2 = (masked_ap*(masked_ap > 0) * d*d).sum(axis=(1, 2))
 
-                    skew_x = (masked_ap*(masked_ap>0) * (dx ** 3)).sum(axis=(1,2))
-                    skew_y = (masked_ap*(masked_ap>0) * (dy ** 3)).sum(axis=(1,2))
+                    skew_x = (masked_ap*(masked_ap > 0) * (dx ** 3)).sum(axis=(1, 2))
+                    skew_y = (masked_ap*(masked_ap > 0) * (dy ** 3)).sum(axis=(1, 2))
                     mom3m = np.sqrt(skew_x * skew_x + skew_y * skew_y)
                     mom3a = np.arctan2(skew_y, skew_x)
 
-                    kurt = (masked_ap*(masked_ap>0) * (d ** 4)).sum(axis=(1,2))
+                    kurt = (masked_ap*(masked_ap > 0) * (d ** 4)).sum(axis=(1, 2))
 
                     data_store[f'mom2_{ref_label}_{apsky_label}'] = mom2
                     data_store[f'mom3m_{ref_label}_{apsky_label}'] = mom3m
@@ -1049,7 +873,7 @@ class Photometry:
                                          f" counts {lab} the threshold ({thresh})"
                                          f" on frame{'s' if n_mask > 1 else ''}"
                                          f" {', '.join(np.array(self.indexing)[mask].astype(str))} "
-                                        )
+                                         )
 
             # for data, center_xy, non_ignore_idx, epochs_idx \
             #         in zip(target, centers_xy, self.indexing, range(ns)):
@@ -1086,10 +910,9 @@ class Photometry:
                              data=data_store)
     
     def infos_available(self):
-        ts = self._last_ts
         ret = []
-        for a in ts.colnames:
-            if a=='time':
+        for a in self._last_ts.colnames:
+            if a == 'time':
                 continue
             fields = a.split("_", 3)
             field = fields[0]
@@ -1126,14 +949,10 @@ class Photometry:
         targets: int/str
             Target specification for re-centering. Either an integer for
             specific target.
-        xlim :
         axes : int, plt.Figure, plt.Axes
-        legend_size : int, optional
         frame : int, optional
         recenter : bool, optional
-            If True, tragets will be tracked as they move
-        save : str, optional
-            Path where the plot will be saved
+            If True, targets will be tracked as they move
         clear : bool, True
         """
 
@@ -1201,9 +1020,8 @@ class Photometry:
             Number of columns
         annotate : bool, optional
             If True, it will include the frame number with each stamp
-        imshow :
-        save : str, optional
-            Filename where the plot will be saved
+        imshow : matplotlib.axes.Axes, matplotlib.figure.Figure
+            Axes or figure where to examine a stamp
         clear : bool, optional
         """
         if target is None:
@@ -1296,7 +1114,7 @@ class Photometry:
             xx, yy = coord_xy.transpose()
             ax.plot(xx - xx[0], yy - yy[0], color, label=label)
 
-        legend_dict = {'bbox_to_anchor':(0., 1.02, 1., .302), 'loc': 3,
+        legend_dict = {'bbox_to_anchor': (0., 1.02, 1., .302), 'loc': 3,
                        'ncol': int(len(labels) // 2),
                        'mode': "expand",
                        'borderaxespad': 0.,
@@ -1328,6 +1146,8 @@ class Photometry:
 
         Parameters
         ----------
+        show: bool
+           Whether to .show() the plot
         frame:
         ap_color: string, optional
         sk_color: string, optional
@@ -1341,17 +1161,12 @@ class Photometry:
             position at the required frame
         interactive: bool, optional
             Enables interactive mode
-        save : str, optional
-            Filename of image where the plot will be saved to.
         clear: bool, optional
             Clear previous axes content
-        mdark :
-        mflat :
         """
         f, ax = pa.figaxes(axes, clear=clear)
         ax.cla()
-        d = _get_calibration(self._astrodir, frame=frame, mdark=self.mdark,
-                             mflat=self.mflat)
+        d = self._astrodir[frame]
 
         pa.imshowz(d, axes=ax,
                    show=False, **kwargs)
