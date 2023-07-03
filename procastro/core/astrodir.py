@@ -18,14 +18,10 @@
 #
 __all__ = ['AstroDir']
 
-import os
-import re
-
 import procastro as pa
 from .internal_functions import trim_to_python, common_trim_fcn, extract_common, python_to_trim
 import numpy as np
 import warnings
-import copy
 import sys
 from astropy.utils.exceptions import AstropyUserWarning
 
@@ -34,10 +30,12 @@ logging.basicConfig(level=logging.INFO)
 io_logger = logging.getLogger('procastro.io')
 io_logger.propagate = False
 
+
 class AstroDir(object):
     """Collection of AstroFile objects.
 
-    Collection can be indexed, filtered, and has several recursive methods that are applied to each AstroFile are available
+    Collection can be indexed, filtered, and has several recursive methods that are applied to each
+     AstroFile are available
 
     Attributes
     ----------
@@ -75,7 +73,6 @@ class AstroDir(object):
     procastro.AstroCalib.add_flat
     """
 
-
     def __new__(cls, *args, **kwargs):
         """
         If passed an AstroDir, then do not create a new instance, just pass
@@ -85,7 +82,6 @@ class AstroDir(object):
             return args[0]
 
         return super(AstroDir, cls).__new__(cls)
-
 
     def __init__(self, path, mflat=None, mbias=None,
                  mbias_header=None, mflat_header=None,
@@ -199,7 +195,7 @@ class AstroDir(object):
         for c in unique_calibs:
             c.add_flat(mflat)
 
-    def sort(self, *args, **kwargs):
+    def sort(self, *args):
         """
         Sorts AstroFile instances inplace depending on the given header fields.
         After sorting the contents the method will return None to avoid problems
@@ -308,9 +304,6 @@ class AstroDir(object):
 
         Parameters
         ----------
-        extra_headers : list, optional
-            List of header items to include on the output
-        verbose_heading : bool, optional
         args : Specify the stats that want to be returned
 
         Returns
@@ -373,7 +366,7 @@ class AstroDir(object):
 
         Parameters
         ----------
-        joinchar : str, optional
+        joinchr : str, optional
             Character used to separate the name of each file
 
         Returns
@@ -392,6 +385,8 @@ class AstroDir(object):
 
         Parameters
         ----------
+        single_in_list
+        hdu
         cast : function, optional
             Function output used to cas the output
 
@@ -424,12 +419,13 @@ class AstroDir(object):
 
     def get_datacube(self, normalize_region=None, normalize=False,
                      verbose=False, check_unique=None, group_by=None,
-                     trim_area_warn = 0.25):
+                     trim_area_warn=0.25):
         """
         Generates a data cube with the data of each AstroFile.
 
         Parameters
         ----------
+        trim_area_warn
         normalize_region :
             Subregion to use for normalization
         normalize : bool, optional
@@ -923,6 +919,7 @@ class AstroDir(object):
 
         Parameters
         ----------
+        return_only_clean
         target: str
             Target keyword for JD storage
         source: str or list
