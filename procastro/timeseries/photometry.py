@@ -30,6 +30,7 @@ import astropy.timeseries as ts
 import astropy.time as apt
 from ..core.interactive_graphics import BindingsFunctions
 from typing import Optional, Union
+import pathlib
 
 TwoValues = tuple[float, float]
 
@@ -68,16 +69,11 @@ tmlogger.propagate = False
 
 def _show_apertures(coords, aperture=None, sky=None,
                     axes=None, sk_color='w', ap_color='w',
-                    n_points=30, alpha=0.5, labels=None, logger=None,
-                    stamp_rad=None, clear=True):
-    if logger is None:
-        logger = tmlogger
-
+                    alpha=0.5, labels=None,
+                    clear=True):
     if aperture is None:
-        logger.warning("Using default aperture of 10 pixels")
         aperture = 10
     if sky is None:
-        logger.warning("Using default sky of 15-20 pixels")
         sky = [15, 20]
 
     f, ax = pa.figaxes(axes, clear=clear)
@@ -93,30 +89,23 @@ def _show_apertures(coords, aperture=None, sky=None,
 
     for coo_xy, lab in zip(coords, labels):
         cx, cy = coo_xy
-        theta = np.linspace(0, 2 * np.pi, n_points, endpoint=True)
-        xs = cx + aperture * np.cos(theta)
-        ys = cy + aperture * np.sin(theta)
-        ax.fill(xs, ys,
-                color=ap_color, edgecolor=ap_color,
-                alpha=alpha)
 
-        xs = cx + np.outer(sky, np.cos(theta))
-        ys = cy + np.outer(sky, np.sin(theta))
-        xs[1, :] = xs[1, ::-1]
-        ys[1, :] = ys[1, ::-1]
-        ax.fill(np.ravel(xs), np.ravel(ys),
-                color=sk_color, edgecolor=sk_color,
-                alpha=alpha)
-        rect = patches.Rectangle((cx - stamp_rad, cy - stamp_rad), 2 * stamp_rad, 2 * stamp_rad,
-                                 linewidth=1, edgecolor='white', facecolor='none')
-        ax.add_patch(rect)
+        circ = patches.Circle((cx, cy), sky[1],
+                              linewidth=1, edgecolor=sk_color, facecolor=sk_color, alpha=alpha)
+        ax.add_patch(circ)
 
-        outer_sky = sky[1]
-        ax.annotate(lab,
-                    xy=(cx, cy + outer_sky),
-                    xytext=(cx + 1 * outer_sky,
-                            cy + 1.5 * outer_sky),
-                    fontsize=20)
+        circ = patches.Circle((cx, cy), aperture,
+                              linewidth=1, edgecolor=ap_color, facecolor=ap_color, alpha=alpha)
+        ax.add_patch(circ)
+
+        if lab:
+            outer_sky = sky[1]
+            ax.annotate(lab,
+                        xy=(cx, cy + outer_sky),
+                        xytext=(cx + 1 * outer_sky,
+                                cy + 1.5 * outer_sky),
+                        fontsize=20,
+                        ha='center')
 
 
 def _prep_offset(offsets, ignore):
@@ -150,10 +139,11 @@ class _interactive(BindingsFunctions):
                  ):
 
         f, axes = pa.figaxes()
+        f.show()
         msg_filter = FilterMessage().add_needle('Using default ')
         # logger.addFilter(msg_filter)
         print("Entering interactive mode:\n"
-              " 'd'elete frame, re'c'enter apertures, flag '1'-'9', 'q'uit, "
+              " 'd'elete frame, re'c'enter apertures, 'q'uit, toggle 'i'gnore, "
               "keep 'g'oing until drift, <- prev frame, -> next frame")
 
         super(_interactive, self).__init__(axes, None)
@@ -170,9 +160,11 @@ class _interactive(BindingsFunctions):
         self._logger = logger
         self._logger_msg_filter = msg_filter
 
-        self.options_add('left', "Return to previous frame", "_move", {'step': -1})
-        self.options_add('right', "Advance to next frame", "_move", {'step': 1})
-        self.options_add('q', "Abort", "_move", {'step': None})
+        self.options_reset(config_options=False)
+
+        self.options_add('left', "Return to previous frame", "_set_move", {'step': -1})
+        self.options_add('right', "Advance to next frame", "_set_move", {'step': 1})
+        self.options_add('q', "Abort", "_set_move", {'step': None})
         self.options_add('i', "Toggle ignore for this frame", "_add_to_ignore")
         self.options_add('c', 'Recenter the brightest', "_recenter")
         self.options_add('g', 'Keep going until next drift', "_skip_interactive")
@@ -187,7 +179,7 @@ class _interactive(BindingsFunctions):
                           ):
         self._move = 1
         self._skip = True
-        self.terminate(None, False)
+        self.terminate(None, close_plot=False, verbose=False)
 
     # noinspection PyUnusedLocal
     def _set_move(self,
@@ -197,14 +189,14 @@ class _interactive(BindingsFunctions):
         self._move = step
         self._skip = False
         if step is not None:
-            self.terminate(None, False)
+            self.terminate(None, close_plot=False, verbose=False)
 
     def new_frame(self, data, filename, idx, ignored, offset_xy, prev_brightest_xy, centers):
         self.clear_data()
         self._move = 0
         ax = self.axes_data
         pa.imshowz(data, axes=ax, show=False)
-        ax.set_ylabel(f'Frame #{idx}: {filename}')
+        ax.set_xlabel(f'Frame #{idx}: {pathlib.Path(filename).name}')
 
         self._prev_brightest_xy = prev_brightest_xy
         self._idx = idx
@@ -217,10 +209,10 @@ class _interactive(BindingsFunctions):
         elif offset_xy.sum():
             ap_color = 'b'
         _show_apertures(centers, axes=ax, labels=self.labels,
-                        sk_color=sk_color, ap_color=ap_color, stamp_rad=self.stamp_rad,
-                        logger=self._logger)
+                        sk_color=sk_color, ap_color=ap_color,
+                        clear=False)
 
-        self.connect()
+        self.connect(verbose=False)
 
         return self._move, self._skip, self._ignored, self._offset_xy
 
@@ -522,8 +514,9 @@ class Photometry:
         n_files = len(sci_files)
 
         tmp = np.zeros([n_files, 2])
-        if offsets_xy is None:
-            offsets_xy = tmp
+        if offsets_xy is not None:
+            tmp[:len(offsets_xy), :] = offsets_xy
+        offsets_xy = tmp
 
         all_centers_xy = np.zeros([n_targets, n_files, 2])
         all_cubes = np.zeros([n_targets, n_files, stamp_rad * 2 + 1, stamp_rad * 2 + 1])
@@ -534,12 +527,14 @@ class Photometry:
 
         if interactive:
             interactive = _interactive(stamp_rad, labels, logger=logger, brightest=self.brightest)
+            self.inter = interactive
 
         prev_centers_xy = [(xx, yy) for xx, yy in self.coords_user_xy]
         previous_distance = None
         skip_interactive = False
         to_store = 0
         idx = 0
+        step = 1
 
         while idx < n_files:
             filename = sci_files[idx].filename
@@ -547,17 +542,19 @@ class Photometry:
 
             offseted = np.abs(off).sum() > 0
             ignored = idx in ignore
+            if offseted:
+                pass
 
-            try:
-                reduced_data = sci_files[idx].reader(verbose=verbose_procdata)
-            except OSError:
-                logger.warning(f"Corrupt file {sci_files[idx].filename}, forcibly added to the ignore list")
-                if not ignored:
-                    ignore.append(idx)
-                idx += 1
-                continue
+            if step != 0:
+                try:
+                    reduced_data = sci_files[idx].reader(verbose=verbose_procdata)
+                except OSError:
+                    logger.warning(f"Corrupt file {sci_files[idx].filename}, forcibly added to the ignore list")
+                    if not ignored:
+                        ignore.append(idx)
+                    idx += 1
+                    continue
 
-            last_coords_xy = []
             centers_xy = []
             cubes = []
 
@@ -572,6 +569,9 @@ class Photometry:
                     raise ValueError(f"Centroid for frame #{idx}({filename}) falls outside data"
                                      f" for target {label}. Initial/final center was:"
                                      f" [{cx:.2f}, {cy:.2f}]/[{ncx:.2f}, {ncy:.2f}] Offset: {off}")
+                print(f"Centroid for frame #{idx}({filename}) falls outside data"
+                f" for target {label}. Initial/final center was:"
+                f" [{cx:.2f}, {cy:.2f}]/[{ncx:.2f}, {ncy:.2f}] Offset: {off}")
                 cubes.append(pa.subarray(reduced_data, [ncy, ncx], stamp_rad, padding=True))
                 centers_xy.append((ncx, ncy))
 
@@ -581,14 +581,12 @@ class Photometry:
                     logger.warning(f"Large jump ({cx}, {cy}) -> ({ncx}, {ncy}). Stamprad: {stamp_rad} pix")
                     logger.warning(f"Large jump of {skip:.1f} pixels for {label} has occurred "
                                    f"on frame #{idx}{'(User Coordinates!)' if not idx else ''}: {filename}")
-                last_coords_xy.append([ncx, ncy])
 
-            last_coords_xy = np.array(last_coords_xy)
             centers_xy = np.array(centers_xy)
             cubes = np.array(cubes)
 
             drifting = False
-            distance_to_brightest_vector = last_coords_xy - last_coords_xy[self.brightest][None, :]
+            distance_to_brightest_vector = centers_xy - centers_xy[self.brightest][None, :]
             distance_to_brightest = np.sqrt((distance_to_brightest_vector ** 2).sum(1))
             if previous_distance is not None:
                 change = np.absolute(distance_to_brightest - previous_distance)
@@ -609,9 +607,14 @@ class Photometry:
                 if ignored and idx not in ignore:
                     ignore.append(idx)
                 elif not ignored and idx in ignore:
-                    ignore.pop(idx)
+                    ignore.remove(idx)
 
-            if step < 1:
+            if not step:
+                continue
+            elif step < 0:
+                to_store += step * (indexing[to_store+step] == idx)   # reduce to_store only if it was
+                                                                      # stored in that previous frame.
+                idx += step
                 continue
 
             indexing[to_store] = idx
@@ -636,7 +639,8 @@ class Photometry:
             idx += step
 
         print('')
-        logger.log(PROGRESS, "Skipped {} flagged frames".format(n_files - to_store))
+        if verbose:
+            logger.info("Skipped {} flagged frames".format(n_files - to_store))
 
         offsets_out_xy = {}
         for idx in range(len(offsets_xy)):
@@ -645,12 +649,13 @@ class Photometry:
             elif offsets_xy[idx].sum() != 0:
                 offsets_out_xy[idx] = offsets_xy[idx]
 
-        dict_union = ',\n     '
+        dict_union = ',\n              '
         if interactive:
-            print("This interactive run was equivalent to use the keyword:")
-            print("offsets_xy = {\n"
-                  f"{dict_union.join([f'{k}: {v}' for k, v in offsets_out_xy.items()])}"
-                  ",\n    }")
+            if verbose:
+                logger.info("This interactive run was equivalent to use the keyword:")
+                logger.info("offsets_xy = {\n            "
+                            f"{dict_union.join([f'{k}: {v}' for k, v in offsets_out_xy.items()])}"
+                            ",\n             }")
 
             interactive.terminate(None)
 
@@ -1249,7 +1254,7 @@ class Photometry:
             n_coords, n_ref_label, n_ref_xy = coords_n_cnt(ref, cnt_tmp)
             # noinspection PyUnusedLocal
             store[:] = [n_ref_label, n_ref_xy]
-            _show_apertures(coords, aperture=self._apertures, sky=self._skies[0],
+            _show_apertures(coords, aperture=self._apertures[0], sky=self._skies[0],
                             axes=ax, labels=annotate and self.labels or None,
                             sk_color=sk_color, ap_color=ap_color, alpha=alpha)
             ax.set_ylabel("Frame #{}{}"
@@ -1279,10 +1284,10 @@ class Photometry:
             f.canvas.mpl_connect('button_press_event', _onclick)
             f.canvas.mpl_connect('key_press_event', _onkey)
 
-        _show_apertures(coords, aperture=self._apertures, sky=self._skies[0],
+        _show_apertures(coords, aperture=self._apertures[0], sky=self._skies[0],
                         axes=ax, labels=annotate and self.labels or None,
                         sk_color=sk_color, ap_color=ap_color, alpha=alpha,
-                        stamp_rad=self.stamp_rad, clear=False)
+                        clear=False)
         ax.set_ylabel("Frame #{}{}".format(frame, reference != frame
                                            and f", apertures from #{reference}"
                                            or ""))

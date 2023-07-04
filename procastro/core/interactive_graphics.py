@@ -169,7 +169,10 @@ class BindingsFunctions:
                 old_config[key] = item
             return old_config
 
-        self._config = toml.loads(Path(pa.default_for_procastro_dir(self._config_file)).read_text(encoding='utf-8'))
+        try:
+            self._config = toml.loads(Path(pa.default_for_procastro_dir(self._config_file)).read_text(encoding='utf-8'))
+        except IOError:
+            return False
         if reset:
             print("Forced reset: loaded factory defaults")
         else:
@@ -181,6 +184,8 @@ class BindingsFunctions:
             except toml.TOMLDecodeError:
                 print(f"Skipping configuration from corrupt local config ({file}). "
                       f"It is recommended to save new version.")
+
+        return True
 
     def _save_config(self,
                      ):
@@ -194,18 +199,21 @@ class BindingsFunctions:
     #
     ############################
 
-    def disconnect(self):
-        print("... exiting interactive mode")
+    def disconnect(self, verbose=True):
+        if verbose:
+            print("... exiting interactive mode")
         self._axes_2d.figure.canvas.stop_event_loop()
         for cid in self._cid.values():
             self._axes_2d.figure.canvas.mpl_disconnect(cid)
 
-    def connect(self):
+    def connect(self, verbose=True):
         self._cid['key_press'] = self._axes_2d.figure.canvas.mpl_connect('key_press_event', self._on_key_press)
         self._axes_2d.figure.canvas.draw_idle()
-        self._axes_exam.figure.canvas.draw_idle()
+        if self.axes_exam is not None:
+            self._axes_exam.figure.canvas.draw_idle()
 
-        print("Entering interactive mode ('?' for help)")
+        if verbose:
+            print("Entering interactive mode ('?' for help)")
         self._axes_2d.figure.canvas.start_event_loop()
 
     def _on_key_press(self, event):
@@ -482,10 +490,12 @@ class BindingsFunctions:
     def terminate(self,
                   event: Optional[KeyEvent],
                   close_plot: bool = True,
+                  verbose=True,
                   ):
-        self.disconnect()
+        self.disconnect(verbose=verbose)
         if close_plot:
-            plt.close(self._axes_exam.figure.number)
+            if self._axes_exam is not None:
+                plt.close(self._axes_exam.figure.number)
             plt.close(self._axes_2d.figure.number)
 
     # noinspection PyUnusedLocal
@@ -533,10 +543,12 @@ class BindingsFunctions:
         if kwargs is None:
             kwargs = {}
 
+        if self._key_options is None:
+            self.options_reset()
         if key in self._key_options.keys() and key not in overwritable:
             raise ValueError(f"Key '{key}' has already been added for '{doc}', cannot add it for '{doc}'")
         if isinstance(fcn, str):
-            fcn = getattr(self, fcn)
+            fcn = getattr(self, fcn, None)
         self._key_options[key] = (doc, fcn, kwargs, ret)
 
     # noinspection PyUnusedLocal
@@ -561,16 +573,20 @@ class BindingsFunctions:
         """Loads config file and add default config saving/loading options
 
         """
-        self._load_config()
+        file_exists = self._load_config()
         self._key_options = {}
 
         if help_option:
-            self.options_add('?', "hotkey help", "_options_help", {}, None)
+            self.options_add('?', "hotkey help", "_options_help")
         if config_options:
+            if not file_exists:
+                raise FileNotFoundError("Config file for interactive not found. "
+                                        "Use procastro.BindingFunctions.options_reset(config_options=False) "
+                                        "to avoid this warning")
             self.options_add('L', f"reload configuration from '{pa.file_from_procastro_dir(self._config_file)}'",
-                             'load_config', {}, None)
-            self.options_add('S', 'save configuration', 'save_config', {}, None)
-            self.options_add('F', 'load default configuration from factory', 'load_config', {'reset': True}, None)
+                             'load_config')
+            self.options_add('S', 'save configuration', 'save_config')
+            self.options_add('F', 'load default configuration from factory', 'load_config', {'reset': True})
 
 
 class BindingsImshowz(BindingsFunctions):
