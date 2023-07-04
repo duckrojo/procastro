@@ -57,6 +57,7 @@ def _numerize_other(method):
 #
 ##################################
 
+
 def _fits_reader(filename, hdu=0):
     """
     Read fits files.
@@ -219,6 +220,7 @@ def _fits_setheader(_filename, **kwargs):
 #
 ####################################
 
+
 def _array_reader(array, **kwargs):
     return array
 
@@ -229,7 +231,7 @@ def _array_write(filename, **kwargs):
 
 def _array_setheader(filename, **kwargs):
     warnings.warn("Saving an np.array type is not implemented yet: only saving in memory for now ",
-                   UserWarning)
+                  UserWarning)
     return None
 
 
@@ -248,6 +250,7 @@ def _array_verify(array, **kwargs):
 #
 ####################################
 
+
 def return_none(*args, **kwargs):
     return None
 
@@ -258,7 +261,7 @@ def _checksortkey(f):
     """
     @_wraps(f)
     def ret(self, *args, **kwargs):
-        if not hasattr(self, 'sortkey'):
+        if not hasattr(self, 'sortkey') or getattr(self, 'sortkey') is None:
             raise ValueError(
                 "Sortkey must be defined before trying to sort AstroFile")
         if not isinstance(self.sortkey, str) or "," in self.sortkey:
@@ -275,13 +278,13 @@ def _checkfilename(f):
     Verifies that the given filename is valid
     """
     @_wraps(f)
-    def isfiledef(inst, *args, **kwargs):
-        if hasattr(inst, 'filename'):
-            if inst.type is None:
+    def isfiledef(self, *args, **kwargs):
+        if hasattr(self, 'filename'):
+            if self.type is None:
                 # raise ValueError("File %s not a supported astro-type." % (f))
                 raise ValueError(
                     "Please specify filename with setFilename first.")
-            return f(inst, *args, **kwargs)
+            return f(self, *args, **kwargs)
         else:
             raise ValueError(
                 "Filename not defined. Must give valid filename to AstroFile")
@@ -292,11 +295,11 @@ def _checkfilename(f):
 class AstroFile(object):
     """
     Representation of an astronomical data file, contains information related
-    to the file's data. Currently supports usage of arrays and .fit files
+    to the file's data. Currently, supports usage of arrays and .fit files
 
     Parameters
     ----------
-    filename : str or procastro.AstroFile
+    filename : str, procastro.AstroFile, numpy.ndarray
         If AstroFile, then it does not read header again, but all new kwargs are applied.
     mbias : dict indexed by exposure time, array or AstroFile, optional
         Default Master bias
@@ -373,7 +376,7 @@ class AstroFile(object):
         If passed an AstroFile, then do not create a new instance, just pass
         that one. If passed None, return None
         """
-        if args and ((isinstance(args[0], AstroFile) and len(kwargs)==0) or args[0]) is None:
+        if args and ((isinstance(args[0], AstroFile) and len(kwargs) == 0) or args[0]) is None:
             return args[0]
 
         return super(AstroFile, cls).__new__(cls)
@@ -384,6 +387,8 @@ class AstroFile(object):
                  hdu=0, hduh=None, hdud=None,
                  auto_trim=None, header=None,
                  *args, **kwargs):
+
+        self.sortkey = None
 
         self.calib = None
         if isinstance(filename, AstroFile):
@@ -422,8 +427,6 @@ class AstroFile(object):
             self.calib = AstroCalib(pa.AstroFile(mbias, header=mbias_header),
                                     pa.AstroFile(mflat, header=mflat_header),
                                     auto_trim=auto_trim)
-
-
 
     def get_trims(self):
         """"Get trim limits, returning in python-style YX"""
@@ -639,7 +642,7 @@ class AstroFile(object):
                     greater_than = True
                 else:
                     io_logger.warning(f"Function '{f}' not recognized in "
-                                     f"filtering, ignoring")
+                                      f"filtering, ignoring")
 
             # print("r:%s h:%s m:%i f:%s" %(request, header_val,
             #                               match, functions))
@@ -693,7 +696,7 @@ class AstroFile(object):
         return self._seth[tp](self.filename, hdu=hdu, **kwargs)
 
     @_checkfilename
-    def getheaderval(self, *args, single_in_list=False, cast=None, hdu=0):
+    def getheaderval(self, *args, single_in_list=False, cast=None, hdu=None):
         """
         Get header value for each of the fields specified in args.
 
@@ -728,8 +731,7 @@ class AstroFile(object):
             else:
                 return None
 
-        if hdu is None:
-            hdu = self._hduh
+        hdu = self._hduh
         if cast is None:
             def cast(x): return x
 
@@ -828,7 +830,7 @@ class AstroFile(object):
         return self.calib.has_flat or self.calib.has_bias
 
     @_checkfilename
-    def read_headers(self, *args, **kwargs):
+    def read_headers(self):
         """
         Reads header from the file
 
@@ -838,7 +840,6 @@ class AstroFile(object):
             Specific hdu slot to be read
         """
         tp = self.type
-        hdu = kwargs.pop('hdu', self._hduh)
 
         if not tp:
             return False
@@ -975,7 +976,7 @@ class AstroFile(object):
             Statistic to be extracted, Possible values are: min, max, mean,
             mean3sclip, std and median
 
-        **kwargs : str
+        **kwargs : dict
             Options available: verbose_heading and extra_headers
 
         Returns
@@ -1131,7 +1132,8 @@ class AstroFile(object):
         """
         Plots spectral data contained on this file
         """
-        fig, ax = pa.prep_canvas(axes, title, xtitle, ytitle)
+        fig, ax = pa.figaxes(axes, title)
+        pa.set_plot_props(ax, xlabel=xtitle, ylabel=ytitle)
 
         data = self.reader()
         dim = len(data.shape)
@@ -1282,14 +1284,14 @@ class AstroCalib(object):
 
         Parameters
         ----------
+        data_trim
+        verbose
         data : array_like
             Data to be reduced
         exptime : int, optional
             Exposure time for bias
         ffilter : str, optional
             Filter used by the flat
-        header : astropy.io.fits.Header, optional
-
         Returns
         -------
         array_like
@@ -1319,7 +1321,8 @@ class AstroCalib(object):
 
         in_data = [data]
         if data_trim is None:
-            trim = [1, data.shape[1], 1, data.shape[0]]
+            io_logger.warning("Trim info not found on science frames... using full figure instead")
+            trim = [(1, data.shape[0], 1, data.shape[1])]
         else:
             trim = [data_trim]
 
@@ -1333,9 +1336,13 @@ class AstroCalib(object):
 
             if theader is None or self.auto_trim_keyword not in theader.keys():
                 if not isinstance(tdata, (int, float)):
-                    io_logger.warning(f"Trim info {self.auto_trim_keyword} found on"
-                                      f" science frames but not in {label} frames... ignoring")
-                trim.append(trim[0])
+
+                    io_logger.warning(f"Trim info {self.auto_trim_keyword} not found on {label} frames..."
+                                      f"using full figure instead")
+                    label_trim = (1, data.shape[0], 1, data.shape[1])
+                else:
+                    label_trim = trim[0]
+                trim.append(label_trim)
             else:
                 trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
 
@@ -1344,8 +1351,9 @@ class AstroCalib(object):
 
             out_data = []
             for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trim):
-                if isinstance(tdata, (int,float)): # if tdata is bias = 0 or flat = 1.0, dont trim
+                if isinstance(tdata, (int, float)):  # if tdata is bias = 0 or flat = 1.0, dont trim
                     out_data.append(tdata)
+                    trimmed = False
                 else:
                     out, trimmed = extract_common(tdata, trim, common_trim)
                     out_data.append(out)
