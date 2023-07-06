@@ -28,6 +28,9 @@ import warnings
 
 import astropy.time as apt
 import datetime
+
+import numpy
+
 import procastro as pa
 import matplotlib.pyplot as plt
 import matplotlib
@@ -89,9 +92,12 @@ def set_plot_props(ax, xlim=None, ylim=None,
     if show is None:
         show = save is None
 
-    ax.set_title(title)
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    if title is not None:
+        ax.set_title(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
 
     if legend is not None:
         if 'loc' not in legend.keys():
@@ -196,7 +202,7 @@ def prep_data_plot(indata, **kwargs):
 
     Parameters
     ----------
-    indata : str, HDUList, procastro.AstroFile or scipy array
+    indata : str, HDUList, procastro.AstroFile, numpy.ndarray
     hdu : int, optional
         If indata is a HDUList, it will prepare the data for this specific hdu
 
@@ -238,7 +244,7 @@ NonInteractiveAxes = Union[None, int, matplotlib.axes.Axes, matplotlib.figure.Fi
 InteractiveAxes = Union[None, int, tuple[matplotlib.axes.Axes, matplotlib.axes.Axes]]
 
 
-def imshowz(data: FileCompat,
+def imshowz(data: Union[FileCompat, numpy.ndarray],
             axes: Union[InteractiveAxes, NonInteractiveAxes] = None,
             minmax=None, xlim=None, ylim=None,
             cxy=None, plot_rad=None,
@@ -320,6 +326,8 @@ def imshowz(data: FileCompat,
                                   wspace=0.05, hspace=0.15)
             ax = fig.add_subplot(gs[0, 0])
             ax_exam = fig.add_subplot(gs[0, 1])
+            fig.patch.set_facecolor("navajowhite")
+            ax.set_title("ProcAstro's interactive imshowz()")
         elif isinstance(axes, int):
             fig, ax = pa.figaxes(axes, force_new=force_new, nrows=1, ncols=2)
             if len(fig.axes) < 2:
@@ -400,6 +408,7 @@ def imshowz(data: FileCompat,
 
     outs = {'vlims': [mn, mx]}
     if interactive:
+
         handler = BindingsImshowz(data, axes_data=ax, axes_exam=ax_exam,
                                   colorbar_data=fig.add_subplot(gs[1,0]),
                                   colorbar_exam=fig.add_subplot(gs[1,1]))

@@ -171,7 +171,7 @@ class _interactive(BindingsFunctions):
 
     def close(self):
         self._logger.removeFilter(self._logger_msg_filter)
-        self.terminate(None)
+        self.disconnect(close_plot=True)
 
     # noinspection PyUnusedLocal
     def _skip_interactive(self,
@@ -179,7 +179,7 @@ class _interactive(BindingsFunctions):
                           ):
         self._move = 1
         self._skip = True
-        self.terminate(None, close_plot=False, verbose=False)
+        self.disconnect(close_plot=False)
 
     # noinspection PyUnusedLocal
     def _set_move(self,
@@ -189,7 +189,7 @@ class _interactive(BindingsFunctions):
         self._move = step
         self._skip = False
         if step is not None:
-            self.terminate(None, close_plot=False, verbose=False)
+            self.disconnect(close_plot=False)
 
     def new_frame(self, data, filename, idx, ignored, offset_xy, prev_brightest_xy, centers):
         self.clear_data()
@@ -657,7 +657,7 @@ class Photometry:
                             f"{dict_union.join([f'{k}: {v}' for k, v in offsets_out_xy.items()])}"
                             ",\n             }")
 
-            interactive.terminate(None)
+            interactive.disconnect(close_plot=True)
 
         self.sci_stamps = all_cubes[:, :to_store, :, :]
         self.indexing = indexing[:to_store]

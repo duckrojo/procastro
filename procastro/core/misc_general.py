@@ -19,7 +19,7 @@
 #
 
 __all__ = ['sortmanynsp', 'sortmany', 'accept_object_name',
-           'file_from_procastro_dir', 'default_for_procastro_dir',
+           'user_confdir', 'defaults_confdir',
            ]
 
 from pathlib import Path
@@ -34,15 +34,17 @@ procastro_dir = Path("~/.procastrorc/").expanduser()
 procastro_dir.mkdir(exist_ok=True)
 
 
-def default_for_procastro_dir(file: str,
-                              ):
+def defaults_confdir(file: str,
+                     ):
     return Path(__file__).parent.joinpath("..", "defaults", file)
 
 
-def file_from_procastro_dir(file: str,
-                            start_with_default: bool = True):
+def user_confdir(file: str,
+                 start_with_default: bool = True):
     full_file = procastro_dir.joinpath(file)
-    default_file = default_for_procastro_dir(file)
+    default_file = defaults_confdir(file)
+
+    # if this is the first time the file is checked, then copy it to the user directory
     if start_with_default and not full_file.exists() and default_file.exists():
         copy2(default_file, full_file)
     return full_file

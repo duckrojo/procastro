@@ -1,7 +1,11 @@
-from pathlib import Path
+# (c) 2023 Patricio Rojo
 
+from pathlib import Path
+from typing import Union
+
+import inspect
 import matplotlib
-from matplotlib import patches
+from matplotlib import patches, transforms
 from matplotlib import pyplot as plt
 from matplotlib.backend_bases import KeyEvent
 import numpy as np
@@ -41,6 +45,44 @@ def _csv_str_to_tuple(value):
     return value,
 
 
+def allow_keep_val(params):
+    """requires lists of parameters that are allowed to remain between calls."""
+
+    def wrapper1(method):
+        # noinspection PyUnusedLocal
+        def do_nothing(*args, **kwargs):
+            return
+
+        @_wraps(method)
+        def wrapper(instance, xy, **kwargs):
+            name = method.__name__
+            pre_run = name in instance.last_dict
+
+            if 'xy' in params:
+                kwargs['xy'] = xy
+            for prm in params:
+                if prm in kwargs:
+                    if kwargs[prm] is None:
+                        # do not enter the function if it has not been called previously
+                        # and some previous values are requested
+                        if not pre_run:
+                            return do_nothing
+                        else:
+                            kwargs[prm] = instance.last_dict[name][prm]
+                else:
+                    kwargs[prm] = inspect.signature(method).parameters[prm].default
+
+            to_store_dict = {k: v for k, v in kwargs.items() if k in params}
+            xy = kwargs.pop('xy', xy)
+
+            ret = method(instance, xy, **kwargs)
+            instance.last_dict[name] = to_store_dict
+
+            return ret
+        return wrapper
+    return wrapper1
+
+
 def _pre_process(method):
     """Apply pre-process to data, this allows general treatment of 3D, 2D functions and others"""
     # pre_process: Union[None,
@@ -72,12 +114,16 @@ def _pre_process(method):
 
 
 class BindingsFunctions:
-    def __init__(self, axes_data,
+    def __init__(self,
+                 axes_data,
                  axes_exam,
                  config_file='interactive.toml',
                  cb_data=None,
                  cb_exam=None,
                  ):
+        self._last_scale_exam = None
+        self.last_dict = {}
+
         self._config_file = config_file
         self._key_options = None
         self._data_2d = None
@@ -91,6 +137,8 @@ class BindingsFunctions:
         self._axes_exam = axes_exam
         self._colorbar_data = cb_data
         self._colorbar_exam = cb_exam
+
+        self._extra_transform_data = transforms.Affine2D()
 
         self._options_history = []
 
@@ -109,7 +157,8 @@ class BindingsFunctions:
 
         """
 
-        self._data_2d = data
+        if data is not None:
+            self._data_2d = data
         if imshow_kwargs is not None:
             self._axes_2d.cla()
             self._axes_2d.imshow(data, **imshow_kwargs)
@@ -135,27 +184,26 @@ class BindingsFunctions:
                              box=None,
                              ):
 
+        tr = self._axes_2d.get_images()[0].get_transform()
         if self._axes_2d is None:
             return
-        if self._temporal_artist:
-            while True:
-                try:
-                    t = self._temporal_artist.pop()
-                except IndexError:
-                    break
-                t.remove()
+        self.clear_temp()
+
         if mark is not None:
-            self._temporal_artist.extend(self._axes_2d.plot(mark[0], mark[1], props['marker'],
+            self._temporal_artist.extend(self._axes_2d.plot(*mark, props['marker'],
                                                             color=props['color'],
                                                             alpha=props['alpha'],
+                                                            transform=tr,
                                                             )
                                          )
         if box is not None:
-            self._temporal_artist.append(self._axes_2d.fill_between(box[0:2], [box[2]] * 2, y2=[box[3]] * 2,
-                                                                    color=props['color'],
-                                                                    alpha=props['alpha'],
-                                                                    )
-                                         )
+            rect = patches.Rectangle((box[0], box[2]), width=box[1]-box[0], height=box[3]-box[2],
+                                     color=props['color'],
+                                     alpha=props['alpha'],
+                                     transform=tr,
+                                     )
+            self._axes_2d.add_patch(rect)
+            self._temporal_artist.append(rect)
 
         self._axes_2d.figure.canvas.draw_idle()
 
@@ -170,13 +218,13 @@ class BindingsFunctions:
             return old_config
 
         try:
-            self._config = toml.loads(Path(pa.default_for_procastro_dir(self._config_file)).read_text(encoding='utf-8'))
+            self._config = toml.loads(Path(pa.defaults_confdir(self._config_file)).read_text(encoding='utf-8'))
         except IOError:
             return False
         if reset:
             print("Forced reset: loaded factory defaults")
         else:
-            file = pa.file_from_procastro_dir(self._config_file)
+            file = pa.user_confdir(self._config_file)
             try:
                 new = toml.loads(Path(file).read_text(encoding='utf-8'))
                 self._config = update_vals(new, self._config)
@@ -189,7 +237,7 @@ class BindingsFunctions:
 
     def _save_config(self,
                      ):
-        file = pa.file_from_procastro_dir(self._config_file)
+        file = pa.user_confdir(self._config_file)
         with open(file, 'wb') as fp:
             tomli_w.dump(self._config, fp)
         print(f"Saved configuration to: {file}")
@@ -199,12 +247,20 @@ class BindingsFunctions:
     #
     ############################
 
-    def disconnect(self, verbose=True):
+    def disconnect(self,
+                   verbose=True,
+                   close_plot: bool = True):
         if verbose:
             print("... exiting interactive mode")
         self._axes_2d.figure.canvas.stop_event_loop()
+
         for cid in self._cid.values():
             self._axes_2d.figure.canvas.mpl_disconnect(cid)
+
+        if close_plot:
+            plt.close(self._axes_2d.figure.number)
+            if self._axes_exam:
+                plt.close(self._axes_exam.figure.number)
 
     def connect(self, verbose=True):
         self._cid['key_press'] = self._axes_2d.figure.canvas.mpl_connect('key_press_event', self._on_key_press)
@@ -217,20 +273,34 @@ class BindingsFunctions:
         self._axes_2d.figure.canvas.start_event_loop()
 
     def _on_key_press(self, event):
-        if event.inaxes == self._axes_2d:
-            self._options_choose(event)
+        self._options_choose(event)
 
     ############################
     # Callable functions
     #
     ############################
 
-    def clear_exam(self):
+    def clear_temp(self):
+        """Clear temporal artists in data area"""
+        if self._temporal_artist:
+            while True:
+                try:
+                    t = self._temporal_artist.pop()
+                except IndexError:
+                    break
+                t.remove()
+
+    def clear_exam(self, temporal=True):
         """Clear exam area for a new plot, and its colorbar if there is any"""
         axes = [self._axes_exam]
         if self._colorbar_exam is not None:
             axes.append(self._colorbar_exam)
         _clear_axes(*axes)
+
+        if temporal:
+            self.clear_temp()
+
+        self.last_dict = {k: v for k, v in self.last_dict.items() if 'exam' not in k}
 
     def clear_data(self):
         """Clear data area for a new plot, and its colorbar if there is any"""
@@ -247,70 +317,122 @@ class BindingsFunctions:
     def axes_exam(self):
         return self._axes_exam
 
-    def zoom_stamp_2d(self,
-                      event,
-                      scale: str = 'original',
-                      text: bool = False,
-                      stamp_rad: int = 0,
-                      ):
+    def change_scale_data(self, xy, scale='zscale'):
+        """Change the scale of the data in 2D mapping"""
+
+        scale_options = ['minmax', 'zscale']
+        if scale == 'cycle':
+            try:
+                scale = scale_options[(scale_options.index(self._last_scale_exam) + 1) % len(scale_options)]
+            except ValueError:
+                scale = scale_options[0]
+        if scale == 'zscale':
+            vmin, vmax = pa.zscale(self._data_2d, trim=0.02)
+        elif scale == 'minmax':
+            vmin, vmax = self._data_2d.min(), self._data_2d.max()
+
+        self.set_data_2d(None, imshow_kwargs={"vmin": vmin, "vmax": vmax})
+
+    @allow_keep_val(["xy", "text", "stamp_rad", "scale"])
+    def zoom_exam_2d(self,
+                     xy: TwoValues,
+                     scale: str = 'original',
+                     text: Optional[bool] = False,
+                     stamp_rad: Optional[int] = 0,
+                     ):
         """"returns a zoom of the stamp"""
 
         self.clear_exam()
 
-        cxy = (int(event.xdata), int(event.ydata))
+        cxy = (int(xy[0]), int(xy[1]))
         props = self._config['tool']['zoom']
 
         if stamp_rad == 0:
             stamp_rad = self._pix_from_percent(self._config['stamp'])
 
-        extents = cxy[0] - stamp_rad, cxy[0] + stamp_rad, cxy[1] - stamp_rad, cxy[1] + stamp_rad
-        stamp = self._data_2d[extents[2]:extents[3], extents[0]:extents[1]]
+        data_extents = cxy[0] - stamp_rad, cxy[0] + stamp_rad, cxy[1] - stamp_rad, cxy[1] + stamp_rad
+        stamp = self._data_2d[data_extents[2]:data_extents[3], data_extents[0]:data_extents[1]]
 
         min_value = np.min(stamp)
         max_value = np.max(stamp)
         min_idxs = np.transpose((stamp == min_value).nonzero())
         max_idxs = np.transpose((stamp == max_value).nonzero())
+        std_value = np.std(stamp)
+        iqr_value = np.subtract(*np.percentile(stamp, [75, 25]))
         mean_value = np.mean(stamp)
         median_value = np.median(stamp)
 
+        scale_options = ['zscale', 'minmax', 'original']
+        if scale == 'cycle':
+            scale = scale_options[(scale_options.index(self._last_scale_exam) + 1) % len(scale_options)]
         if scale == 'zscale':
             vmin, vmax = pa.zscale(self._data_2d, trim=0.02)
-        elif scale == 'linear':
+        elif scale == 'minmax':
             vmin, vmax = min_value, max_value
         elif scale == 'original':
             vmin, vmax = self._axes_2d.get_images()[0].get_clim()
         else:
             raise ValueError(f"zoom called with an unsupported 'scale' option: {scale}")
-        mid = (vmin+vmax)/2
-        im = self._axes_exam.imshow(stamp,
+        self._last_scale_exam = scale
+        mid = (vmin + vmax)/2
+
+        im = self._axes_exam.imshow(self._data_2d,
                                     cmap=props['colormap'],
-                                    extent=extents, vmin=vmin, vmax=vmax,
+                                    vmin=vmin, vmax=vmax,
                                     origin='lower',
                                     )
+        transform = self._extra_transform_data + im.get_transform()
+        im.set_transform(transform)
 
+        bottom_left = data_extents[0], data_extents[2]
+        upper_right = data_extents[1], data_extents[3]
+        extremes = self._extra_transform_data.transform([bottom_left, upper_right])
+        new_extremes = np.array([extremes.min(0), extremes.max(0)])
+        extents = list(new_extremes[:, 0] - 0.5) + list(new_extremes[:, 1] - 0.5)
+
+        self._axes_exam.set_xlim(*extents[0:2])
+        self._axes_exam.set_ylim(*extents[2:4])
+
+        ny, nx = self._data_2d.shape
+        shadow_area = [[extents[0], extents[2]], [extents[0], extents[3]],
+                       [extents[1], extents[3]], [extents[1], extents[2]],
+                       [0, extents[2]], [0, 0], [nx, 0], [nx, ny], [0, ny], [0, extents[2]],
+                       ]
+        polygon = patches.Polygon(shadow_area, closed=True, facecolor="black", alpha=0.5,
+                                  transform=transform)
+        self.axes_exam.add_patch(polygon)
+
+        ax = self.axes_exam
         stat_mark = props['stat']
         border = stat_mark['from_border']
         if self._colorbar_exam is not None:
-            ending = 0
-            if vmax != max_value:
-                ending |= 2
-            if vmin != min_value:
-                ending |= 1
-            self._axes_exam.figure.colorbar(im, cax=self._colorbar_exam,
-                                            orientation='horizontal',
-                                            # extend=['neither', 'min', 'max', 'both'][ending],
-                                            )
+            ax.figure.colorbar(im, cax=self._colorbar_exam,
+                               orientation='horizontal',
+                               )
 
-            mxv, mxl = [max_value, ''] if max_value == vmax else [vmax, " ->"]
-            mnv, mnl = [min_value, ''] if min_value == vmin else [vmin, "<- "]
-            for value, vert, sym, label, ha in zip([mxv, mnv, median_value, mean_value],
-                                                   [0.5, 0.5, 0.2, 0.8],
-                                                   ['|', '|', 'd', 'd'],
-                                                   [f'max {max_value} {mxl}', f'{mnl} {min_value} min',
-                                                    f'median {median_value}', f'mean {mean_value:.1f}'],
-                                                   ['right'] + ['left']*3,
-                                                   ):
-                color = props['facecolor_dark' if value > mid else 'facecolor_light']
+            for value, vert, label in zip([max_value, min_value, median_value, mean_value],
+                                          [0.5, 0.5, 0.2, 0.8],
+                                          ["max", "min", "median", "mean"],
+                                          ):
+                sym = "d"
+                if value < mid:
+                    color = props['facecolor_light']
+                    ha = "left"
+                    label = f" {value:.1f} {label}"
+                else:
+                    color = props['facecolor_dark']
+                    ha = 'right'
+                    label = f"{label} {value:.1f} "
+
+                if value < vmin:
+                    label = r" $\leftarrow$" + f"{label}"
+                    value = vmin
+                    sym = "|"
+                elif value > vmax:
+                    label = f"{label}" + r"$\rightarrow$ "
+                    value = vmax
+                    sym = "|"
+
                 self._colorbar_exam.plot(value, vert, sym,
                                          color=color)
                 self._colorbar_exam.text(value, vert, label,
@@ -319,17 +441,20 @@ class BindingsFunctions:
 
         rectangle = patches.Rectangle
         color = stat_mark['color']
-        ax = self._axes_exam
         for idx, label in [[min_idxs, "min"], [max_idxs, "max"]]:
             for y, x in idx:
-                y += extents[2]
-                x += extents[0]
+                y += data_extents[2]-0.5
+                x += data_extents[0]-0.5
                 ax.add_patch(rectangle((x + border, y + border),
                                        1 - 2*border, 1 - 2*border,
                                        alpha=stat_mark['alpha'], linewidth=stat_mark['linewidth'],
-                                       color=color, fill=False)
+                                       color=color, fill=False,
+                                       transform=transform,
+                                       )
                              )
-                ax.text(x + 2*border, y, label, ha="left", va="bottom", color=color)
+                ax.text(x + 2*border, y, label, ha="left", va="bottom", color=color,
+                        transform=transform,
+                        )
 
         x0 = extents[0] + 0.5
         y0 = extents[2] + 0.5
@@ -341,30 +466,33 @@ class BindingsFunctions:
                 ax.text(xx + x0, yy + y0, f"{val:.1f}",
                         color=color, ha='center', va='center',
                         size=props['fontsize'],
+                        transform=transform,
                         )
 
+        sep = r"$\bullet$"
         pa.set_plot_props(self._axes_exam,
-                          title=f"max:{max_value} * min:{min_value} * mean:{mean_value:.1f} * median:{median_value}",
+                          title=f"max:{max_value} {sep} min:{min_value} {sep}"
+                                f" mean:{mean_value:.1f} {sep} median:{median_value} {sep}"
+                                f" std:{std_value:.1f} {sep} iqr:{iqr_value}",
                           ylabel=f"{scale[0].upper()}{scale[1:]} scale",
                           )
 
         self._mark_temporal_in_2d(self._config['mark'][props['mark_data']],
-                                  box=extents,
+                                  box=data_extents,
                                   )
 
-    def plot_radial_from_2d(self,
-                            event,
+    def plot_radial_exam_2d(self,
+                            xy: TwoValues,
                             recenter: bool = True,
                             ):
         """"Plot radial profile after optional recenter"""
-        cxy = (event.xdata, event.ydata)
         props = self._config['tool']['radial_profile']
         mark = self._config['mark'][props['mark_exam']]
 
         # prepare data
-        rpx, rpy, cxy = pa.radial_profile(self._data_2d, cnt_xy=cxy,
-                                          stamp_rad=self._pix_from_percent(self._config['stamp']),
-                                          recenter=recenter)
+        rpx, rpy, xy = pa.radial_profile(self._data_2d, cnt_xy=xy,
+                                         stamp_rad=self._pix_from_percent(self._config['stamp']),
+                                         recenter=recenter)
         # plot data
         self.clear_exam()
         self._axes_exam.plot(rpx, rpy, mark['marker'],
@@ -372,33 +500,31 @@ class BindingsFunctions:
         pa.set_plot_props(self._axes_exam,
                           title="radial profile",
                           xlabel="distance to center",
-                          ylabel=f'center at ({cxy[0]:.1f}, {cxy[1]:.1f})')
+                          ylabel=f'center at ({xy[0]:.1f}, {xy[1]:.1f})')
         self._axes_exam.figure.canvas.draw_idle()
 
         # mark temporal
-        self._mark_temporal_in_2d(self._config['mark'][props['mark_data']], mark=cxy)
+        self._mark_temporal_in_2d(self._config['mark'][props['mark_data']], mark=xy)
 
-    def plot_vprojection_from_2d(self, event):
-        cxy = (event.xdata, event.ydata)
+    def plot_vprojection_exam_2d(self, xy):
         props = self._config['tool']['projection']
 
-        self.plot_projection_from_2d(cxy[0], cxy[1],
+        self.plot_projection_exam_2d(xy[0], xy[1],
                                      props['width'],
                                      self._pix_from_percent(props, 'length_'),
                                      props['combine_op'],
                                      1)
 
-    def plot_hprojection_from_2d(self, event):
-        cxy = (event.xdata, event.ydata)
+    def plot_hprojection_exam_2d(self, xy):
         props = self._config['tool']['projection']
 
-        self.plot_projection_from_2d(cxy[0], cxy[1],
+        self.plot_projection_exam_2d(xy[0], xy[1],
                                      self._pix_from_percent(props, 'length_'),
                                      props['width'],
                                      props['combine_op'],
                                      0)
 
-    def plot_projection_from_2d(self, x, y, lx, ly, op, op_row):
+    def plot_projection_exam_2d(self, x, y, lx, ly, op, op_row):
         props = self._config['tool']['projection']
         mark = self._config['mark'][props['mark_exam']]
 
@@ -433,19 +559,18 @@ class BindingsFunctions:
                                   box=[x, x+lx, y, y+ly],
                                   )
 
-    def return_mark_from_2d(self, event, marks=None, recenter=True, decimals=None):
-        cxy = (event.xdata, event.ydata)
+    def return_mark_from_2d(self, xy, marks=None, recenter=True, decimals=None):
         props = self._config['tool']['marking']
 
         yy, xx = self._data_2d.shape
         if recenter:
-            cxy = pa.subcentroid_xy(self._data_2d, cxy, self._pix_from_percent(self._config['stamp']))
+            xy = pa.subcentroid_xy(self._data_2d, xy, self._pix_from_percent(self._config['stamp']))
 
         radius = props['radius'] * max(xx, yy) / 100
         if decimals is None:
             decimals = props['rounding_user']
 
-        xy = (round(cxy[0], decimals), round(cxy[1], decimals))
+        xy = (round(xy[0], decimals), round(xy[1], decimals))
 
         colors = _csv_str_to_tuple(props['color'])
 
@@ -464,7 +589,7 @@ class BindingsFunctions:
 
     # noinspection PyUnusedLocal
     def delete_marks_from_2d(self,
-                             event: KeyEvent,
+                             xy: TwoValues,
                              field: str = ''):
         for p in self._mark_patches:
             p.remove()
@@ -474,25 +599,43 @@ class BindingsFunctions:
 
     # noinspection PyUnusedLocal
     def vertical_flip_2d(self,
-                         event: KeyEvent,
+                         xy: TwoValues,
                          ):
         self._axes_2d.set_ylim(list(self._axes_2d.get_ylim())[::-1])
         self._axes_2d.figure.canvas.draw_idle()
 
     # noinspection PyUnusedLocal
     def horizontal_flip_2d(self,
-                           event: KeyEvent,
+                           xy: TwoValues,
                            ):
         self._axes_2d.set_xlim(list(self._axes_2d.get_xlim())[::-1])
         self._axes_2d.figure.canvas.draw_idle()
 
     # noinspection PyUnusedLocal
+    def rotate_2d(self,
+                  xy: TwoValues,
+                  angle: float = 0,
+                  ):
+        image = self._axes_2d.get_images()[0]
+        delta = self._data_2d.shape[1] - self._data_2d.shape[0]
+        identity = transforms.Affine2D()
+        trans_data = identity.rotate_deg_around(self._data_2d.shape[1]/2,
+                                                self._data_2d.shape[0]/2, angle).translate(-delta/2, delta/2)
+
+        self._extra_transform_data = trans_data
+        trans = trans_data + image.get_transform()
+        self._axes_2d.get_images()[0].set_transform(trans)
+        self.clear_exam(temporal=True)
+
+        self._axes_2d.figure.canvas.draw_idle()
+
+    # noinspection PyUnusedLocal
     def terminate(self,
-                  event: Optional[KeyEvent],
+                  xy: TwoValues,
                   close_plot: bool = True,
                   verbose=True,
                   ):
-        self.disconnect(verbose=verbose)
+        self.disconnect(verbose=verbose, close_plot=close_plot)
         if close_plot:
             if self._axes_exam is not None:
                 plt.close(self._axes_exam.figure.number)
@@ -500,13 +643,13 @@ class BindingsFunctions:
 
     # noinspection PyUnusedLocal
     def save_config(self,
-                    event: KeyEvent,
+                    xy: TwoValues,
                     ):
         self._save_config()
 
     # noinspection PyUnusedLocal
     def load_config(self,
-                    event: KeyEvent,
+                    xy: TwoValues,
                     reset: bool = False):
         self._load_config(reset=reset)
 
@@ -522,11 +665,16 @@ class BindingsFunctions:
 
     def options_add(self, key, doc, fcn,
                     kwargs: dict = None,
-                    ret: Optional[str] = None):
+                    ret: Optional[str] = None,
+                    valid_in: Union[list[matplotlib.axes.Axes],
+                                    matplotlib.axes.Axes, matplotlib.figure.Figure] = None,
+                    ):
         """Add a new hotkey binding, it can overwrite only those given by default in .options_reset_config()
 
         Parameters
         ----------
+        valid_in : list, matplotlib.axes.Axes, matplotlib.figure.Figure, optional
+          Axes or Figures were the kwy is valid.  If None, then it is only valid in the datamap axes
         key: str
           Single character string
         doc: str
@@ -539,54 +687,101 @@ class BindingsFunctions:
         ret: str, optional
           Attribute of self defined in child class, return from fcn will be appended to this list
         """
-        overwritable = ['S', 'L', 'F', '?']
         if kwargs is None:
             kwargs = {}
 
         if self._key_options is None:
             self.options_reset()
-        if key in self._key_options.keys() and key not in overwritable:
-            raise ValueError(f"Key '{key}' has already been added for '{doc}', cannot add it for '{doc}'")
+
+        if valid_in is None:
+            valid_in = [self._axes_2d]
+        elif isinstance(valid_in, matplotlib.figure.Figure):
+            valid_in = valid_in.axes
+        elif isinstance(valid_in, matplotlib.axes.Axes):
+            valid_in = [valid_in]
+        elif not isinstance(valid_in, (list, tuple)):
+            raise TypeError(f"Invalid parameter valid_in ({valid_in})")
+
         if isinstance(fcn, str):
             fcn = getattr(self, fcn, None)
-        self._key_options[key] = (doc, fcn, kwargs, ret)
+
+        if key not in self._key_options:
+            self._key_options[key] = []
+        for ax in valid_in:
+            if not isinstance(ax, matplotlib.axes.Axes):
+                raise TypeError(f"valid_in element list of incorrect type ({ax}), it can only be an axes")
+            if ax in [x[4] for x in self._key_options[key]]:
+                raise ValueError(f"Key '{key}' has already been added for '{doc}' in axes {ax}, "
+                                 f"cannot add it for '{doc}'")
+            self._key_options[key].append((doc, fcn, kwargs, ret, ax))
 
     # noinspection PyUnusedLocal
     def _options_help(self,
                       event: KeyEvent):
         print("Available hotkeys:")
-        for key, (doc, fcn, kwargs, ret) in self._key_options.items():
-            print(f"+ {key}: {doc}")
+        for key, options in self._key_options.items():
+            docs = []
+            for (doc, fcn, kwargs, ret, valid_in) in options:
+                docs.append(doc)
+            print(f"+ {key}: {'/'.join(set(docs))}")
 
     def _options_choose(self,
                         event: KeyEvent):
-        for key, (doc, fcn, kwargs, ret) in self._key_options.items():
+        for key, options in self._key_options.items():
             if event.key == key:
-                if ret is None:
-                    fcn(event, **kwargs)
+                for (doc, fcn, kwargs, ret, valid_in) in options:
+                    if event.inaxes == valid_in:
+                        break
                 else:
-                    getattr(self, ret).append(fcn(event, **kwargs))
+                    return
 
-        self._options_history.append(event.key)
+                kwargs = kwargs.copy()
+                inverse_transform = self._axes_2d.get_images()[0].get_transform().inverted()
+                xy = kwargs.pop('xy', inverse_transform.transform((event.x, event.y)))
 
-    def options_reset(self, config_options=True, help_option=True):
+                if ret is None:
+                    fcn(xy, **kwargs)
+                else:
+                    getattr(self, ret).append(fcn(xy, **kwargs))
+
+                self._options_history.append(key)
+
+                return
+
+    def options_reset(self, config_options=True, help_option=True, quit_option=True, valid_in=None):
         """Loads config file and add default config saving/loading options
 
+        Parameters
+        ----------
+        valid_in: axes, figure
+            specify the validity for the help and config options, the default None indicates the whole
+            figure that has the datamap
+        help_option: bool
+            Whether to include the help option '?'
+        config_options : bool
+            Whether to include the config options 'L'oad, 'S'ave, load-'F'actory-defaults
         """
         file_exists = self._load_config()
         self._key_options = {}
+        if valid_in is None:
+            valid_in = self._axes_2d.figure
 
         if help_option:
-            self.options_add('?', "hotkey help", "_options_help")
+            self.options_add('?', "hotkey help", "_options_help", valid_in=valid_in)
         if config_options:
             if not file_exists:
                 raise FileNotFoundError("Config file for interactive not found. "
                                         "Use procastro.BindingFunctions.options_reset(config_options=False) "
                                         "to avoid this warning")
-            self.options_add('L', f"reload configuration from '{pa.file_from_procastro_dir(self._config_file)}'",
-                             'load_config')
-            self.options_add('S', 'save configuration', 'save_config')
-            self.options_add('F', 'load default configuration from factory', 'load_config', {'reset': True})
+            self.options_add('L', f"reload configuration from '{pa.user_confdir(self._config_file)}'",
+                             'load_config', valid_in=valid_in)
+            self.options_add('S', 'save configuration', 'save_config',
+                             valid_in=valid_in)
+            self.options_add('F', 'load default configuration from factory', 'load_config',
+                             kwargs={'reset': True},
+                             valid_in=valid_in)
+        if quit_option:
+            self.options_add('q', 'terminate interactive imshow', 'terminate', valid_in=valid_in)
 
 
 class BindingsImshowz(BindingsFunctions):
@@ -616,29 +811,47 @@ class BindingsImshowz(BindingsFunctions):
 
         self._marks_xy = []
 
-        self.options_add('r', 'radial profile', 'plot_radial_from_2d')
-        self.options_add('9', 'zoom with radius 9', 'zoom_stamp_2d', {'scale': 'linear', 'stamp_rad': 9})
-        self.options_add('5', 'zoom with radius 5', 'zoom_stamp_2d', {'scale': 'linear', 'stamp_rad': 5, 'text': True})
-        self.options_add('z', 'zoom into stamp', 'zoom_stamp_2d', {'scale': 'original'})
-        self.options_add('Z', 'zoom into stamp, recomputing scale by zscale in stamp', 'zoom_stamp_2d',
-                         {'scale': 'zscale'})
-        self.options_add('X', 'zoom into stamp, recomputing scale linearly in the stamp', 'zoom_stamp_2d',
-                         {'scale': 'linear'})
-        self.options_add('h', 'horizontal projection', 'plot_hprojection_from_2d')
-        self.options_add('v', 'vertical projection', 'plot_vprojection_from_2d')
-        self.options_add('m', 'mark a new position', 'return_mark_from_2d', {'recenter': False, 'marks': '_marks_xy',
-                                                                             'decimals':
-                                                                                 self._config['tool']['marking'][
-                                                                                     'rounding_user'],
-                                                                             }, '_marks_xy')
+        self.options_add('r', 'radial profile', 'plot_radial_exam_2d')
+        self.options_add('9', 'zoom with radius 9', 'zoom_exam_2d',
+                         kwargs={'scale': 'minmax', 'stamp_rad': 9})
+        self.options_add('5', 'zoom with radius 5', 'zoom_exam_2d',
+                         kwargs={'scale': 'minmax', 'stamp_rad': 5, 'text': True})
+        self.options_add('z', 'zoom into stamp', 'zoom_exam_2d')
+        self.options_add('9', 'zoom with radius 9 at same point', 'zoom_exam_2d',
+                         kwargs={'xy': None, 'scale': None, 'text': False, 'stamp_rad': 9},
+                         valid_in=axes_exam)
+        self.options_add('5', 'zoom with radius 5 at same point', 'zoom_exam_2d',
+                         kwargs={'xy': None, 'scale': None, 'text': True, 'stamp_rad': 5},
+                         valid_in=axes_exam)
+        self.options_add('z', 'zoom with stamp radius at same point', 'zoom_exam_2d',
+                         kwargs={'xy': None, 'scale': None},
+                         valid_in=axes_exam)
+        self.options_add('s', 'Cycle scale for data map', 'change_scale_data',
+                         kwargs={'scale': 'cycle'},
+                         valid_in=self.axes_data)
+        self.options_add('s', 'Cycle contrast scale for examination map', 'zoom_exam_2d',
+                         kwargs={'scale': 'cycle', 'stamp_rad': None, 'text': None, 'xy': None},
+                         valid_in=self.axes_exam)
+        self.options_add('w', 'Rotate 90 degrees counter-clockwise', 'rotate_2d',
+                         kwargs={'angle': 90})
+        self.options_add('e', 'Rotate 90 degrees clockwise', 'rotate_2d',
+                         kwargs={'angle': -90})
+        self.options_add('h', 'horizontal projection', 'plot_hprojection_exam_2d')
+        self.options_add('v', 'vertical projection', 'plot_vprojection_exam_2d')
+        self.options_add('m', 'mark a new position', 'return_mark_from_2d',
+                         kwargs={'recenter': False, 'marks': '_marks_xy',
+                                 'decimals': self._config['tool']['marking']['rounding_user'],
+                                 },
+                         ret='_marks_xy')
         self.options_add('c', 'mark a new position after centering', 'return_mark_from_2d',
-                         {'recenter': True, 'marks': '_marks_xy',
-                          'decimals': self._config['tool']['marking']['rounding_centroid'],
-                          }, '_marks_xy')
-        self.options_add('d', 'delete all marks', 'delete_marks_from_2d', {'field': '_marks_xy'})
+                         kwargs={'recenter': True, 'marks': '_marks_xy',
+                                 'decimals': self._config['tool']['marking']['rounding_centroid'],
+                                 },
+                         ret='_marks_xy')
+        self.options_add('d', 'delete all marks', 'delete_marks_from_2d',
+                         kwargs={'field': '_marks_xy'})
         self.options_add('x', 'flip X-axis', 'horizontal_flip_2d')
         self.options_add('y', 'flip Y-axis', 'vertical_flip_2d')
-        self.options_add('q', 'terminate interactive imshow', 'terminate')
 
         self.set_data_2d(image)
         self.connect()

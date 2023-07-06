@@ -44,7 +44,7 @@ __all__ = ['query_full_exoplanet_db', 'Nightly']
 def query_full_exoplanet_db(force_reload: bool = False,
                             reload_days: float = 7
                             ):
-    file = pa.file_from_procastro_dir("exodb.pickle")
+    file = pa.user_confdir("exodb.pickle")
     if not force_reload and os.path.isfile(file):
         days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
         if days_since < reload_days:

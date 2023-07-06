@@ -239,7 +239,7 @@ def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
     ValueError
         If a data field does not match the specified format
     """
-    paths = [pa.file_from_procastro_dir("transits.txt")
+    paths = [pa.user_confdir("transits.txt")
              ]
 
     tr_epoch = None
