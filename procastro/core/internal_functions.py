@@ -22,7 +22,7 @@ def common_trim_fcn(trim_all):
 
 
 def extract_common(tdata, trim, common_trim):
-    # reacommodating to use the same operators both sides of the array
+    # accommodating to use the same operators both sides of the array
     if trim is None:
         return tdata, False
 

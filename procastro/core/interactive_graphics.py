@@ -122,6 +122,8 @@ class BindingsFunctions:
                  cb_exam=None,
                  ):
         self._last_scale_exam = None
+        self._last_scale_data = None
+
         self.last_dict = {}
 
         self._config_file = config_file
@@ -143,7 +145,7 @@ class BindingsFunctions:
         self._options_history = []
 
     def set_data_2d(self,
-                    data: np.ndarray,
+                    data: Optional[np.ndarray],
                     imshow_kwargs: Optional[dict] = None):
         """Set data content for internal treatment of key bindings.
         Due to variety of contrasts This function does not plot the data, only its colorbar if such axes exists.
@@ -161,15 +163,19 @@ class BindingsFunctions:
             self._data_2d = data
         if imshow_kwargs is not None:
             self._axes_2d.cla()
-            self._axes_2d.imshow(data, **imshow_kwargs)
+            self._axes_2d.imshow(self._data_2d, **imshow_kwargs)
+            self._axes_2d.figure.canvas.draw_idle()
+
+        self._axes_2d.figure.patch.set_facecolor("navajowhite")
+        self._axes_2d.set_title("ProcAstro's interactive imshowz()")
 
         if self._colorbar_data is not None:
             fig = self._axes_2d.figure
             fig.colorbar(self._axes_2d.get_images()[0],
                          cax=self._colorbar_data,
                          orientation="horizontal",
-                         # extend='both',
                          )
+            self._colorbar_data.figure.canvas.draw_idle()
 
     def _pix_from_percent(self, param, prop=''):
         """Computes radius in pixel given percent of image (*percent) if the *pixels property is not set"""
@@ -323,11 +329,13 @@ class BindingsFunctions:
         scale_options = ['minmax', 'zscale']
         if scale == 'cycle':
             try:
-                scale = scale_options[(scale_options.index(self._last_scale_exam) + 1) % len(scale_options)]
+                scale = scale_options[(scale_options.index(self._last_scale_data) + 1) % len(scale_options)]
             except ValueError:
                 scale = scale_options[0]
+        self._last_scale_data = scale
+
         if scale == 'zscale':
-            vmin, vmax = pa.zscale(self._data_2d, trim=0.02)
+            vmin, vmax = pa.zscale(self._data_2d)
         elif scale == 'minmax':
             vmin, vmax = self._data_2d.min(), self._data_2d.max()
 
@@ -715,15 +723,36 @@ class BindingsFunctions:
                                  f"cannot add it for '{doc}'")
             self._key_options[key].append((doc, fcn, kwargs, ret, ax))
 
-    # noinspection PyUnusedLocal
-    def _options_help(self,
-                      event: KeyEvent):
-        print("Available hotkeys:")
+    def options_help(self,
+                     axes: matplotlib.axes.Axes = None,
+                     fontsize: int = 9,
+                     ):
+        yy = 0.91
+
+        txt = "Available hotkeys:"
+        if axes is None:
+            print(txt)
+        else:
+            axes.text(0.1, 0.95, txt,
+                      fontsize=fontsize+1, transform=axes.transAxes)
         for key, options in self._key_options.items():
             docs = []
             for (doc, fcn, kwargs, ret, valid_in) in options:
                 docs.append(doc)
-            print(f"+ {key}: {'/'.join(set(docs))}")
+            txt = f"+ {key}: {'/'.join(set(docs))}"
+            if axes is None:
+                print(txt)
+            else:
+                axes.text(0.1, yy, txt,
+                          fontsize=fontsize, transform=axes.transAxes)
+                yy -= 0.03
+
+    # noinspection PyUnusedLocal
+    def _options_help(self,
+                      event: KeyEvent,
+                      axes: matplotlib.axes.Axes = None,
+                      ):
+        self.options_help(axes=axes)
 
     def _options_choose(self,
                         event: KeyEvent):
@@ -854,6 +883,8 @@ class BindingsImshowz(BindingsFunctions):
         self.options_add('y', 'flip Y-axis', 'vertical_flip_2d')
 
         self.set_data_2d(image)
+        self.options_help(axes=self.axes_exam, fontsize=10)
+
         self.connect()
 
     def get_marks(self):

@@ -326,8 +326,6 @@ def imshowz(data: Union[FileCompat, numpy.ndarray],
                                   wspace=0.05, hspace=0.15)
             ax = fig.add_subplot(gs[0, 0])
             ax_exam = fig.add_subplot(gs[0, 1])
-            fig.patch.set_facecolor("navajowhite")
-            ax.set_title("ProcAstro's interactive imshowz()")
         elif isinstance(axes, int):
             fig, ax = pa.figaxes(axes, force_new=force_new, nrows=1, ncols=2)
             if len(fig.axes) < 2:
@@ -410,8 +408,8 @@ def imshowz(data: Union[FileCompat, numpy.ndarray],
     if interactive:
 
         handler = BindingsImshowz(data, axes_data=ax, axes_exam=ax_exam,
-                                  colorbar_data=fig.add_subplot(gs[1,0]),
-                                  colorbar_exam=fig.add_subplot(gs[1,1]))
+                                  colorbar_data=fig.add_subplot(gs[1, 0]),
+                                  colorbar_exam=fig.add_subplot(gs[1, 1]))
         outs['marks_xy'] = handler.get_marks()
         outs['handler'] = handler
 

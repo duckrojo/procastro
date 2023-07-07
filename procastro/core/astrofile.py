@@ -278,13 +278,13 @@ def _checkfilename(f):
     Verifies that the given filename is valid
     """
     @_wraps(f)
-    def isfiledef(self, *args, **kwargs):
-        if hasattr(self, 'filename'):
-            if self.type is None:
+    def isfiledef(inst, *args, **kwargs):
+        if hasattr(inst, 'filename'):
+            if inst.type is None:
                 # raise ValueError("File %s not a supported astro-type." % (f))
                 raise ValueError(
                     "Please specify filename with setFilename first.")
-            return f(self, *args, **kwargs)
+            return f(inst, *args, **kwargs)
         else:
             raise ValueError(
                 "Filename not defined. Must give valid filename to AstroFile")
