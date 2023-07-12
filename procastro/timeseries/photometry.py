@@ -160,7 +160,7 @@ class _interactive(BindingsFunctions):
         self._logger = logger
         self._logger_msg_filter = msg_filter
 
-        self.options_reset(config_options=False)
+        self.options_reset(config_options=False, quit_option=False)
 
         self.options_add('left', "Return to previous frame", "_set_move", {'step': -1})
         self.options_add('right', "Advance to next frame", "_set_move", {'step': 1})
@@ -175,7 +175,7 @@ class _interactive(BindingsFunctions):
 
     # noinspection PyUnusedLocal
     def _skip_interactive(self,
-                          event: Optional[matplotlib.backend_bases.Event],
+                          xy: Optional[TwoValues],
                           ):
         self._move = 1
         self._skip = True
@@ -183,7 +183,7 @@ class _interactive(BindingsFunctions):
 
     # noinspection PyUnusedLocal
     def _set_move(self,
-                  event: Optional[matplotlib.backend_bases.Event],
+                  xy: Optional[TwoValues],
                   step: Optional[int],
                   ):
         self._move = step
@@ -217,13 +217,13 @@ class _interactive(BindingsFunctions):
         return self._move, self._skip, self._ignored, self._offset_xy
 
     # noinspection PyUnusedLocal
-    def _add_to_ignore(self, event):
+    def _add_to_ignore(self, xy):
         self._ignored = not self._ignored
         self._set_move(None, 0)
 
-    def _recenter(self, event):
-        self._offset_xy = (event.xdata - self._prev_brightest_xy[0],
-                           event.ydata - self._prev_brightest_xy[1])
+    def _recenter(self, xy):
+        self._offset_xy = (xy[0] - self._prev_brightest_xy[0],
+                           xy[1] - self._prev_brightest_xy[1])
         self._set_move(None, 0)
 
     def __bool__(self):

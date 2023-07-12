@@ -251,7 +251,6 @@ def imshowz(data: Union[FileCompat, numpy.ndarray],
             ticks=True, colorbar=False,
             rotate=0, invertx=False, inverty=False,
             origin='lower', force_new=False,
-            trim_data=False,
             extent=None, interactive=False,
             save=None, show=None, close=None,
             **kwargs):
@@ -367,12 +366,6 @@ def imshowz(data: Union[FileCompat, numpy.ndarray],
         xlim[1] = (xlim[1] > data.shape[1]) and data.shape[1] or xlim[1]
         ylim[0] *= ylim[0] > 0
         ylim[1] = (ylim[1] > data.shape[0]) and data.shape[0] or ylim[1]
-
-    if trim_data:
-        y0, y1, x0, x1 = ylim[0], ylim[1], xlim[0], xlim[1]
-        data = data[y0: y1, x0: x1]
-        xlim = [0, data.shape[1] - 1]
-        ylim = [0, data.shape[0] - 1]
 
     # Find the contrast
     if minmax is None:
