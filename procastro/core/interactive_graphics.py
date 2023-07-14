@@ -132,8 +132,12 @@ class BindingsFunctions:
 
         self._config = {}
         self._temporal_artist = []
-        self._mark_patches = []
         self._cid = {}
+
+        self._mark_patches = {'point': [],
+                              }
+        self._marks = {'point': [],
+                       }
 
         self._axes_2d = axes_data
         self._axes_exam = axes_exam
@@ -146,12 +150,16 @@ class BindingsFunctions:
 
     def set_data_2d(self,
                     data: Optional[np.ndarray],
-                    imshow_kwargs: Optional[dict] = None):
+                    imshow_kwargs: Optional[dict] = None,
+                    scale: Optional[str] = None,
+                    ):
         """Set data content for internal treatment of key bindings.
         Due to variety of contrasts This function does not plot the data, only its colorbar if such axes exists.
 
         Parameters
         ----------
+        scale:
+           passed to self.change_scale_data
         data:
            NumPy array with data
         imshow_kwargs: dict, optional
@@ -161,13 +169,14 @@ class BindingsFunctions:
 
         if data is not None:
             self._data_2d = data
+
+        if scale is not None:
+            self.change_scale_data(None, scale=scale)
+
         if imshow_kwargs is not None:
             self._axes_2d.cla()
             self._axes_2d.imshow(self._data_2d, **imshow_kwargs)
             self._axes_2d.figure.canvas.draw_idle()
-
-        self._axes_2d.figure.patch.set_facecolor("navajowhite")
-        self._axes_2d.set_title("ProcAstro's interactive imshowz()")
 
         if self._colorbar_data is not None:
             fig = self._axes_2d.figure
@@ -286,15 +295,68 @@ class BindingsFunctions:
     #
     ############################
 
+    def set_marks(self,
+                  marks: list[TwoValues],
+                  mark_type: str = 'point',
+                  redraw: bool = True,
+                  ):
+        self._marks[mark_type] = marks
+
+        if redraw:
+            self.redraw_marks(only=mark_type)
+
+    def draw_last_mark(self,
+                       mark_type: str,
+                       ):
+        props = self._config['tool']['marking']
+        colors = _csv_str_to_tuple(props['color'])
+        idx = len(self._marks[mark_type]) - 1
+        color = colors[idx] if idx < len(colors) else colors[-1]
+        radius = self._pix_from_percent(props, 'point_radius_')
+
+        circ = patches.Circle(self._marks[mark_type][-1],
+                              radius=radius,
+                              alpha=props['alpha'],
+                              color=color)
+        self._mark_patches[mark_type].append(circ)
+        self._axes_2d.add_patch(circ)
+        self._axes_2d.figure.canvas.draw_idle()
+
+    def redraw_marks(self,
+                     only: Optional[str] = None,
+                     ):
+
+        if only is None:
+            for m in self._marks.keys():
+                self.redraw_marks(only=m)
+            return
+
+        props = self._config['tool']['marking']
+        colors = _csv_str_to_tuple(props['color'])
+        marks = self._marks[only]
+        self.delete_marks_from_2d(None,
+                                  clear_data=False,
+                                  only=only)
+
+        if only == 'point':
+            radius = self._pix_from_percent(props, 'point_radius_')
+            for idx, mark in enumerate(marks):
+                color = colors[idx] if idx < len(colors) else colors[-1]
+
+                circ = patches.Circle(mark,
+                                      radius=radius,
+                                      alpha=props['alpha'],
+                                      color=color)
+                self._mark_patches[only].append(circ)
+                self._axes_2d.add_patch(circ)
+        self._axes_2d.figure.canvas.draw_idle()
+
     def clear_temp(self):
         """Clear temporal artists in data area"""
         if self._temporal_artist:
-            while True:
-                try:
-                    t = self._temporal_artist.pop()
-                except IndexError:
-                    break
+            for t in self._temporal_artist:
                 t.remove()
+            self._temporal_artist = []
 
     def clear_exam(self, temporal=True):
         """Clear exam area for a new plot, and its colorbar if there is any"""
@@ -338,6 +400,8 @@ class BindingsFunctions:
             vmin, vmax = pa.zscale(self._data_2d)
         elif scale == 'minmax':
             vmin, vmax = self._data_2d.min(), self._data_2d.max()
+        else:
+            raise ValueError(f"Unsupported scale '{scale}'")
 
         self.set_data_2d(None, imshow_kwargs={"vmin": vmin, "vmax": vmax})
 
@@ -567,42 +631,52 @@ class BindingsFunctions:
                                   box=[x, x+lx, y, y+ly],
                                   )
 
-    def return_mark_from_2d(self, xy, marks=None, recenter=True, decimals=None):
-        props = self._config['tool']['marking']
+    def mark_2d(self,
+                xy: TwoValues,
+                recenter: bool = True,
+                decimals: int = 1,
+                mark_type: str = 'point',
+                ):
+        """Add an extra mark at position. Store in list and draw in canvas.
 
-        yy, xx = self._data_2d.shape
+        Parameters
+        ----------
+        xy:
+           Position at which to add the mark
+        recenter:
+           whether to do a centroid centering
+        decimals:
+           number of decimals to keep
+        mark_type:
+            Type of mark to add. Currently, only 'point' is implemented
+        """
         if recenter:
             xy = pa.subcentroid_xy(self._data_2d, xy, self._pix_from_percent(self._config['stamp']))
-
-        radius = props['radius'] * max(xx, yy) / 100
-        if decimals is None:
-            decimals = props['rounding_user']
-
         xy = (round(xy[0], decimals), round(xy[1], decimals))
 
-        colors = _csv_str_to_tuple(props['color'])
-
-        idx = len(getattr(self, marks))
-        color = colors[idx] if idx < len(colors) else colors[-1]
-
-        circ = patches.Circle(xy,
-                              radius=radius,
-                              alpha=props['alpha'],
-                              color=color)
-        self._mark_patches.append(circ)
-        self._axes_2d.add_patch(circ)
-        self._axes_2d.figure.canvas.draw_idle()
-
-        return xy
+        if mark_type != "point":
+            raise NotImplementedError(f"Invalid value '{mark_type}':"
+                                      f" only 'point' is currently implemented as mark type")
+        self._marks[mark_type].append(xy)
+        self.draw_last_mark(mark_type)
 
     # noinspection PyUnusedLocal
     def delete_marks_from_2d(self,
-                             xy: TwoValues,
-                             field: str = ''):
-        for p in self._mark_patches:
+                             xy: Optional[TwoValues],
+                             clear_data: bool = True,
+                             only: Optional[str] = None,
+                             ):
+        if only is None:
+            for m in self._marks.keys():
+                self.delete_marks_from_2d(xy, clear_data=clear_data, only=m)
+            return
+
+        for p in self._mark_patches[only]:
             p.remove()
-        setattr(self, field, [])
-        self._mark_patches = []
+
+        if clear_data:
+            self._marks[only] = []
+
         self._axes_2d.figure.canvas.draw_idle()
 
     # noinspection PyUnusedLocal
@@ -785,6 +859,8 @@ class BindingsFunctions:
         valid_in: axes, figure
             specify the validity for the help and config options, the default None indicates the whole
             figure that has the datamap
+        quit_option
+            Whether to include the quit option 'q'
         help_option: bool
             Whether to include the help option '?'
         config_options : bool
@@ -824,10 +900,23 @@ class BindingsImshowz(BindingsFunctions):
                  config_file: str = "interactive.toml",
                  ):
 
-        f, axes_exam = pa.figaxes(axes_exam)
-        axes_exam.yaxis.tick_right()
-        if colorbar_exam is not None:
-            colorbar_exam.yaxis.tick_right()
+        if axes_data is None or isinstance(axes_data, int):
+            f = plt.figure(axes_data, figsize=(16, 8))
+            gs = f.add_gridspec(2, 2, height_ratios=(12, 1),
+                                left=0.05, right=0.95, top=0.95, bottom=0.05,
+                                wspace=0.05, hspace=0.15)
+            axes_data = f.add_subplot(gs[0, 0])
+            axes_exam = f.add_subplot(gs[0, 1])
+            colorbar_data = f.add_subplot(gs[1, 0])
+            colorbar_exam = f.add_subplot(gs[1, 1])
+
+            f.patch.set_facecolor("navajowhite")
+            axes_data.set_title("ProcAstro's interactive imshowz()")
+        else:
+            f, axes_exam = pa.figaxes(axes_exam)
+            axes_exam.yaxis.tick_right()
+            if colorbar_exam is not None:
+                colorbar_exam.yaxis.tick_right()
         f.show()
 
         super(BindingsImshowz, self).__init__(axes_data, axes_exam,
@@ -837,8 +926,6 @@ class BindingsImshowz(BindingsFunctions):
                                               )
 
         self.options_reset()
-
-        self._marks_xy = []
 
         self.options_add('r', 'radial profile', 'plot_radial_exam_2d')
         self.options_add('9', 'zoom with radius 9', 'zoom_exam_2d',
@@ -867,25 +954,24 @@ class BindingsImshowz(BindingsFunctions):
                          kwargs={'angle': -90})
         self.options_add('h', 'horizontal projection', 'plot_hprojection_exam_2d')
         self.options_add('v', 'vertical projection', 'plot_vprojection_exam_2d')
-        self.options_add('m', 'mark a new position', 'return_mark_from_2d',
-                         kwargs={'recenter': False, 'marks': '_marks_xy',
+        self.options_add('m', 'mark a new position', 'mark_2d',
+                         kwargs={'recenter': False,
                                  'decimals': self._config['tool']['marking']['rounding_user'],
                                  },
-                         ret='_marks_xy')
-        self.options_add('c', 'mark a new position after centering', 'return_mark_from_2d',
-                         kwargs={'recenter': True, 'marks': '_marks_xy',
+                         )
+        self.options_add('c', 'mark a new position after centering', 'mark_2d',
+                         kwargs={'recenter': True,
                                  'decimals': self._config['tool']['marking']['rounding_centroid'],
                                  },
-                         ret='_marks_xy')
-        self.options_add('d', 'delete all marks', 'delete_marks_from_2d',
-                         kwargs={'field': '_marks_xy'})
+                         )
+        self.options_add('d', 'delete all marks', 'delete_marks_from_2d',)
         self.options_add('x', 'flip X-axis', 'horizontal_flip_2d')
         self.options_add('y', 'flip Y-axis', 'vertical_flip_2d')
 
-        self.set_data_2d(image)
+        self.set_data_2d(image, scale='zscale')
         self.options_help(axes=self.axes_exam, fontsize=10)
 
         self.connect()
 
     def get_marks(self):
-        return self._marks_xy
+        return self._marks['point']

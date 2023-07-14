@@ -138,15 +138,13 @@ class _interactive(BindingsFunctions):
                  logger: logging.Logger = None,
                  ):
 
-        f, axes = pa.figaxes()
-        f.show()
         msg_filter = FilterMessage().add_needle('Using default ')
         # logger.addFilter(msg_filter)
         print("Entering interactive mode:\n"
               " 'd'elete frame, re'c'enter apertures, 'q'uit, toggle 'i'gnore, "
-              "keep 'g'oing until drift, <- prev frame, -> next frame")
+              "keep 'g'oing until drift, <- prev frame, -> next frame, '?' for full help")
 
-        super(_interactive, self).__init__(axes, None)
+        super(_interactive, self).__init__(None, None)
 
         self._prev_brightest_xy: Optional[TwoValues] = None
         self._offset_xy: Optional[TwoValues] = None
@@ -168,6 +166,32 @@ class _interactive(BindingsFunctions):
         self.options_add('i', "Toggle ignore for this frame", "_add_to_ignore")
         self.options_add('c', 'Recenter the brightest', "_recenter")
         self.options_add('g', 'Keep going until next drift', "_skip_interactive")
+
+        self.options_add('r', 'radial profile', 'plot_radial_exam_2d')
+        self.options_add('9', 'zoom with radius 9', 'zoom_exam_2d',
+                         kwargs={'scale': 'minmax', 'stamp_rad': 9})
+        self.options_add('5', 'zoom with radius 5', 'zoom_exam_2d',
+                         kwargs={'scale': 'minmax', 'stamp_rad': 5, 'text': True})
+        self.options_add('z', 'zoom into stamp', 'zoom_exam_2d')
+        self.options_add('9', 'zoom with radius 9 at same point', 'zoom_exam_2d',
+                         kwargs={'xy': None, 'scale': None, 'text': False, 'stamp_rad': 9},
+                         valid_in=self.axes_exam)
+        self.options_add('5', 'zoom with radius 5 at same point', 'zoom_exam_2d',
+                         kwargs={'xy': None, 'scale': None, 'text': True, 'stamp_rad': 5},
+                         valid_in=self.axes_exam)
+        self.options_add('z', 'zoom with stamp radius at same point', 'zoom_exam_2d',
+                         kwargs={'xy': None, 'scale': None},
+                         valid_in=self.axes_exam)
+        self.options_add('s', 'Cycle scale for data map', 'change_scale_data',
+                         kwargs={'scale': 'cycle'},
+                         valid_in=self.axes_data)
+        self.options_add('s', 'Cycle contrast scale for examination map', 'zoom_exam_2d',
+                         kwargs={'scale': 'cycle', 'stamp_rad': None, 'text': None, 'xy': None},
+                         valid_in=self.axes_exam)
+        self.options_add('h', 'horizontal projection', 'plot_hprojection_exam_2d')
+        self.options_add('v', 'vertical projection', 'plot_vprojection_exam_2d')
+        self.options_add('x', 'flip X-axis', 'horizontal_flip_2d')
+        self.options_add('y', 'flip Y-axis', 'vertical_flip_2d')
 
     def close(self):
         self._logger.removeFilter(self._logger_msg_filter)
@@ -305,7 +329,8 @@ class Photometry:
     def __init__(self, sci_files, target_coords_xy, offsets_xy=None,
                  mdark=None, mflat=None,
                  stamp_rad=30, outer_ap=1.2,
-                 max_skip=8, max_counts=50000, min_counts=4000, recenter=True,
+                 max_skip=8, max_counts=50000, min_counts=4000, max_drift=None,
+                 recenter=True,
                  epoch='JD', labels=None, brightest=None,
                  deg=1, gain=None, ron=None,
                  logfile=None, ignore=None, extra=None,
@@ -341,7 +366,9 @@ class Photometry:
         self.min_counts = min_counts
         self.recenter = recenter
         self.max_skip = max_skip
-        self.max_drift = stamp_rad/2
+        if max_drift is None:
+            max_drift = stamp_rad/3
+        self.max_drift = max_drift
         sci_files = pa.AstroDir(sci_files, mbias=mdark, mflat=mflat)
         self._astrodir = sci_files
 
@@ -612,8 +639,8 @@ class Photometry:
             if not step:
                 continue
             elif step < 0:
-                to_store += step * (indexing[to_store+step] == idx)   # reduce to_store only if it was
-                                                                      # stored in that previous frame.
+                # reduce to_store only if it was stored in that previous frame.
+                to_store += step * (indexing[to_store+step] == idx)
                 idx += step
                 continue
 

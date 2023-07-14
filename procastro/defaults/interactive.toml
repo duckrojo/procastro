@@ -13,9 +13,10 @@
     mark_data = "rect"
 
     [tool.marking]
-    alpha = 0.3
+    alpha = 0.4
     # size of circle' radius in percent
-    radius = 2
+    point_radius_percent = 2
+    point_radius_pix = 0
     # color of mfirst, second, etc mark. Last keeps repeating
     color = "black, red"
     # number of decimals for rounding of mark coordinates

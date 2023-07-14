@@ -34,6 +34,8 @@ import numpy
 import procastro as pa
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 import astropy.io.fits as pf
 import numpy as np
 from typing import Optional, Tuple, Union
@@ -311,32 +313,22 @@ def imshowz(data: Union[FileCompat, numpy.ndarray],
 
     data = prep_data_plot(data, **kwargs)
 
-    ax_exam = None
     if interactive:
-        show = False
-        save = None
-        colorbar = False
+        ax_exam = None
+        ax = None
 
         # if axes is None, then create a double axes. overwriting or not the last figure according to force_new
-        if axes is None:
-            fig = plt.figure(figsize=(16, 8))
-            gs = fig.add_gridspec(2, 2, height_ratios=(12, 1),
-                                  left=0.05, right=0.95, top=0.95, bottom=0.05,
-                                  wspace=0.05, hspace=0.15)
-            ax = fig.add_subplot(gs[0, 0])
-            ax_exam = fig.add_subplot(gs[0, 1])
-        elif isinstance(axes, int):
-            fig, ax = pa.figaxes(axes, force_new=force_new, nrows=1, ncols=2)
-            if len(fig.axes) < 2:
-                raise ValueError(f"Specified figure #{axes} does not have the required two axes for interactive mode")
-            ax_exam = fig.axes[1]
-        elif isinstance(axes, list) and len(axes) == 2 and isinstance(axes[0], matplotlib.axes.Axes):
+        if isinstance(axes, Figure) or isinstance(axes, Axes):
+            raise ValueError(f"Axes value is invalid in interactive mode: {axes}")
+        if isinstance(axes, list) and len(axes) == 2 and isinstance(axes[0], Axes):
             ax, ax_exam = axes
-            fig = ax.figure
-        else:
-            raise ValueError(f"Invalid axes specification for interactive mode: {axes}")
-    else:
-        fig, ax = pa.figaxes(axes, force_new=force_new)
+
+        handler = BindingsImshowz(data, axes_data=ax, axes_exam=ax_exam)
+        return {'marks_xy': handler.get_marks(),
+                'handler': handler,
+                }
+
+    fig, ax = pa.figaxes(axes, force_new=force_new)
 
     if extent is not None and xlim is not None and ylim is not None:
         raise ValueError(
@@ -398,13 +390,6 @@ def imshowz(data: Union[FileCompat, numpy.ndarray],
     set_plot_props(ax, **kwargs)
 
     outs = {'vlims': [mn, mx]}
-    if interactive:
-
-        handler = BindingsImshowz(data, axes_data=ax, axes_exam=ax_exam,
-                                  colorbar_data=fig.add_subplot(gs[1, 0]),
-                                  colorbar_exam=fig.add_subplot(gs[1, 1]))
-        outs['marks_xy'] = handler.get_marks()
-        outs['handler'] = handler
 
     return outs
 
