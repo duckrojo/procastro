@@ -119,7 +119,7 @@ class Obsrv(ocalc.ObsCalc):
     be interacted with.
 
     Right Image:
-        Displays an exoplanet eclipsing transits across a specific timeframe,
+        Displays an exoplanet eclipsing transits across a specific frame,
         where the x-axis shows the day of occurrence while the y-axis
         corresponds to the hour of the event.
 
@@ -414,9 +414,9 @@ class Obsrv(ocalc.ObsCalc):
         datetime = tm.iso.replace("-", "/")
 
         phase_info = f"phase {self.transit_info['offset']}: " if self.transit_info['offset'] != 0.0 else ""
-        print("{0:s}{1:s} {2:f}".format(phase_info, str(datetime)[:-3], jd))
+        print("{0:s} {1:s} {2:f}".format(phase_info, str(datetime)[:-3], jd))
 
-        ax.set_title('{0:s}{1:s}'.format(phase_info, str(datetime)[:-3]))
+        ax.set_title(f'{phase_info}{str(datetime[:-4])} JD{jd:.2f}')
         ax.set_ylim(ax.get_ylim())
         sam = np.array([1, 1.5, 2, 3, 4, 5])
         ax2.set_yticks(np.arcsin(1.0/sam)*180.0/np.pi)
