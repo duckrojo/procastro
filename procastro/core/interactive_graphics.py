@@ -939,13 +939,13 @@ class BindingsImshowz(BindingsFunctions):
         self.options_add('z', 'zoom into stamp', 'zoom_exam_2d')
         self.options_add('9', 'zoom with radius 9 at same point', 'zoom_exam_2d',
                          kwargs={'xy': None, 'scale': None, 'text': False, 'stamp_rad': 9},
-                         valid_in=axes_exam)
+                         valid_in=self.axes_exam)
         self.options_add('5', 'zoom with radius 5 at same point', 'zoom_exam_2d',
                          kwargs={'xy': None, 'scale': None, 'text': True, 'stamp_rad': 5},
-                         valid_in=axes_exam)
+                         valid_in=self.axes_exam)
         self.options_add('z', 'zoom with stamp radius at same point', 'zoom_exam_2d',
                          kwargs={'xy': None, 'scale': None},
-                         valid_in=axes_exam)
+                         valid_in=self.axes_exam)
         self.options_add('s', 'Cycle scale for data map', 'change_scale_data',
                          kwargs={'scale': 'cycle'},
                          valid_in=self.axes_data)
