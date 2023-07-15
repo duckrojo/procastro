@@ -1321,7 +1321,7 @@ class AstroCalib(object):
 
         in_data = [data]
         if data_trim is None:
-            io_logger.warning("Trim info not found on science frames... using full figure instead")
+            io_logger.warning("Trim info not found on raw frames... using full figure instead")
             trim = [(1, data.shape[0], 1, data.shape[1])]
         else:
             trim = [data_trim]
@@ -1337,7 +1337,9 @@ class AstroCalib(object):
             if theader is None or self.auto_trim_keyword not in theader.keys():
                 if not isinstance(tdata, (int, float)):
 
-                    io_logger.warning(f"Trim info {self.auto_trim_keyword} not found on {label} frames..."
+                    io_logger.warning(f"Trim info "
+                                      f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword+' '}"
+                                      f"not found on {label} frames..."
                                       f"using full figure instead")
                     label_trim = (1, data.shape[0], 1, data.shape[1])
                 else:

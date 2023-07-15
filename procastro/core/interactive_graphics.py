@@ -120,6 +120,7 @@ class BindingsFunctions:
                  config_file='interactive.toml',
                  cb_data=None,
                  cb_exam=None,
+                 title: str = '',
                  ):
         self._last_scale_exam = None
         self._last_scale_data = None
@@ -138,6 +139,24 @@ class BindingsFunctions:
                               }
         self._marks = {'point': [],
                        }
+
+        if axes_data is None or isinstance(axes_data, int):
+            f = plt.figure(axes_data, figsize=(16, 8))
+            gs = f.add_gridspec(2, 2, height_ratios=(12, 1),
+                                left=0.05, right=0.95, top=0.95, bottom=0.05,
+                                wspace=0.05, hspace=0.15)
+            axes_data = f.add_subplot(gs[0, 0])
+            axes_exam = f.add_subplot(gs[0, 1])
+
+            cb_data = f.add_subplot(gs[1, 0])
+            cb_exam = f.add_subplot(gs[1, 1])
+
+            f.patch.set_facecolor("navajowhite")
+            axes_data.set_title(title)
+
+        elif not isinstance(axes_data, Axes):
+            raise NotImplementedError(f"Axes type '{axes_data}' not supported")
+        f.show()
 
         self._axes_2d = axes_data
         self._axes_exam = axes_exam
@@ -174,7 +193,7 @@ class BindingsFunctions:
             self.change_scale_data(None, scale=scale)
 
         if imshow_kwargs is not None:
-            self._axes_2d.cla()
+            self.clear_data()
             self._axes_2d.imshow(self._data_2d, **imshow_kwargs)
             self._axes_2d.figure.canvas.draw_idle()
 
@@ -370,12 +389,15 @@ class BindingsFunctions:
 
         self.last_dict = {k: v for k, v in self.last_dict.items() if 'exam' not in k}
 
-    def clear_data(self):
+    def clear_data(self, keep_title=True):
         """Clear data area for a new plot, and its colorbar if there is any"""
-        axes = [self._axes_2d]
+        axes = [self._axes_2d, self._axes_exam]
         if self. _colorbar_data is not None:
             axes.append(self._colorbar_data)
+        title = self._axes_2d.get_title()
         _clear_axes(*axes)
+        if keep_title:
+            self._axes_2d.set_title(title)
 
     @property
     def axes_data(self):
@@ -900,29 +922,11 @@ class BindingsImshowz(BindingsFunctions):
                  config_file: str = "interactive.toml",
                  ):
 
-        if axes_data is None or isinstance(axes_data, int):
-            f = plt.figure(axes_data, figsize=(16, 8))
-            gs = f.add_gridspec(2, 2, height_ratios=(12, 1),
-                                left=0.05, right=0.95, top=0.95, bottom=0.05,
-                                wspace=0.05, hspace=0.15)
-            axes_data = f.add_subplot(gs[0, 0])
-            axes_exam = f.add_subplot(gs[0, 1])
-            colorbar_data = f.add_subplot(gs[1, 0])
-            colorbar_exam = f.add_subplot(gs[1, 1])
-
-            f.patch.set_facecolor("navajowhite")
-            axes_data.set_title("ProcAstro's interactive imshowz()")
-        else:
-            f, axes_exam = pa.figaxes(axes_exam)
-            axes_exam.yaxis.tick_right()
-            if colorbar_exam is not None:
-                colorbar_exam.yaxis.tick_right()
-        f.show()
-
         super(BindingsImshowz, self).__init__(axes_data, axes_exam,
                                               config_file=config_file,
                                               cb_data=colorbar_data,
                                               cb_exam=colorbar_exam,
+                                              title="ProcAstro's interactive imshowz()",
                                               )
 
         self.options_reset()

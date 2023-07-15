@@ -129,7 +129,7 @@ def _prep_offset(offsets, ignore):
     return ignore, offset_list
 
 
-class _interactive(BindingsFunctions):
+class _Interactive(BindingsFunctions):
 
     def __init__(self,
                  stamp_rad: int,
@@ -144,7 +144,7 @@ class _interactive(BindingsFunctions):
               " 'd'elete frame, re'c'enter apertures, 'q'uit, toggle 'i'gnore, "
               "keep 'g'oing until drift, <- prev frame, -> next frame, '?' for full help")
 
-        super(_interactive, self).__init__(None, None)
+        super(_Interactive, self).__init__(None, None, title="Interactive mode for photometry")
 
         self._prev_brightest_xy: Optional[TwoValues] = None
         self._offset_xy: Optional[TwoValues] = None
@@ -217,9 +217,10 @@ class _interactive(BindingsFunctions):
 
     def new_frame(self, data, filename, idx, ignored, offset_xy, prev_brightest_xy, centers):
         self.clear_data()
+
         self._move = 0
+        self.set_data_2d(data, scale='zscale')
         ax = self.axes_data
-        pa.imshowz(data, axes=ax, show=False)
         ax.set_xlabel(f'Frame #{idx}: {pathlib.Path(filename).name}')
 
         self._prev_brightest_xy = prev_brightest_xy
@@ -367,7 +368,7 @@ class Photometry:
         self.recenter = recenter
         self.max_skip = max_skip
         if max_drift is None:
-            max_drift = stamp_rad/3
+            max_drift = stamp_rad/6
         self.max_drift = max_drift
         sci_files = pa.AstroDir(sci_files, mbias=mdark, mflat=mflat)
         self._astrodir = sci_files
@@ -438,8 +439,8 @@ class Photometry:
         # rough aperture photometry performed
         if brightest is None:
             flxs = []
+            data = sci_files[0].reader(verbose=verbose_procdata)
             for trgx, trgy in coords_user_xy:
-                data = sci_files[0].reader(verbose=verbose_procdata)
                 if not (0 < trgy < data.shape[0]) and not (0 < trgx < data.shape[1]):
                     raise ValueError(
                         f"Given coordinates ({trgx}, {trgy}) is beyond data size ({data.shape[1]}, {data.shape[0]})")
@@ -454,11 +455,8 @@ class Photometry:
             brightest = np.argmax(flxs)
         self.brightest = brightest
 
-        self._logger.log(PROGRESS,
-                         " Initial guess received for {} targets, "
-                         "reference brightest '{}'."
-                         .format(len(target_coords_xy),
-                                 self.labels[brightest]))
+        self._logger.info(f" Initial guess received for {len(target_coords_xy)} targets, "
+                          f"reference brightest '{self.labels[brightest]}'.")
         self._logger.info(
             "Initial coordinates {}"
             .format(", ".join([f"{lab} {coo}"
@@ -553,7 +551,7 @@ class Photometry:
             logger.info(" Obtaining stamps for {} files: ".format(n_files))
 
         if interactive:
-            interactive = _interactive(stamp_rad, labels, logger=logger, brightest=self.brightest)
+            interactive = _Interactive(stamp_rad, labels, logger=logger, brightest=self.brightest)
             self.inter = interactive
 
         prev_centers_xy = [(xx, yy) for xx, yy in self.coords_user_xy]
@@ -596,9 +594,6 @@ class Photometry:
                     raise ValueError(f"Centroid for frame #{idx}({filename}) falls outside data"
                                      f" for target {label}. Initial/final center was:"
                                      f" [{cx:.2f}, {cy:.2f}]/[{ncx:.2f}, {ncy:.2f}] Offset: {off}")
-                print(f"Centroid for frame #{idx}({filename}) falls outside data"
-                f" for target {label}. Initial/final center was:"
-                f" [{cx:.2f}, {cy:.2f}]/[{ncx:.2f}, {ncy:.2f}] Offset: {off}")
                 cubes.append(pa.subarray(reduced_data, [ncy, ncx], stamp_rad, padding=True))
                 centers_xy.append((ncx, ncy))
 
@@ -640,7 +635,7 @@ class Photometry:
                 continue
             elif step < 0:
                 # reduce to_store only if it was stored in that previous frame.
-                to_store += step * (indexing[to_store+step] == idx)
+                to_store += step * (indexing[to_store + step] == idx + step)
                 idx += step
                 continue
 
@@ -896,8 +891,8 @@ class Photometry:
 
             too_much_mask = peak > self.max_counts
             too_little_mask = peak < self.min_counts
-            for mask, lab, thresh in ((too_much_mask, "above", self.max_counts),
-                                      (too_little_mask, "below", self.min_counts)):
+            for mask, lab, thresh in ((too_much_mask, "ABOVE", self.max_counts),
+                                      (too_little_mask, "BELOW", self.min_counts)):
                 n_mask = mask.sum()
                 if n_mask:
                     self._logger.warning(f"Object {label}"
