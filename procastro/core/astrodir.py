@@ -377,7 +377,7 @@ class AstroDir(object):
         """
         return joinchr.join([b.basename() for b in self])
 
-    def getheaderval(self, *args, cast=None, single_in_list=False, hdu=0):
+    def getheaderval(self, *args, cast=None, single_in_list=False, hdu=None):
         """
         Gets the header values specified in 'args' from each file.
         A function can be specified to be used over the returned values for

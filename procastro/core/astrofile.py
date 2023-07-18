@@ -48,7 +48,7 @@ class _AstroCache:
         self._max_cache: int = 200
         self._queue: Optional[queue.Queue] = None
 
-        self.max_cache(self._max_cache)
+        self.set_max_cache(self._max_cache)
 
     def __call__(self, method):
         def wrapper(instance, **kwargs):
@@ -70,7 +70,7 @@ class _AstroCache:
 
         return wrapper
 
-    def max_cache(self, max_cache: int):
+    def set_max_cache(self, max_cache: int):
         if max_cache < 0:
             raise ValueError(f"max_cache must be positive ({max_cache})")
 
@@ -90,19 +90,17 @@ class _AstroCache:
         if old_queue is None:
             return
 
-        # if reducing cache, get rid of the extra caches
-        if delta > 0:
-            for af in range(delta):
-                del self._cache[self._queue.get_nowait()]   # both delete elements from indexing and the cache.
-
-        # copy old queue into new
         try:
+            # if reducing cache, get rid of the extra caches
+            if delta > 0:
+                for af in range(delta):
+                    del self._cache[self._queue.get_nowait()]   # both delete elements from indexing and the cache.
+
+            # copy old queue into new
             while True:
                 self._queue.put_nowait(old_queue.get_nowait())
         except queue.Empty:
             pass
-
-
 
 
 astrofile_cache = _AstroCache()
@@ -325,24 +323,6 @@ def return_none(*args, **kwargs):
     return None
 
 
-def _checksortkey(f):
-    """
-    Verifies that the given sortkey is valid
-    """
-    @_wraps(f)
-    def ret(self, *args, **kwargs):
-        if not hasattr(self, 'sortkey') or getattr(self, 'sortkey') is None:
-            raise ValueError(
-                "Sortkey must be defined before trying to sort AstroFile")
-        if not isinstance(self.sortkey, str) or "," in self.sortkey:
-            raise ValueError(
-                "Invalid value for sortkey ({}), it must be a single header"
-                "specification (without commas)".format(self.sortkey))
-        return f(self, *args, **kwargs)
-
-    return ret
-
-
 def _checkfilename(f):
     """
     Verifies that the given filename is valid
@@ -456,9 +436,11 @@ class AstroFile(object):
                  mbias_header=None, mflat_header=None,
                  hdu=0, hduh=None, hdud=None,
                  auto_trim=None, header=None,
+                 sortkey="filename",
                  *args, **kwargs):
 
         self.sortkey = None
+        self.add_sortkey(sortkey)
 
         self.calib = None
         if isinstance(filename, AstroFile):
@@ -806,7 +788,8 @@ class AstroFile(object):
             else:
                 return None
 
-        hdu = self._hduh
+        if hdu is None:
+            hdu = self._hduh
         if cast is None:
             def cast(x): return x
 
@@ -830,6 +813,8 @@ class AstroFile(object):
                 ret.append(cast(hdr[k_lc]))
             elif k in hdr:
                 ret.append(cast(hdr[k]))
+            elif k_lc == "filename":
+                ret.append(self.filename)
             elif k_lc == "basename":
                 ret.append(path.basename(self.filename))
             elif k_lc == "dirname":
@@ -965,27 +950,22 @@ class AstroFile(object):
             return self.reader()[key]
 
     # Object Comparison
-    @_checksortkey
     def __lt__(self, other):
         return self.getheaderval(self.sortkey) < \
             other.getheaderval(self.sortkey)
 
-    @_checksortkey
     def __le__(self, other):
         return self.getheaderval(self.sortkey) <= \
             other.getheaderval(self.sortkey)
 
-    @_checksortkey
     def __gt__(self, other):
         return self.getheaderval(self.sortkey) > \
             other.getheaderval(self.sortkey)
 
-    @_checksortkey
     def __eq__(self, other):
         return self.getheaderval(self.sortkey) == \
             other.getheaderval(self.sortkey)
 
-    @_checksortkey
     def __ne__(self, other):
         return self.getheaderval(self.sortkey) != \
             other.getheaderval(self.sortkey)
