@@ -18,14 +18,18 @@
 #
 #
 
-__all__ = ['AstroFile', 'AstroCalib']
+__all__ = ['AstroFile', 'AstroCalib', 'astrofile_cache']
 
 import logging
+import queue
 from functools import wraps as _wraps
 import warnings
 from pathlib import PurePath, Path
+from typing import Optional
 
 import astropy.io.fits
+import numpy
+
 import procastro as pa
 from .internal_functions import trim_to_python, common_trim_fcn, extract_common
 import astropy.time as apt
@@ -36,6 +40,72 @@ import astropy.io.fits as pf
 logging.basicConfig(level=logging.INFO)
 io_logger = logging.getLogger('procastro.io')
 io_logger.propagate = False
+
+
+class _AstroCache:
+    def __init__(self):
+        self._cache: dict[AstroFile, numpy.ndarray] = {}
+        self._max_cache: int = 200
+        self._queue: Optional[queue.Queue] = None
+
+        self.max_cache(self._max_cache)
+
+    def __call__(self, method):
+        def wrapper(instance, **kwargs):
+            if instance in self._cache:
+                return self._cache[instance]
+            ret = method(instance, **kwargs)
+
+            # if caching
+            if self._queue is not None:
+
+                # delete oldest cache if limit reached
+                if self._queue.full():
+                    del self._cache[self._queue.get_nowait()]
+
+                self._queue.put_nowait(instance)
+                self._cache[instance] = ret
+
+            return ret
+
+        return wrapper
+
+    def max_cache(self, max_cache: int):
+        if max_cache < 0:
+            raise ValueError(f"max_cache must be positive ({max_cache})")
+
+        # if disabling cache, delete all
+        if not max_cache:
+            self._queue = None
+            self._cache = {}
+            return
+
+        delta = self._max_cache - max_cache
+        old_queue = self._queue
+
+        self._queue = queue.Queue(maxsize=max_cache)
+        self._max_cache = max_cache
+
+        # if cache was disabled, then start it empty
+        if old_queue is None:
+            return
+
+        # if reducing cache, get rid of the extra caches
+        if delta > 0:
+            for af in range(delta):
+                del self._cache[self._queue.get_nowait()]   # both delete elements from indexing and the cache.
+
+        # copy old queue into new
+        try:
+            while True:
+                self._queue.put_nowait(old_queue.get_nowait())
+        except queue.Empty:
+            pass
+
+
+
+
+astrofile_cache = _AstroCache()
 
 
 def _numerize_other(method):
@@ -428,6 +498,11 @@ class AstroFile(object):
                                     pa.AstroFile(mflat, header=mflat_header),
                                     auto_trim=auto_trim)
 
+    def __hash__(self):
+        """If calib changes, then the astrofile hash should change as well. ."""
+        # todo: manually changing some of the header's keywords might affect the output as well losing uniqueness.
+        return hash((self.filename, self.calib))
+
     def get_trims(self):
         """"Get trim limits, returning in python-style YX"""
         if self.auto_trim is None:
@@ -768,7 +843,8 @@ class AstroFile(object):
             return ret
 
     @_checkfilename
-    def reader(self, *args,
+    @astrofile_cache
+    def reader(self,
                skip_calib=False, hdud=None, hdu=None, verbose=True,
                **kwargs):
         """
@@ -797,7 +873,7 @@ class AstroFile(object):
         if not tp:
             return False
 
-        data = self._reads[tp](self.filename, *args, hdu=hdu, **kwargs)
+        data = self._reads[tp](self.filename, hdu=hdu, **kwargs)
 
         if data is None:  # File with no data / corrupt
             self._corrupt = True
