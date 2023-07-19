@@ -18,7 +18,8 @@ author = 'Patricio Rojo'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', "numpydoc"]
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', "numpydoc",
+              "sphinx.ext.autosectionlabel"]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'deprecated']
@@ -32,6 +33,6 @@ html_static_path = ['_static']
 
 html_sidebars = {
     '**': [
-        'localtoc.html',
+        'globaltoc.html',
     ]
 }

@@ -7,8 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   procastro.obsrv.deprecated
-   procastro.obsrv.tests
 
 Submodules
 ----------

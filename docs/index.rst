@@ -3,17 +3,26 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to procastro's documentation!
+Welcome to ProcAstro's documentation!
 =====================================
 
 **Saving time for astronomers handling data everywhere**
 
+ProcAstro is a versatile framework aimed at seamless handling of astronomical data in a minimalistic pythonic style.
+
+* easy handling of multiple FITS files <source/quickstart/multiple>
+* quick plotting with interactive options <source/quickstart/plotting>
+* easy handling/creation of calibration frames
+* fast aperture photometry
+* observation planning
+
+
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
-   quickstart
-   API reference <source/procastro>
+   QuicksStart guides <source/quickstart>
+   API reference <source/api>
 
 
 Indices and tables

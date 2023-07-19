@@ -1,7 +1,6 @@
-Quickstart tutorial
-===================
 
-
+Working with Multiple Files
+=======
 
 .. code-block:: python
 
@@ -31,14 +30,3 @@ also with easy indexing and mixing
 
   ad_selected = ad[ad["exptime"] > 10]
   ad_selected = ad[:5] + ad[7:]
-
-There is also a very versatile tool called imshowz that can be used interactively.
-It will remind you of ds9/imexam but is Python native!
-
-.. image:: source/figs/imshowz_z.png
-  :width: 700
-  :alt: zoom in area
-
-.. image:: source/figs/imshowz_r.png
-  :width: 700
-  :alt: Radial profile

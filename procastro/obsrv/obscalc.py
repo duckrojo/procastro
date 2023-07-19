@@ -69,8 +69,6 @@ class ObsCalc(object):
 
     Attributes
     ----------
-    _obs : ephem.Observer instance
-    _sun : ephem.Sun instance
     params : dict
         General parameter values.
         Available keys: 'target', 'current transit', 'equinox', 'lat_lon',
@@ -119,7 +117,7 @@ class ObsCalc(object):
         self.hours = np.array([])
         self.transit_hours = []
 
-        self.set_site(site, **kwargs)
+        self.set_site(site)
         self.set_timespan(timespan, **kwargs)
 
         if target is not None:

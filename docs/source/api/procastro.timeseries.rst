@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   procastro.timeseries.tests
 
 Submodules
 ----------

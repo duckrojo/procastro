@@ -1,14 +1,6 @@
 procastro package
 =================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-   quickstart
-   API reference <source/procastro>
-
-
 Module contents
 ---------------
 
@@ -23,12 +15,12 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   procastro.astro
-   procastro.obsrv
-   procastro.photography
-   procastro.timeseries
+   api/procastro.astro
+   api/procastro.obsrv
+   api/procastro.photography
+   api/procastro.timeseries
 
 
 
