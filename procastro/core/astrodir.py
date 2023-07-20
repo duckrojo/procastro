@@ -18,6 +18,8 @@
 #
 __all__ = ['AstroDir']
 
+from typing import Optional
+
 import procastro as pa
 from .internal_functions import trim_to_python, common_trim_fcn, extract_common, python_to_trim
 import numpy as np
@@ -85,6 +87,9 @@ class AstroDir(object):
 
     def __init__(self, path, mflat=None, mbias=None,
                  mbias_header=None, mflat_header=None,
+                 mbias_filter: Optional[str] = None,
+                 mflat_filter: Optional[str] = None,
+                 raise_calib_filter = True,
                  calib_force=False,
                  hdu=0, hdud=None, hduh=None, auto_trim=None,
                  jd_from_ut=None):
@@ -137,16 +142,36 @@ class AstroDir(object):
 
         self.files = files
         self.props = {}
-        calib = pa.AstroCalib(mbias, mflat, auto_trim=auto_trim,
+
+        calib = pa.AstroCalib(mbias, mflat,
+                              auto_trim=auto_trim,
                               mbias_header=mbias_header,
                               mflat_header=mflat_header)
 
+        # check that the given calibrator complies with its given filters
+        filter_calib = {}
+        calibrators = ["bias", "flat"]
+        for calibrator in calibrators:
+            if vars()[f"m{calibrator}_filter"] is not None and getattr(calib, f"m{calibrator}_header") is not None:
+                for value in vars()[f"m{calibrator}_filter"]:
+                    if (value in filter_calib and
+                            getattr(calib, f"m{calibrator}_header")[value] != filter_calib[value]):
+                        raise ValueError(f"{'/'.join(calibrators)} have conflictive filter requests")
+                    filter_calib[value] = getattr(calib, f"m{calibrator}_header")
+
         for f in files:
-            # Allows some files to keep their calibration
-            if calib_force or not f.has_calib():  #
-                # AstroFile are created with an empty calib by default, which
-                # is overwritten here.
-                f.calib = calib
+            # Allows files with preexistent calibrations to keep it
+            if calib_force or not f.has_calib():
+                # AstroFile are created with an (0, 1) calib by default, which
+                # is overwritten here if they pass the calib filters
+                for k, v in filter_calib.items():
+                    if f[k] != v:
+                        message = f"File {f} does not comply with calibration filter '{f[k]}' = {v}"
+                        if raise_calib_filter:
+                            raise IOError(message)
+                        else:
+                            io_logger.warning(message)
+                f.set_calib(calib)
 
         self.path = path
 
@@ -172,7 +197,7 @@ class AstroDir(object):
         procastro.AstroCalib.add_bias : this function is called for each unique
                                        AstroCalib object in AstroDir
         """
-        unique_calibs = set([f.calib for f in self])
+        unique_calibs = set([f._calib for f in self])
         for c in unique_calibs:
             c.add_bias(mbias)
 
@@ -191,7 +216,7 @@ class AstroDir(object):
         procastro.AstroCalib.add_flat : This function is called for each unique
                                        AstroCalib object in AstroDir
         """
-        unique_calibs = set([f.calib for f in self])
+        unique_calibs = set([f._calib for f in self])
         for c in unique_calibs:
             c.add_flat(mflat)
 
@@ -218,7 +243,7 @@ class AstroDir(object):
         hdrfld = False
 
         for a in args:
-            if None not in self.getheaderval(a):
+            if None not in self.values(a):
                 hdrfld = a
                 break
         if not hdrfld:
@@ -247,8 +272,8 @@ class AstroDir(object):
             other_af = [pa.AstroFile(filename,
                                      hdud=self[0].default_hdu_dh()[0],
                                      hduh=self[0].default_hdu_dh()[1],
-                                     mflat=self[0].calib.mflat,
-                                     mbias=self[0].calib.mbias)
+                                     mflat=self[0]._calib.mflat,
+                                     mbias=self[0]._calib.mbias)
                         for filename in other]
         else:
             raise TypeError(
@@ -263,9 +288,9 @@ class AstroDir(object):
         if isinstance(item, (int, np.integer)):
             return self.files[item]  # .__getitem__(item)
 
-        # if string, return as getheaderval
+        # if string, return as values()
         if isinstance(item, str):
-            return self.getheaderval(item)
+            return self.values(item)
 
         # imitate indexing on boolean array as in scipy.
         if isinstance(item, np.ndarray):
@@ -377,7 +402,7 @@ class AstroDir(object):
         """
         return joinchr.join([b.basename() for b in self])
 
-    def getheaderval(self, *args, cast=None, single_in_list=False, hdu=None):
+    def values(self, *args, cast=None, single_in_list=False, hdu=None):
         """
         Gets the header values specified in 'args' from each file.
         A function can be specified to be used over the returned values for
@@ -403,7 +428,7 @@ class AstroDir(object):
         warnings.filterwarnings("once",
                                 "non-standard convention",
                                 AstropyUserWarning)
-        ret = [f.getheaderval(*args, cast=cast, single_in_list=single_in_list, hdu=hdu) for f in self]
+        ret = [f.values(*args, cast=cast, single_in_list=single_in_list, hdu=hdu) for f in self]
 
         warnings.resetwarnings()
         return np.array(ret)
@@ -412,7 +437,7 @@ class AstroDir(object):
         """
         Sets the header values specified in 'args' from each of the files.
         """
-        if False in [f.setheader(**kwargs) for f in self]:
+        if False in [f.set_values(**kwargs) for f in self]:
             raise ValueError("Setting the header of a file returned error")
 
         return self
@@ -463,9 +488,9 @@ class AstroDir(object):
         # each requested keyword and then complain if any greater than 1
         if len(check_unique) > 1:
             lens = np.array([len(set(rets)) for rets
-                            in zip(*self.getheaderval(*check_unique))])
+                             in zip(*self.values(*check_unique))])
         elif len(check_unique) == 1:
-            lens = np.array([len(set(self.getheaderval(*check_unique)))])
+            lens = np.array([len(set(self.values(*check_unique)))])
         else:
             lens = np.array([])
         if True in (lens > 1):
@@ -817,7 +842,7 @@ class AstroDir(object):
                 sys.stdout.flush()
 
             data_cube = data_dict[groupers[k]]
-            values = self.getheaderval(field)
+            values = self.values(field)
             values, data_cube = pa.sortmanynsp(values, data_cube)
 
             if not (values[0] <= target <= values[-1]):

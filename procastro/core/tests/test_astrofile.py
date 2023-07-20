@@ -81,18 +81,18 @@ class TestAstroFile(object):
     def test_header_accessors(self, current, edition):
         #TODO: Include cases where headers have multiple keys with same name, include
         #      case described on docstring
-        val = self.file.getheaderval(edition[0])
+        val = self.file.values(edition[0])
         assert val == current
 
         dict = {edition[0]: edition[1]}
-        self.file.setheader(**dict)
-        val = self.file.getheaderval(edition[0])
+        self.file.set_values(**dict)
+        val = self.file.values(edition[0])
         assert val == edition[1]
 
         #Recover former values
         if edition[0] != 'test':
             dict = {edition[0]: current}
-            self.file.setheader(**dict)
+            self.file.set_values(**dict)
 
     def test_reader(self):
         # Raw data
@@ -138,19 +138,19 @@ class TestAstroFile(object):
         blank.writer(data, header)
         
         assert_equal(blank.reader(), data)
-        assert blank.getheaderval("TEST") == 85
+        assert blank.values("TEST") == 85
         
     def test_jd_from_ut(self):
         expected = 2457487.626745567
 
         # UT time is located in one header value
         self.file.jd_from_ut(target="test", source="date")
-        val = self.file.getheaderval("test")
+        val = self.file.values("test")
         assert val == expected
 
         # UT time is split between two keys
         self.file.jd_from_ut(target ="test2", source = ["ut-date", "ut-time"])
-        split_val = self.file.getheaderval("test2")
+        split_val = self.file.values("test2")
         assert split_val == expected
 
     def test_checktype(self):

@@ -349,7 +349,7 @@ class Photometry:
         self.coords_new_xy = None
 
         if isinstance(epoch, str):
-            self.epochs = sci_files.getheaderval(epoch)
+            self.epochs = sci_files.values(epoch)
         elif hasattr(epoch, '__iter__'):
             self.epochs = epoch
         else:
@@ -485,8 +485,8 @@ class Photometry:
                                 f"It can be str, list, or dictionary (fits_value: column_value) ")
             # Storing extras and frame_id with the original indexing.
             self.extras = {x: list(v)
-                           for x, v in zip(extra, zip(*sci_files.getheaderval(*self.extra_header.keys(),
-                                                                              single_in_list=True)))}
+                           for x, v in zip(extra, zip(*sci_files.values(*self.extra_header.keys(),
+                                                                        single_in_list=True)))}
 
         # storing indexing only for those not ignored
 
