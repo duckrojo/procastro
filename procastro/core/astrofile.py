@@ -69,7 +69,6 @@ class _AstroCache:
                 if self._queue.full():
                     del self._cache[self._queue.get_nowait()]
 
-                print(instance)
                 self._queue.put_nowait(instance)
                 self._cache[instance] = ret
 
@@ -101,7 +100,7 @@ class _AstroCache:
             # if reducing cache, get rid of the extra caches
             if delta > 0:
                 for af in range(delta):
-                    del self._cache[self._queue.get_nowait()]   # both delete elements from indexing and the cache.
+                    del self._cache[self._queue.get_nowait()]  # both delete elements from indexing and the cache.
 
             # copy old queue into new
             while True:
@@ -118,6 +117,7 @@ def _numerize_other(method):
     When operating between two AstroFile objects, this decorator will try to
     read the second AstroFile first.
     """
+
     @_wraps(method)
     def wrapper(instance, other, *args, **kwargs):
         if isinstance(other, AstroFile):
@@ -125,6 +125,7 @@ def _numerize_other(method):
         return method(instance, other, *args, **kwargs)
 
     return wrapper
+
 
 #######################
 #
@@ -262,6 +263,7 @@ def _fits_read_data_header(_filename, hdu=0):
 
     return fl, ret
 
+
 #############################
 #
 # Startnparray type
@@ -289,7 +291,6 @@ def _array_verify(array, **kwargs):
     if isinstance(array, np.ndarray):
         return True
     return False
-
 
 
 #############################
@@ -374,12 +375,12 @@ class AstroFile(object):
             filename = str(self.filename)
         return '<AstroFile{}: {}>'.format(self.has_calib()
                                           and "({}{})"
-                                              .format(self._calib.has_bias
-                                                      and "B" or "",
-                                                      self._calib.has_flat
-                                                      and "F" or "",)
+                                          .format(self._calib.has_bias
+                                                  and "B" or "",
+                                                  self._calib.has_flat
+                                                  and "F" or "", )
                                           or "",
-                                          filename,)
+                                          filename, )
 
     def __new__(cls, *args, **kwargs):
         """
@@ -433,7 +434,6 @@ class AstroFile(object):
                 self._hdud = hdud
             self.filename = filename
 
-
             self.type = self.checktype(*args, **kwargs)
             try:
                 if pa.astrofile_cache.available():
@@ -477,7 +477,7 @@ class AstroFile(object):
         """"Get trim limits, returning in python-style YX"""
         if self.auto_trim is None:
             return None
-        
+
         # TODO: include minimum common area with AstroCalib
 
         return trim_to_python(self[self.auto_trim])
@@ -909,23 +909,23 @@ class AstroFile(object):
     # Object Comparison
     def __lt__(self, other):
         return self.values(self._sort_key) < \
-               other.values(self._sort_key)
+            other.values(self._sort_key)
 
     def __le__(self, other):
         return self.values(self._sort_key) <= \
-               other.values(self._sort_key)
+            other.values(self._sort_key)
 
     def __gt__(self, other):
         return self.values(self._sort_key) > \
-               other.values(self._sort_key)
+            other.values(self._sort_key)
 
     def __eq__(self, other):
         return self.values(self._sort_key) == \
-               other.values(self._sort_key)
+            other.values(self._sort_key)
 
     def __ne__(self, other):
         return self.values(self._sort_key) != \
-               other.values(self._sort_key)
+            other.values(self._sort_key)
 
     # Object Arithmetic
     @_numerize_other
@@ -1012,7 +1012,7 @@ class AstroFile(object):
                   .format(", ".join(args),
                           len(extra_headers)
                           and "\nand showing the following headers: {}"
-                              .format(", ".join(extra_headers))
+                          .format(", ".join(extra_headers))
                           or ""))
         ret = []
         data = self.reader()
@@ -1061,7 +1061,7 @@ class AstroFile(object):
         newhd = {}
         target = target.lower()
         if isinstance(source, list) is True:
-            newhd[target] = apt.Time(self[source[0]]+"T"+self[source[1]]).jd
+            newhd[target] = apt.Time(self[source[0]] + "T" + self[source[1]]).jd
         else:
             try:
                 newhd[target] = apt.Time(self[source]).jd
@@ -1109,8 +1109,8 @@ class AstroFile(object):
                     else:
                         dataset.append(mat)
                 else:
-                    raise(TypeError,
-                          "Unable to merge hdu of type: " + type(fit[i]))
+                    raise (TypeError,
+                           "Unable to merge hdu of type: " + type(fit[i]))
 
             comp = np.concatenate(dataset, axis=1)
 
@@ -1208,8 +1208,8 @@ class AstroCalib(object):
         # turned true.
         self.has_bias = self.has_flat = False
 
-        self.mbias : Union[np.ndarray, int, float] = 0.0
-        self.mflat : Union[np.ndarray, int, float] = 1.0
+        self.mbias: Union[np.ndarray, int, float] = 0.0
+        self.mflat: Union[np.ndarray, int, float] = 1.0
         self.mbias_header: Optional[dict] = mbias_header
         self.mflat_header: Optional[dict] = mflat_header
 
@@ -1329,7 +1329,7 @@ class AstroCalib(object):
                 if not isinstance(tdata, (int, float)):
 
                     io_logger.warning(f"Trim info "
-                                      f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword+' '}"
+                                      f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
                                       f"not found on {label} frames..."
                                       f"using full figure instead")
                     label_trim = (1, data.shape[0], 1, data.shape[1])

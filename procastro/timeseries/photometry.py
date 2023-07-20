@@ -141,7 +141,7 @@ class _Interactive(BindingsFunctions):
         msg_filter = FilterMessage().add_needle('Using default ')
         # logger.addFilter(msg_filter)
         print("Entering interactive mode:\n"
-              " 'd'elete frame, re'c'enter apertures, 'q'uit, toggle 'i'gnore, "
+              " e'c'enter apertures, 'q'uit, toggle 'i'gnore, "
               "keep 'g'oing until drift, <- prev frame, -> next frame, '?' for full help")
 
         super(_Interactive, self).__init__(None, None, title="Interactive mode for photometry")
@@ -203,7 +203,7 @@ class _Interactive(BindingsFunctions):
                           ):
         self._move = 1
         self._skip = True
-        self.disconnect(close_plot=False)
+        self.disconnect(close_plot=False, verbose=False)
 
     # noinspection PyUnusedLocal
     def _set_move(self,
@@ -213,7 +213,7 @@ class _Interactive(BindingsFunctions):
         self._move = step
         self._skip = False
         if step is not None:
-            self.disconnect(close_plot=False)
+            self.disconnect(close_plot=False, verbose=False)
 
     def new_frame(self, data, filename, idx, ignored, offset_xy, prev_brightest_xy, centers):
         self.clear_data()
@@ -669,17 +669,19 @@ class Photometry:
             if idx in ignore:
                 offsets_out_xy[idx] = 0
             elif offsets_xy[idx].sum() != 0:
-                offsets_out_xy[idx] = offsets_xy[idx]
+                offsets_out_xy[idx] = tuple(offsets_xy[idx])
 
         dict_union = ',\n              '
         if interactive:
             if verbose:
+                off = {k: f"[{v[0]:.2f}, {v[1]:.2f}]" if isinstance(v, tuple)
+                       else v for k, v in offsets_out_xy.items()}
                 logger.info("This interactive run was equivalent to use the keyword:")
-                logger.info("offsets_xy = {\n            "
-                            f"{dict_union.join([f'{k}: {v}' for k, v in offsets_out_xy.items()])}"
-                            ",\n             }")
+                logger.info("offsets_xy = {\n              "
+                            f"{dict_union.join([f'{k}: {v}' for k, v in off.items()])}"
+                            ",\n              }")
 
-            interactive.disconnect(close_plot=True)
+            interactive.disconnect(close_plot=True, verbose=False)
 
         self.sci_stamps = all_cubes[:, :to_store, :, :]
         self.indexing = indexing[:to_store]
