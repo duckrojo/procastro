@@ -368,7 +368,7 @@ class Photometry:
         self.recenter = recenter
         self.max_skip = max_skip
         if max_drift is None:
-            max_drift = stamp_rad/6
+            max_drift = stamp_rad/10
         self.max_drift = max_drift
         sci_files = pa.AstroDir(sci_files, mbias=mdark, mflat=mflat)
         self._astrodir = sci_files

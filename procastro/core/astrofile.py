@@ -69,6 +69,7 @@ class _AstroCache:
                 if self._queue.full():
                     del self._cache[self._queue.get_nowait()]
 
+                print(instance)
                 self._queue.put_nowait(instance)
                 self._cache[instance] = ret
 
@@ -238,6 +239,29 @@ def _fits_getheader(_filename, *args, **kwargs):
     return ret
 
 
+def _fits_read_data_header(_filename, hdu=0):
+    """
+    Obtains data from headers
+
+    Parameters
+    ----------
+    _filename : str
+
+    Returns
+    -------
+    list of dicts
+        Each dictionary contains the header data from a hdu unit inside
+        the file
+    """
+    ret = []
+    hdu_list = pf.open(_filename)
+    for h in hdu_list:
+        ret.append({k.lower(): v for k, v in h.header.items()})
+    fl = hdu_list[hdu].data
+    hdu_list.close()
+
+    return fl, ret
+
 #############################
 #
 # Startnparray type
@@ -247,6 +271,10 @@ def _fits_getheader(_filename, *args, **kwargs):
 
 def _array_reader(array, **kwargs):
     return array
+
+
+def _array_read_data_header(array, hdu=0):
+    return array, [{}]
 
 
 def _array_write(filename, **kwargs):
@@ -261,6 +289,8 @@ def _array_verify(array, **kwargs):
     if isinstance(array, np.ndarray):
         return True
     return False
+
+
 
 #############################
 #
@@ -330,6 +360,7 @@ class AstroFile(object):
 
     # Interface between public and private methods for each supported type
     _reads = {'fits': _fits_reader, 'nparray': _array_reader}
+    _getdh = {'fits': _fits_read_data_header, 'nparray': _array_read_data_header}
     _ids = {'fits': _fits_verify, 'nparray': _array_verify}
     _writes = {'fits': _fits_writer, 'nparray': _array_write}
     _geth = {'fits': _fits_getheader, 'nparray': _array_getheader}
@@ -395,15 +426,20 @@ class AstroFile(object):
         else:
             if hdu is None:
                 hdu = 0
-            if hduh is None:
-                self._hduh = hdu
-            if hdud is None:
-                self._hdud = hdu
+            self._hdud = self._hduh = hdu
+            if hduh is not None:
+                self._hduh = hduh
+            if hdud is not None:
+                self._hdud = hdud
             self.filename = filename
+
 
             self.type = self.checktype(*args, **kwargs)
             try:
-                self.header_cache = self._geth[self.type](self.filename)
+                if pa.astrofile_cache.available():
+                    _, self.header_cache = self.read_data_headers()
+                else:
+                    self.header_cache = self.read_headers()
             except OSError:
                 self.type = None
                 io_logger.warning("Omitting corrupt file")
@@ -419,8 +455,11 @@ class AstroFile(object):
                                      pa.AstroFile(mflat, header=mflat_header),
                                      auto_trim=auto_trim)
 
-        if pa.astrofile_cache.available():
-            self.reader()
+    def read_headers(self):
+        return self._geth[self.type](self.filename)
+
+    def read_data_headers(self):
+        return self._getdh[self.type](self.filename)
 
     def __hash__(self):
         """If calib changes, then the astrofile hash should change as well. ."""
@@ -618,8 +657,10 @@ class AstroFile(object):
 
             if isinstance(request, str):
                 request = [request]
-            elif isinstance(request, (tuple, list, dict)):
-                raise TypeError("Filter string cannot be tuple/list/dict anymore. ")
+            elif isinstance(request, dict):
+                raise TypeError("Filter string cannot be dict anymore. ")
+            elif isinstance(request, (tuple, list)):
+                pass
             else:
                 request = [request]
 
@@ -1180,11 +1221,9 @@ class AstroCalib(object):
             self.add_flat(mflat)
 
     def _add_calib(self, calib, label):
-        if isinstance(calib,
-                      (int, float, np.ndarray)):
+        if isinstance(calib, (int, float, np.ndarray)):
             setattr(self, label, calib)
-        elif isinstance(calib,
-                        pa.AstroFile):
+        elif isinstance(calib, pa.AstroFile):
             setattr(self, f"{label}_header", calib.read_headers())
             setattr(self, label, calib.reader())
         else:
@@ -1192,7 +1231,7 @@ class AstroCalib(object):
 
         setattr(self, f"has_{label}", True)
 
-    def add_mbias(self, mbias):
+    def add_bias(self, mbias):
         """
         Add Master Bias to Calib object.
 
