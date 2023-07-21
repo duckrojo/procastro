@@ -33,6 +33,10 @@ html_static_path = ['_static']
 
 html_sidebars = {
     '**': [
-        'globaltoc.html',
+        'localtoc.html', 'relations.html',
+        #'sourcelink.html',
+        'searchbox.html',
     ]
 }
+
+html_show_sourcelink = False

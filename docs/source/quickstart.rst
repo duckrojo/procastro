@@ -3,8 +3,8 @@ Quickstart Guides
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
+   :caption: Available Guides:
 
    Multiple Files <quickstart/multiple>
    Plotting <quickstart/plotting>
-
+   Calibration <quickstart/calibration>

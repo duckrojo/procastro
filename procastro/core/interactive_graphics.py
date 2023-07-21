@@ -8,10 +8,13 @@ import matplotlib
 from matplotlib import patches, transforms
 from matplotlib import pyplot as plt
 from matplotlib.backend_bases import KeyEvent
+from matplotlib.axes import Axes
 import numpy as np
 import procastro as pa
 from functools import wraps as _wraps
 import re
+
+__all__ = ['BindingsFunctions']
 
 try:
     import tomllib as toml
@@ -29,12 +32,13 @@ FunctionArgs = tuple[Callable, list[Any]]
 FunctionArgsKw = tuple[Callable, list[Any], dict]
 
 
-def _clear_axes(*axes):
-    """Clear examination area for a new plot, and its colorbar if there is any"""
-    for ax in axes:
+def _clear_axes(*axes_right):
+    """Clear examination area for a specified"""
+    for ax, right in axes_right:
         ax.cla()
         ax.set_aspect("auto")
-        ax.yaxis.tick_right()
+        if right:
+            ax.yaxis.tick_right()
 
 
 def _csv_str_to_tuple(value):
@@ -45,7 +49,7 @@ def _csv_str_to_tuple(value):
     return value,
 
 
-def allow_keep_val(params):
+def _allow_keep_val(params):
     """requires lists of parameters that are allowed to remain between calls."""
 
     def wrapper1(method):
@@ -153,10 +157,10 @@ class BindingsFunctions:
 
             f.patch.set_facecolor("navajowhite")
             axes_data.set_title(title)
+            f.show()
 
         elif not isinstance(axes_data, Axes):
             raise NotImplementedError(f"Axes type '{axes_data}' not supported")
-        f.show()
 
         self._axes_2d = axes_data
         self._axes_exam = axes_exam
@@ -379,9 +383,9 @@ class BindingsFunctions:
 
     def clear_exam(self, temporal=True):
         """Clear exam area for a new plot, and its colorbar if there is any"""
-        axes = [self._axes_exam]
+        axes = [(self._axes_exam, False)]
         if self._colorbar_exam is not None:
-            axes.append(self._colorbar_exam)
+            axes.append((self._colorbar_exam, True))
         _clear_axes(*axes)
 
         if temporal:
@@ -391,9 +395,9 @@ class BindingsFunctions:
 
     def clear_data(self, keep_title=True):
         """Clear data area for a new plot, and its colorbar if there is any"""
-        axes = [self._axes_2d, self._axes_exam]
+        axes = [(self._axes_2d, False), (self._axes_exam, True)]
         if self. _colorbar_data is not None:
-            axes.append(self._colorbar_data)
+            axes.append((self._colorbar_data, False))
         title = self._axes_2d.get_title()
         _clear_axes(*axes)
         if keep_title:
@@ -427,7 +431,7 @@ class BindingsFunctions:
 
         self.set_data_2d(None, imshow_kwargs={"vmin": vmin, "vmax": vmax})
 
-    @allow_keep_val(["xy", "text", "stamp_rad", "scale"])
+    @_allow_keep_val(["xy", "text", "stamp_rad", "scale"])
     def zoom_exam_2d(self,
                      xy: TwoValues,
                      scale: str = 'original',

@@ -10,16 +10,17 @@ Welcome to ProcAstro's documentation!
 
 ProcAstro is a versatile framework aimed at seamless handling of astronomical data in a minimalistic pythonic style.
 
-* easy handling of multiple FITS files <source/quickstart/multiple>
-* quick plotting with interactive options <source/quickstart/plotting>
-* easy handling/creation of calibration frames
+* :ref:`Easy handling of multiple FITS files <Working with Multiple Files>`
+* :ref:`Quick plotting with interactive options <Easy Plotting>`
+* :ref:`Easy handling/creation of calibration frames <Calibration Files>`
 * fast aperture photometry
 * observation planning
 
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Guides Available:
 
    QuicksStart guides <source/quickstart>
    API reference <source/api>
