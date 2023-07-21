@@ -230,9 +230,7 @@ def prep_data_plot(indata, **kwargs):
         if af:
             data = af.reader(**kwargs)
         else:
-            raise TypeError(
-                "Unrecognized type for input data: {0:s}"
-                .format(indata.__class__.__name__, ))
+            raise TypeError(f"Invalid Type or Filename: {indata}")
 
     if data is None:
         if error_msg is None:
@@ -501,4 +499,5 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
 
 
 if __name__ == '__main__':
-    a = pa.imshowz(Path.home().joinpath('Documents', 'test.fits.gz'), interactive=True)
+    filename = Path.home().joinpath('Documents', 'test_dk.fits.gz')
+    a = pa.imshowz(filename, interactive=True)

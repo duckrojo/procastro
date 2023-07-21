@@ -141,7 +141,7 @@ class _Interactive(BindingsFunctions):
         msg_filter = FilterMessage().add_needle('Using default ')
         # logger.addFilter(msg_filter)
         print("Entering interactive mode:\n"
-              " e'c'enter apertures, 'q'uit, toggle 'i'gnore, "
+              "re'c'enter apertures, 'q'uit, toggle 'i'gnore, "
               "keep 'g'oing until drift, <- prev frame, -> next frame, '?' for full help")
 
         super(_Interactive, self).__init__(None, None, title="Interactive mode for photometry")
