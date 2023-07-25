@@ -58,12 +58,18 @@ class _AstroCache:
 
     def __call__(self, method):
         def wrapper(instance, **kwargs):
-            if instance in self._cache:
-                return self._cache[instance]
+            cache = True
+            try:
+                if instance in self._cache:
+                    return self._cache[instance]
+            except TypeError:
+                # disable cache if type is not hashable (numpy array for instance)
+                cache = False
+
             ret = method(instance, **kwargs)
 
             # if caching
-            if self._queue is not None:
+            if cache and self._queue is not None:
 
                 # delete oldest cache if limit reached
                 if self._queue.full():
