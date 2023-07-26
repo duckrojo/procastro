@@ -21,7 +21,7 @@ __all__ = ['AstroDir']
 from typing import Optional
 
 import procastro as pa
-from .internal_functions import trim_to_python, common_trim_fcn, extract_common, python_to_trim
+from .internal_functions import common_trim_fcn, extract_common, python_to_trim
 import numpy as np
 import warnings
 import sys
@@ -54,7 +54,7 @@ class AstroDir(object):
     mbias, mflat : array_like, dict or AstroFile, optional
         Master bias and flat to associate to each AstroFile
         (in one shared AstroCalib object)
-    mbias_header, mflat_header : astropy.io.fits.Header
+    bias_header, flat_header : astropy.io.fits.Header
         Headers for bias and flat
     calib_force : bool, optional
         If True, then force specified `mbias` and `mflat` to all files,
@@ -86,10 +86,10 @@ class AstroDir(object):
         return super(AstroDir, cls).__new__(cls)
 
     def __init__(self, path, mflat=None, mbias=None,
-                 mbias_header=None, mflat_header=None,
-                 mbias_filter: Optional[str] = None,
-                 mflat_filter: Optional[str] = None,
-                 raise_calib_filter = True,
+                 bias_header=None, flat_header=None,
+                 bias_filter: Optional[str] = None,
+                 flat_filter: Optional[str] = None,
+                 raise_calib_filter=True,
                  calib_force=False,
                  hdu=0, hdud=None, hduh=None, auto_trim=None,
                  jd_from_ut=None):
@@ -145,26 +145,26 @@ class AstroDir(object):
 
         calib = pa.AstroCalib(mbias, mflat,
                               auto_trim=auto_trim,
-                              mbias_header=mbias_header,
-                              mflat_header=mflat_header)
+                              bias_header=bias_header,
+                              flat_header=flat_header)
 
         # check that the given calibrator complies with its given filters
-        filter_calib = {}
-        calibrators = ["bias", "flat"]
-        for calibrator in calibrators:
-            if vars()[f"m{calibrator}_filter"] is not None and getattr(calib, f"m{calibrator}_header") is not None:
-                for value in vars()[f"m{calibrator}_filter"]:
-                    if (value in filter_calib and
-                            getattr(calib, f"m{calibrator}_header")[value] != filter_calib[value]):
-                        raise ValueError(f"{'/'.join(calibrators)} have conflictive filter requests")
-                    filter_calib[value] = getattr(calib, f"m{calibrator}_header")
+        cumulative_filter = {}
+        calibrators = [("bias", bias_filter, bias_header),
+                       ("flat", flat_filter, flat_header)]
+        for calibrator, cal_filter, header in calibrators:
+            if cal_filter is not None and header is not None:
+                for value in cal_filter:
+                    if value in cumulative_filter and header[value] != cumulative_filter[value]:
+                        raise ValueError(f"Bias and Flats have conflictive filter requests")
+                    cumulative_filter[value] = header[value]
 
         for f in files:
             # Allows files with preexistent calibrations to keep it
             if calib_force or not f.has_calib():
                 # AstroFile are created with an (0, 1) calib by default, which
                 # is overwritten here if they pass the calib filters
-                for k, v in filter_calib.items():
+                for k, v in cumulative_filter.items():
                     if f[k] != v:
                         message = f"File {f} does not comply with calibration filter '{f[k]}' = {v}"
                         if raise_calib_filter:
@@ -182,14 +182,14 @@ class AstroDir(object):
                                 "See help on method .jd_from_ut()")
             self.jd_from_ut(*jd_from_ut)
 
-    def add_bias(self, mbias):
+    def add_bias(self, bias):
         """
         Updates the master bias of all AstroCalib instances included on
         the contained AstroFile instances
 
         Parameters
         ----------
-        mbias : dict indexed by exposure time, array or AstroFile
+        bias : dict indexed by exposure time, array or AstroFile
             Master Bias to use for all frames.
 
         See Also
@@ -197,18 +197,26 @@ class AstroDir(object):
         procastro.AstroCalib.add_bias : this function is called for each unique
                                        AstroCalib object in AstroDir
         """
-        unique_calibs = set([f._calib for f in self])
-        for c in unique_calibs:
-            c.add_bias(mbias)
 
-    def add_flat(self, mflat):
+        unique_calibs = set([f.get_calib() for f in self])
+
+        # whenever calibration is changed a new object is generated on purpose such that hash is different
+        # and thus cache refreshes
+        new_cals = {}
+        for c in unique_calibs:
+            new_cals[c] = c.copy().add_bias(bias)
+
+        for f in self:
+            f.set_calib(new_cals[f.get_calib()])
+
+    def add_flat(self, flat):
         """
         Update Master Flats of all AstroCalib instances included on
         the contained AstroFile instances.
 
         Parameters
         ----------
-        mflat : dict indexed by filter name, array or AstroFile
+        flat : dict indexed by filter name, array or AstroFile
             Master Flat to use for all frames.
 
         See Also
@@ -216,9 +224,16 @@ class AstroDir(object):
         procastro.AstroCalib.add_flat : This function is called for each unique
                                        AstroCalib object in AstroDir
         """
-        unique_calibs = set([f._calib for f in self])
+        unique_calibs = set([f.get_calib() for f in self])
+
+        # whenever calibration is changed a new object is generated on purpose such that hash is different
+        # and thus cache refreshes
+        new_cals = {}
         for c in unique_calibs:
-            c.add_flat(mflat)
+            new_cals[c] = c.copy().add_flat(flat)
+
+        for f in self:
+            f.set_calib(new_cals[f.get_calib()])
 
     def sort(self, *args):
         """
@@ -266,15 +281,7 @@ class AstroDir(object):
         if isinstance(other, AstroDir):
             other_af = other.files
         elif isinstance(other, (list, tuple)) and isinstance(other[0], str):
-            io_logger.warning("Adding list of files to Astrodir, calib and hdu"
-                              "defaults will be shared from first "
-                              "AstroFile in AstroDir")
-            other_af = [pa.AstroFile(filename,
-                                     hdud=self[0].default_hdu_dh()[0],
-                                     hduh=self[0].default_hdu_dh()[1],
-                                     mflat=self[0]._calib.mflat,
-                                     mbias=self[0]._calib.mbias)
-                        for filename in other]
+            raise NotImplemented("Only Astrodirs can be added together")
         else:
             raise TypeError(
                 "Cannot add {0:s} + {1:s}".format(self.__class__.__name__,
@@ -308,7 +315,7 @@ class AstroDir(object):
 
                 return ad
 
-        # if slice, return a new astrodir
+        # if it is a slice, return a new astrodir
         if isinstance(item, slice):
             return AstroDir(self.files.__getitem__(item))
 
@@ -976,7 +983,7 @@ class AstroDir(object):
             a single character to be repeated unbuffered for every AstroFile
         start : int, optional
             HDU unit from which the method starts joining
-        end ; int, optional
+        end : int, optional
             Last ImageHDU unit to be included, if None will stop at the last
             hdu found
 
