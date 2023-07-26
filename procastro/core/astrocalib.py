@@ -74,9 +74,12 @@ class AstroCalib(object):
                           flat_header=self.flat_header,
                           auto_trim=self.auto_trim_keyword)
 
-    def _add_calib(self, calib, label):
+    def _add_calib(self, calib, label, default):
         if isinstance(calib, (int, float, np.ndarray)):
             setattr(self, label, calib)
+            # following avoids a positive flag
+            if calib == default:
+                return
         elif isinstance(calib, pa.AstroFile):
             setattr(self, f"{label}_header", calib.read_headers())
             setattr(self, label, calib.reader())
@@ -99,7 +102,8 @@ class AstroCalib(object):
         ValueError
             If the bias type is invalid
         """
-        self._add_calib(bias, "bias")
+
+        self._add_calib(bias, "bias", 0)
         return self
 
     def add_flat(self, flat):
@@ -116,7 +120,7 @@ class AstroCalib(object):
         ValueError
             If the bias type is invalid
         """
-        self._add_calib(flat, "flat")
+        self._add_calib(flat, "flat", 1)
         return self
 
     def reduce(self, data, data_trim=None, verbose=True):
