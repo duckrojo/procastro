@@ -562,6 +562,7 @@ class Photometry:
         step = 1
 
         while idx < n_files:
+            long_skip = False
             filename = sci_files[idx].filename
             off = offsets_xy[idx]
 
@@ -583,7 +584,6 @@ class Photometry:
             centers_xy = []
             cubes = []
 
-            long_skip = False
             for label, prev_center_xy in zip(labels, prev_centers_xy):
                 cx, cy = prev_center_xy[0] + off[0], prev_center_xy[1] + off[1]
                 if recenter:
@@ -598,10 +598,10 @@ class Photometry:
                 centers_xy.append((ncx, ncy))
 
                 skip = np.sqrt((cx - ncx) ** 2 + (cy - ncy) ** 2)
-                if skip > max_skip:
+                if skip > max_skip and not long_skip:
                     long_skip = True
-                    logger.warning(f"Large jump ({cx}, {cy}) -> ({ncx}, {ncy}). Stamprad: {stamp_rad} pix")
-                    logger.warning(f"Large jump of {skip:.1f} pixels for {label} has occurred "
+                    # logger.warning(f"Large jump ({cx}, {cy}) -> ({ncx}, {ncy}). Stamprad: {stamp_rad} pix")
+                    logger.warning(f"Large jump of {skip:.1f} pixels has occurred "
                                    f"on frame #{idx}{'(User Coordinates!)' if not idx else ''}: {filename}")
 
             centers_xy = np.array(centers_xy)
