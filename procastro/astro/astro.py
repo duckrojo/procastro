@@ -21,16 +21,21 @@
 __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'blackbody', 'getfilter', 'applyfilter',
            'filter_conversion', 'planeteff',
-           'find_target', 'moon_distance'
+           'find_target', 'moon_distance',
+           'read_jpl'
            ]
 
 import astropy.constants as apc
 import astropy.coordinates as apcoo
+import astropy.units as u
 import astropy.units as apu
 import astropy.time as apt
 import numpy as np
 import glob
 import os.path as path
+
+import pandas as pd
+
 import procastro as pa
 from collections import defaultdict
 import re
@@ -42,6 +47,119 @@ try:
     import astroquery.simbad as aqs
 except ImportError:
     aqs = None
+
+
+def read_jpl(filename):
+    """Read JPL's Horizons ephemeris file returning the adequate datatype in a pandas dataframe with named columns
+
+    Parameters
+    ----------
+    filename: str
+    Filename of the ephemeris file
+    """
+
+    def change_names(string):
+        string, _ = re.subn(r'1', 'one', string)
+        string, _ = re.subn(r'399', 'earth', string)
+        string, _ = re.subn(r'[%*.()-]', '_', string)
+        string, _ = re.subn(r'/', '_slash_', string)
+        return string
+
+    float_col = ['Date_________JDUT', 'APmag', 'S_brt',
+                 'dRA_cosD', 'd_DEC__dt', 'dAZ_cosE', 'd_ELV__dt',
+                 'SatPANG', 'L_Ap_Sid_Time', 'a_mass mag_ex',
+                 'Illu_', 'Def_illu', 'Ang_diam',
+                 'ObsSub_LON', 'ObsSub_LAT', 'SunSub_LON', 'SunSub_LAT',
+                 'SN_ang', 'SN_dist', 'NP_ang', 'NP_dist', 'hEcl_Lon', 'hEcl_Lat',
+                 'r', 'rdot', 'delta', 'deldot', 'one_way_down_LT', 'VmagSn', 'VmagOb',
+                 'S_O_T', 'S_T_O', 'O_P_T', 'PsAng', 'PsAMV', 'PlAng',
+                 'TDB_UT', 'ObsEcLon', 'ObsEcLat', 'N_Pole_RA', 'N_Pole_DC',
+                 'GlxLon', 'GlxLat',  'L_Ap_SOL_Time', 'Tru_Anom', 'L_Ap_Hour_Ang', 'phi',
+                 'earth_ins_LT', 'RA_3sigma', 'DEC_3sigma', 'SMAA_3sig', 'SMIA_3sig', 'Theta Area_3sig',
+                 'POS_3sigma', 'RNG_3sigma', 'RNGRT_3sig', 'DOP_S_3sig',  'DOP_X_3sig', 'RT_delay_3sig',
+                 'PAB_LON', 'PAB_LAT', 'App_Lon_Sun',  'I_dRA_cosD', 'I_d_DEC__dt',
+                 'Sky_motion', 'Sky_mot_PA', 'RelVel_ANG', 'Lun_Sky_Brt', 'sky_SNR',
+                 'sat_primary_X', 'sat_primary_Y', 'a_app_Azi', 'a_app_Elev',
+                 'ang_sep', 'T_O_M', 'MN_Illu_'
+                 ]
+    str_col = ['_slash_r', 'Cnst', ]
+
+    convert_dict = {k: float for k in float_col} | {k: str for k in str_col}
+
+    coords_col = {'R_A_______ICRF______DEC': 'ICRF',
+                  'R_A____a_apparent___DEC': 'apparent',
+                  'RA__ICRF_a_apparnt__DEC': 'ICRF_app',
+                  }
+    two_values_col = ['X__sat_primary__Y', 'Azi_____a_app____Elev']
+    slash_col = ['ang_sep_slash_v', 'T_O_M_slash_MN_Illu_']
+
+    previous = ""
+    with open(filename, 'r') as fp:
+        while True:
+            line = fp.readline()
+            if len(line) == 0:
+                raise ValueError("No Ephemeris info: it should be surrounded by $$SOE and $$EOE")
+            if re.match(r"\*+ *", line):
+                continue
+            if re.match(r"\$\$SOE", line):
+                break
+            previous = line
+
+        previous = change_names(previous)
+
+        pattern = ""
+        spaces = 0
+        col_seps = re.split(r'( +)', previous.rstrip())
+        for val in col_seps:
+            if val[0] != ' ':
+                chars = len(val) + spaces
+                pattern += f'(?P<{val}>.{{{chars}}})'
+            else:
+                spaces = len(val)
+
+        incoming = []
+        while True:
+            line = fp.readline()
+            if len(line) == 0:
+                raise ValueError("No Ephemeris info: it should be surrounded by $$SOE and $$EOE")
+
+            if re.match(r"\$\$EOE", line.rstrip()):
+                break
+            incoming.append(line.strip())
+
+    # dataframe with each field separated
+    df = pd.DataFrame({'incoming': incoming}).incoming.str.extract(pattern)
+    df = df.replace(re.compile(r" +n\.a\."), np.nan).astype(str)
+
+    # convert sexagesimal coordinates to float
+    for coord, name in coords_col.items():
+        if coord not in df:
+            continue
+        coords = pd.DataFrame()
+        coords[['rah', 'ram', 'ras', 'decd', 'decm', 'decs']] = df[coord].str.strip().str.split(re.compile(" +"),
+                                                                                                expand=True)
+        coords = coords.astype(float)
+        df[f'ra_{name}'] = coords.rah + (coords.ram + coords.ras / 60) / 60
+        df[f'dec_{name}'] = (coords.decd.abs() + (coords.decm + coords.decs / 60) / 60) * np.sign(coords.decd)
+
+    # convert two values into their own columns
+    for column in two_values_col:
+        local_pattern = re.compile(r"([a-zA-Z]+?)_+(.+?)_+([a-zA-Z]+?)$")
+        match = re.match(local_pattern, column)
+        left, right = f"{match[2]}_{match[1]}", f"{match[2]}_{match[3]}",
+        new_df = df[column].str.strip().str.split(re.compile(" +"), n=2, expand=True)
+        if len(new_df.columns) == 1:
+            new_df[1] = new_df[0]
+        df[[left, right]] = new_df
+
+    # convert two values into their own columns
+    for column in slash_col:
+        local_pattern = re.compile(r"(.+)_slash_(.+)$")
+        match = re.match(local_pattern, column)
+        left, right = match[1], match[2]
+        df[[left, right]] = df[column].str.split('/', expand=True)
+
+    return df.astype({k: v for k, v in convert_dict.items() if k in df})
 
 
 def moon_distance(target, location=None, time=None):
