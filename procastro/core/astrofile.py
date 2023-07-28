@@ -18,104 +18,22 @@
 #
 #
 
-__all__ = ['AstroFile', 'AstroCalib', 'astrofile_cache']
+__all__ = ['AstroFile']
 
-import logging
-import queue
 from functools import wraps as _wraps
 import warnings
 from pathlib import PurePath, Path
-from typing import Optional, Union
-
-import astropy.io.fits
-import numpy
 
 import procastro as pa
-from .internal_functions import trim_to_python, common_trim_fcn, extract_common
+from .internal_functions import trim_to_python
+from .logging import io_logger
+from .astrocalib import AstroCalib
+from .cache import astrofile_cache
+
 import astropy.time as apt
 import numpy as np
 import os.path as path
 import astropy.io.fits as pf
-
-logging.basicConfig(level=logging.INFO)
-io_logger = logging.getLogger('procastro.io')
-io_logger.propagate = False
-
-
-class _AstroCache:
-    def __init__(self):
-        self._cache: dict[AstroFile, numpy.ndarray] = {}
-        self._max_cache: int = 200
-        self._queue: Optional[queue.Queue] = None
-
-        self.set_max_cache(self._max_cache)
-
-    def __bool__(self):
-        return self._max_cache > 0
-
-    def available(self):
-        return not self._queue.full()
-
-    def __call__(self, method):
-        def wrapper(instance, **kwargs):
-            cache = True
-            try:
-                if instance in self._cache:
-                    return self._cache[instance]
-            except TypeError:
-                # disable cache if type is not hashable (numpy array for instance)
-                cache = False
-
-            ret = method(instance, **kwargs)
-
-            # if caching
-            if cache and self._queue is not None:
-
-                # delete oldest cache if limit reached
-                if self._queue.full():
-                    del self._cache[self._queue.get_nowait()]
-
-                self._queue.put_nowait(instance)
-                self._cache[instance] = ret
-
-            return ret
-
-        return wrapper
-
-    def set_max_cache(self, max_cache: int):
-        if max_cache < 0:
-            raise ValueError(f"max_cache must be positive ({max_cache})")
-
-        # if disabling cache, delete all
-        if not max_cache:
-            self._queue = None
-            self._cache = {}
-            return
-
-        delta = self._max_cache - max_cache
-        old_queue = self._queue
-
-        self._queue = queue.Queue(maxsize=max_cache)
-        self._max_cache = max_cache
-
-        # if cache was disabled, then start it empty
-        if old_queue is None:
-            return
-
-        try:
-            # if reducing cache, get rid of the extra caches
-            if delta > 0:
-                for af in range(delta):
-                    del self._cache[self._queue.get_nowait()]  # both delete elements from indexing and the cache.
-
-            # copy old queue into new
-            while True:
-                self._queue.put_nowait(old_queue.get_nowait())
-        except queue.Empty:
-            pass
-
-
-astrofile_cache = _AstroCache()
 
 
 def _numerize_other(method):
@@ -354,8 +272,6 @@ class AstroFile(object):
 
     Attributes
     ----------
-    shape : tuple
-        Shape of the data contained on the file
     header_cache : dict
         Data contained on the most recently read header
     _sort_key : str
@@ -452,7 +368,7 @@ class AstroFile(object):
                 return
 
         # if custom header is added, then overwrite/append that in the first HDU
-        if isinstance(header, (dict, astropy.io.fits.Header)):
+        if isinstance(header, (dict, pf.Header)):
             for k, v in header.items():
                 self.header_cache[0][k] = v
 
@@ -479,6 +395,10 @@ class AstroFile(object):
             raise TypeError("calib needs to be AstroCalib in .set_calib()")
         self._calib = calib
 
+    def get_calib(self,
+                  ) -> AstroCalib:
+        return self._calib
+
     def get_trims(self):
         """"Get trim limits, returning in python-style YX"""
         if self.auto_trim is None:
@@ -500,13 +420,13 @@ class AstroFile(object):
            new calibration array or astrofile
         """
         if header is None:
-            header = self._calib.mbias_header
+            header = self._calib.bias_header
 
         # Creating of new AstroCalib upon change of calibration is on purpose as it will
         # prevent using the cached value when reading
-        calib = AstroCalib(mbias, self._calib.mflat,
-                           mbias_header=header,
-                           mflat_header=self._calib.mflat_header,
+        calib = AstroCalib(mbias, self._calib.flat,
+                           bias_header=header,
+                           flat_header=self._calib.flat_header,
                            auto_trim=self._calib.auto_trim_keyword)
         self._calib = calib
 
@@ -519,13 +439,13 @@ class AstroFile(object):
         master_flat: dict indexed by filter name time, array or AstroFile
         """
         if header is None:
-            header = self._calib.mflat_header
+            header = self._calib.flat_header
 
         # Creating of new AstroCalib upon change of calibration is on purpose as it will
         # prevent using the cached value when reading
-        calib = AstroCalib(self._calib.mbias, mflat,
-                           mflat_header=header,
-                           mbias_header=self._calib.mflat_header,
+        calib = AstroCalib(self._calib.bias, mflat,
+                           flat_header=header,
+                           bias_header=self._calib.flat_header,
                            auto_trim=self._calib.auto_trim_keyword)
         self._calib = calib
 
@@ -1171,200 +1091,3 @@ class AstroFile(object):
             raise NotImplementedError("Spectra not understood")
 
         ax.plot(wav, flx, *args, **kwargs)
-
-
-class AstroCalib(object):
-    """
-    Object to hold calibration frames.
-
-    Since several AstroFiles might use the same calibration frames, one
-    AstroCalib object might be shared by more than one AstroFile. For instance,
-    all the files initialized through AstroDir share a single calibration
-    object.
-
-    Attributes
-    ----------
-    has_bias : bool
-    has_flat : bool
-
-    Parameters
-    ----------
-    mbias : dict indexed by exposure time, array or AstroFile
-        Master Bias
-    mflat : dict indexed by filter name, array or AstroFile
-        Master Flat
-    exptime_keyword : str, optional
-        Header item name containing the exposure time of te frames
-    mbias_header : astropy.io.fits.Header, optional
-        Header of the master bias
-    mflat_header : astropy.io.fits.Header, optional
-        Header of the master bias
-    filter_keyword : str, optional
-    auto_trim : str
-        Header field name which is used to cut a portion of the data. This
-        field should contain the dimensions of the section to be cut.
-        (i.e. TRIMSEC = '[1:1992,1:1708]')
-    """
-
-    def __init__(self, mbias=None, mflat=None,
-                 mbias_header=None, mflat_header=None,
-                 auto_trim=None):
-
-        # Its always created false, if the add_*() has something, then its
-        # turned true.
-        self.has_bias = self.has_flat = False
-
-        self.mbias: Union[np.ndarray, int, float] = 0.0
-        self.mflat: Union[np.ndarray, int, float] = 1.0
-        self.mbias_header: Optional[dict] = mbias_header
-        self.mflat_header: Optional[dict] = mflat_header
-
-        self.auto_trim_keyword = None if auto_trim is None else auto_trim.lower()
-
-        if mbias is not None:
-            self.add_bias(mbias)
-        if mflat is not None:
-            self.add_flat(mflat)
-
-    def _add_calib(self, calib, label):
-        if isinstance(calib, (int, float, np.ndarray)):
-            setattr(self, label, calib)
-        elif isinstance(calib, pa.AstroFile):
-            setattr(self, f"{label}_header", calib.read_headers())
-            setattr(self, label, calib.reader())
-        else:
-            raise ValueError(f"Master {label} supplied was not recognized.")
-
-        setattr(self, f"has_{label}", True)
-
-    def add_bias(self, mbias):
-        """
-        Add Master Bias to Calib object.
-
-        Parameters
-        ----------
-        mbias : dict indexed by exposure time, array_like or AstroFile
-            Master bias to be included
-        mbias_header: astropy.io.fits.Header
-            Header to be included
-
-        Raises
-        ------
-        ValueError
-            If the bias type is invalid
-        """
-        self._add_calib(mbias, "mbias")
-
-    def add_flat(self, mflat):
-        """
-        Add master flat to Calib object
-
-        Parameters
-        ----------
-        mflat: dict indexed by filter name, array_like, AstroFile
-            Master flat to be included
-        mflat_header: astropy.io.fits.Header, optional
-            Master flat header
-
-        Raises
-        ------
-        ValueError
-            If the bias type is invalid
-        """
-        self._add_calib(mflat, "mflat")
-
-    def reduce(self, data, data_trim=None, verbose=True):
-        """
-        Process given "data" using the bias and flat contained in this instance
-
-        Parameters
-        ----------
-        data_trim
-        verbose
-        data : array_like
-            Data to be reduced
-        exptime : int, optional
-            Exposure time for bias
-        ffilter : str, optional
-            Filter used by the flat
-        Returns
-        -------
-        array_like
-            Reduced data
-
-        """
-
-        # if exptime is None or exptime not in self.mbias:
-        #     exptime = -1
-        # if ffilter is None or ffilter not in self.mflat:
-        #     ffilter = ''
-        #
-        # if exptime not in self.mbias:
-        #     raise ValueError(
-        #         "Requested exposure time ({}) is not available "
-        #         "for mbias, only: {}".format(exptime,
-        #                                      ", "
-        #                                      .join(map(str,
-        #                                                self.mbias.keys()))))
-        # if ffilter not in self.mflat:
-        #     raise ValueError(
-        #         "Requested filter ({}) is not available for mflat, only: {}"
-        #         .format(ffilter, ", ".join(self.mflat.keys())))
-        #
-        # flat = self.mflat[ffilter]
-        # bias = self.mbias[exptime]
-        flat = self.mflat
-        bias = self.mbias
-
-        in_data = [data]
-        if data_trim is None:
-            io_logger.warning("Trim info not found on raw frames... using full figure instead")
-            trim = [(1, data.shape[0], 1, data.shape[1])]
-        else:
-            trim = [data_trim]
-
-        for label in ['bias', 'flat']:
-            tdata = vars()[label]
-            in_data.append(tdata)
-
-            theader = getattr(self, f'm{label}_header')
-            if theader is not None:
-                theader = theader[0]
-
-            if theader is None or self.auto_trim_keyword not in theader.keys():
-                if not isinstance(tdata, (int, float)):
-
-                    io_logger.warning(f"Trim info "
-                                      f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
-                                      f"not found on {label} frames..."
-                                      f"using full figure instead")
-                    label_trim = (1, data.shape[0], 1, data.shape[1])
-                else:
-                    label_trim = trim[0]
-                trim.append(label_trim)
-            else:
-                trim.append(trim_to_python(theader[self.auto_trim_keyword.lower()]))
-
-        if len(set(trim)) != 1:
-            common_trim = common_trim_fcn(trim)
-
-            out_data = []
-            for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trim):
-                if isinstance(tdata, (int, float)):  # if tdata is bias = 0 or flat = 1.0, dont trim
-                    out_data.append(tdata)
-                    trimmed = False
-                else:
-                    out, trimmed = extract_common(tdata, trim, common_trim)
-                    out_data.append(out)
-
-                if trimmed and verbose:
-                    logging.info(f"Adjusting {label} shape to minimmum common trim [{self.auto_trim_keyword}: "
-                                 f"({str(trim)}) -> ({str(common_trim)})]")
-            data, bias, flat = out_data
-
-        debias = data - bias
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", category=RuntimeWarning)
-            deflat = debias / flat
-
-        return deflat

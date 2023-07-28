@@ -37,11 +37,11 @@ class TestAstroCalib(object):
 
         bias = AstroFile(os.path.join(self.path, "bias.fits"))
         calib.add_bias(bias)
-        assert_equal(calib.mbias[-1], AstroFile(os.path.join(self.path, "bias.fits")).reader())
+        assert_equal(calib.bias[-1], AstroFile(os.path.join(self.path, "bias.fits")).reader())
 
         flat = AstroFile(os.path.join(self.path, "flat.fits"))
         calib.add_flat(flat)
-        assert_equal(calib.mflat[''], AstroFile(os.path.join(self.path, "flat.fits")).reader())
+        assert_equal(calib.flat[''], AstroFile(os.path.join(self.path, "flat.fits")).reader())
 
         # Reduces data
         # TODO: Test different settings
