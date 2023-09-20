@@ -234,9 +234,9 @@ class Nightly:
         self._planets['sy_pmra'].fillna(0, inplace=True)
         self._planets['sy_pmdec'].fillna(0, inplace=True)
 
-        pm_right_ascension = planets['sy_pmra'] * u.mas / u.yr
-        pm_declination = planets['sy_pmdec'] * u.mas / u.yr
-        coords = apc.SkyCoord(planets['ra'] * u.degree, planets['dec'] * u.degree,
+        pm_right_ascension = planets['sy_pmra'].array * u.mas / u.yr
+        pm_declination = planets['sy_pmdec'].array * u.mas / u.yr
+        coords = apc.SkyCoord(planets['ra'].array * u.degree, planets['dec'].array * u.degree,
                               frame='icrs', pm_ra_cosdec=pm_right_ascension, pm_dec=pm_declination,
                               equinox=equinox_db)
         self._planets['star_coords'] = coords
