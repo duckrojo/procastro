@@ -25,9 +25,10 @@ __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'read_jpl'
            ]
 
+from pathlib import Path
+
 import astropy.constants as apc
 import astropy.coordinates as apcoo
-import astropy.units as u
 import astropy.units as apu
 import astropy.time as apt
 import numpy as np
@@ -35,18 +36,49 @@ import glob
 import os.path as path
 
 import pandas as pd
+import requests
 
 import procastro as pa
 from collections import defaultdict
 import re
 import warnings
-import os
 
 
 try:
     import astroquery.simbad as aqs
 except ImportError:
     aqs = None
+
+
+def _request_horizons_online(specifications):
+    default_spec = {'MAKE_EPHEM': 'YES',
+                    'EPHEM_TYPE': 'OBSERVER',
+                    'CENTER': "'500@399'",
+                    'STEP_SIZE': "'2 DAYS'",
+                    'QUANTITIES': "'1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,"
+                                  "27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48'",
+                    'REF_SYSTEM': "'ICRF'",
+                    'CAL_FORMAT': "'JD'",
+                    'CAL_TYPE': "'M'",
+                    'TIME_DIGITS': "'MINUTES'",
+                    'ANG_FORMAT': "'HMS'",
+                    'APPARENT': "'AIRLESS'",
+                    'RANGE_UNITS': "'AU'",
+                    'SUPPRESS_RANGE_RATE': "'NO'",
+                    'SKIP_DAYLT': "'NO'",
+                    'SOLAR_ELONG': "'0,180'",
+                    'EXTRA_PREC': "'NO'",
+                    'R_T_S_ONLY': "'NO'",
+                    'CSV_FORMAT': "'NO'",
+                    'OBJ_DATA': "'YES'",
+                    }
+    url_api = "https://ssd.jpl.nasa.gov/api/horizons.api?"
+    custom_spec = {spec.split("=")[0].replace(" ", ""): spec.strip().split("=")[1]
+                   for spec in specifications
+                   if spec[:6] != r"!$$SOF"}
+
+    url = url_api + "&".join([f"{k}={v}" for k, v in (default_spec | custom_spec).items()])
+    return eval(requests.get(url, allow_redirects=True).content)['result'].splitlines()
 
 
 def read_jpl(filename):
@@ -59,9 +91,9 @@ def read_jpl(filename):
     """
 
     def change_names(string):
-        string, _ = re.subn(r'1', 'one', string)
+        string, _ = re.subn(r'1(\D)', r'one\1', string)
         string, _ = re.subn(r'399', 'earth', string)
-        string, _ = re.subn(r'[%*.()-]', '_', string)
+        string, _ = re.subn(r'[%*().-]', '_', string)
         string, _ = re.subn(r'/', '_slash_', string)
         return string
 
@@ -93,39 +125,58 @@ def read_jpl(filename):
     two_values_col = ['X__sat_primary__Y', 'Azi_____a_app____Elev']
     slash_col = ['ang_sep_slash_v', 'T_O_M_slash_MN_Illu_']
 
+    lines = filename.splitlines()
+    if len(lines) == 1:
+        if not Path(filename).exists():
+            raise FileNotFoundError(f"File '{filename}' does not exists")
+        with open(filename, 'r') as fp:
+            line = fp.readline()
+            if line[:6] == r"!$$SOF":
+                filename = _request_horizons_online(fp.readlines())
+    else:
+        if lines[0][:6] != r"!$$SOF":
+            raise ValueError(f"Multiline Horizons specification invalid:"
+                             f"{lines}")
+        filename = _request_horizons_online(lines)
+
     previous = ""
-    with open(filename, 'r') as fp:
-        while True:
-            line = fp.readline()
-            if len(line) == 0:
-                raise ValueError("No Ephemeris info: it should be surrounded by $$SOE and $$EOE")
-            if re.match(r"\*+ *", line):
-                continue
-            if re.match(r"\$\$SOE", line):
-                break
-            previous = line
 
-        previous = change_names(previous)
+    if len(filename) != 1:
+        lines = filename
+    elif Path(filename).exists():
+        lines = open(filename, 'r').readlines()
 
-        pattern = ""
-        spaces = 0
-        col_seps = re.split(r'( +)', previous.rstrip())
-        for val in col_seps:
-            if val[0] != ' ':
-                chars = len(val) + spaces
-                pattern += f'(?P<{val}>.{{{chars}}})'
-            else:
-                spaces = len(val)
+    while True:
+        line = lines.pop(0)
+        if len(lines) == 0:
+            raise ValueError("No Ephemeris info: it should be surrounded by $$SOE and $$EOE")
+        if re.match(r"\*+ *", line):
+            continue
+        if re.match(r"\$\$SOE", line):
+            break
+        previous = line
 
-        incoming = []
-        while True:
-            line = fp.readline()
-            if len(line) == 0:
-                raise ValueError("No Ephemeris info: it should be surrounded by $$SOE and $$EOE")
+    # previous = change_names(previous)
 
-            if re.match(r"\$\$EOE", line.rstrip()):
-                break
-            incoming.append(line.strip())
+    pattern = ""
+    spaces = 0
+    col_seps = re.split(r'( +)', previous.rstrip())
+    for val in col_seps:
+        if val[0] != ' ':
+            chars = len(val) + spaces
+            pattern += f'(?P<{change_names(val)}>.{{{chars}}})'
+        else:
+            spaces = len(val)
+
+    incoming = []
+    while True:
+        line = lines.pop(0)
+        if len(lines) == 0:
+            raise ValueError("No Ephemeris info: it should be surrounded by $$SOE and $$EOE")
+
+        if re.match(r"\$\$EOE", line.rstrip()):
+            break
+        incoming.append(line.strip())
 
     # dataframe with each field separated
     df = pd.DataFrame({'incoming': incoming}).incoming.str.extract(pattern)
@@ -167,6 +218,8 @@ def moon_distance(target, location=None, time=None):
 
     Parameters
     -------------
+    target: str
+        Target object for Moon distance
     location: apcoo.EarthLocation
         If None uses CTIO observatory
     time: apc.Time
@@ -187,12 +240,14 @@ def moon_distance(target, location=None, time=None):
     return apcoo.get_moon(time, location=location).separation(target)
 
 
-def find_target(target, coo_files=None, return_pm=False, equinox='J2000', extra_info=None, verbose=False):
+def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbose=False):
     """
     Obtain coordinates from a target, that can be specified in various formats.
 
     Parameters
     ----------
+    verbose
+    extra_info
     target: str
        Either a coordinate understandable by astropy.coordinates
        (RA in hours, Dec in degrees), a name in coo_files, or a name
@@ -208,9 +263,6 @@ def find_target(target, coo_files=None, return_pm=False, equinox='J2000', extra_
        follows (i.e. WASP_77__b, matches wasp-77, wasp77b, but not wasp77a).
        RA and Dec can be any mathematical expression that eval() can handle.
        RA is hms by default, unless 'd' is appended, Dec is always dms.
-    return_pm : bool, optional
-      if True return proper motions. Only as provided by Simbad for now,
-      otherwise returns None for each
     equinox : str, optional
        Which astronomy equinox the coordinates refer. Default is J2000
 
@@ -322,7 +374,7 @@ def find_target(target, coo_files=None, return_pm=False, equinox='J2000', extra_
     return ra_dec
 
 
-def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
+def get_transit_ephemeris(target):
     """
     Recovers epoch, period and length of a target transit if said transit has
     been specified in one of the provided paths
@@ -343,8 +395,6 @@ def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
     ----------
     target: str
         Target requested
-    direc: str, optional
-        Directory containing the files to be inspected
 
     Returns
     -------
@@ -375,7 +425,7 @@ def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
                 data = line[:-1].split()
                 planet = data.pop(0)
 
-                if pa.accept_object_name(planet, target):
+                if pa.accept_object_name(planet, target, planet_match=True):
                     for d in data:
                         if d[0].lower() == 'p':
                             override.append('period')
@@ -392,10 +442,7 @@ def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
                             raise ValueError("data field not understood, it "
                                              "must start with L, P, C, "
                                              "or E:\n{0:s}".format(line,))
-                    print("Overriding for '{:s}' from file '{:s}': "
-                          "{:s}".format(planet,
-                                        transit_filename,
-                                        ', '.join(override),))
+                    print(f"Overriding for '{planet}' from file '{transit_filename}': {', '.join(override)}")
 
                 if len(override):
                     break
@@ -412,7 +459,7 @@ def get_transit_ephemeris(target, direc=os.path.dirname(__file__)):
 
 def read_horizons_cols(file):
     """
-    Reads an horizons ephemeris file into a dictionary. It maintains the
+    Reads a horizons ephemeris file into a dictionary. It maintains the
     original column's header as dictionary keys.
     Columns can be automatically recognized as float or int (work in progress
     the latter)
@@ -590,15 +637,13 @@ def getfilter(name,
         if name in path.basename(f):
             found.append(f)
 
+    new_line = '\n '
     if not len(found):
         raise ValueError(f"No filter matches '{name}'"
-                         " Be more specific between:\n {1:s}".format(name,
-                                                                      '\n '.join(found)))
+                         f" Be more specific between:\n {new_line.join(found):s}")
     if len(found) > 2:
-        raise ValueError(
-            ("Only one of the available filters should match '{0:s}'." +
-             " Be more specific between:\n {1:s}").format(name,
-                                                          '\n '.join(found)))
+        raise ValueError(f"Only one of the available filters should match '{name:s}'."
+                         f" Be more specific between:\n {new_line.join(found):s}")
 
     if name_only:
         return path.basename(found[0])
@@ -645,8 +690,6 @@ def applyfilter(name, spectra,
       Wavelength or frequency. Only necessary when flux is given as spectra
     n_wav_bb: int, optional
       Number of wavelength points for blackbody. Default is 100
-    filter_unit: astropy.unit, optional
-      If None use getfilter's default
     output_unit : astropy.unit, optional
       Default unit for output. Default is nanometers
     filter_dir : str, optional
@@ -730,7 +773,7 @@ def filter_conversion(target_filter, temperature,
     ----------
     target_filter : str
        Target filter for the conversion
-    temperature : int
+    temperature : float
        Temperature of star
     temperature_ref : int, optional
        Temperature of magnitude's zero-point
@@ -752,23 +795,20 @@ def filter_conversion(target_filter, temperature,
         raise ValueError("One, and only one reference filter needs to "
                          "be specified as kwargs ({0:s})".format(kwargs,))
 
-    orig_filter, orig_value = kwargs.items()[0]
+    orig_filter, orig_value = list(kwargs.items())[0]
     orig_filter = getfilter(orig_filter.replace('_', '.'), True)
     target_filter = getfilter(target_filter.replace('_', '.'), True)
 
     if verbose:
-        print("Converting from '{0:s}'={1:f} to '{2:s}'\n"
-              "(T={3:s} object)".format(orig_filter,
-                                        orig_value,
-                                        target_filter,
-                                        temperature))
+        print(f"Converting from '{orig_filter}'={orig_value} to '{target_filter}'\n"
+              f"(T={temperature} object)")
 
     ref0 = orig_value + 2.5 * np.log(applyfilter(orig_filter, temperature) /
                                      applyfilter(orig_filter, temperature_ref)) / np.log(10)
 
     return -2.5 * (np.log(applyfilter(target_filter, temperature) /
                           applyfilter(target_filter, temperature_ref)) /
-                          np.log(10) + ref0)
+                   np.log(10) + ref0)
 
 
 def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
