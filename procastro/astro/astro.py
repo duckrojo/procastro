@@ -93,7 +93,7 @@ def read_jpl(filename):
     def change_names(string):
         string, _ = re.subn(r'1(\D)', r'one\1', string)
         string, _ = re.subn(r'399', 'earth', string)
-        string, _ = re.subn(r'[%*().-]', '_', string)
+        string, _ = re.subn(r'[%*().:-]', '_', string)
         string, _ = re.subn(r'/', '_slash_', string)
         return string
 
@@ -115,6 +115,8 @@ def read_jpl(filename):
                  'ang_sep', 'T_O_M', 'MN_Illu_'
                  ]
     str_col = ['_slash_r', 'Cnst', ]
+    ut_col = ['Date___UT___HR_MN']
+    jd_col = 'Date_________JDUT'
 
     convert_dict = {k: float for k in float_col} | {k: str for k in str_col}
 
@@ -141,10 +143,12 @@ def read_jpl(filename):
 
     previous = ""
 
-    if len(filename) != 1:
+    if isinstance(filename, list):
         lines = filename
     elif Path(filename).exists():
         lines = open(filename, 'r').readlines()
+    else:
+        raise ValueError(f"Invalid specification of input: {filename}")
 
     while True:
         line = lines.pop(0)
@@ -161,6 +165,8 @@ def read_jpl(filename):
     pattern = ""
     spaces = 0
     col_seps = re.split(r'( +)', previous.rstrip())
+    if col_seps[0] == '':
+        col_seps.pop(0)
     for val in col_seps:
         if val[0] != ' ':
             chars = len(val) + spaces
@@ -176,7 +182,7 @@ def read_jpl(filename):
 
         if re.match(r"\$\$EOE", line.rstrip()):
             break
-        incoming.append(line.strip())
+        incoming.append(line.rstrip())
 
     # dataframe with each field separated
     df = pd.DataFrame({'incoming': incoming}).incoming.str.extract(pattern)
@@ -195,6 +201,8 @@ def read_jpl(filename):
 
     # convert two values into their own columns
     for column in two_values_col:
+        if column not in df:
+            continue
         local_pattern = re.compile(r"([a-zA-Z]+?)_+(.+?)_+([a-zA-Z]+?)$")
         match = re.match(local_pattern, column)
         left, right = f"{match[2]}_{match[1]}", f"{match[2]}_{match[3]}",
@@ -205,10 +213,22 @@ def read_jpl(filename):
 
     # convert two values into their own columns
     for column in slash_col:
+        if column not in df:
+            continue
         local_pattern = re.compile(r"(.+)_slash_(.+)$")
         match = re.match(local_pattern, column)
         left, right = match[1], match[2]
         df[[left, right]] = df[column].str.split('/', expand=True)
+
+    # convert UT date to JD
+    for column in ut_col:
+        newdate = df[column].str.strip().str.replace(" ", "T")
+        for idx, month in enumerate(['Jan', "Feb", "Mar", "Apr", "May", "Jun",
+                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]):
+            newdate = newdate.str.strip().str.replace(month, f"{idx+1:02d}")
+        df[jd_col] = [apt.Time(ut_date).jd for ut_date in newdate]
+
+    df['jd'] = df[jd_col]
 
     return df.astype({k: v for k, v in convert_dict.items() if k in df})
 

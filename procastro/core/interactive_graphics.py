@@ -328,21 +328,29 @@ class BindingsFunctions:
         if redraw:
             self.redraw_marks(only=mark_type)
 
-    def draw_last_mark(self,
-                       mark_type: str,
-                       ):
+    def draw_mark(self,
+                  mark_type: str,
+                  pos: int = -1,
+                  ):
         props = self._config['tool']['marking']
         colors = _csv_str_to_tuple(props['color'])
-        idx = len(self._marks[mark_type]) - 1
-        color = colors[idx] if idx < len(colors) else colors[-1]
-        radius = self._pix_from_percent(props, 'point_radius_')
+        # if given a negative position, then count from the end
+        if pos < 0:
+            pos += len(self._marks[mark_type])
 
-        circ = patches.Circle(self._marks[mark_type][-1],
-                              radius=radius,
-                              alpha=props['alpha'],
-                              color=color)
-        self._mark_patches[mark_type].append(circ)
-        self._axes_2d.add_patch(circ)
+        color = colors[pos] if pos < len(colors) else colors[-1]
+
+        if mark_type == 'point':
+            radius = self._pix_from_percent(props, 'point_radius_')
+            patch = patches.Circle(self._marks[mark_type][pos],
+                                  radius=radius,
+                                  alpha=props['alpha'],
+                                  color=color)
+        else:
+            raise NotImplementedError(f"Mark type '{mark_type}' is not implemented for now. Only 'point'")
+
+        self._mark_patches[mark_type].append(patch)
+        self._axes_2d.add_patch(patch)
         self._axes_2d.figure.canvas.draw_idle()
 
     def redraw_marks(self,
@@ -354,25 +362,13 @@ class BindingsFunctions:
                 self.redraw_marks(only=m)
             return
 
-        props = self._config['tool']['marking']
-        colors = _csv_str_to_tuple(props['color'])
-        marks = self._marks[only]
         self.delete_marks_from_2d(None,
                                   clear_data=False,
                                   only=only)
 
-        if only == 'point':
-            radius = self._pix_from_percent(props, 'point_radius_')
-            for idx, mark in enumerate(marks):
-                color = colors[idx] if idx < len(colors) else colors[-1]
-
-                circ = patches.Circle(mark,
-                                      radius=radius,
-                                      alpha=props['alpha'],
-                                      color=color)
-                self._mark_patches[only].append(circ)
-                self._axes_2d.add_patch(circ)
-        self._axes_2d.figure.canvas.draw_idle()
+        marks = self._marks[only]
+        for idx in range(len(marks)):
+            self.draw_mark(only, pos=idx)
 
     def clear_temp(self):
         """Clear temporal artists in data area"""
@@ -684,7 +680,7 @@ class BindingsFunctions:
             raise NotImplementedError(f"Invalid value '{mark_type}':"
                                       f" only 'point' is currently implemented as mark type")
         self._marks[mark_type].append(xy)
-        self.draw_last_mark(mark_type)
+        self.draw_mark(mark_type)
 
     # noinspection PyUnusedLocal
     def delete_marks_from_2d(self,
