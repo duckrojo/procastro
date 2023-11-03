@@ -19,7 +19,7 @@
 #
 
 
-__all__ = ['gauss', 'bipol',
+__all__ = ['gauss', 'bipol', 'parabolic_x',
            ]
 
 from typing import Optional
