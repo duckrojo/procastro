@@ -30,6 +30,7 @@ import pyvo as vo
 import pyvo.dal.exceptions
 
 import procastro as pa
+import procastro.astro as paa
 import matplotlib as mpl
 import numpy as np
 import pandas as pd

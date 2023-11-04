@@ -867,10 +867,11 @@ def hour_angle_for_altitude(dec, site_lat, altitude):
     """
     cos_ha = (np.sin(altitude) - np.sin(dec) * np.sin(site_lat)
               ) / np.cos(dec) / np.cos(site_lat)
-    if np.abs(cos_ha) > 1:
-        return 12*u.hourangle
+    mask = np.abs(cos_ha) > 1
+    ret = (np.arccos(cos_ha)*u.radian).to(u.hourangle)
+    ret[mask] = 13 * u.hourangle
 
-    return (np.arccos(cos_ha)*u.radian).to(u.hourangle)
+    return ret
 
 
 def find_time_for_altitude(location, time,
