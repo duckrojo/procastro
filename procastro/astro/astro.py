@@ -22,14 +22,15 @@ __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'blackbody', 'getfilter', 'applyfilter',
            'filter_conversion', 'planeteff',
            'find_target', 'moon_distance',
-           'read_jpl'
+           'read_jpl', 'hour_angle_for_altitude', 'find_time_for_altitude',
            ]
 
 from pathlib import Path
+from typing import Union
 
-import astropy.constants as apc
-import astropy.coordinates as apcoo
-import astropy.units as apu
+import astropy.constants as c
+import astropy.coordinates as apc
+import astropy.units as u
 import astropy.time as apt
 import numpy as np
 import glob
@@ -249,15 +250,15 @@ def moon_distance(target, location=None, time=None):
     target = find_target(target)
     if location is None:
         location = "ctio"
-    if not isinstance(location, apcoo.EarthLocation):
-        location = apcoo.EarthLocation.of_site(location)
+    if not isinstance(location, apc.EarthLocation):
+        location = apc.EarthLocation.of_site(location)
 
     if time is None:
         time = apt.Time.now()
     if not isinstance(time, apt.Time):
         time = apt.Time(time)
 
-    return apcoo.get_moon(time, location=location).separation(target)
+    return apc.get_moon(time, location=location).separation(target)
 
 
 def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbose=False):
@@ -302,8 +303,8 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
         extra_info = []
 
     try:
-        ra_dec = apcoo.SkyCoord([f"{target}"], unit=(apu.hour, apu.degree),
-                                equinox=equinox)
+        ra_dec = apc.SkyCoord([f"{target}"], unit=(u.hour, u.degree),
+                              equinox=equinox)
     except ValueError:
         if not isinstance(coo_files, (list, tuple)):
             coo_files = [coo_files]
@@ -378,9 +379,9 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
                     info = info.replace(")", "")
                     extra.append(query[info.upper()][0])
 
-        ra_dec = apcoo.SkyCoord('{0:s} {1:s}'.format(ra, dec),
-                                unit=(apu.hour, apu.degree),
-                                equinox=equinox)
+        ra_dec = apc.SkyCoord('{0:s} {1:s}'.format(ra, dec),
+                              unit=(u.hour, u.degree),
+                              equinox=equinox)
         if verbose:
             print("success! \n  {})".format(ra_dec,))
 
@@ -559,33 +560,33 @@ def blackbody(temperature, wav_freq, unit=None):
         wav_frequency unit is invalid
     """
 
-    if not isinstance(temperature, apu.Quantity):
-        temperature = temperature * apu.K
-    if not isinstance(wav_freq, apu.Quantity):
+    if not isinstance(temperature, u.Quantity):
+        temperature = temperature * u.K
+    if not isinstance(wav_freq, u.Quantity):
         if unit is None:
-            wav_freq = wav_freq * apu.micron
-        elif isinstance(unit, apu.Unit):
+            wav_freq = wav_freq * u.micron
+        elif isinstance(unit, u.Unit):
             wav_freq = wav_freq * unit
         else:
             raise ValueError("Specified unit ({0:s}) is not a valid "
                              "astropy.unit".format(unit,))
 
-    if wav_freq.cgs.unit == apu.cm:
+    if wav_freq.cgs.unit == u.cm:
         use_length = True
-    elif wav_freq.cgs.unit == 1 / apu.s:
+    elif wav_freq.cgs.unit == 1 / u.s:
         use_length = False
     else:
         raise ValueError("Units for x must be either length or frequency, "
                          "not {0:s}".format(wav_freq.unit,))
 
-    h_kb_t = apc.h / apc.k_B / temperature
+    h_kb_t = c.h / c.k_B / temperature
 
     if use_length:
-        blackbody_return = 2 * apc.h * apc.c ** 2 / (wav_freq ** 5) / (np.exp(h_kb_t * apc.c / wav_freq) - 1)
-        blackbody_return = blackbody_return.to(apu.erg / apu.cm ** 2 / apu.cm / apu.s) / apu.sr
+        blackbody_return = 2 * c.h * c.c ** 2 / (wav_freq ** 5) / (np.exp(h_kb_t * c.c / wav_freq) - 1)
+        blackbody_return = blackbody_return.to(u.erg / u.cm ** 2 / u.cm / u.s) / u.sr
     else:
-        blackbody_return = 2 * apc.h * wav_freq ** 3 / (apc.c ** 2) / (np.exp(h_kb_t * wav_freq) - 1)
-        blackbody_return = blackbody_return.to(apu.erg / apu.cm ** 2 / apu.Hz / apu.s) / apu.sr
+        blackbody_return = 2 * c.h * wav_freq ** 3 / (c.c ** 2) / (np.exp(h_kb_t * wav_freq) - 1)
+        blackbody_return = blackbody_return.to(u.erg / u.cm ** 2 / u.Hz / u.s) / u.sr
 
     return blackbody_return
 
@@ -635,7 +636,7 @@ def getfilter(name,
     filters = glob.glob(filter_dir + '/*.dat')
 
     if filter_unit is None:
-        filter_unit = apu.AA
+        filter_unit = u.AA
 
     # if cut-in and cut-out values were specified
     if isinstance(name, (list, tuple)) and len(name) == 2:
@@ -674,7 +675,7 @@ def getfilter(name,
         for item in items:
             fld, val = item.split(':')
             if fld.lstrip() == 'units':
-                filter_unit = getattr(apu, val.lstrip())
+                filter_unit = getattr(u, val.lstrip())
             if fld.lstrip() == 'fct':
                 fct = float(val.lstrip())
 
@@ -686,7 +687,7 @@ def getfilter(name,
 
     if force_increasing:
         axis, transmission = pa.sortmany(axis, transmission)
-        axis = apu.Quantity(axis)
+        axis = u.Quantity(axis)
         transmission = np.array(transmission)
 
     return axis, transmission
@@ -727,7 +728,7 @@ def applyfilter(name, spectra,
     filter_wav, filter_transmission = getfilter(name, filter_dir)
     filter_unit = filter_wav.unit
     if output_unit is None:
-        output_unit = apu.micron
+        output_unit = u.micron
     wav_min, wav_max = filter_wav[0], filter_wav[-1]
     us = it.UnivariateSpline(filter_wav, filter_transmission, s=0.0)
 
@@ -735,19 +736,19 @@ def applyfilter(name, spectra,
         if wav_freq is None:
             raise ValueError(
                 "wav_freq needs to be specified if spectra is given")
-        if not isinstance(wav_freq, apu.Quantity):
+        if not isinstance(wav_freq, u.Quantity):
             wav_freq *= filter_unit
 
-        if wav_freq.cgs.unit == apu.cm:
-            if not isinstance(spectra, apu.Quantity):
-                spectra *= apu.erg / apu.cm ** 2 / apu.cm / apu.s / apu.sr
-        elif wav_freq.cgs.unit == 1 / apu.s:
-            if not isinstance(spectra, apu.Quantity):
-                spectra *= apu.erg / apu.cm ** 2 / apu.Hz / apu.s / apu.sr
-            spectra = spectra.to(apu.erg / apu.cm ** 2 / apu.cm / apu.s / apu.sr,
-                                 equivalencies=apu.spectral_density(wav_freq))[::-1]
-            wav_freq = wav_freq.to(apu.nm,
-                                   equivalencies=apu.spectral())[::-1]
+        if wav_freq.cgs.unit == u.cm:
+            if not isinstance(spectra, u.Quantity):
+                spectra *= u.erg / u.cm ** 2 / u.cm / u.s / u.sr
+        elif wav_freq.cgs.unit == 1 / u.s:
+            if not isinstance(spectra, u.Quantity):
+                spectra *= u.erg / u.cm ** 2 / u.Hz / u.s / u.sr
+            spectra = spectra.to(u.erg / u.cm ** 2 / u.cm / u.s / u.sr,
+                                 equivalencies=u.spectral_density(wav_freq))[::-1]
+            wav_freq = wav_freq.to(u.nm,
+                                   equivalencies=u.spectral())[::-1]
             print("WARNING: frequency domain filtering has not been tested "
                   "thoroughly!!")
         else:
@@ -847,4 +848,106 @@ def planeteff(au=1.0, tstar=6000, rstar=1.0, albedo=0.0):
     -------
     float
     """
-    return tstar * np.sqrt((rstar * apc.R_sun / au / apc.au) * np.sqrt(1 - albedo) / 2.0)
+    return tstar * np.sqrt((rstar * c.R_sun / au / c.au) * np.sqrt(1 - albedo) / 2.0)
+
+
+def hour_angle_for_altitude(dec, site_lat, altitude):
+    """
+    Returns hour angle at which the object reaches the requested altitude
+
+    Parameters
+    ----------
+    dec
+    site_lat
+    altitude
+
+    Returns
+    -------
+      Hour angle quantity,or 13 if the declination never reaches the altitude
+    """
+    cos_ha = (np.sin(altitude) - np.sin(dec) * np.sin(site_lat)
+              ) / np.cos(dec) / np.cos(site_lat)
+    if np.abs(cos_ha) > 1:
+        return 12*u.hourangle
+
+    return (np.arccos(cos_ha)*u.radian).to(u.hourangle)
+
+
+def find_time_for_altitude(location, time,
+                           search_delta_hour: float = 2,
+                           search_span_hour: float = 16,
+                           fine_span_min: float = 20,
+                           ref_altitude_deg: Union[str, float] = "min",
+                           find: str = "next",
+                           body: str = "sun"):
+    """returns times at altitude with many parameters. The search span is centered around `time` and, by default,
+     it searches half a day before and half a day after.
+
+    Parameters
+    ----------
+    find: str
+       find can be: 'next', 'previous'/'prev', or 'around'
+    time: apt.Time
+       starting time for the search. It must be within 4 hours of the middle of day to work with default parameters.
+    ref_altitude_deg : float, str
+       Altitude for which to compute the time. It can also be "min" or "max"
+    """
+    find_actions = {"next": 1,
+                    "previous": -1,
+                    "prev": -1,
+                    "around": 1}
+    multiplier = find_actions[find]
+
+    rough_offset = - (find == 'around') * search_span_hour * u.hour / 2
+
+    rough_span = time + np.arange(0, search_span_hour, search_delta_hour) * multiplier * u.hour + rough_offset
+
+    altitude_rough = apc.get_body(body, rough_span,
+                                location=location).transform_to(apc.AltAz(obstime=rough_span,
+                                                                        location=location)
+                                                                ).alt
+
+    if isinstance(ref_altitude_deg, str):
+        central_idx = getattr(np, f"arg{ref_altitude_deg}")(altitude_rough)
+        ref_altitude = 0
+        vertex = True
+    else:
+        ref_altitude = ref_altitude_deg * u.degree
+        above = altitude_rough > ref_altitude
+        central_idx = list(above).index(not above[0])
+        vertex = False
+
+    # following is number hours from time that has the requested elevation, roughly
+    closest_idx = pa.parabolic_x(altitude_rough - ref_altitude, central_idx=central_idx, vertex=vertex) + central_idx
+    closest_rough = closest_idx * search_delta_hour * multiplier * u.hour + rough_offset
+
+    fine_span = time + closest_rough + np.arange(-fine_span_min, fine_span_min) * u.min
+
+    sun = apc.get_body(body, fine_span)
+    altitude = sun.transform_to(apc.AltAz(obstime=fine_span, location=location)).alt
+
+    if isinstance(ref_altitude_deg, str):
+        central_idx = getattr(np, f"arg{ref_altitude_deg}")(altitude)
+        vertex = True
+    else:
+        central_idx = np.argmin(np.abs(altitude - ref_altitude))
+        vertex = False
+
+    # following is number hours from time that has the requested elevation, roughly
+    closest_idx = pa.parabolic_x(altitude - ref_altitude,
+                                 central_idx=central_idx,
+                                 vertex=vertex) + central_idx
+
+    if not (0 < closest_idx < len(altitude) - 1):
+        if isinstance(ref_altitude_deg, str):
+            label = f'{ref_altitude_deg} altitude'
+        else:
+            label = f'altitude {ref_altitude_deg} deg'
+        newline = '\n'
+
+        warnings.warn(f"It's possible that {label} was not found correctly "
+                      f"{'after' if find else 'before'} {time} for body {body}.{newline}"
+                      f"minimum index ({closest_idx}) on border: {altitude}{newline}"
+                      f"But not quite what was expected from rough approx: {altitude_rough}")
+
+    return time + (closest_idx - fine_span_min) * u.min + closest_rough

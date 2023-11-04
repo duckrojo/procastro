@@ -214,9 +214,12 @@ class Nightly:
         sun_alt = np.array(apc.get_body("sun", the_day).transform_to(apc.AltAz(obstime=the_day, location=self._observatory)
                                                              ).alt.degree)
         above = list(sun_alt > self._constraints['night_angle'])
+
         start_night_idx = above.index(False)
         self._start_night = the_day[start_night_idx]
         self._end_night = the_day[above.index(True, start_night_idx + 1)]
+
+
         self._moon_coord = apc.get_body("moon", self._civil_midday + 12 * u.hour, location=self._observatory)
         times_at_sets = apt.Time([self._start_night, self._end_night])
         self._sidereal_at_sets = times_at_sets.sidereal_time('apparent', self._observatory).hourangle
@@ -254,11 +257,8 @@ class Nightly:
     def _hour_angle_for_altitude(self, skycoord, altitude):
         if not isinstance(altitude, u.Quantity):
             altitude = (altitude*u.degree).to(u.radian).value
-        dec = skycoord.dec.radian
 
-        cos_ha = (np.sin(altitude) - np.sin(dec)*np.sin(self._observatory.lat.radian)
-                  ) / np.cos(dec) / np.cos(self._observatory.lat.radian)
-        return (np.arccos(cos_ha)*u.radian).to(u.hourangle)
+        return paa.hour_angle_for_altitude(skycoord.dec.radian, self._observatory.lat.radian, altitude)
 
     def _ephemeris(self):
         planets = self._planets.copy()
@@ -266,7 +266,7 @@ class Nightly:
         skycoords = apc.SkyCoord(list(planets['star_coords']))
         hour_angle_sets = self._hour_angle_for_altitude(skycoords, self._constraints['altitude_min'])
         # following is for not filtering circumpolar stars
-        hour_angle_sets[np.isnan(hour_angle_sets)] = 15 * u.hourangle
+        hour_angle_sets[np.isnan(hour_angle_sets)] = 13 * u.hourangle
 
         planets['starrise'] = (self._start_night+(skycoords.ra.hourangle - self._sidereal_at_sets[0]
                                                   - hour_angle_sets.value)*u.sday/24).jd
@@ -531,7 +531,7 @@ class Nightly:
 
 
 if __name__ == '__main__':
-    a = Nightly("lasilla")
-    a.plot("2023-09-20",
+    a = Nightly("paranal")
+    a.plot("2023-11-12",
            mark_ra=(8, 15),  # Highlighting a RA range can help identify TESS targets, among others
            )

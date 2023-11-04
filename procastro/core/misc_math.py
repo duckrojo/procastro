@@ -133,7 +133,7 @@ def parabolic_x(yy_or_xx: list,
 
     if central_idx is not None:
         if not (0 < central_idx < len(yy_or_xx) - 1):
-            raise ValueError(f"central_idx has to be within [1, {len(yy_or_xx)-1}], cannot be a border of `yy_or_xx`")
+            raise ValueError(f"central_idx has to be within [1, {len(yy_or_xx)-1}] (not {central_idx}), cannot be a border of `yy_or_xx`")
         yy_or_xx = yy_or_xx[central_idx - 1: central_idx + 2]
         if yy is not None:
             yy = yy[central_idx - 1: central_idx + 2]
@@ -160,5 +160,3 @@ def parabolic_x(yy_or_xx: list,
     xz = xv + delta * np.array([1, -1]) / (2 * a)
 
     return xz[np.argmin(np.abs(xz - x2))]
-
-
