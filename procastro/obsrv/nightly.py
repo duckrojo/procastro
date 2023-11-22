@@ -269,10 +269,10 @@ class Nightly:
         # following is for not filtering circumpolar stars
         hour_angle_sets[np.isnan(hour_angle_sets)] = 13 * u.hourangle
 
-        planets['starrise'] = (self._start_night+(skycoords.ra.hourangle - self._sidereal_at_sets[0]
-                                                  - hour_angle_sets.value)*u.sday/24).jd
-        planets['starset'] = (self._start_night+(skycoords.ra.hourangle - self._sidereal_at_sets[0]
-                                                 + hour_angle_sets.value)*u.sday/24).jd
+        delta_ra = skycoords.ra.hourangle - self._sidereal_at_sets[0]
+        delta_ra[delta_ra < -12] += 24
+        planets['starrise'] = (self._start_night+(delta_ra - hour_angle_sets.value)*u.sday/24).jd
+        planets['starset'] = (self._start_night+(delta_ra + hour_angle_sets.value)*u.sday/24).jd
 
         planets['start_observation'] = planets['transit_i'] - self._constraints['baseline_max']/24
         planets['start_observation'] = _choose(planets, 'start_observation', self._start_night.jd, return_max=True)
@@ -532,7 +532,7 @@ class Nightly:
 
 
 if __name__ == '__main__':
-    a = Nightly("paranal")
-    a.plot("2023-11-12",
+    a = Nightly("lasilla")
+    a.plot("2023-11-21",
            mark_ra=(8, 15),  # Highlighting a RA range can help identify TESS targets, among others
            )
