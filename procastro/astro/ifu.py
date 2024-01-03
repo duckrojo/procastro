@@ -454,7 +454,8 @@ def optimal_radius_selection_IFU(cube_path,
                                  error=3, 
                                  plots=True, 
                                  percentage=20,
-                                 save_plots=None):
+                                 save_plots=None,
+                                 N_max=None):
     """
     Determines the optimal radius for disk integration of spectra by analyzing a small, flat range
     of the spectra and observing its behavior as the radius of the integrated area increases.
@@ -473,6 +474,7 @@ def optimal_radius_selection_IFU(cube_path,
         plots (bool): True if you want to visualize plots.
         percentage (float): Percentage of the initial data to consider for fitting.
         save_plots (str): If a path is provided, the images are save in this directory.
+        N_max (int): If a value is provided, the algorithm uses this amount of spaxels as the upper limit
 
     Returns:
         radius (float): Optimal radius for disk integration in arcseconds.
@@ -577,6 +579,12 @@ def optimal_radius_selection_IFU(cube_path,
         if save_plots != None:
             plt.savefig(save_plots + "/SignalToNoiseIncrease.png")
         plt.show()
+
+    if N_max != None:
+        if radius_spaxel[indiceRadio] > N_max:
+            N_max = min(radius_spaxel, key=lambda x: abs(N_max - x))
+            indiceRadio = np.where(radius_spaxel == N_max)[0][0]
+            #indiceRadio = radius_spaxel.index(N_max)
 
     print(" ")
     print("Optimal radius (arcsec): ", radius[indiceRadio])
@@ -1061,7 +1069,8 @@ def process_my_ifu_obs(fits_path,
                        error=1, 
                        path_to_save = None, 
                        comment = None, 
-                       save_plots = None):
+                       save_plots = None,
+                       N_max=None):
     """
     Computes a single disk-integrated spectrum from observations with IFUs. The algorithm involves three steps:
     1. Corrects atmospheric dispersion (optional for x and y directions).
@@ -1085,6 +1094,7 @@ def process_my_ifu_obs(fits_path,
         path_to_save (str): Path where the final data will be saved.
         comment (str): Special comment that will be saved in the header of the final FITS file.
         save_plots (str): If a path is provided, the images are save in this directory.
+        N_max (int): If a value is provided, the algorithm uses this amount of spaxels as the upper limit
 
     Returns:
         final_data (array): Disk-integrated spectra of the data-cube
@@ -1132,7 +1142,8 @@ def process_my_ifu_obs(fits_path,
                                                           error=error,
                                                           dim_x=dx*(pix_x + 1), 
                                                           dim_y=dy*(pix_y + 1),
-                                                          save_plots=save_plots)
+                                                          save_plots=save_plots,
+                                                          N_max=N_max)
     
     final_data, wave = Disk_integrate(" ", 
                                 center, 
