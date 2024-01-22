@@ -165,7 +165,7 @@ class AstroCalib(object):
                                       f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
                                       f"not found on {label} frames..."
                                       f"using full figure instead")
-                    label_trim = (1, data.shape[0], 1, data.shape[1])
+                    label_trim = (1, tdata.shape[0], 1, tdata.shape[1])
                 else:
                     label_trim = trim[0]
                 trim.append(label_trim)

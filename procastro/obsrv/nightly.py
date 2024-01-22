@@ -30,6 +30,7 @@ import pyvo as vo
 import pyvo.dal.exceptions
 
 import procastro as pa
+import procastro.astro as paa
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -211,13 +212,16 @@ class Nightly:
         self._date = date
         self._civil_midday = apt.Time(date) + 12 * u.hour - (int(self._observatory.lon.degree / 15)) * u.hour
         the_day = self._civil_midday + np.linspace(0, 24, n_points) * u.hour
-        sun_alt = np.array(apc.get_sun(the_day).transform_to(apc.AltAz(obstime=the_day, location=self._observatory)
+        sun_alt = np.array(apc.get_body("sun", the_day).transform_to(apc.AltAz(obstime=the_day, location=self._observatory)
                                                              ).alt.degree)
         above = list(sun_alt > self._constraints['night_angle'])
+
         start_night_idx = above.index(False)
         self._start_night = the_day[start_night_idx]
         self._end_night = the_day[above.index(True, start_night_idx + 1)]
-        self._moon_coord = apc.get_moon(self._civil_midday + 12 * u.hour, location=self._observatory)
+
+
+        self._moon_coord = apc.get_body("moon", self._civil_midday + 12 * u.hour, location=self._observatory)
         times_at_sets = apt.Time([self._start_night, self._end_night])
         self._sidereal_at_sets = times_at_sets.sidereal_time('apparent', self._observatory).hourangle
 
@@ -234,9 +238,9 @@ class Nightly:
         self._planets['sy_pmra'].fillna(0, inplace=True)
         self._planets['sy_pmdec'].fillna(0, inplace=True)
 
-        pm_right_ascension = planets['sy_pmra'] * u.mas / u.yr
-        pm_declination = planets['sy_pmdec'] * u.mas / u.yr
-        coords = apc.SkyCoord(planets['ra'] * u.degree, planets['dec'] * u.degree,
+        pm_right_ascension = planets['sy_pmra'].array * u.mas / u.yr
+        pm_declination = planets['sy_pmdec'].array * u.mas / u.yr
+        coords = apc.SkyCoord(planets['ra'].array * u.degree, planets['dec'].array * u.degree,
                               frame='icrs', pm_ra_cosdec=pm_right_ascension, pm_dec=pm_declination,
                               equinox=equinox_db)
         self._planets['star_coords'] = coords
@@ -254,21 +258,21 @@ class Nightly:
     def _hour_angle_for_altitude(self, skycoord, altitude):
         if not isinstance(altitude, u.Quantity):
             altitude = (altitude*u.degree).to(u.radian).value
-        dec = skycoord.dec.radian
 
-        cos_ha = (np.sin(altitude) - np.sin(dec)*np.sin(self._observatory.lat.radian)
-                  ) / np.cos(dec) / np.cos(self._observatory.lat.radian)
-        return (np.arccos(cos_ha)*u.radian).to(u.hourangle)
+        return paa.hour_angle_for_altitude(skycoord.dec.radian, self._observatory.lat.radian, altitude)
 
     def _ephemeris(self):
         planets = self._planets.copy()
 
         skycoords = apc.SkyCoord(list(planets['star_coords']))
         hour_angle_sets = self._hour_angle_for_altitude(skycoords, self._constraints['altitude_min'])
-        planets['starrise'] = (self._start_night+(skycoords.ra.hourangle - self._sidereal_at_sets[0]
-                                                  - hour_angle_sets.value)*u.sday/24).jd
-        planets['starset'] = (self._start_night+(skycoords.ra.hourangle - self._sidereal_at_sets[0]
-                                                 + hour_angle_sets.value)*u.sday/24).jd
+        # following is for not filtering circumpolar stars
+        hour_angle_sets[np.isnan(hour_angle_sets)] = 13 * u.hourangle
+
+        delta_ra = skycoords.ra.hourangle - self._sidereal_at_sets[0]
+        delta_ra[delta_ra < -12] += 24
+        planets['starrise'] = (self._start_night+(delta_ra - hour_angle_sets.value)*u.sday/24).jd
+        planets['starset'] = (self._start_night+(delta_ra + hour_angle_sets.value)*u.sday/24).jd
 
         planets['start_observation'] = planets['transit_i'] - self._constraints['baseline_max']/24
         planets['start_observation'] = _choose(planets, 'start_observation', self._start_night.jd, return_max=True)
@@ -529,6 +533,6 @@ class Nightly:
 
 if __name__ == '__main__':
     a = Nightly("lasilla")
-    a.plot("2023-05-03",
+    a.plot("2023-11-21",
            mark_ra=(8, 15),  # Highlighting a RA range can help identify TESS targets, among others
            )

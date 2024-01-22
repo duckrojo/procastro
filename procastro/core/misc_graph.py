@@ -436,6 +436,22 @@ def figaxes_xdate(x, axes=None, clear=True):
     return f, ax, retx
 
 
+def change_axes_projection(axes: Axes,
+                           projection: Union[str, Axes],
+                           keep_content: bool = False):
+    """Changes the projection of existing axes. This is done by the destruction of current axis
+     and creation of a new one with the new projection in the same position as the old one"""
+
+    if not keep_content:
+        raise NotImplementedError("Currently, changing axes projection loses the content")
+
+    pos = axes.get_position()
+    fig = axes.figure
+    ax: Axes = fig.add_subplot(projection=projection)
+    ax.set_position(pos)
+    axes.remove()
+
+
 def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
             force_new: bool = True,
             clear: bool = True,

@@ -323,7 +323,7 @@ class ObsCalc(object):
                       self._target.dec.to_string(sep=':')))
 
         transit_epoch, transit_period, transit_length = \
-            paa.get_transit_ephemeris(target, os.path.dirname(__file__))
+            paa.get_transit_ephemeris(target)
         print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
 
         if transit_epoch is None or transit_period is None:

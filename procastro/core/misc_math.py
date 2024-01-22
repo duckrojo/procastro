@@ -19,8 +19,10 @@
 #
 
 
-__all__ = ['gauss', 'bipol',
+__all__ = ['gauss', 'bipol', 'parabolic_x',
            ]
+
+from typing import Optional
 
 import numpy as np
 import inspect
@@ -106,3 +108,55 @@ def bipol(coef, x, y):
             plane += coef[i, j] * (x ** j) * (y ** (i - j))
 
     return plane
+
+
+def parabolic_x(yy_or_xx: list,
+                yy: Optional[list] = None,
+                central_idx: int = None,
+                vertex: bool = True):
+    """
+    Adapted and modified to get the unknowns for defining a parabola:
+    http://stackoverflow.com/questions/717762/how-to-calculate-the-vertex-of-a-parabola-given-three-points
+
+    Parameters
+    ----------
+    yy_or_xx: list
+        if `yy` is present, then it is `xx`. Else it is `yy` and x-axis becomes [-1, 0, 1]
+    yy: list, array, 3-element if central_idx is None
+    central_idx : int, optional
+    If specified, then extract the three x&y points around index idx, otherwise they are expected as
+     three-element array
+
+    vertex : bool
+       If True then return x position of vertex, otherwise return closest zero-crossing to middle point
+    """
+
+    if central_idx is not None:
+        if not (0 < central_idx < len(yy_or_xx) - 1):
+            raise ValueError(f"central_idx has to be within [1, {len(yy_or_xx)-1}] (not {central_idx}), cannot be a border of `yy_or_xx`")
+        yy_or_xx = yy_or_xx[central_idx - 1: central_idx + 2]
+        if yy is not None:
+            yy = yy[central_idx - 1: central_idx + 2]
+
+    if yy is None:
+        yy = yy_or_xx
+        xx = [-1, 0, 1]
+    else:
+        xx = yy_or_xx
+
+    x1, x2, x3 = xx
+    y1, y2, y3 = yy
+
+    denominator = (x1 - x2) * (x1 - x3) * (x2 - x3)
+    a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denominator
+    b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / denominator
+
+    xv = -b / (2*a)
+    if vertex:
+        return xv
+
+    c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / denominator
+    delta = np.sqrt(b * b - 4 * a * c)
+    xz = xv + delta * np.array([1, -1]) / (2 * a)
+
+    return xz[np.argmin(np.abs(xz - x2))]
