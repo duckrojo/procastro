@@ -27,6 +27,7 @@ from typing import Optional
 import numpy as np
 import inspect
 import scipy.signal as sg
+import astropy.units as u
 
 
 def gauss(grid, sigma, center=None, norm=False, ndim=None):
@@ -152,11 +153,17 @@ def parabolic_x(yy_or_xx: list,
     b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / denominator
 
     xv = -b / (2*a)
+    # do not return quantity if x is not.
+    if not isinstance(xx, u.Quantity) and isinstance(xv, u.Quantity):
+        key = lambda x: x.to(u.dimensionless_unscaled).value
+    else:
+        key = lambda x: x
+
     if vertex:
-        return xv
+        return key(xv)
 
     c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 * (x1 - x2) * y3) / denominator
     delta = np.sqrt(b * b - 4 * a * c)
     xz = xv + delta * np.array([1, -1]) / (2 * a)
 
-    return xz[np.argmin(np.abs(xz - x2))]
+    return key(xz[np.argmin(np.abs(xz - x2))])
