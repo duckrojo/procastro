@@ -1,5 +1,5 @@
 ads==0.12.3
-astropy==5.1
+astropy==5.3.3
 astroquery==0.4.6
 ExifRead==3.0.0
 matplotlib==3.5.3
