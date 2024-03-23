@@ -2,4 +2,7 @@
 /deprecated/
 /docs/_build/
 /procastro.egg-info/
-procastro/__pycache__/__init__.cpython-39.pyc
+procastro/__pycache__/
+procastro/astro/__pycache__/
+procastro/core/__pycache__/
+procastro/obsrv/__pycache__/
