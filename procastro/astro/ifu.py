@@ -1,9 +1,9 @@
-from astropy.utils.data import get_pkg_data_filename
-from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
-from astropy.io import fits
 import numpy as np
-
+import matplotlib.pyplot as plt
+import astropy
+from astropy.utils.data import get_pkg_data_filename
+from astropy.io import fits
+from scipy.optimize import curve_fit
 
 
 def closest(x, arr):
@@ -23,7 +23,7 @@ def closest(x, arr):
     return index
 
 
-def visualize(cube_path, save_plots=None):
+def visualize(cube_path, save_plots=None, plots=True):
     """
     Provides a quick visualization of the data, allowing you to check the dimensions
     of the slit, data quality, and object center. Also returns important parameters.
@@ -57,13 +57,14 @@ def visualize(cube_path, save_plots=None):
         for j in range(pix_y):
             medians[j, i] = np.nanpercentile(data[:, j, i], 50)
 
-    fig, axes = plt.subplots(1, 1, figsize=(6, 10))
-    axes.set_title("Visualization of the data cube")
-    axes.imshow(medians, origin="lower", aspect=dy/dx)
-    axes.set_ylabel("y-spaxels")
-    axes.set_xlabel("x-spaxels")
-    if save_plots != None:
-        plt.savefig(save_plots + "/Visualization_RawData.png")
+    if plots==True:
+        fig, axes = plt.subplots(1, 1, figsize=(6, 10))
+        axes.set_title("Visualization of the data cube")
+        axes.imshow(medians, origin="lower", aspect=dy/dx)
+        axes.set_ylabel("y-spaxels")
+        axes.set_xlabel("x-spaxels")
+        if save_plots != None:
+            plt.savefig(save_plots + "/Visualization_RawData.png")
 
     print(" ")
     print("Size of the data: (",N ,", ", pix_y, ", ", pix_x, ")")
@@ -453,7 +454,8 @@ def optimal_radius_selection_IFU(cube_path,
                                  error=3, 
                                  plots=True, 
                                  percentage=20,
-                                 save_plots=None):
+                                 save_plots=None,
+                                 N_max=None):
     """
     Determines the optimal radius for disk integration of spectra by analyzing a small, flat range
     of the spectra and observing its behavior as the radius of the integrated area increases.
@@ -472,6 +474,7 @@ def optimal_radius_selection_IFU(cube_path,
         plots (bool): True if you want to visualize plots.
         percentage (float): Percentage of the initial data to consider for fitting.
         save_plots (str): If a path is provided, the images are save in this directory.
+        N_max (int): If a value is provided, the algorithm uses this amount of spaxels as the upper limit
 
     Returns:
         radius (float): Optimal radius for disk integration in arcseconds.
@@ -577,6 +580,12 @@ def optimal_radius_selection_IFU(cube_path,
             plt.savefig(save_plots + "/SignalToNoiseIncrease.png")
         plt.show()
 
+    if N_max != None:
+        if radius_spaxel[indiceRadio] > N_max:
+            N_max = min(radius_spaxel, key=lambda x: abs(N_max - x))
+            indiceRadio = np.where(radius_spaxel == N_max)[0][0]
+            #indiceRadio = radius_spaxel.index(N_max)
+
     print(" ")
     print("Optimal radius (arcsec): ", radius[indiceRadio])
     print("Number of spaxels inside the optimal radius: ", radius_spaxel[indiceRadio])
@@ -655,6 +664,225 @@ def Disk_integrate(cube_path,
 
     return flux_final, wave
 
+def integrate_extended(cube_path,
+                       data=np.array([]), 
+                       wave=np.array([]),
+                       mode="all", 
+                       discard=[], 
+                       A=1.5, 
+                       lower=None,
+                       upper=None, 
+                       save_plots=None, 
+                       aspect=0.2564):
+    """
+    Integrates the pixels of the data cube to create a single final spectrum. 
+    This function operates in two modes: "all", which integrates all pixels except those specified
+    in the discard parameter, and "drop," which analyzes if there are pixels too different from the others.
+    In the "drop" mode, any pixel detected as an outlier is not considered in the integration. 
+    "drop fitting is a variation of "drop" mode but uses a line fitting to get rid of the linear tendency of the data. 
+    For this last one is important to choose a linear section of the spectra with the parameters upper ad lower.
+
+
+    Args:
+        cube_path (str): Path to the data cube.
+        data (3D array): 3D array containing the data cube.
+        wave (array): Array containing the wavelengths of the data.
+        mode (str): Mode of integration to be used, which can be "all" or "drop."
+        discard (array): Array of tuples indicating the pixels that should not be considered in the integration.
+        A (float): Parameter to determine if a pixel is an outlier (recommended: 1.5).
+        lower (float): Lower limit in wavelength for studying the dispersion in the pixels.
+        upper (float): Upper limit in wavelength for studying the dispersion in the pixels.
+        save_plots (str): Path where the generated images should be saved.
+        aspect (float): Value to control the aspect ratio of the displayed images.
+
+    Returns:
+        flux_final (array): The final integrated spectrum.
+        wave (array): The wavelength array for the final spectrum.
+    """
+
+    if len(data) == 0:
+        obs = get_pkg_data_filename(cube_path)
+        hdul = fits.open(cube_path)
+        header = hdul[0].header
+        N = header["NAXIS3"]
+        wave = np.zeros(N)
+        pix_x = header["NAXIS1"]
+        pix_y = header["NAXIS2"]
+        #obtain the data and wavelength
+        data = fits.getdata(obs, ext=0)[:, :, :]
+
+        for i in range(N):
+            wave[i] = (i+header["CRPIX3"])*header["CDELT3"] + header["CRVAL3"]
+
+    if lower != None:
+        lower = closest(lower, wave)
+    if upper != None:
+        upper = closest(upper, wave)
+    
+    if (len(data) > 0) and (len(wave) == 0):
+        print(" ")
+        print("wave= ")
+        print("Error: If you provide the data, also should provide the wavelength")
+
+    if len(data) > 0:
+        N = len(data)
+        pix_x = len(data[0, 0, :])
+        pix_y = len(data[0, :, 0])
+
+
+    pix_x = len(data[0, 0, :])
+    pix_y = len(data[0, :, 0])
+
+    if mode =="all":
+        flux_final= np.zeros(N)
+        for i in range(pix_x):
+            for j in range(pix_y):
+                if (j, i) not in discard:
+                    flux_final = flux_final + data[:, j, i]
+
+        return flux_final, wave
+
+    if mode == "drop":
+
+        medianas = np.zeros((pix_y, pix_x))
+        for i in range(pix_x):
+            for j in range(pix_y):
+                medianas[j, i] = np.nanpercentile(data[lower:upper, j, i], 50)
+        medianas = medianas / np.max(medianas)
+        medianas_raw = medianas.copy()
+
+        leveled_data = data / medianas
+
+        median_flux = np.zeros(N)
+        for l in range(N):
+            median_flux[l] = np.nanpercentile(leveled_data[l, :, :], 50)
+        flux_final= np.zeros(N)
+        deviations = np.zeros((pix_y, pix_x))
+        for i in range(pix_x):
+            for j in range(pix_y):
+                flux = leveled_data[:, j, i]
+                dif = flux[lower:upper] - median_flux[lower:upper]
+                deviations[j, i] = np.std(dif)
+        
+        iqr = np.nanpercentile(deviations, 75) - np.nanpercentile(deviations, 25)
+        limit = np.nanpercentile(deviations, 75) + A*iqr
+        #deviations = deviations / iqr
+
+        for i in range(pix_x):
+            for j in range(pix_y):
+                if (j, i) not in discard:
+                    if deviations[j, i] > limit:
+                        print("pixel (y="+str(j)+", x="+str(i)+") considered noisy")
+                        medianas[j, i] = None
+                        pass
+                    elif deviations[j, i] < limit:
+                        flux_final = flux_final + data[:, j, i]
+                if (j, i) in discard:
+                    print("pixel (y="+str(j)+", x="+str(i)+") discarded")
+                    medianas[j, i] = None
+
+
+
+        fig, axes = plt.subplots(1, 3, figsize=(6, 21))
+        axes[0].set_title("Visualization")
+        im0 = axes[0].imshow(medianas_raw, origin="lower", aspect=aspect)
+        #bar0 = plt.colorbar(im0)
+        axes[0].set_ylabel("y-spaxels")
+        axes[0].set_xlabel("x-spaxels")
+
+        axes[2].set_title("Integrated pixels")
+        im2 = axes[2].imshow(medianas, origin="lower", aspect=aspect)
+        #bar2 = plt.colorbar(im2)
+        axes[2].set_ylabel("y-spaxels")
+        axes[2].set_xlabel("x-spaxels")
+
+        axes[1].set_title("Noise per pixel")
+        im1 = axes[1].imshow(deviations, origin="lower", aspect=aspect)
+        #bar1 = plt.colorbar(im1)
+        axes[1].set_ylabel("y-spaxels")
+        axes[1].set_xlabel("x-spaxels")
+        if save_plots != None:
+            plt.savefig(save_plots + "/Visualization_RawData.png")
+
+        return flux_final, wave
+    
+
+    if mode == "drop fitting":
+
+        def linear(x, m, c):
+            return x*m+c
+
+        n = int(upper-lower)
+        centered_data = np.zeros((n, pix_y, pix_x))
+
+        
+        for j in range(pix_y):
+            for i in range(pix_x):
+                popt, pcov = curve_fit(linear, wave[lower:upper], data[lower:upper, j, i])
+                m, c = popt
+                centered_data[:, j, i] = data[lower:upper, j, i] - linear(wave[lower:upper], m, c)
+
+        medianas = np.zeros((pix_y, pix_x))
+        for i in range(pix_x):
+            for j in range(pix_y):
+                medianas[j, i] = np.nanpercentile(data[lower:upper, j, i], 50)
+        medianas = medianas / np.max(medianas)
+        medianas_raw = medianas.copy()
+
+        median_centered = np.zeros(n)
+        leveled_data = centered_data / medianas
+        for l in range(n):
+            median_centered[l] = np.nanpercentile(leveled_data[l], 50)
+
+        flux_final= np.zeros(N)
+        deviations = np.zeros((pix_y, pix_x))
+        for i in range(pix_x):
+            for j in range(pix_y):
+                flux = leveled_data[:, j, i]
+                dif = flux - median_centered
+                deviations[j, i] = np.std(dif)
+
+        iqr = np.nanpercentile(deviations, 75) - np.nanpercentile(deviations, 25)
+        limit = np.nanpercentile(deviations, 75) + A*iqr
+
+        for i in range(pix_x):
+            for j in range(pix_y):
+                if (j, i) not in discard:
+                    if deviations[j, i] > limit:
+                        print("pixel (y="+str(j)+", x="+str(i)+") considered noisy")
+                        medianas[j, i] = None
+                        pass
+                    elif deviations[j, i] < limit:
+                        flux_final = flux_final + data[:, j, i]
+                if (j, i) in discard:
+                    print("pixel (y="+str(j)+", x="+str(i)+") discarded")
+                    medianas[j, i] = None
+
+        fig, axes = plt.subplots(1, 3, figsize=(6, 21))
+        axes[0].set_title("Visualization")
+        im0 = axes[0].imshow(medianas_raw, origin="lower", aspect=aspect)
+        #bar0 = plt.colorbar(im0)
+        axes[0].set_ylabel("y-spaxels")
+        axes[0].set_xlabel("x-spaxels")
+
+        axes[2].set_title("Integrated pixels")
+        im2 = axes[2].imshow(medianas, origin="lower", aspect=aspect)
+        #bar2 = plt.colorbar(im2)
+        axes[2].set_ylabel("y-spaxels")
+        axes[2].set_xlabel("x-spaxels")
+
+        axes[1].set_title("Noise per pixel")
+        im1 = axes[1].imshow(deviations, origin="lower", aspect=aspect)
+        #bar1 = plt.colorbar(im1)
+        axes[1].set_ylabel("y-spaxels")
+        axes[1].set_xlabel("x-spaxels")
+        if save_plots != None:
+            plt.savefig(save_plots + "/Visualization_RawData.png")
+
+        return flux_final, wave
+
+    
+
 def save_file(path_to_save, 
               header, 
               data,
@@ -674,6 +902,7 @@ def save_file(path_to_save,
               error=None):
     """
     Save the final data into a FITS file. Also writes in the header all the important information about the final data.
+    This is dessign for disk-integrated spectra.
 
     Args:
         path_to_save (str): Path where the data will be saved.
@@ -770,6 +999,60 @@ def save_file(path_to_save,
     hdul = fits.HDUList([empty_primary])
     hdul.writeto(path_to_save, overwrite=True)
 
+def save_file_extended(path_to_save, 
+                       header, 
+                       data, 
+                       mode_used=None,
+                       discard_pixels=None,
+                       comment=None,
+                       lower=None,
+                       upper=None):
+    """
+    Save the final data into a FITS file and write important information into the header.
+    This function is designed for cases where the observation is entirely within the studied object.
+
+    Args:
+        path_to_save (str): Path where the data will be saved.
+        header (str): Header of the raw data.
+        data (float): Final data to be saved.
+        mode_used (str): Mode of integration to be used, which can be "all" or "drop."
+        discard_pixels (list): List of tuples indicating the pixels that should not be considered in the integration.
+        comment (str): Special comment to be saved in the header of the final FITS file.
+        lower (float): Lower limit in wavelength for studying the dispersion in the pixels.
+        upper (float): Upper limit in wavelength for studying the dispersion in the pixels.
+
+    Returns:
+        None    
+    """
+
+    hdr = header
+
+    if mode_used != None:
+        hdr["SH DI MODE USED"] = mode_used
+    if mode_used == None:
+        hdr["SH DI MODE USED"] = "No information"
+    if discard_pixels != None:
+        hdr["SH DISCARD PIXELS FOR DI"] = str(discard_pixels)
+    if discard_pixels == None:
+        hdr["SH DISCARD PIXELS FOR DI"] = "No information"
+    if comment != None:
+        hdr["SH COMMENT"] = comment
+    if comment == None:
+        hdr["SH COMMENT"] = "No comments"
+    if lower != None:
+        hdr["SH LOWER LIMIT"] = lower
+    if lower == None:
+        hdr["SH LOWER LIMIT"] = "No comments"
+    if upper != None:
+        hdr["SH UPPER LIMIT"] = upper
+    if upper == None:
+        hdr["SH UPPER LIMIT"] = "No comments"
+    
+    empty_primary = fits.PrimaryHDU(data, header=hdr)
+
+    hdul = fits.HDUList([empty_primary])
+    hdul.writeto(path_to_save, overwrite=True)
+
 
 def process_my_ifu_obs(fits_path,
                        lower_limit, 
@@ -786,7 +1069,8 @@ def process_my_ifu_obs(fits_path,
                        error=1, 
                        path_to_save = None, 
                        comment = None, 
-                       save_plots = None):
+                       save_plots = None,
+                       N_max=None):
     """
     Computes a single disk-integrated spectrum from observations with IFUs. The algorithm involves three steps:
     1. Corrects atmospheric dispersion (optional for x and y directions).
@@ -810,10 +1094,11 @@ def process_my_ifu_obs(fits_path,
         path_to_save (str): Path where the final data will be saved.
         comment (str): Special comment that will be saved in the header of the final FITS file.
         save_plots (str): If a path is provided, the images are save in this directory.
+        N_max (int): If a value is provided, the algorithm uses this amount of spaxels as the upper limit
 
     Returns:
-        corrected_data (3D array): Data cube with atmospheric dispersion correction.
-        center (tuple): Calculated center of the new data cube.
+        final_data (array): Disk-integrated spectra of the data-cube
+        wave (array): Wavelength of the final spectra
     """
     
     data, wave, pix_x, pix_y, dx, dy = visualize(fits_path, save_plots)
@@ -831,7 +1116,7 @@ def process_my_ifu_obs(fits_path,
                                                 data=corrected_data, 
                                                 wave=wave, 
                                                 A=A_sc, 
-                                                window=window_sc) 
+                                                window=window_sc)
 
     fig, axes = plt.subplots(1, 1, figsize=(18, 10))
     median = np.median(corrected_data[:, center[0], center[1]])
@@ -844,7 +1129,8 @@ def process_my_ifu_obs(fits_path,
     axes.set_ylabel("Count", fontsize=18)
     axes.legend()
     axes.set_ylim(0, median*3)
-    plt.savefig(save_plots + "/SigmaClipping.png")
+    if save_plots != None:
+        plt.savefig(save_plots + "/SigmaClipping.png")
 
     radius, radius_spaxels = optimal_radius_selection_IFU(" ", 
                                                           center, 
@@ -856,7 +1142,8 @@ def process_my_ifu_obs(fits_path,
                                                           error=error,
                                                           dim_x=dx*(pix_x + 1), 
                                                           dim_y=dy*(pix_y + 1),
-                                                          save_plots=save_plots)
+                                                          save_plots=save_plots,
+                                                          N_max=N_max)
     
     final_data, wave = Disk_integrate(" ", 
                                 center, 
@@ -874,7 +1161,8 @@ def process_my_ifu_obs(fits_path,
     axes.set_ylabel("Count", fontsize=18)
     axes.legend()
     axes.set_ylim(0, median*3)
-    plt.savefig(save_plots + "/Final_DiskIntegrated_Spectra.png")
+    if save_plots != None:
+        plt.savefig(save_plots + "/Final_DiskIntegrated_Spectra.png")
 
     if path_to_save != None:
         hdul = fits.open(fits_path)
@@ -898,9 +1186,94 @@ def process_my_ifu_obs(fits_path,
     
     return final_data, wave
 
+def process_ifu_extended(fits_path,
+                         plots=True,
+                         max_plots=3,
+                         A_sc=3,
+                         window_sc=100, 
+                         discard=np.array([]),
+                         mode_di = "drop",
+                         A_di=3,
+                         path_to_save = None,
+                         comment = None,
+                         save_plots = None,
+                         lower=None,
+                         upper=None):
+    """
+    Compute a single integrated spectrum from observations with IFUs. The algorithm involves two steps:
+    1. Identifies and replaces outliers using an adapted sigma-clipping algorithm.
+    2. Integrates the data cube with the integration mode provided. 
 
-    
-    
+    Args:
+        fits_path (str): Path to the data cube.
+        plots (bool): True to visualize plots.
+        max_plots (float): Factor to set vertical plot limits. ylim = max_plots * data_median.
+        A_sc (float): The number of standard deviations away from the median to consider as an outlier.
+        window_sc (float): Width of the window for comparison and data leveling.
+        mode_di (str): Mode of integration to be used, which can be "all" or "drop."
+        discard (list): List of tuples indicating the pixels that should not be considered in the integration.
+        A_di (float): Parameter to consider a pixel an outlier (recommended: 1.5).
+        path_to_save (str): Path where the final data will be saved.
+        comment (str): Special comment to be saved in the header of the final FITS file.
+        save_plots (str): If a path is provided, the images will be saved in this directory.
+        lower (float): Lower limit in wavelength for studying the dispersion in the pixels.
+        upper (float): Upper limit in wavelength for studying the dispersion in the pixels.
 
+    Returns:
+        final_data (array): Integrated spectra of the data cube.
+        wave (array): Wavelength of the final spectra.
+    """
     
+    data, wave, pix_x, pix_y, dx, dy = visualize(fits_path, save_plots, plots=False)
 
+    clean_data = Sigma_clipping_adapted_for_IFU("", 
+                                                data=data, 
+                                                wave=wave, 
+                                                A=A_sc, 
+                                                window=window_sc)
+    
+    X = pix_x//2
+    Y = pix_y//2 
+    fig, axes = plt.subplots(1, 1, figsize=(18, 10))
+    median = np.median(data[:, Y, X])
+    axes.plot(wave, data[:, Y, X], c="red", linewidth=0.5, label="Raw data")
+    axes.plot(wave, clean_data[:, Y, X], c="k", linewidth=0.5, label="Data with Sigma-Clipping")
+    axes.set_title("Data with and without Sigma clipping", fontsize=22)
+    axes.set_xlabel("Wavelength", fontsize=18)
+    axes.set_ylabel("Count", fontsize=18)
+    axes.legend()
+    axes.set_ylim(0, median*max_plots)
+    if save_plots != None:
+        plt.savefig(save_plots + "/SigmaClipping.png")
+
+    final_data, wave = integrate_extended("", 
+                                          data=clean_data, 
+                                          wave=wave,
+                                          mode=mode_di,
+                                          discard=discard,
+                                          A=A_di,
+                                          lower=lower,
+                                          upper=upper)
+    
+    fig, axes = plt.subplots(1, 1, figsize=(18, 10))
+    median = np.median(final_data)
+    axes.plot(wave, final_data, c="k", linewidth=0.5)
+    axes.set_title("Final data after the Integration", fontsize=22)
+    axes.set_xlabel("Wavelength", fontsize=18)
+    axes.set_ylabel("Count", fontsize=18)
+    axes.legend()
+    axes.set_ylim(0, median*max_plots)
+    if save_plots != None:
+        plt.savefig(save_plots + "/Final_DiskIntegrated_Spectra.png")
+
+    if path_to_save != None:
+        hdul = fits.open(fits_path)
+        save_file_extended(path_to_save, 
+                                    hdul[0].header, 
+                                    final_data,
+                                    mode_used=mode_di,
+                                    discard_pixels=discard,
+                                    comment=comment,
+                                    lower=lower,
+                                    upper=upper)
+    return final_data, wave
