@@ -176,6 +176,7 @@ class Obsrv(ocalc.ObsCalc):
                  target=None, show_twilight=True, show_months=True,
                  show_colorbar=True, show_transits=True,
                  interact=True, savedir='fig/', altitude_limit=30,
+                 timespan=2024,
                  **kwargs):
 
         if not hasattr(self, 'params'):
@@ -189,7 +190,7 @@ class Obsrv(ocalc.ObsCalc):
         self.params["savedir"] = savedir
         self.params["altitude_limit"] = altitude_limit
 
-        super(Obsrv, self).__init__(target=target, **kwargs)
+        super(Obsrv, self).__init__(target=target, timespan=timespan, **kwargs)
 
     @_update_plot
     def set_target(self, *args, **kwargs):

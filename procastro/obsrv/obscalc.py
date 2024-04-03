@@ -97,6 +97,7 @@ class ObsCalc(object):
     def __init__(self, timespan=2017, target=None,
                  site='paranal',
                  equinox="J2000",
+                 phase_offset=0,
                  **kwargs):
 
         if not hasattr(self, 'params'):
@@ -121,7 +122,7 @@ class ObsCalc(object):
         self.set_timespan(timespan, **kwargs)
 
         if target is not None:
-            self.set_target(target, **kwargs)
+            self.set_target(target, phase_offset=phase_offset, **kwargs)
 
     def set_site(self, site):
         """
@@ -330,7 +331,7 @@ class ObsCalc(object):
             print("Attempting to query transit information")
 
             query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
-                    f"WHERE lower(pl_name) like '%{target.lower()}%' "
+                    f"WHERE lower(pl_name) like '%{target}%' "
             resultset = exo_service.search(query)
             try:
                 req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
