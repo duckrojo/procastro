@@ -364,12 +364,12 @@ class Obsrv(ocalc.ObsCalc):
         with apc.solar_system_ephemeris.set('builtin'):
 
             n_hours = 200
-            previous_24 = apt.Time(jd, format='jd') - np.arange(0, 1, 0.05)
+            previous_24 = apt.Time(jd, format='jd') - np.arange(0, 1, 0.05)*u.day
             ref_at_night = previous_24[0]
             previous_midday_idx = np.argmax(apc.get_sun(
                 ref_at_night).transform_to(apc.AltAz(obstime=previous_24,
                                                      location=loc)).alt)
-            the_24 = previous_24[previous_midday_idx] + np.linspace(0, 1, n_hours)
+            the_24 = previous_24[previous_midday_idx] + np.linspace(0, 1, n_hours)*u.day
 
             the_24_alt = apc.get_sun(
                 ref_at_night).transform_to(apc.AltAz(obstime=the_24,
@@ -384,7 +384,7 @@ class Obsrv(ocalc.ObsCalc):
             delta = 1.1*night_span / (n_hours - 1)
             hours = the_24[twi_set_rise_twi_idx[0]] - 0.05*night_span + delta*np.arange(n_hours)
 
-            moon_coords = apc.get_moon(hours, loc)
+            moon_coords = apc.get_body("moon", hours, loc)
             alt_moon = moon_coords.transform_to(apc.AltAz(obstime=hours, location=loc)).alt
             alt_target = star_coords.transform_to(apc.AltAz(obstime=hours, location=loc)).alt
 

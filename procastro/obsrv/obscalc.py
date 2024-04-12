@@ -159,7 +159,7 @@ class ObsCalc(object):
             Distance and moon phase represented as percentage
         """
         with apc.solar_system_ephemeris.set('builtin'):
-            moon = apc.get_moon(date, location=self._location)
+            moon = apc.get_body("moon", date, location=self._location)
             sun = apc.get_sun(date)
 
         separation = moon.separation(self._target)
