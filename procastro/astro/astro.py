@@ -21,7 +21,7 @@
 __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'blackbody', 'getfilter', 'applyfilter',
            'filter_conversion', 'planeteff',
-           'find_target', 'moon_distance',
+           'find_target', 'moon_distance', 'path_from_jpl',
            'read_jpl', 'hour_angle_for_altitude', 'find_time_for_altitude',
            ]
 
@@ -38,12 +38,14 @@ import os.path as path
 
 import pandas as pd
 import requests
+from astropy.table import Table
 
 import procastro as pa
 from collections import defaultdict
 import re
 import warnings
 
+from procastro.core.cache import jpl_cache
 
 try:
     import astroquery.simbad as aqs
@@ -51,6 +53,7 @@ except ImportError:
     aqs = None
 
 
+@jpl_cache
 def _request_horizons_online(specifications):
     default_spec = {'MAKE_EPHEM': 'YES',
                     'EPHEM_TYPE': 'OBSERVER',
@@ -83,7 +86,7 @@ def _request_horizons_online(specifications):
 
 
 def read_jpl(filename):
-    """Read JPL's Horizons ephemeris file returning the adequate datatype in a pandas dataframe with named columns
+    """Read JPL's Horizons ephemeris file returning the adequate datatype in a astropy.Table with named columns
 
     Parameters
     ----------
@@ -231,7 +234,90 @@ def read_jpl(filename):
 
     df['jd'] = df[jd_col]
 
-    return df.astype({k: v for k, v in convert_dict.items() if k in df})
+    return Table.from_pandas(df.astype({k: v for k, v in convert_dict.items() if k in df}))
+
+
+def path_from_jpl(body,
+                  observer,
+                  time_start: apt.Time,
+                  delta_or_finish_time: apt.Time | apt.TimeDelta | u.Quantity,
+                  steps: int | u.Quantity = 10,
+                  ):
+    """Get values sorted by jd on movement of Solar System Body
+
+    Parameters
+    ----------
+    body
+    observer
+    time_start
+    delta_or_finish_time
+    steps
+
+    Returns
+    -------
+    object
+    """
+    bodies = {'mercury': 199,
+              'venus': 299,
+              'moon': 301,
+              'luna': 301,
+              'mars': 399,
+              'jupiter': 499,
+              'saturn': 599,
+              'uranus': 699,
+              'neptune': 799,
+              }
+    site = apc.EarthLocation.of_site(observer)
+    match delta_or_finish_time:
+        case apt.Time():
+            delta = delta_or_finish_time - time_start
+        case apt.TimeDelta() | u.Quantity():
+            delta = apt.TimeDelta(delta_or_finish_time)
+        case a:
+            raise ValueError(f"Invalid value, only delta or finish"
+                             f" time in astropy format is allowed in {a}")
+    match steps:
+        case int():
+            pass
+        case apt.TimeDelta() | u.Quantity():
+            steps = (delta/steps).to(u.dimensionless_unscaled)
+        case a:
+            raise ValueError(f"Invalid value in steps ({a})")
+
+    step_size = (delta / steps).to(u.day).value
+    if step_size >= 2:
+        unit = "DAYS"
+    else:
+        step_size *= 24
+        if step_size >= 2:
+            unit = "HOURS"
+        else:
+            step_size *= 60
+            if step_size >= 2:
+                unit = "MINUTES"
+            else:
+                step_size *= 60
+                unit = "SECONDS"
+
+    match body:
+        case int():
+            pass
+        case str():
+            body = bodies[body.lower()]
+        case a:
+            raise ValueError(f"Invalid value in body ({a})")
+
+    request = {'STEP_SIZE': f"'{step_size:.0f} {unit}'",
+               'CENTER': (f"'(g: {site.lon.degree} {site.lat.degree}" +
+                          f" {site.height.to(u.km).value})@399'"),
+               'START_TIME': time_start.isot[:16].replace("T", " "),
+               'STOP_TIME': (time_start + delta).isot[:16].replace("T", " "),
+               'COMMAND': body,
+               }
+
+    return read_jpl(f"""!$SOF
+    {"\n".join([f'{k}={v}' for k, v in request.items()])}
+    """)
 
 
 def moon_distance(target, location=None, time=None):

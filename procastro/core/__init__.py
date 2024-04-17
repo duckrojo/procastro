@@ -21,8 +21,6 @@ from . import astrodir
 from .astrodir import *
 from . import astrofile
 from .astrofile import *
-from . import cache
-from .cache import *
 from . import astrocalib
 from .astrocalib import *
 from . import misc_arr
@@ -40,7 +38,7 @@ __all__ = []
 __all__ += astrodir.__all__
 __all__ += astrofile.__all__
 __all__ += astrocalib.__all__
-__all__ += cache.__all__
+#__all__ += cache.__all__
 __all__ += misc_arr.__all__
 __all__ += misc_general.__all__
 __all__ += misc_graph.__all__

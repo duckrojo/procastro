@@ -1,16 +1,14 @@
 from typing import Optional
 
-import numpy
 import queue
 
-
-__all__ = ['astrofile_cache']
+__all__ = ['astrofile_cache', 'jpl_cache']
 
 
 class _AstroCache:
-    def __init__(self):
-        self._cache: dict["AstroFile", numpy.ndarray] = {}
-        self._max_cache: int = 200
+    def __init__(self, max_cache=200):
+        self._cache: dict = {}
+        self._max_cache: int = max_cache
         self._queue: Optional[queue.Queue] = None
 
         self.set_max_cache(self._max_cache)
@@ -22,16 +20,17 @@ class _AstroCache:
         return not self._queue.full()
 
     def __call__(self, method):
-        def wrapper(instance, **kwargs):
-            cache = True
+        def wrapper(hashable_first_argument, **kwargs):
+            """Instance is just the first argument to the function which would need a __hash__:
+             in a method it refers to self."""
             try:
-                if instance in self._cache:
-                    return self._cache[instance]
+                if hashable_first_argument in self._cache:
+                    return self._cache[hashable_first_argument]
             except TypeError:
                 # disable cache if type is not hashable (numpy array for instance)
                 cache = False
 
-            ret = method(instance, **kwargs)
+            ret = method(hashable_first_argument, **kwargs)
 
             # if caching
             if cache and self._queue is not None:
@@ -40,8 +39,8 @@ class _AstroCache:
                 if self._queue.full():
                     del self._cache[self._queue.get_nowait()]
 
-                self._queue.put_nowait(instance)
-                self._cache[instance] = ret
+                self._queue.put_nowait(hashable_first_argument)
+                self._cache[hashable_first_argument] = ret
 
             return ret
 
@@ -81,3 +80,4 @@ class _AstroCache:
 
 
 astrofile_cache = _AstroCache()
+jpl_cache = _AstroCache(max_cache=50)
