@@ -5,6 +5,8 @@ __all__ = ['AstroCalib']
 from typing import Union, Optional
 
 import numpy as np
+from astropy.io.fits import Header
+
 import procastro as pa
 import warnings
 
@@ -43,10 +45,10 @@ class AstroCalib(object):
     """
 
     def __init__(self,
-                 bias: Optional[Union[np.ndarray, "AstroFile"]] = None,
-                 flat: Optional[Union[np.ndarray, "AstroFile"]] = None,
-                 bias_header=None,
-                 flat_header=None,
+                 bias: 'np.ndarray | pa.AstroFile | None' = None,
+                 flat: 'np.ndarray | pa.AstroFile | None' = None,
+                 bias_header: Header | dict | None = None,
+                 flat_header: Header | dict | None = None,
                  auto_trim: Optional[str] = None):
 
         # Its always created false, if the add_*() has something, then its
@@ -55,12 +57,12 @@ class AstroCalib(object):
 
         self.bias: Union[np.ndarray, int, float] = 0.0
         self.flat: Union[np.ndarray, int, float] = 1.0
-        self.bias_header: Optional[dict] = bias_header
-        self.flat_header: Optional[dict] = flat_header
+        self.bias_header = bias_header
+        self.flat_header = flat_header
 
         if auto_trim is not None:
             auto_trim = auto_trim.lower()
-        self.auto_trim_keyword: Optional[str] = auto_trim
+        self.auto_trim_keyword: str | None = auto_trim
 
         if bias is not None:
             self.add_bias(bias)

@@ -21,12 +21,13 @@
 __all__ = ['read_horizons_cols', 'get_transit_ephemeris',
            'blackbody', 'getfilter', 'applyfilter',
            'filter_conversion', 'planeteff',
-           'find_target', 'moon_distance', 'path_from_jpl',
+           'find_target', 'moon_distance',
+           'path_from_jpl', 'path_body',
            'read_jpl', 'hour_angle_for_altitude', 'find_time_for_altitude',
            ]
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Sequence
 
 import astropy.constants as c
 import astropy.coordinates as apc
@@ -38,7 +39,11 @@ import os.path as path
 
 import pandas as pd
 import requests
-from astropy.table import Table
+from astropy.coordinates import ICRS
+from astropy.table import Table, QTable
+from astroquery.simbad import Simbad
+from matplotlib import pyplot as plt
+from matplotlib.patches import Circle
 
 import procastro as pa
 from collections import defaultdict
@@ -298,6 +303,8 @@ def path_from_jpl(body,
             else:
                 step_size *= 60
                 unit = "SECONDS"
+                if step_size < 2:
+                    step_size = 1
 
     match body:
         case int():
@@ -308,16 +315,17 @@ def path_from_jpl(body,
             raise ValueError(f"Invalid value in body ({a})")
 
     request = {'STEP_SIZE': f"'{step_size:.0f} {unit}'",
-               'CENTER': (f"'(g: {site.lon.degree} {site.lat.degree}" +
-                          f" {site.height.to(u.km).value})@399'"),
-               'START_TIME': time_start.isot[:16].replace("T", " "),
-               'STOP_TIME': (time_start + delta).isot[:16].replace("T", " "),
+               'CENTER': (f"'g: {site.lon.degree:.2f}, {site.lat.degree:.2f}," +
+                          f" {site.height.to(u.km).value:.2f} @ 399'"),
+               'START_TIME': f"'{time_start.isot[:16].replace("T", " ")}'",
+               'STOP_TIME': f"'{(time_start + delta).isot[:16].replace("T", " ")}'",
                'COMMAND': body,
                }
 
-    return read_jpl(f"""!$SOF
-    {"\n".join([f'{k}={v}' for k, v in request.items()])}
-    """)
+    request_str = f"""!$$SOF
+        {"\n".join([f'{k}={v}' for k, v in request.items()])}"""
+
+    return read_jpl(request_str)
 
 
 def moon_distance(target, location=None, time=None):
@@ -345,6 +353,148 @@ def moon_distance(target, location=None, time=None):
         time = apt.Time(time)
 
     return apc.get_moon(time, location=location).separation(target)
+
+
+def path_body(body,
+              observer,
+              time_start_or_all: apt.Time,
+              delta_or_finish_time: apt.Time | apt.TimeDelta | u.Quantity | None = None,
+              steps: int | u.Quantity = 10,
+              use_jpl: bool = False,
+              ):
+    """
+
+    Parameters
+    ----------
+    use_jpl
+    body
+    observer
+    time_start_or_all
+    delta_or_finish_time
+    steps
+    """
+    if delta_or_finish_time is None:
+        if time_start_or_all.isscalar:
+            time_start_or_all = apt.Time([time_start_or_all])
+    else:
+        if time_start_or_all.isscalar:
+            match delta_or_finish_time:
+                case apt.Time():
+                    time_start_or_all = time_start_or_all + np.linspace(0, 1, steps
+                                                                        ) * (delta_or_finish_time -
+                                                                             time_start_or_all)
+                case apt.TimeDelta() | u.Quantity():
+                    time_start_or_all = time_start_or_all + np.linspace(0, 1, steps
+                                                                        ) * delta_or_finish_time
+                case _:
+                    raise ValueError(f"Invalid value in delta_or_finish_time ({delta_or_finish_time})")
+        else:
+            warnings.warn("Both multiple times and delta_time has been specified. Ignoring the latter.")
+
+    if use_jpl:
+        return path_from_jpl(body, observer, time_start_or_all[0],
+                             time_start_or_all[1]-time_start_or_all[0],
+                             steps)
+
+    site = apc.EarthLocation.of_site(observer)
+    body_object = apc.get_body(body, time_start_or_all, location=site)
+
+    return QTable([time_start_or_all, time_start_or_all.jd, body_object,
+                   body_object.ra.degree, body_object.dec.degree],
+                  names=['time', 'jd', 'skycoord', 'ra', 'dec'])
+
+
+def polygon_along_path(coordinates: apc.SkyCoord | Sequence,
+                       radius: u.Quantity = 5 * u.arcmin,
+                       n_points: int = 7,
+                       close: bool = False,
+                      ):
+    def border_points(center: apc.SkyCoord,
+                      pa_next: apc.angles.core.Angle,
+                      separation: u.Quantity,
+                      clockwise: bool = True,
+                      ):
+        """
+
+        Parameters
+        ----------
+        center
+        pa_next:
+           Position angle of next point
+        separation
+        clockwise
+        n_points
+
+        Returns
+        -------
+
+        """
+        angles = np.linspace(pa_next + 90 * u.deg, pa_next + 270 * u.deg, n_points)
+        if not clockwise:
+            angles = angles[::-1]
+        return [center.directional_offset_by(a, separation) for a in angles]
+
+    def offset_three(coo1, coo2, coo3, separation):
+        pa_12 = coo1.position_angle(coo2)
+        pa_23 = coo2.position_angle(coo3)
+        delta = pa_23 - pa_12
+        delta += 360 * u.deg * (delta < 0 * u.deg)
+        if delta < 180*u.deg:  # expand
+            return [coo2.directional_offset_by(pa_12 - 90 * u.deg, separation),
+                   coo2.directional_offset_by(pa_23 - 90 * u.deg, separation),
+                   ]
+        else: #reduce
+            return [coo2.directional_offset_by((pa_12 + pa_23)/2 - 90 * u.deg, separation),
+                   ]
+
+    if coordinates.isscalar:
+        offsets = apc.SkyCoord([border_points(coordinates, 0, radius),
+                                border_points(coordinates, 180, radius)[1:-1]])
+    else:
+        offsets = border_points(coordinates[0], coordinates[0].position_angle(coordinates[1]), radius)
+        for idx in np.arange(len(coordinates)-2) + 1:
+            offsets.extend(offset_three(coordinates[idx-1], coordinates[idx], coordinates[idx+1], radius))
+        offsets.extend(border_points(coordinates[-1], coordinates[-2].position_angle(coordinates[1]), radius))
+        for idx in (np.arange(len(coordinates)-2) + 1)[::-1]:
+            offsets.extend(offset_three(coordinates[idx+1], coordinates[idx], coordinates[idx-1], radius))
+
+    if close:
+        offsets.append(offsets[0])
+
+    return apc.SkyCoord([o.ra for o in offsets], [o.dec for o in offsets])
+
+
+def simbad_along_path(coordinates: apc.SkyCoord | Sequence,
+                      radius: u.Quantity = 5 * u.arcmin,
+                      exclude_radius: u.Quantity | None = None,
+                      brightest: float = 5,
+                      dimmest: float = 11,
+                      filter_name: str = 'V',
+                      points_hemisphere: int = 7,
+                      ):
+
+    polygon = polygon_along_path(coordinates, radius, n_points=points_hemisphere)
+    polygon_string = "".join([f", {coo.ra.degree:.6f}, {coo.dec.degree:.6f}" for coo in polygon])
+
+    if exclude_radius is None:
+        exclude_string = ""
+    else:
+        raise NotImplementedError("exclude_radius option is not working")
+        exclude_polygon = polygon_along_path(coordinates, exclude_radius, n_points=points_hemisphere)
+        exclude_polygon_string = "".join([f", {coo.ra.degree:.6f}, {coo.dec.degree:.6f}" for coo in polygon])
+        exclude_string = f" AND CONTAINS(POINT('ICRS', ra, dec), POLYGON('ICRS'{exclude_polygon_string})) = 0"
+
+    query = ("SELECT main_id, ra, dec, flux.flux "
+             "FROM basic JOIN flux ON basic.oid=flux.oidref "
+             f"WHERE CONTAINS(POINT('ICRS', ra, dec), POLYGON('ICRS'{polygon_string})) = 1"
+             f"{exclude_string}"
+             f" AND flux.filter='{filter_name}'"
+             f" AND flux.flux>{brightest} AND flux.flux<{dimmest};"
+             )
+
+    print(query)
+
+    return Simbad.query_tap(query)
 
 
 def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbose=False):
@@ -964,14 +1114,20 @@ def find_time_for_altitude(location, time,
                            search_delta_hour: float = 2,
                            search_span_hour: float = 16,
                            fine_span_min: float = 20,
-                           ref_altitude_deg: Union[str, float] = "min",
+                           ref_altitude_deg: str | float = "min",
                            find: str = "next",
-                           body: str = "sun"):
+                           body: str = "sun",
+                           ):
     """returns times at altitude with many parameters. The search span is centered around `time` and, by default,
      it searches half a day before and half a day after.
 
     Parameters
     ----------
+    location
+    search_delta_hour
+    search_span_hour
+    fine_span_min
+    body
     find: str
        find can be: 'next', 'previous'/'prev', or 'around'
     time: apt.Time
@@ -1038,3 +1194,57 @@ def find_time_for_altitude(location, time,
                       f"But not quite what was expected from rough approx: {altitude_rough}")
 
     return time + (closest_idx - fine_span_min) * u.min + closest_rough
+
+
+if __name__ == '__main__':
+    extra_radius = 30*u.arcmin
+    max_separation_center = 10*u.arcmin
+
+    path = path_body("moon",
+                     "lasilla",
+                     apt.Time.now(),
+                     5*u.hour,
+                     )
+
+    path_cover = polygon_along_path(path['skycoord'],
+                                    max_separation_center+extra_radius,
+                                    close=True)
+    path_with_moon = polygon_along_path(path['skycoord'],
+                                        15*u.arcmin,
+                                        close=True,
+                                       )
+
+    stars_all = simbad_along_path(path['skycoord'],
+                                  2 * max_separation_center,
+#                                  exclude_radius=15*u.arcmin,
+                                  brightest=5,
+                                  dimmest=11,
+                                  filter_name='V',
+                                  )
+
+    stars_inside = simbad_along_path(path['skycoord'],
+                                 15*u.arcmin,
+                                 brightest=5,
+                                 dimmest=11,
+                               filter_name='V',
+                              )
+
+    f, ax = plt.subplots()
+    ax.set_title(f"start {path['time'][0].isot[:16]} (delta: {(path['time'][1]-path['time'][0]).to(u.min):.1f})",
+              )
+    ax.plot(path['ra'][0], path['dec'][0], marker='o', color="red")
+    ax.plot(path['ra'], path['dec'], color="red", marker='x')
+    ax.plot(path_cover.ra, path_cover.dec, color="blue")
+    ax.plot(path_with_moon.ra, path_with_moon.dec, color="blue")
+    ax.scatter(stars_all['ra'], stars_all['dec'], s=10 * (max(stars_all['flux']) - stars_all['flux']),
+               color='blue', zorder=10)
+    for star in stars_all:
+        ax.add_patch(Circle((star['ra'], star['dec']),
+                             radius=(extra_radius/(1*u.deg)).to(u.dimensionless_unscaled).value,
+                             facecolor='none', edgecolor='red'))
+    for star in stars_inside:
+        ax.add_patch(Circle((star['ra'], star['dec']),
+                             radius=(extra_radius / (1 * u.deg)).to(u.dimensionless_unscaled).value,
+                             facecolor='none', edgecolor='grey'))
+
+    plt.show()

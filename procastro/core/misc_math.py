@@ -25,8 +25,6 @@ __all__ = ['gauss', 'bipol', 'parabolic_x',
 from typing import Optional
 
 import numpy as np
-import inspect
-import scipy.signal as sg
 import astropy.units as u
 
 
@@ -114,7 +112,8 @@ def bipol(coef, x, y):
 def parabolic_x(yy_or_xx: list,
                 yy: Optional[list] = None,
                 central_idx: int = None,
-                vertex: bool = True):
+                vertex: bool = True,
+                ) -> float:
     """
     Adapted and modified to get the unknowns for defining a parabola:
     http://stackoverflow.com/questions/717762/how-to-calculate-the-vertex-of-a-parabola-given-three-points
@@ -130,6 +129,13 @@ def parabolic_x(yy_or_xx: list,
 
     vertex : bool
        If True then return x position of vertex, otherwise return closest zero-crossing to middle point
+
+
+    Returns
+    -------
+    float
+        Returns index sub-position if xx is specified; otherwise, it returns requested xx value
+
     """
 
     if central_idx is not None:
