@@ -1,5 +1,6 @@
 import pytest
-from ..astro import find_target, get_transit_ephemeris
+from ..exoplanet import get_transit_ephemeris
+from ..coordinates import find_target
 import os
 
 

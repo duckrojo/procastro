@@ -37,6 +37,8 @@ import pandas as pd
 import time
 from typing import Union, Optional, Tuple
 
+import procastro.astro.coordinates
+
 TwoTuple = Tuple[float, float]
 
 __all__ = ['query_full_exoplanet_db', 'Nightly']
@@ -259,7 +261,7 @@ class Nightly:
         if not isinstance(altitude, u.Quantity):
             altitude = (altitude*u.degree).to(u.radian).value
 
-        return paa.hour_angle_for_altitude(skycoord.dec.radian, self._observatory.lat.radian, altitude)
+        return procastro.astro.coordinates.hour_angle_for_altitude(skycoord.dec.radian, self._observatory.lat.radian, altitude)
 
     def _ephemeris(self):
         planets = self._planets.copy()

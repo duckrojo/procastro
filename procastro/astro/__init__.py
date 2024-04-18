@@ -18,7 +18,8 @@
 #
 #
 
-from . import astro
 from .astro import *
-
-__all__ = []
+from .solar_system import *
+from .coordinates import *
+from .exoplanet import *
+from .spectra import *

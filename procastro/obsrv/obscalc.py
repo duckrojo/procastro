@@ -27,6 +27,9 @@ import numpy as np
 import os
 import pyvo as vo
 
+import procastro.astro.coordinates
+import procastro.astro.exoplanet
+
 exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
 
 
@@ -315,16 +318,16 @@ class ObsCalc(object):
         paths = [os.path.dirname(__file__)+'/coo.txt',
                  os.path.expanduser("~")+'/.coostars'
                  ]
-        self._target = paa.find_target(target,
-                                       coo_files=paths,
-                                       equinox=self.params["equinox"])
+        self._target = procastro.astro.coordinates.find_target(target,
+                                                               coo_files=paths,
+                                                               equinox=self.params["equinox"])
 
         print("Star at RA/DEC: {0:s}/{1:s}"
               .format(self._target.ra.to_string(sep=':'),
                       self._target.dec.to_string(sep=':')))
 
         transit_epoch, transit_period, transit_length = \
-            paa.get_transit_ephemeris(target)
+            procastro.astro.exoplanet.get_transit_ephemeris(target)
         print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
 
         if transit_epoch is None or transit_period is None:
