@@ -3,10 +3,92 @@ from typing import Sequence
 
 import numpy as np
 from astropy import coordinates as apc, time as apt, units as u
+from astropy.table import Table
 from astroquery.simbad import Simbad
+from matplotlib import pyplot as plt, ticker
+import cartopy.crs as ccrs
+from matplotlib.patches import Polygon
 
 import procastro as pa
 from procastro.astro import aqs as aqs
+
+
+def starry_plot(star_table: list[Table] | Table,
+                projection="Robinson",
+                marker_size=(4, 16),
+                areas: list[apc.SkyCoord] = None,
+                areas_facecolor: list[str] | str = 'none',
+                areas_edgecolor: list[str] | str = 'black',
+                areas_zorder: list[int] | int = 1,
+                stars_zorder: int = 10,
+                stars_color: str = "blue",
+                ax=None,
+                ):
+
+    def major_formatter(x, pos):
+        x /= 15
+        h = int(x)
+        x = (x % 1) * 60
+        m = x
+        x = (x % 1) * 60
+
+        return f"{h}h{m:.1f}"
+
+    if projection is not None:
+        transform_projection = ccrs.PlateCarree()
+    else:
+        transform_projection = None
+
+    if not isinstance(star_table, Sequence):
+        star_table = [star_table]
+    if isinstance(stars_color, str):
+        stars_color = [stars_color]
+
+    for table, color in zip(star_table, stars_color):
+        mags = table['flux']
+        mmin = min(mags)
+        mmax = max(mags)
+        dm = (marker_size[1] - marker_size[0]) / (mmax - mmin)
+
+        if ax is None:
+            f = plt.figure()
+            ax = f.add_subplot(111,
+                               projection=getattr(ccrs, projection)(),
+                               frameon=False,
+                               )
+        gl = ax.gridlines(draw_labels=True, alpha=0.9, linestyle=':')
+        gl.xformatter = ticker.FuncFormatter(major_formatter)
+
+        ax.scatter(table['ra'], table['dec'],
+                   transform=transform_projection,
+                   s=marker_size[0] + (mags - mmin) * dm,
+                   marker='o',
+                   zorder=stars_zorder,
+                   color=color,
+                   )
+
+    if areas is not None:
+        if isinstance(areas_facecolor, str):
+            areas_facecolor = [areas_facecolor] * len(areas)
+        if isinstance(areas_edgecolor, str):
+            areas_edgecolor = [areas_edgecolor] * len(areas)
+        if isinstance(areas_zorder, int):
+            areas_zorder = [areas_zorder] * len(areas)
+
+        for area, zorder, facecolor, edgecolor in zip(areas,
+                                                      areas_zorder,
+                                                      areas_facecolor,
+                                                      areas_edgecolor):
+            points = [(coo.ra.degree, coo.dec.degree) for coo in area]
+            patch = Polygon(points,
+                            transform=transform_projection,
+                            zorder=zorder,
+                            facecolor=facecolor,
+                            edgecolor=edgecolor,
+                            )
+            ax.add_patch(patch)
+
+
 
 
 def moon_distance(target, location=None, time=None):
@@ -36,11 +118,11 @@ def moon_distance(target, location=None, time=None):
     return apc.get_moon(time, location=location).separation(target)
 
 
-def polygon_along_path(coordinates: apc.SkyCoord | Sequence,
-                       radius: u.Quantity = 5 * u.arcmin,
-                       n_points: int = 7,
-                       close: bool = False,
-                       ):
+def polygon_around_path(coordinates: apc.SkyCoord | Sequence,
+                        radius: u.Quantity = 5 * u.arcmin,
+                        n_points: int = 11,
+                        close: bool = False,
+                        ):
     def border_points(center: apc.SkyCoord,
                       pa_next: apc.angles.core.Angle | float,
                       separation: u.Quantity,
@@ -97,29 +179,74 @@ def polygon_along_path(coordinates: apc.SkyCoord | Sequence,
     return apc.SkyCoord([o.ra for o in offsets], [o.dec for o in offsets])
 
 
-def simbad_along_path(coordinates: apc.SkyCoord | Sequence,
-                      radius: u.Quantity = 5 * u.arcmin,
-                      exclude_radius: u.Quantity | None = None,
-                      brightest: float = 5,
-                      dimmest: float = 11,
-                      filter_name: str = 'V',
-                      points_hemisphere: int = 7,
-                      ):
+def simbad_around_path(path: apc.SkyCoord | Sequence,
+                       radius: u.Quantity = 5 * u.arcmin,
+                       exclude_radius: u.Quantity | None = None,
+                       brightest: float = 5,
+                       dimmest: float = 11,
+                       filter_name: str = 'V',
+                       points_hemisphere: int = 7,
+                       ):
 
-    polygon = polygon_along_path(coordinates, radius, n_points=points_hemisphere)
-    polygon_string = "".join([f", {coo.ra.degree:.6f}, {coo.dec.degree:.6f}" for coo in polygon])
-
+    include_polygon = polygon_around_path(path, radius, n_points=points_hemisphere)
     if exclude_radius is None:
-        exclude_string = ""
+        exclude_polygon = None
     else:
-        raise NotImplementedError("exclude_radius option is not working")
-        exclude_polygon = polygon_along_path(coordinates, exclude_radius, n_points=points_hemisphere)
-        exclude_polygon_string = "".join([f", {coo.ra.degree:.6f}, {coo.dec.degree:.6f}" for coo in polygon])
-        exclude_string = f" AND CONTAINS(POINT('ICRS', ra, dec), POLYGON('ICRS'{exclude_polygon_string})) = 0"
+        exclude_polygon = polygon_around_path(path, exclude_radius, n_points=points_hemisphere)
+
+    return simbad_between_polygons(include_polygon, exclude_polygon,
+                                   brightest=brightest,
+                                   dimmest=dimmest,
+                                   filter_name=filter_name,
+                                   )
+
+
+def simbad_between_polygons(include_polygon: apc.SkyCoord | Sequence,
+                            exclude_polygon: u.Quantity | None = None,
+                            brightest: float = 5,
+                            dimmest: float = 11,
+                            filter_name: str = 'V',
+                            decimals=6,
+                            ):
+    """
+
+    Parameters
+    ----------
+    include_polygon
+      polygon made of SkyCoord points inside of which to search for stars
+    exclude_polygon
+      polygon made of SkyCoord points inside of which to omit stars
+    brightest
+      brightest magnitude
+    dimmest
+      dimmest magnitude
+    filter_name
+      filter in which to look for magnitude
+    decimals
+      decimals of degrees used in specifying the polygons
+
+    Returns
+    -------
+      astropy.Table with "name, ra, dec, skycoord, magnitude" columns
+
+    """
+    def adql_from_polygon(polygon, digits):
+        if polygon is None:
+            return ""
+        coo_string = f", {{ra:.{digits}f}}, {{dec:.{digits}f}}"
+        polygon_string = "".join([coo_string.format(ra=coo.ra.degree, dec=coo.dec.degree) for coo in polygon])
+        ret = (" AND CONTAINS(POINT('ICRS', ra, dec),"
+               " POLYGON('ICRS'{polygon_string}))".format(polygon_string=polygon_string))
+        return ret
+
+    include_string = adql_from_polygon(include_polygon, decimals)
+    include_string += "= 1"
+    exclude_string = adql_from_polygon(exclude_polygon, decimals)
+    exclude_string += "= 0" * (exclude_string != "")
 
     query = ("SELECT main_id, ra, dec, flux.flux "
              "FROM basic JOIN flux ON basic.oid=flux.oidref "
-             f"WHERE CONTAINS(POINT('ICRS', ra, dec), POLYGON('ICRS'{polygon_string})) = 1"
+             f"{include_string}"
              f"{exclude_string}"
              f" AND flux.filter='{filter_name}'"
              f" AND flux.flux>{brightest} AND flux.flux<{dimmest};"
