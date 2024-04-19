@@ -6,7 +6,7 @@ from astropy import coordinates as apc, time as apt, units as u
 from astroquery.simbad import Simbad
 
 import procastro as pa
-from procastro.astro.astro import aqs as aqs
+from procastro.astro import aqs as aqs
 
 
 def moon_distance(target, location=None, time=None):
@@ -40,9 +40,9 @@ def polygon_along_path(coordinates: apc.SkyCoord | Sequence,
                        radius: u.Quantity = 5 * u.arcmin,
                        n_points: int = 7,
                        close: bool = False,
-                      ):
+                       ):
     def border_points(center: apc.SkyCoord,
-                      pa_next: apc.angles.core.Angle,
+                      pa_next: apc.angles.core.Angle | float,
                       separation: u.Quantity,
                       clockwise: bool = True,
                       ):
@@ -55,12 +55,13 @@ def polygon_along_path(coordinates: apc.SkyCoord | Sequence,
            Position angle of next point
         separation
         clockwise
-        n_points
 
         Returns
         -------
 
         """
+        if not isinstance(pa_next, apc.angles.core.Angle):
+            pa_next *= u.deg
         angles = np.linspace(pa_next + 90 * u.deg, pa_next + 270 * u.deg, n_points)
         if not clockwise:
             angles = angles[::-1]
@@ -73,11 +74,11 @@ def polygon_along_path(coordinates: apc.SkyCoord | Sequence,
         delta += 360 * u.deg * (delta < 0 * u.deg)
         if delta < 180*u.deg:  # expand
             return [coo2.directional_offset_by(pa_12 - 90 * u.deg, separation),
-                   coo2.directional_offset_by(pa_23 - 90 * u.deg, separation),
-                   ]
-        else: #reduce
+                    coo2.directional_offset_by(pa_23 - 90 * u.deg, separation),
+                    ]
+        else:  # reduce
             return [coo2.directional_offset_by((pa_12 + pa_23)/2 - 90 * u.deg, separation),
-                   ]
+                    ]
 
     if coordinates.isscalar:
         offsets = apc.SkyCoord([border_points(coordinates, 0, radius),

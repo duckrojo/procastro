@@ -22,4 +22,3 @@ try:
     import astroquery.simbad as aqs
 except ImportError:
     aqs = None
-

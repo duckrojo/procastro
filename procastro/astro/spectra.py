@@ -5,7 +5,7 @@ import numpy as np
 from astropy import units as u, constants as c
 
 import procastro as pa
-from procastro.astro.astro import path as path
+import os.path as path
 
 
 def blackbody(temperature, wav_freq, unit=None):
