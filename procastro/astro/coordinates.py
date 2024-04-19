@@ -31,10 +31,10 @@ def starry_plot(star_table: list[Table] | Table,
         x = (x % 1) * 60
         m = x
 
-        return f"{h}$^h${m:04.1f}"
+        return f"{h}$^h${m:02.0f}"
 
     def dec_formatter(x, pos):
-        return f"{int(x):+.0f}$^\\circ${(x%1)*60:04.1f}"
+        return f"{int(x):+.0f}$^\\circ${(x%1)*60:02.0f}"
 
     if projection is not None:
         transform_projection = ccrs.PlateCarree()
