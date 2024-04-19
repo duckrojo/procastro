@@ -22,17 +22,19 @@ def starry_plot(star_table: list[Table] | Table,
                 areas_zorder: list[int] | int = 1,
                 stars_zorder: int = 10,
                 stars_color: str = "blue",
-                ax=None,
+                ax=None, frameon=True,
                 ):
 
-    def major_formatter(x, pos):
+    def ra_formatter(x, pos):
         x /= 15
         h = int(x)
         x = (x % 1) * 60
         m = x
-        x = (x % 1) * 60
 
-        return f"{h}h{m:.1f}"
+        return f"{h}$^h${m:04.1f}"
+
+    def dec_formatter(x, pos):
+        return f"{int(x):+.0f}$^\\circ${(x%1)*60:04.1f}"
 
     if projection is not None:
         transform_projection = ccrs.PlateCarree()
@@ -45,6 +47,8 @@ def starry_plot(star_table: list[Table] | Table,
         stars_color = [stars_color]
 
     for table, color in zip(star_table, stars_color):
+        if len(table) == 0:
+            continue
         mags = table['flux']
         mmin = min(mags)
         mmax = max(mags)
@@ -52,12 +56,17 @@ def starry_plot(star_table: list[Table] | Table,
 
         if ax is None:
             f = plt.figure()
+            if projection is not None:
+                projection = getattr(ccrs, projection)()
             ax = f.add_subplot(111,
-                               projection=getattr(ccrs, projection)(),
-                               frameon=False,
+                               projection=projection,
+                               frameon=frameon,
                                )
-        gl = ax.gridlines(draw_labels=True, alpha=0.9, linestyle=':')
-        gl.xformatter = ticker.FuncFormatter(major_formatter)
+        if projection is not None:
+            gl = ax.gridlines(draw_labels=True, alpha=0.9, linestyle=':')
+            gl.xformatter = ticker.FuncFormatter(ra_formatter)
+            gl.yformatter = ticker.FuncFormatter(dec_formatter)
+
 
         ax.scatter(table['ra'], table['dec'],
                    transform=transform_projection,
@@ -88,7 +97,7 @@ def starry_plot(star_table: list[Table] | Table,
                             )
             ax.add_patch(patch)
 
-
+    return ax
 
 
 def moon_distance(target, location=None, time=None):

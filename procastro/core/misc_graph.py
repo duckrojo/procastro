@@ -24,12 +24,11 @@ __all__ = ['plot_accross', 'prep_data_plot',
            'fill_between',
            ]
 
-import warnings
-
 import astropy.time as apt
 import datetime
 
 import numpy
+from matplotlib.ticker import Locator, MultipleLocator
 
 import procastro as pa
 import matplotlib.pyplot as plt
@@ -38,7 +37,7 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 import astropy.io.fits as pf
 import numpy as np
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, Dict, Any
 from procastro.core.interactive_graphics import BindingsImshowz
 from pathlib import Path, PurePath
 
@@ -513,6 +512,92 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
 
     return fig, axs
 
+class MultiBaseLocator(Locator):
+
+    def __init__(self, bases, min_ticks=3, max_ticks=6):
+        """
+
+
+        min_ticks
+        max_ticks
+        """
+        bases = sorted(set(bases), reverse=True)
+
+        self._bases = bases
+        self._locators = {}
+        self.min_ticks = min_ticks
+        self.max_ticks = max_ticks
+
+        prev = bases[0]
+        for base in bases[1:]:
+            if prev*min_ticks > base*max_ticks:
+                raise ValueError(f"Base ticks {base} do not overlap given "
+                                 f"min/max ticks of {min_ticks}/{max_ticks}")
+        super().__init__()
+
+    def _call_multiple(self, base):
+        if base not in self._locators:
+            base = MultipleLocator(base)
+        return self._locators[base]
+
+    def tick_values(self, vmin, vmax):
+        span = (vmax - vmin)/15
+
+        bases = sorted(self._bases, reverse=True)
+        if span/bases[0] > vmin:
+            return self._call_multiple(bases[0]).tick_values(vmin, vmax)
+
+        for base in bases[1:-1]:
+            if span/bases[0] > self.max_ticks:
+                raise ValueError(f"Bases [{bases}] are not overlapping."
+                                 f" Unable to solve for span {span/bases[0]} ")
+            if span/bases[0] < self.min_ticks:
+                continue
+            return self._call_multiple(base).tick_values(vmin, vmax)
+
+        return self._call_multiple(bases[-1]).tick_values(vmin, vmax)
+
+    def __call__(self):
+        vmin, vmax = self.axis.get_view_interval()
+        return self.tick_values(vmin, vmax)
+
+
+
+class RABaseLocator(MultiBaseLocator):
+    """        Parameters
+        ----------
+        bases
+            list of acceptable bases for MultipleLocator(). If None, then use
+            the ones appropriate for angles:
+            [90, 45, 30, 20, 10, 5, 2.5, 2, 1,
+             30/60, 20/60, 10/60, 5/60, 2.5/60, 2/60, 1/60,
+             30/3600, 20/3600, 10/3600, 5/3600, 2.5/3600, 2/3600, 1/3600,
+             1/36000, 1/360000]
+"""
+    def __init__(self):
+        bins = [5, 2.5, 2, 1,
+                30 / 60, 20 / 60, 10 / 60, 5 / 60, 2.5 / 60, 2 / 60, 1 / 60,
+                30 / 3600, 20 / 3600, 10 / 3600, 5 / 3600, 2.5 / 3600, 2 / 3600, 1 / 3600,
+                1 / 36000, 1 / 360000]
+        super().__init__(np.array(bins)*15)
+
+class DecBaseLocator(MultiBaseLocator):
+    """        Parameters
+        ----------
+        bases
+            list of acceptable bases for MultipleLocator(). If None, then use
+            the ones appropriate for angles:
+            [90, 45, 30, 20, 10, 5, 2.5, 2, 1,
+             30/60, 20/60, 10/60, 5/60, 2.5/60, 2/60, 1/60,
+             30/3600, 20/3600, 10/3600, 5/3600, 2.5/3600, 2/3600, 1/3600,
+             1/36000, 1/360000]
+"""
+    def __init__(self):
+        bins = [90, 45, 30, 20, 10, 5, 2.5, 2, 1,
+                30 / 60, 20 / 60, 10 / 60, 5 / 60, 2.5 / 60, 2 / 60, 1 / 60,
+                30 / 3600, 20 / 3600, 10 / 3600, 5 / 3600, 2.5 / 3600, 2 / 3600, 1 / 3600,
+                1 / 36000, 1 / 360000]
+        super().__init__(np.array(bins))
 
 if __name__ == '__main__':
     filename = Path.home().joinpath('Documents', 'test_dk.fits.gz')
