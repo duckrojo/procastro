@@ -308,10 +308,7 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
         for coo_file in coo_files:
             if coo_file is None:
                 continue
-            # try:
-            #     open_file = open(coo_file)
-            # except TypeError:
-            #     open_file=False
+
             try:
                 open_file = open(coo_file)
             except IOError:

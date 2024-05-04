@@ -21,7 +21,7 @@
 
 __all__ = ['plot_accross', 'prep_data_plot',
            'imshowz', 'figaxes_xdate', 'figaxes', 'set_plot_props',
-           'fill_between',
+           'fill_between', 'change_axes_projection',
            ]
 
 import warnings
@@ -30,6 +30,7 @@ import astropy.time as apt
 import datetime
 
 import numpy
+from cartopy.crs import CRS
 
 import procastro as pa
 import matplotlib.pyplot as plt
@@ -151,7 +152,7 @@ def plot_accross(data,
     ticks : bool, optional
         Whether to display the ticks
     colorbar: bool, optional
-        Wheteher to use a colorbar
+        Whether to use a colorbar
     hdu : int, optional
         HDU to plot
     rotate : int, optional
@@ -437,12 +438,12 @@ def figaxes_xdate(x, axes=None, clear=True):
 
 
 def change_axes_projection(axes: Axes,
-                           projection: Union[str, Axes],
+                           projection: str | CRS,
                            keep_content: bool = False):
     """Changes the projection of existing axes. This is done by the destruction of current axis
      and creation of a new one with the new projection in the same position as the old one"""
 
-    if not keep_content:
+    if keep_content:
         raise NotImplementedError("Currently, changing axes projection loses the content")
 
     pos = axes.get_position()
