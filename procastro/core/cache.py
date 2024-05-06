@@ -6,12 +6,26 @@ __all__ = ['astrofile_cache', 'jpl_cache']
 
 
 class _AstroCache:
-    def __init__(self, max_cache=200):
+    def __init__(self, max_cache=200, disk_lifetime=0, hashable_kw=None):
+        """
+
+        Parameters
+        ----------
+        max_cache
+        disk_lifetime
+         how many days to cache in disk, if more than that has elapsed, it will be reread.
+        """
         self._cache: dict = {}
         self._max_cache: int = max_cache
         self._queue: Optional[queue.Queue] = None
 
         self.set_max_cache(self._max_cache)
+
+        if disk_lifetime:
+            raise NotImplementedError("DISK caching in the works still")
+
+        if hashable_kw is None:
+            self.hashable_kw = []
 
     def __bool__(self):
         return self._max_cache > 0
@@ -24,9 +38,12 @@ class _AstroCache:
             """Instance is just the first argument to the function which would need a __hash__:
              in a method it refers to self."""
             cache = True
+            compound_hash = tuple([hashable_first_argument] +
+                                  [kwargs[kw] for kw in self.hashable_kw if kw in kwargs])
+
             try:
-                if hashable_first_argument in self._cache:
-                    return self._cache[hashable_first_argument]
+                if compound_hash in self._cache:
+                    return self._cache[compound_hash]
             except TypeError:
                 # disable cache if type is not hashable (numpy array for instance)
                 cache = False
@@ -40,8 +57,8 @@ class _AstroCache:
                 if self._queue.full():
                     del self._cache[self._queue.get_nowait()]
 
-                self._queue.put_nowait(hashable_first_argument)
-                self._cache[hashable_first_argument] = ret.copy()
+                self._queue.put_nowait(compound_hash)
+                self._cache[compound_hash] = ret.copy()
 
             return ret
 
