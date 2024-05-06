@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Goddard Space Flight Center</origin>
+        <origin>NASA</origin>
+        <origin>JPL</origin>
+        <origin>PDS Geosciences Node</origin>
+        <pubdate>20150413</pubdate>
+        <title>Moon LRO LOLA Color Shaded Relief Blue Steel 474m v1</title>
+        <edition/>
+        <geoform>Shaded-Relief Map, Digital Elevation Model, Global Mosaic, Remote-sensing Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Moon/LMMP/LOLA-derived/Lunar_LRO_LOLA_ClrShade_Global_64ppd_BlueSteel</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This map is based on data from the Lunar Orbiter Laser Altimeter (LOLA; Smith et al., 2010), an instrument on the National Aeronautics and Space Agency (NASA) Lunar Reconnaissance Orbiter (LRO) spacecraft (Tooley et al., 2010). It was used for the USGS publication http://pubs.usgs.gov/sim/3316/ as funded by NASA. The image used for the base of this map represents more than 6.5 billion measurements gathered between July 2009 and July 2013, adjusted for consistency in the coordinate system described below, and then converted to lunar radii (Mazarico et al., 2012). 
+
+Elevations were computed by subtracting the lunar reference radius of 1737.4 kilometers from the surface radius measurements (LRO Project and LGCWG, 2008; Archinal et al., 2011). Thus elevation values are the distance above or below the reference sphere. The average accuracy of each point after crossover correction is better than 20 meters in horizontal position and ~1 m in radius (Mazarico et al., 2012). The measurements were converted into a DEM (Neumann, 2011) using Generic Mapping Tools software, with a resolution of 0.015625 degrees per pixel, or 64 pixels per degree. In projection, the pixels are 473.8 meters per pixel (m) in size at the equator. Gaps between tracks of 1–2 km are common, and some gaps of as much as 4 km occur near the equator. Digital Elevation Model (DEM) points located in these gaps were filled by interpolation (Smith et al., 2010). The high and low elevations noted on the map and listed on the scale bar are approximate. 
+
+<b>Mission and Instrument Information:</b>
+
+The U.S. National Aeronautics and Space Administration (NASA) launched the Lunar Reconnaissance Orbiter (LRO) spacecraft to the Moon in June 2009 (Tooley et al., 2010) carrying a variety of instruments that continue to return high-resolution images of the lunar surface from its eccentric polar mapping orbit (Petro et al., 2019).
+
+The LOLA has collected over more than 6.5 billion measurements of global surface height with a vertical precision of ~10 cm and an accuracy of ~1m (Mazarico et al., 2012). With such highly accurate global coverage, the resulting topographic map has become the reference geodetic framework for the lunar community and has led to the highest resolution and most accurate polar DEMs to date.
+
+<b>References:</b>
+
+Archinal, B. A., A'Hearn, M. F., Bowell, E., Conrad, A., Consolmagno, G. J., Courtin, R., Fukushima, T., et al. (2011). Report of the IAU Working Group on cartographic coordinates and rotational elements: 2009, Celestial Mechanics and Dynamical Astronomy, v. 109, 2, February, pp. 101-135. <a href='https://doi.org/10.1007/s10569-010-9320-4' target='_blank'>https://doi.org/10.1007/s10569-010-9320-4</a>
+
+LRO Project and Lunar Geodesy and Cartography Working Group (2008). A Standardized Lunar Coordinate System for the Lunar Reconnaissance Orbiter and Lunar Datasets: LRO Project and LGCWG White Paper, v. 3. <a href='https://lunar.gsfc.nasa.gov/library/LunCoordWhitePaper-10-08.pdf' target='_blank'>https://lunar.gsfc.nasa.gov/library/LunCoordWhitePaper-10-08.pdf</a>
+
+Mazarico, E., Rowlands, D. D., Neumann, G. A., Smith, D. E., Torrence, M. H., Lemoine, F. G., & Zuber, M. T. (2012). Orbit determination of the Lunar Reconnaissance Orbiter. <em>Journal of Geodesy, 86</em>(3), 193–207. <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20180007208.pdf' target='_blank'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20180007208.pdf</a>
+
+Neumann, G. A., (2011). Lunar Reconnaissance Orbiter Lunar Orbiter Laser Altimeter reduced data record and derived products software interface specification, version 2.42, LRO-L-LOLA-4- GDR-V1.0, NASA Planetary Data System (PDS). <a href='https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/document/rdrsis.pdf' target='_blank'>https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/document/rdrsis.pdf</a>
+
+Petro, N. E., Keller, J. W., Cohen, B. A., & McClanahan, T. P. (2019). <em>Ten years of the Lunar Reconnaissance Orbiter: Advancing lunar science and context for future lunar exploration.</em> Paper presented at the 50th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf' target='_blank'>https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf</a>
+
+Smith, D. E., Zuber, M. T., Neumann, G. A., Lemoine, F. G., Torrence, M. H., McGarry, J. F., Rowlands, D. D., et al. (2010). Initial observations from the Lunar Orbiter Laser Altimeter (LOLA). <em>Geophysical Research Letters, 37</em>(L18204). <a href='https://doi.org/10.1029/2010GL043751' target='_blank'>https://doi.org/10.1029/2010GL043751</a>
+
+Tooley, C. R., Houghton, M. B., Saylor Jr., S. S., Peddie, C., Everett, D. F., Baker, C. L., & Safdie, K. N. (2010). Lunar Reconnaissance Orbiter mission and spacecraft design. <em>Space Science Reviews, 150</em>(1), 23–62. <a href='https://doi.org/10.1007/s11214-009-9624-4' target='_blank'>https://doi.org/10.1007/s11214-009-9624-4</a>]]></abstract>
+      <purpose><![CDATA[The Lunar Orbiter Laser Altimeter (LOLA) is producing a high-resolution global topographic model and geodetic framework that enables precise targeting,  safe landing,  and surface mobility to carry out exploratory activities. LOLA characterizes the polar illumination environment,  and images permanently shadowed polar regions of the Moon to identify possible locations of surface ice crystals in shadowed polar craters.]]></purpose>
+      <supplinf><![CDATA[http://pubs.usgs.gov/sim/3316/, https://lola.gsfc.nasa.gov/, https://ode.rsl.wustl.edu/moon/, http://pds-geosciences.wustl.edu/missions/lro/lola_faq.htm,  http://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/catalog/lolainst.cat, http://pds-geosciences.wustl.edu/missions/lro/default.htm]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Ground condition</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20090701</begdate>
+          <enddate>20130701</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>None planned</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Cartography</themekey>
+        <themekey>Geographic Information System (GIS)</themekey>
+        <themekey>Topography</themekey>
+        <themekey>Remote Sensing</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>None</accconst>
+    <useconst>Public domain</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Moon/LMMP/LOLA-derived/thumbs/Lunar_LRO_LOLA_ClrShade_Global_64ppd_BlueSteel_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Accurate to Control Net</attraccr>
+    </attracc>
+    <logic>The average accuracy of each point after crossover correction is better than 20 meters (m) in horizontal position and ~1 m in radius (Mazarico and others,  2012). The high and low elevations noted on the map and listed on the scale bar are approximate.</logic>
+    <complete>Gaps between tracks of 1–2 km are common,  and some gaps of as much as 4 km occur near the equator. DEM points located in these gaps were filled by interpolation (Smith and others,  2011).</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Accurate to Control Net</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr>Accurate to Control Net</vertaccr>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>LOLA Science Team at the Goddard Space Flight Center</origin>
+            <pubdate/>
+            <title>Lunar Orbiter Laser Altimeter Archive,  LDEM</title>
+            <online>http://pds-geosciences.wustl.edu/lro/lro-l-lola-2-edr-v1/lrolol_0xxx/data/lola_edr/</online>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/lro.html</online>
+            <online>http://pds-geosciences.wustl.edu/missions/lro/lola.htm</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>The measurements were converted into a digital elevation model (DEM; Neumann and others,  2011) using Generic Mapping Tools software,  with a resolution of 0.015625 degrees per pixel,  or 64 pixels per degree. In projection,  the pixels are 473.8 m in size at the equator.  Pixels do not contain any of the original explicit elevation information. The colorized shaded-relief represents approximate elevations based on the original topographic data. Elevations values are mapped based on the defined red,  green,  and blue look-up-table shown next.
+
+Elevation_m Red Green Blue&lt;br&gt;
+-9000.0 56 2 123&lt;br&gt;
+-8000.0 0 0 89&lt;br&gt;
+-7000.0 0 94 187&lt;br&gt;
+-5000.0 60 157 255&lt;br&gt;
+0.0 215 255 255&lt;br&gt;
+2000.0 255 255 255&lt;br&gt;
+4000.0 192 192 192&lt;br&gt;
+6000.0 128 128 128&lt;br&gt;
+7000.0 83 83 83&lt;br&gt;
+8000.0 51 51 51&lt;br&gt;
+10000.0 52 31 31&lt;br&gt;</procdesc>
+        <procdate>20150413</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>11520</rowcount>
+      <colcount>23040</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>473.80235038</absres>
+            <ordres>473.80235038</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Moon</ellips>
+        <semiaxis>1737400</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits>Meters</altunits>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>759 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Lunar_LRO_LOLA_ClrShade_Global_64ppd_BlueSteel.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Earth</system>
+      <target>Moon</target>
+      <quadsys/>
+      <quadname/>
+      <rada>1737400</rada>
+      <radb/>
+      <radc>1737400</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey/>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey/>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>64</scale>
+    <bands>3</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

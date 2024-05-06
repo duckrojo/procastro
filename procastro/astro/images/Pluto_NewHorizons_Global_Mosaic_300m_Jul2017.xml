@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>NASA</origin>
+        <origin>Johns Hopkins University Applied Physics Laboratory</origin>
+        <origin>Southwest Research Institute</origin>
+        <origin>Lunar and Planetary Institute</origin>
+        <pubdate>20170714</pubdate>
+        <title>Pluto New Horizons LORRI - MVIC Global Mosaic 300m v1</title>
+        <edition>2017-03-28T13:28:24</edition>
+        <geoform>Global Mosaic, Image, Remote-sensing Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Pluto/NewHorizons/Pluto_NewHorizons_Global_Mosaic_300m_Jul2017</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This detailed, high-quality global mosaic of Pluto was assembled from nearly all of the highest-resolution images obtained by the Long-Range Reconnaissance Imager (LORRI) and the Multispectral Visible Imaging Camera (MVIC) on New Horizons. 
+
+The mosaic is the most detailed and comprehensive global view yet of Pluto’s surface using New Horizons data. It includes topography data of the hemisphere visible to New Horizons during the spacecraft’s closest approach. The topography is derived from digital stereo-image mapping tools that measure the parallax – or the difference in the apparent relative positions – of features on the surface obtained at different viewing angles during the encounter. Scientists use these parallax displacements of high and low terrain to estimate landform heights. 
+
+The mosaic is available in Equirectangular projection at an equatorial pixel scale of 300 meters per pixel (m). The ISIS3 cube in original 32bit file format is available from the ancillary section.  This map was produced using radii of 1188.3 kilometers for Pluto.
+
+<b>Mission and Instrument Information:</b>
+
+Pluto was discovered on February 18, 1930 at Lowell Observatory in Flagstaff, Arizona. It was discovered by an observing assistant, Clyde Tombaugh, as he assisted the search for planet X which was believed (incorrectly) to be responsible for anomalies in the orbits of Uranus and Neptune.  At about half the size of Earth’s moon, Pluto has been officially re-classified as a dwarf planet. It is in the Kuiper Belt and orbits the sun at an average distance of 3.6 billion miles. Pluto has five moons, the largest of which is Charon. Pluto and Charon orbit each other like a double planet system. 
+
+New Horizons spacecraft launched onboard a Lockheed Martin Atlas V rocket at Cape Canaveral Air Force Station in Florida on January 19, 2006. The main objectives of New Horizons was a Pluto Flyby and a Kuiper Belt Object Flyby.  The science payload includes seven instruments: visible and infrared imager/spectrometer (Ralph), ultraviolet imaging spectrometer (Alice), Radio science EXperiment (REX), Long Range Reconnaissance Image (LORRI), solar wind around Pluto (SWAP), Pluto Energetic Particle Spectrometer Science Investigation (PEPSSI), and Student Dust Counter (SDC). 
+
+New Horizons passed Mars on April 7th, 2006 and received a gravity assist from Jupiter on Feb 28th, 2007. The spacecraft was put into hibernation mode starting June 28th, 2007 and it reached the halfway point to Pluto on February 25th, 2010. Ground controllers revived New Horizons from hibernation on December 6th, 2014. At that time, it took four hours and twenty-five minutes for a signal from the spacecraft to reach Earth.  New Horizons began its approach to Pluto on January 15th, 2015 and flew about 4,800 miles above the surface of Pluto on July 14th, 2015. The entire series of data collected during New Horizons’ encounter with Pluto and Charon is about 6.25 gigabytes and was transmitted to earth at about 1-2 kilobits per second over a distance of roughly 4.5 light-hours from Earth.  As of March 2019, New Horizons was about 4.1 billion miles from Earth and continuing its journey deep into the Kuiper Belt at nearly 33,000 miles per hour. The New Horizons mission is currently extended through 2021 with the objective to explore Kuiper Belt objects.
+
+<b>References:</b>
+
+Moore, J. M., McKinnon, W. B., Spencer, J. R., Howard, A. D., Schenk, P. M., Beyer, R. A., New Horizons Science Team, et al. (2016). The Geology of Pluto and Charon Through the Eyes of New Horizons. <em>Science, 351</em>(6279), 284-1293. <a href='https://doi.org/10.1126/science.aad7055' target='_blank'>https://doi.org/10.1126/science.aad7055 </a>
+
+Schenk, P. M., Beyer, R. A., McKinnon, W. B., Moore, J. M., Spencer, J. R., White, O. L., New Horizons Geology and Geophysics Investigation Team, et al. (2018). Basin, Fractures and Volcanoes: Global Cartography and Topography of Pluto from New Horizons. <em>Icarus, 314,</em> 400-433. <a href='https://doi.org/10.1016/j.icarus.2018.06.008' target='_blank'>https://doi.org/10.1016/j.icarus.2018.06.008</a>]]></abstract>
+      <purpose><![CDATA[Image map of Pluto]]></purpose>
+      <supplinf><![CDATA[https://arxiv.org/abs/1604.05702, https://www.hou.usra.edu/meetings/lpsc2019/pdf/1723.pdf]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Ground condition</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20150714</begdate>
+          <enddate>20161025</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Image Processing</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Cartography</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS, Astropedia, ISIS</accscope>
+    <accconst>None</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Pluto/NewHorizons/thumbs/Pluto_NewHorizons_Global_Mosaic_300m_Jul2017_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3, GDAL</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic/>
+    <complete/>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Johns Hopkins University Applied Physics Laboratory</origin>
+            <pubdate/>
+            <title>Pluto's Surface in Detail</title>
+            <online>https://pds-smallbodies.astro.umd.edu/holdings/nh-p_psa-lorri_mvic-5-geophys-v1.0/dataset.html</online>
+            <online>https://pds-smallbodies.astro.umd.edu/data_sb/missions/newhorizons/index.shtml</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>The original 32bit pixel values were linearly stretched to 8bit (1-255) using the input range of 0.03344 to 0.99981.</procdesc>
+        <procdate>20170714</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>12444</rowcount>
+      <colcount>24888</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>300</absres>
+            <ordres>300</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Pluto</ellips>
+        <semiaxis>1188300</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>(296 MB)</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Pluto_NewHorizons_Global_Mosaic_300m_Jul2017_8bit.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Small Bodies</system>
+      <target>Pluto</target>
+      <quadsys/>
+      <quadname/>
+      <rada>1188300</rada>
+      <radb/>
+      <radc>1188300</radc>
+      <lattype>Planetographic</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>New Horizons</missikey>
+    </mission>
+    <instr>
+      <instrkey>LORRI</instrkey>
+      <instrkey>MVIC</instrkey>
+      <instrkey/>
+    </instr>
+    <pdsstat>PDS 3 Archived</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>69.132491671495</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

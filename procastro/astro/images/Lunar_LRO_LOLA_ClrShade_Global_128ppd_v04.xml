@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>USGS Astrogeology Science Center</origin>
+        <origin>Goddard Space Flight Center</origin>
+        <origin>NASA</origin>
+        <origin>JPL</origin>
+        <origin>PDS Geosciences Node</origin>
+        <pubdate>20110801</pubdate>
+        <title>Moon LRO LOLA Color Shaded Relief 388m v4</title>
+        <edition>4</edition>
+        <geoform>Shaded-Relief Map, Digital Elevation Model, Global Mosaic, Remote-sensing Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Moon/LMMP/LOLA-derived/Lunar_LRO_LOLA_ClrShade_Global_128ppd_v04</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This is a colorized shaded-relief of a original polar digital elevation model (DEM) from the Lunar Orbiter Laser Altimeter (LOLA; Smith et al., 2010), an instrument on the National Aeronautics and Space Agency (NASA) Lunar Reconnaissance Orbiter (LRO) spacecraft (Tooley et al., 2010).  
+
+The DEM is a shape map (radius) of the Moon at a resolution 100 meters per pixel (m) based on altimetry data acquired through September, 2011 by the LOLA instrument. The ground tracks were interpolated using the Generic Mapping Tools programs "surface" and "grdblend". Map values are referred to a radius of 1,737,400 m.
+
+<b>Mission and Instrument Information:</b>
+
+The U.S. National Aeronautics and Space Administration (NASA) launched the Lunar Reconnaissance Orbiter (LRO) spacecraft to the Moon in June 2009 (Tooley et al., 2010) carrying a variety of instruments that continue to return high-resolution images of the lunar surface from its eccentric polar mapping orbit (Petro et al., 2019).
+
+The LOLA has collected over more than 6.5 billion measurements of global surface height with a vertical precision of ~10 cm and an accuracy of ~1m (Mazarico et al., 2013). With such highly accurate global coverage, the resulting topographic map has become the reference geodetic framework for the lunar community and has led to the highest resolution and most accurate polar DEMs to date (Barker et al., 2016).
+
+<b>References:</b>
+
+Barker, M. K., Mazarico, E., Neumann, G. A., Zuber, M. T., Haruyama, J., & Smith, D. E. (2016). A new lunar digital elevation model from the Lunar Orbiter Laser Altimeter and SELENE Terrain Camera. <em>Icarus, 273,</em> 346–355. <a href='https://doi.org/10.1016/j.icarus.2015.07.039' target='_blank'>https://doi.org/10.1016/j.icarus.2015.07.039</a>
+
+LRO Project and Lunar Geodesy and Cartography Working Group (2008). A Standardized Lunar Coordinate System for the Lunar Reconnaissance Orbiter and Lunar Datasets: LRO Project and LGCWG White Paper, v. 3. <a href='https://lunar.gsfc.nasa.gov/library/LunCoordWhitePaper-10-08.pdf' target='_blank'>https://lunar.gsfc.nasa.gov/library/LunCoordWhitePaper-10-08.pdf</a>
+
+Mazarico, E., Neumann, G. A., Barker, M. K., Goossens, S., Smith, D. E., & Zuber, M. T. (2012). Orbit determination of the Lunar Reconnaissance Orbiter. <em>Journal of Geodesy, 86</em>(3), 193–207. <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20180007208.pdf' target='_blank'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20180007208.pdf</a>
+
+Petro, N. E., Keller, J. W., Cohen, B. A., & McClanahan, T. P. (2019). <em>Ten years of the Lunar Reconnaissance Orbiter: Advancing lunar science and context for future lunar exploration.</em> Paper presented at the 50th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf' target='_blank'>https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf</a>
+
+Smith, D. E., Zuber, M. T., Neumann, G. A., Lemoine, F. G., Mazarico, E., Torrence, M. H., McGarry, J. F., et al. (2010). Initial observations from the Lunar Orbiter Laser Altimeter (LOLA). <em>Geophysical Research Letters, 37</em>(L18204). <a href='https://doi.org/10.1029/2010GL043751' target='_blank'>https://doi.org/10.1029/2010GL043751</a>
+
+Tooley, C. R., Houghton, M. B., Saylor Jr., R. S., Peddie, C., Everett, D. F., Baker, C. L., & Safdie, K. N. (2010). Lunar Reconnaissance Orbiter mission and spacecraft design. <em>Space Science Reviews, 150</em>(1), 23–62. <a href='https://doi.org/10.1007/s11214-009-9624-4' target='_blank'>https://doi.org/10.1007/s11214-009-9624-4</a>]]></abstract>
+      <purpose><![CDATA[The Lunar Orbiter Laser Altimeter (LOLA) is producing a high-resolution global topographic model and geodetic framework that enables precise targeting,  safe landing,  and surface mobility to carry out exploratory activities. LOLA characterizes the polar illumination environment and images permanently shadowed polar regions of the Moon to identify possible locations of surface ice crystals in shadowed polar craters.]]></purpose>
+      <supplinf><![CDATA[https://lola.gsfc.nasa.gov/, https://ode.rsl.wustl.edu/moon/, http://pds-geosciences.wustl.edu/missions/lro/lola_faq.htm, http://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/catalog/lolainst.cat,  http://pds-geosciences.wustl.edu/missions/lro/default.htm]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Publication date</current>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>In Work</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Cartography</themekey>
+        <themekey>Geographic Information System (GIS)</themekey>
+        <themekey>Topography</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Manned exploration</themekey>
+        <themekey>Landing sites</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>None</accconst>
+    <useconst>Public domain</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Moon/LMMP/LOLA-derived/Lunar_LRO_LOLA_ClrShade_Global_128ppd_v04.cub/full.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Accurate to Control Net</attraccr>
+    </attracc>
+    <logic>The LOLA instrument has a along-track sampling in latitude of 25 m. Cross-track sampling in longitude 0.04 degrees (~25 m above latitude 85 degrees; and ~1.2 km at the equator),  after the first year of operation. Along with each gridded DEM,  a "count" image is created which reports,  at the chosen resolution,  how many LOLA shots intersected that pixel. If there are more than one shot per pixel,  the mean of the shots is used per pixel. Where no LOLA shots are available,  the pixel is approximated using a spline interpolation from the surrounding neighbors.</logic>
+    <complete>This is a preliminary product.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Accurate to Control Net</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr>Accurate to Control Net</vertaccr>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>LOLA Science Team at the Goddard Space Flight Center</origin>
+            <pubdate/>
+            <title/>
+            <online>http://pds-geosciences.wustl.edu/lro/lro-l-lola-2-edr-v1/lrolol_0xxx/data/lola_edr/</online>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/lro.html</online>
+            <online>http://pds-geosciences.wustl.edu/missions/lro/lola.htm</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>All processing was completed using Geospatial Data Abstraction Library (GDAL) tools on the original LROC DEM. To derive this colorized shaded-relief these three GDAL commands were used:
+
+(1) gdaldem hillshade input_dem output_hillshade -z 2 (ZFactor) -az 315 (Azimuth) -alt 45 (Altitude)
+(2) gdaldem color-relief input_dem color_text_file output_color_relief_map &gt;
+(3) hsv_merge.py output_color_relief_map output_hillshade output_color-hillshade. 
+
+       Pixels do not contain any of the original explicit elevation information. The colorized shaded-relief represents approximate elevations based on the original topographic data. Elevations values are mapped based on the defined red,  green,  and blue mapping listed next. All NoData values are mapped to 0, 0, 0 (black). Thus 0 percent (purple) maps to minimum elevation and 100 percent (white) maps to maximum using a linear stretch between percentages.
+-----
+
+   *  nv 0 0 0 //No Data
+   *  0% 255 120 255 //purple
+   * 20% 120 120 255 //blue
+   * 40% 120 255 255 //aqua
+   * 60% 120 255 120 //green
+   * 70% 255 255 120 //yellow
+   *  90% 255 120 120 //red
+   * 100% 255 255 255 //white</procdesc>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>23040</rowcount>
+      <colcount>46080</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>387.84</absres>
+            <ordres>387.84</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn>LOLA</horizdn>
+        <ellips>Moon</ellips>
+        <semiaxis>1737400</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum>LOLA</altdatum>
+        <altres>1</altres>
+        <altunits>Meters</altunits>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>3 GB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Lunar_LRO_LOLA_ClrShade_Global_128ppd_v04.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Earth</system>
+      <target>Moon</target>
+      <quadsys/>
+      <quadname/>
+      <rada>1737400</rada>
+      <radb/>
+      <radc>1737400</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Lunar Reconnaissance Orbiter</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>LOLA</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet>LOLA</ctrlnet>
+    <bittype>8</bittype>
+    <scale>128</scale>
+    <bands>3</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

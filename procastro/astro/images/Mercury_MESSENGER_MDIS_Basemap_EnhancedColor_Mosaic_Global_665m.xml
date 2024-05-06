@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>NASA</origin>
+        <origin>Johns Hopkins Applied Physics Laboratory</origin>
+        <origin>Arizona State University</origin>
+        <origin>Carnegie Science</origin>
+        <pubdate>20160513</pubdate>
+        <title>Mercury MESSENGER MDIS Basemap Enhanced Color Global Mosaic 665m (64ppd)</title>
+        <edition>1</edition>
+        <geoform>Global Mosaic, Raster Data, Remote-sensing Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Mercury/Messenger/Global/Mercury_MESSENGER_MDIS_Basemap_EnhancedColor_Mosaic_Global_665m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[This mosaic shows Mercury's surface in "enhanced color," a term used to describe a color scheme created to emphasize color differences on Mercury's surface. This is not what Mercury would look like to the human eye, but rather by applying mathematical analysis to MESSENGER images, color differences on Mercury's surface can be accentuated beyond those visible to a person. This view uses a global mosaic with  430, 750, and 1000 nm bands and places the second principal component, the first principal component, and the 430/1000 ratio in the red, green, and blue channels respectively.  
+
+This mosaic contains data acquired by the MErcury Surface, Space ENvironment, GEochemistry and Ranging (MESSENGER) Mercury Dual Imaging System (MDIS) instrument.
+
+References:
+
+MESSENGER Mercury Dual Imaging System (MDIS) Experiment Data Record (EDR) Software Interface Specification (SIS) document, The Johns Hopkins University, APL, V2T, Jun. 28, 2015.
+
+Hawkins, S.E., III, et al., The Mercury Dual Imaging System on the MESSENGER Spacecraft, Space Sci Rev 131: 247–338, DOI 10.1007/s11214-007-9266-3, 2007.
+
+Denevi, B.W. et al., Final calibration and multispectral map products from the Mercury Dual Imaging System Wide-Angle Camera on MESSENGER, Lunar Planet. Sci 47, abstract #1264.]]></abstract>
+      <purpose><![CDATA[]]></purpose>
+      <supplinf><![CDATA[http://messenger.jhuapl.edu/Explore/Images.html#global-mosaics]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Ground condition</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20110329</begdate>
+          <enddate>20150430</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Image Processing</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Geomorphology</themekey>
+      </theme>
+    </keywords>
+    <accscope/>
+    <accconst>None</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Mercury/Messenger/Global/thumbs/Mercury_MESSENGER_MDIS_Basemap_EnhancedColor_Mosaic_Global_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic/>
+    <complete/>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Johns Hopkins University Applied Physics Laboratory</origin>
+            <pubdate/>
+            <title>Enhanced Color Mosaic</title>
+            <online>http://messenger.jhuapl.edu/Explore/Images.html#global-mosaics</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>A stretch of approximately 0 to 0.2 is required to map Mercury reflectance values to an 8bit range of 1 to 255.</procdesc>
+        <procdate>20160506</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>11520</rowcount>
+      <colcount>23040</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>665.24315271</absres>
+            <ordres>665.24315271</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Mercury</ellips>
+        <semiaxis>2439400</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>759 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Mercury_MESSENGER_MDIS_Basemap_EnhancedColor_Mosaic_Global_665m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system/>
+      <target>Mercury</target>
+      <quadsys/>
+      <quadname/>
+      <rada>2439400</rada>
+      <radb/>
+      <radc>2439400</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>MESSENGER</missikey>
+    </mission>
+    <instr>
+      <instrkey>NAC</instrkey>
+      <instrkey>WAC</instrkey>
+      <instrkey>MDIS</instrkey>
+    </instr>
+    <pdsstat/>
+    <pdsarch>MESSENGER</pdsarch>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>64</scale>
+    <bands>3</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

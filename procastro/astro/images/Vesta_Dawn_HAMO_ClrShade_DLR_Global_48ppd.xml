@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin/>
+        <pubdate>20131210</pubdate>
+        <title>Vesta Dawn FC HAMO Global Color Shaded Relief 93m v1</title>
+        <edition>20131210</edition>
+        <geoform>Color, Raster Data, Global Mosaic, Shaded-Relief Map</geoform>
+        <serinfo>
+          <sername>Vesta_Dawn_HAMO_ClrShade_DLR_Global_48ppd</sername>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Vesta/Dawn/DLR/HAMO/Vesta_Dawn_HAMO_ClrShade_DLR_Global_48ppd</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This is a colorized shaded-relief of the original stereo-derived High Altitude Mapping Orbit (HAMO) digital terrain model (DTM).  DAWN orbited Vesta during HAMO in 21 cycles between December 2011 and end of April 2012.  Dawn orbited Vesta during HAMO in 6 cycles between end of September end early November 2011.  The FC took about 2,500 clear filter images with a resolution of about 70 meters per pixel (m) during these cycles (Roatsch et al., 2012). This DTM was created from 5439 HAMO stereo FC clear filter images at ~93 m (48 pixels per degree). The value are in radii given in meters with an +-8 meter mean intersection error.
+
+Note: This preliminary file has been shifted 150 degrees eastward (such that Claudia crater is located at 146E) to match the IAU-approved Claudia Double Prime system (from the Dawn-Claudia system as released by DLR in November 2013). 
+
+<b>Mission and Instrument Information:</b>
+
+The Dawn spacecraft launched on September 25, 2007 onboard a Delta II-Heavy Rocket.  The instrument payload consisted of two identical framing cameras (FC1 & FC2), a visible and infrared mapping spectrometer (VIR, and a gamma ray and neutron detector (GRaND).  DAWN is a National Aeronautics and Space Administration (NASA) Discovery Program mission managed by the Jet Propulsion Laboratory (JPL) with the principal investigator and science operations center located at the University of California, Los Angeles. The framing cameras were built by the Max Planck Institute for Solar System Research with significant contributions by the German Aerospace Center, Institute of Planetary Research (DLR) and in coordination with the Institute of Computer and Communication Network Engineering (Polansky et al., 2016). 
+
+Dawn spacecraft orbited Vesta in a series of science orbits designed to gradually increase the resolution and quality of science measurements as the mission at each target (Vesta & Ceres) progressed. The four science orbits are: rotation characterizations (RC1 and RC2) at 14,000 km, survey at 4,900 km (RC3), high altitude mapping orbit (HAMO) 1,950 km, and low altitude mapping orbit (LAMO) 850 km.  HAMO provided the opportunity to collect data for the global topography model by collecting six complete clear-image maps: two at nadir and four at off-nadir attitudes (Polansky et al., 2016). 
+
+<b>References:</b>
+
+Polanskey, C., Joy, S., & Raymond, C. (2016). <em>Dawn Ceres Mission: Science Operations Performance.</em> Paper presented at the SpaceOps Conference, Daejeon, Korea. <a href='https://arc.aiaa.org/doi/abs/10.2514/6.2016-2442' target='_blank' >https://arc.aiaa.org/doi/abs/10.2514/6.2016-2442</a>
+
+Preusker, F., Scholten, F., Matz, K.-D., Roatsch, T., Jaumann, R., Raymond, C. A., & Russell, C. T. (2014). <em>Global Shape of Vesta from Dawn FC stereo images.</em> Paper presented at the 45th Lunar Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href ='http://www.hou.usra.edu/meetings/vesta2014/pdf/2027.pdf' target='_blank'>http://www.hou.usra.edu/meetings/vesta2014/pdf/2027.pdf </a>
+
+Roatsch, T., Kersten, E., Matz, K.-D., Preusker, F., Scholten, F., Jaumann, R., Raymond, C. A., & Russell, C. T. (2012). High resolution Vesta High Altitude Mapping Orbit (HAMO) Atlas derived from Dawn framing camera images. <em>Planetary and Space Science, 73</em>(1), 283-286. <a href ='https://doi.org/10.1016/j.pss.2012.08.021' target='_blank' >https://doi.org/10.1016/j.pss.2012.08.021</a>
+
+Russell, C. T., & Raymond, C. A. (2011). The Dawn Mission to Vesta and Ceres. <em>Space Science Reviews, 163</em>(1-4), 3-23. <a href ='https://doi.org/10.1007/s11214-011-9836-2' target='_blank' >https://doi.org/10.1007/s11214-011-9836-2 </a>]]></abstract>
+      <purpose><![CDATA[One of the prime science goals was the determination of the global shape of Vesta represented by a digital terrain model (DTM). The DTM is particularly important,  because it is essential for derivation of physical properties of Vesta as well as for precise ortho-image registration,  mosaicking,  and map generation of monochrome/color framing camera images. In addition a DTM is needed for quantitative geomorphologic analysis and precise photometric analysis from detailed local surface incli-nation. For this purpose the entire illuminated surface was imaged stereoscopically using the Dawn Framing Camera (Dawn FC).]]></purpose>
+      <supplinf><![CDATA[http://www.hou.usra.edu/meetings/vesta2014/pdf/2027.pdf, http://dawndata.igpp.ucla.edu/tw.jsp?section=geometry/DTMs/DLR_HAMO_DTM, http://dawndata.igpp.ucla.edu/download.jsp?file=documents/VESTA_COORDINATES/VESTA_COORDINATES_121214.PDF]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Ground condition</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20111201</begdate>
+          <enddate>20120430</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>In Work</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Asteroids</themekey>
+        <themekey>Photogrammetry</themekey>
+        <themekey>Image Processing</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Topography</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>None</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Vesta/Dawn/DLR/HAMO/thumbs/Vesta_Dawn_HAMO_ClrShade_DLR_Global_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Best Effort</attraccr>
+    </attracc>
+    <logic>The Framing Camera is a multispectral imager that also serves as an optical navigation camera.  The detector is a 1024x1024 pixel Atmel/Thomson TH7888A CCD with 14 micron pixels.  It has eight filters numbered F1 through F8,  including a broadband (clear) filter and narrow band filters ranging from 438 nm to 965 nm.  The Framing camera instrument includes two redundant cameras of identical design,  referred to as FC1 and FC2.  For full information about the FC instrument,  see Schroeder and Gutierrez-Marques (2011). Reference:  Schroeder,  S.E.,  and P. Gutierrez-Marques,  Calibration Pipeline,  MPS Report DA-FC-MPAE-RP-272,  Issue 2,  Rev. a,  20 July 2011. The team constrained all HAMO clear filter images within their stereo requirements and achieved at least triple stereo image coverage for the entire illuminated surface. In total,  about 35, 000 inde-pendent multi-stereo image combinations were used to determine selected image tie points by multi-image matching for the set-up of a 3D control network of about 83, 000 surface points.</logic>
+    <complete>This DTM was created from 5439 HAMO stereo FC clear filter images at ~92 meters per pixel. The DTM covers approximately 95 percent of the surface for Vesta</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Unknown</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr>Accurate to Control Net</vertaccr>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Dawn Team</origin>
+            <pubdate/>
+            <title>Dawn FC HAMO Topography,  ColorHillshade</title>
+            <online>https://sbn.psi.edu/pds/resource/dawn/dwnvfcmosaics.html</online>
+            <online>https://sbn.psi.edu/pds/archive/maps.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>All processing was completed using Geospatial Data Abstraction Library (GDAL) tools on the original HAMO DTM. To derive this colorized shaded-relief these three GDAL commands were used:
+&gt;
+&gt; (1) gdaldem hillshade input_dem output_hillshade -z 0.0003 (ZFactor) -az 315 (Azimuth) -alt 45 (Altitude) &gt;
+&gt; (2) gdaldem color-relief input_dem color_text_file output_color_relief_map &gt;
+&gt; (3) hsv_merge.py output_color_relief_map output_hillshade output_color-hillshade. &gt;
+       Pixels do not contain any of the original explicit elevation information. The colorized shaded-relief represents approximate elevations based on the original topographic data. Elevations values are mapped based on the defined red,  green,  and blue mapping listed next. All NoData values are mapped to 0, 0, 0 (black). Thus 0 percent (purple) maps to minimum elevation and 100 percent (white) maps to maximum using a linear stretch between percentages.
+&gt; 
+&gt;      nv 0 0 0 //No Data
+&gt;      0% 255 120 255 //purple
+&gt;      20% 120 120 255 //blue
+&gt;      40% 120 255 255 //aqua
+&gt;      60% 120 255 120 //green
+&gt;      70% 255 255 120 //yellow
+&gt;      90% 255 120 120 //red
+&gt;      100% 255 255 255 //white</procdesc>
+        <procdate>20140801</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>8640</rowcount>
+      <colcount>17280</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>92.72061651</absres>
+            <ordres>92.72061651</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Vesta</ellips>
+        <semiaxis>255000</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits>Meters</altunits>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>428 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Vesta_Dawn_HAMO_ClrShade_DLR_Global_48ppd.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Small Bodies</system>
+      <target>Vesta</target>
+      <quadsys/>
+      <quadname/>
+      <rada>255000</rada>
+      <radb/>
+      <radc>255000</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Dawn</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey/>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>48</scale>
+    <bands>3</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

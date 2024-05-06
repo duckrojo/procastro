@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Arizona State University</origin>
+        <pubdate/>
+        <title>Moon LRO LROC WAC Global Morphology Mosaic 100m v3</title>
+        <edition>June 2013</edition>
+        <geoform>Global Mosaic, Remote-sensing Data, Raster Data</geoform>
+        <serinfo>
+          <sername>Version</sername>
+          <issue>3</issue>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Moon/LRO/LROC_WAC/Lunar_LRO_LROC-WAC_Mosaic_global_100m_June2013</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+Lunar Reconnaissance Orbiter Camera (LROC) Wide Angle Camera (WAC) aboard the Lunar Reconnaissance Orbiter (LRO) has allowed the instrument team to create a global mosaic comprised of over 15,000 images acquired between November 2009 and February 2011. The WAC maps the whole Moon in one month, however the solar incidence angle at the equator changes about 28° from the beginning to the end of the month. To even out the incidence angle variations (generally angles between 55-75 degrees), this morphology mosaic (at 643 nm), is comprised of data collected over three periods (1/20/2010 to 1/28/2010, 5/30/2010 to 6/6/2010, 7/24/2010 to 7/31/2010). 
+
+The South Pole mosaic images were acquired 8/10/10 to 9/19/10 and the north polar images 4/22/10 to 5/19/10. Some gores were filled with data taken at other times. The non-polar images were map projected onto the GLD100, WAC-derived 100 meters per pixel (m), while polar images were map projected on the Lunar Orbiter Laser Altimeter (LOLA) shape model (80° to 90° N/S) and the GLD100 (60° to 80° N/S). In addition, the LOLA derived crossover corrected ephemeris and an improved camera pointing provide accurate positioning of each WAC image. Because the polar images were acquired at a different season than the equatorial images, and the lunar photometric function is not perfectly known, there can be a brightness difference where the polar mosaics meet the equatorial mosaics. This has been greatly reduced in version 3 (created in June 2013). 
+
+<b>Mission and Instrument Information:</b>
+
+The U.S. National Aeronautics and Space Administration (NASA) launched the Lunar Reconnaissance Orbiter (LRO) spacecraft to the Moon in June 2009 (Tooley et al., 2010) carrying a variety of instruments that continue to return high-resolution images of the lunar surface from its eccentric polar mapping orbit (Petro et al., 2019).
+
+The LRO is a robotic spacecraft designed to acquire data to prepare for and support future human exploration of the Moon.  The Lunar Reconnaissance Orbiter Camera (LROC) is a system of three cameras mounted on the LRO that capture high resolution black and white images and moderate resolution multi-spectral images of the lunar surface (ASU, 2019). 
+
+The LROC consists of two narrow-angle cameras (NACs) that provide 0.5 meter-scale panchromatic images over a 5 km swath , a wide-angle camera (WAC) to provide images at a scale of 100 meters/pixel in seven color bands over a 60 km swath, and a Sequence and Compressor System (SCS) supporting data acquisition for both cameras. The LROC data sets are produced by the LROC Team at the Tempe campus of Arizona State University (PDS IMG, 2018).
+
+<b>References:</b>
+
+<b>Original Mosaic:</b> Speyerer, E. J., Robinson, M. S., Denevi, B. W., & LROC Science Team (2011). <em>Lunar Reconnaissance Orbiter Camera global morphological map of the Moon.</em> Paper presented at the 42nd Lunar Planetary Science Conference, Lunar and Planetary Science Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2011/pdf/2387.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2011/pdf/2387.pdf</a>
+
+<b>Mission:</b> Robinson, M. S., Brylow, S. M., Humm, D., Lawrence, S. J., Thomas, P. C., Denevi, B. W., Bowman-Cisneros, E., et al. (2010). Lunar Reconnaissance Orbiter Camera (LROC) instrument overview. <em>Space Science Review, 150</em>(1), 81–124. <a href='https://doi.org/10.1007/s11214-010-9634-2' target='_blank'>https://doi.org/10.1007/s11214-010-9634-2</a>
+
+<b>Mosaic Production:</b> Wagner, R. V., Speyerer, E. J., Robinson, M. S., & LROC Team (2015). <em>New Mosaicked Data Products from the LROC Team.</em> Paper presented at the 46th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.hou.usra.edu/meetings/lpsc2015/pdf/1473.pdf' target='_blank'>https://www.hou.usra.edu/meetings/lpsc2015/pdf/1473.pdf</a>
+Eposter: <a href='http://www.lpi.usra.edu/meetings/lpsc2015/eposter/1473.pdf' target='_blank'>http://www.lpi.usra.edu/meetings/lpsc2015/eposter/1473.pdf</a>
+
+<b>Photometry:</b> Sato, H., Robinson, M. S., Hapke, B., Denevi, B. W., & Boyd, A. K. (2104). Resolved Hapke parameter maps of the Moon. <em>Journal of Geophysical Research: Planets, 119,</em> 1775-1805. <a href='https://doi.org/10.1002/2013JE004580' target='_blank'>https://doi.org/10.1002/2013JE004580</a>
+
+Arizona State University (ASU) (2019). About Lunar Reconnaissance Orbiter. <a href='https://www.lroc.sese.asu.edu' target='_blank'>https://www.lroc.sese.asu.edu</a>
+
+Petro, N. E., Keller, J. W., Cohen, B. A., & McClanahan, T. P. (2019). <em>Ten years of the Lunar Reconnaissance Orbiter: Advancing lunar science and context for future lunar exploration.</em> Paper presented at the 50th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf' target='_blank'>https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf</a>
+
+Planetary Data Systems (PDS) Cartography and Imaging Sciences (IMG) (2018). <em>Lunar Reconnaissance Orbiter.</em> <a href='https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html' target='_blank'>https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html</a>
+
+Tooley, C. R., Houghton, M. B., Saylor Jr., S. S., Peddie, C., Everett, D. F., Baker, C. L., & Safdie, K. N. (2010). Lunar Reconnaissance Orbiter mission and spacecraft design. <em>Space Science Review, 150,</em> 23–62. <a href='https://doi.org/10.1007/s11214-009-9624-4' target='_blank'>https://doi.org/10.1007/s11214-009-9624-4</a>]]></abstract>
+      <purpose><![CDATA[To generate a 100 meters per pixel morphology mosaic of the Moon.]]></purpose>
+      <supplinf><![CDATA[http://wms.lroc.asu.edu/lroc/view_rdr/WAC_GLOBAL, https://www.hou.usra.edu/meetings/lpsc2015/pdf/1473.pdf, https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/2013JE004580,  http://lroc.sese.asu.edu/about, https://www.lpi.usra.edu/meetings/lpsc2011/pdf/2046.pdf]]></supplinf>
+    </descript>
+    <timeperd>
+      <current/>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>In Work</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Image Processing</themekey>
+        <themekey>Cartography</themekey>
+        <themekey>Geomorphology</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Selenography</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>public domain</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Moon/LRO/LROC_WAC/thumbs/Moon_LRO_LROC-WAC_Mosaic_global_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic>Because the polar images were acquired at a different season than the equatorial images,  and the lunar photometric function is not perfectly known,  there is a brightness difference where the polar mosaics meet the equatorial mosaics. In a future release this discontinuity will be reduced.</logic>
+    <complete>global coverage</complete>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Arizona State University</origin>
+            <pubdate/>
+            <title>LRO LROC images</title>
+            <online>http://pds-geosciences.wustl.edu/lro/lro-l-lola-2-edr-v1/lrolol_0xxx/data/lola_edr/</online>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/lro.html</online>
+            <online>http://pds-geosciences.wustl.edu/missions/lro/lola.htm</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/lro_mission.htm</online>
+            <online>http://wms.lroc.asu.edu/lroc/view_rdr/WAC_GLD100</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>image processing completed using ISIS and orthorectified on both LOLA and WAC digital elevation models.</procdesc>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>54582</rowcount>
+      <colcount>109164</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>100.0000418</absres>
+            <ordres>100.0000418</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Moon</ellips>
+        <semiaxis>1737400</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>5.5 GB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Lunar_LRO_LROC-WAC_Mosaic_global_100m_June2013.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Earth</system>
+      <target>Moon</target>
+      <quadsys/>
+      <quadname/>
+      <rada>1737400</rada>
+      <radb/>
+      <radc>1737400</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Lunar Reconnaissance Orbiter</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>LROC</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Archived</pdsstat>
+    <pdsarch>Lunar Reconnaissance Orbiter</pdsarch>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>303.2334</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin/>
+        <pubdate>20140211</pubdate>
+        <title>Global Geologic Map of Ganymede, SIM3237</title>
+        <edition>1</edition>
+        <geoform>Geologic Map, Global Mosaic</geoform>
+        <serinfo>
+          <sername>IMAP</sername>
+          <issue>3237</issue>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Ganymede/Geology/Ganymede_SIM3237_Database</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[Ganymede is the largest satellite of Jupiter, and its icy surface has been formed through a variety of of impact cratering, tectonic, and possibly cryovolcanic processes.  The history of Ganymede can be divided into three distinct phases: an early phase dominated by impact cratering and mixing of non-ice materials in the icy crust, a phase in the middle of its history marked by great tectonic upheaval, and a late quiescent phase characterized by a gradual drop in heat flow and further impact cratering.  Images of Ganymede suitable for geologic mapping were collected during the flybys of Voyager 1 and Voyager 2 (1979), as well as during the Galileo mission in orbit around Jupiter (1995-2003).  This map represents a synthesis of our understanding of Ganymede geology after the conclusion of the Galileo mission.
+
+      The two fundamental classes of material units on Ganymede are dark materials and light materials.  The dark/light distinction is based on sharp relative albedo contrasts at terrain boundaries, rather than on absolute albedo, as several other types of surface modification (e.g., crater rays, polar caps) change the absolute albedo within these terrain classes.  Dark materials cover 35% of Ganymede's surface, with almost the entire remainder of the surface covered by light materials.
+
+      Dark materials are heavily cratered, though not as heavily cratered as the surface of the neighboring satellite Callisto, suggesting that dark materials cannot be a primordial surface.  At high resolution, dark materials are dominated by the downslope movement of loose dark regolith within impact craters and on the sides of bright ridges and hummocks.  These observations suggest that dark materials are covered by a thin lag deposit of dark regolith derived by sublimation of a more ice-rich crust below.  Dark materials commonly exhibit sets of concentric arcuate structures known as furrows.  Furrows may be the remnants of ancient multi-ring impact basins, similar to intact impact basins on Callisto such as Valhalla and Asgard.
+
+      Light materials crosscut dark materials and exhibit a lower impact crater density, demonstrating that they were formed later.  Light materials are subdivided into an intricate patchwork of crosscutting lineaments called grooves, mixed with areas of relatively smooth terrain.  At high resolution, most light materials are dominated by extensional faulting.  Even light materials that appear to be smooth at low resolution are marked at high resolution by sets of parallel lineaments of apparent tectonic origin.  There is an open question on the extent to which light terrain is formed by cryovolcanic flooding of dark material with brighter ice, versus tectonic destruction of preexisting surface features and exposure of brighter subsurface ice in fault scarps; it is certainly possible that both of these processes play important roles in the formation of light materials.  Not all tectonic activity on Ganymede has led to the formation of light material and some dark material is cut by extensional faults without exhibiting a major change in albedo, while reticulate material is cut by two sets of tectonic lineaments and is transitional in albedo between adjacent light and dark materials.
+
+      The other material units found on Ganymede were created by several types of impact features, ranging from impact craters, to viscously relaxed impact features called palimpsests, to the large impact basin Gilgamesh in the southern hemisphere. Additional details on these topics, along with detailed descriptions of the type localities for the material units, may be found in the companion paper to this map (Patterson and others, 2010).
+
+Suggested Citation:
+Collins, G.C., Patterson, G.W., Head, J.W., Pappalardo, R.T., Prockter, L.M., Lucchitta, B.K., and Kay, J.P., 2013, Global geologic map of Ganymede: U.S. Geological Survey Scientific Investigations Map 3237, pamphlet 4 p., 1 sheet, scale 1:15,000,000, http://dx.doi.org/10.3133/sim3237
+
+References:
+ Patterson, G.W., Collins, G.C., Head, J.W., and 4 others, 2010, Global geological mapping of Ganymede: Icarus, v. 207, p. 845-867.
+
+ Shoemaker, E.M., Lucchitta, B.K., Wilhelms, D.E., and 2 others, 1982, The geology of Ganymede, in: Satellites of Jupiter (Morrison, D., ed.), Univ. of Arizona Press, p. 435-520.
+
+ Pappalardo, R.T., Collins, G.C., Head, J.W., and 6 others, 2004, Geology of Ganymede, in: Jupiter (Bagenal, F., Dowling, T., McKinnon, W., eds.), Cambridge Univ. Press, p. 363-396.]]></abstract>
+      <purpose><![CDATA[Much has been learned about Ganymede's impact cratering,  tectonic,  and possibly cryovolcanic processes since the Voyager flybys,  primarily during and following the Galileo Mission at Jupiter (December 1995-September 2003). Our mapping incorporates this new understanding to assist in map unit definition and provide a global synthesis of Ganymede's geology.]]></purpose>
+      <supplinf><![CDATA[http://pubs.usgs.gov/sim/3237/]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Publication date</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20060601</begdate>
+          <enddate>20140211</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>None planned</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Geology</themekey>
+        <themekey>Geographic Information System (GIS)</themekey>
+        <themekey>Flyby missions</themekey>
+        <themekey>Photogeology</themekey>
+        <themekey>Geomorphology</themekey>
+        <themekey>Structure</themekey>
+        <themekey>Satellites</themekey>
+        <themekey>Remote Sensing</themekey>
+      </theme>
+    </keywords>
+    <accscope>PGM, MRCTR</accscope>
+    <accconst>None</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Ganymede/Geology/thumbs/Ganymede_Geology_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ESRI Arcinfo</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Best Effort</attraccr>
+    </attracc>
+    <logic>These data are believed to be logically consistent. Line geometry is topologically clean. The final map was generalized and scaled to be commensurate with a 1:15, 000, 000 map scale,  although map component compilation was at a larger scale. Overall,  the geologic map product is only as accurate as the 2005 basemap created by the USGS which contains kilometer errors. 
+
+* Becker,  T. et al.,  2001. Final Digital Global Maps of Ganymede,  Europa,  and Callisto,  In Lunar and Planetary Science XXXII,  Abstract #2009,  Lunar and Planetary Institute,  Houston.</logic>
+    <complete>Completed at the given scale for publication by USGS.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Best Effort</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Astrogeology Science Center</origin>
+            <pubdate/>
+            <title>Controlled color photomosaic map of Ganymede Jg 15M CMNK</title>
+            <online>http://pubs.er.usgs.gov/publication/i2762</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>Relative age relationships of mapped units were determined based on crosscutting relationships and differences in crater density.  Dark cratered material (dc) is crosscut by grooves to form dark lineated material (dl).  Dark materials and reticulate material are crosscut by light materials.  Light materials are divided into three broad age categories based on crosscutting relationships.  The youngest (lg3,  ls3,  li3) light material units are not crosscut by any other light units,  while the oldest (lg1,  ls1,  li1) are crosscut by all adjacent light units.  Intermediate age light material units (lg2,  ls2,  li2) are crosscut by the youngest units,  and intermediate units in turn crosscut the oldest units.  Dark lineated (dl) and reticulate (r) material sometimes share common groove spacing,  morphology,  and orientation with adjacent old light materials (lg1,  ls1,  li1),  indicating that they may have formed contemporaneously.  Palimpsests are divided into ancient palimpsests (p1),  which are crosscut by light material,  young palimpsests (p2),  which overlie light material,  and undivided palimpsests (pu),  which do not come in contact with light material and thus crosscutting relationships cannot be used for relative age determination.  The p2 palimpsests Epigeous and Zakar overlie all ages of light materials,  Teshub overlies undivided light materials (l) and is cut by young light grooved material (lg3),  and Hathor overlies undivided light material (l) while its secondary craters overlie old light subdued material (ls1) and intermediate light grooved material (lg2).  All basin materials (br,  bs,  bi) overlie all ages of light materials.  Some degraded crater materials (c1) are crosscut by dark lineated (dl) and light materials,  while other degraded crater materials overlie light materials.  Partially degraded and fresh crater materials (c2 and c3) overlie all other material units.</procdesc>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Vector</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount/>
+      <colcount/>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres/>
+            <ordres/>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn>RAND November 1999 control solution</horizdn>
+        <ellips>Ganymede</ellips>
+        <semiaxis>2632345</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum>RAND November 1999 control solution</altdatum>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>zip</formname>
+          <transize>107290967</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://pubs.usgs.gov/sim/3237</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Jupiter</system>
+      <target>Ganymede</target>
+      <quadsys/>
+      <quadname/>
+      <rada>2632345</rada>
+      <radb/>
+      <radc>2632345</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Voyager</missikey>
+      <missikey>Galileo</missikey>
+    </mission>
+    <instr>
+      <instrkey>Voyager  1</instrkey>
+      <instrkey>Voyager  2</instrkey>
+      <instrkey/>
+    </instr>
+    <pdsstat/>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet>RAND November 1999 control solution</ctrlnet>
+    <bittype/>
+    <scale/>
+    <bands/>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

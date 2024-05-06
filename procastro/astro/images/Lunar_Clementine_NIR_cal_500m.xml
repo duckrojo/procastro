@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin/>
+        <pubdate/>
+        <title>Moon Clementine NIR Standard Calibration 500m v1</title>
+        <edition>1</edition>
+        <geoform>Remote-sensing Data, Global Mosaic</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Moon/Clementine/NIR/Lunar_Clementine_NIR_cal_500m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This mosaic represents a reduced-resolution version of the standard calibration Clementine near-infrared (NIR) mosaic processed to 500 meters per pixel (m) as an ISIS cube (70° N to 70° S).
+
+<b>Mission and Instrument Information:</b>
+
+On January 25, 1994, the Deep Space Program Science Experiment (DSPSE), better known as Clementine, was launched from Vandenburg Air Force Base aboard a Titan IIG rocket, as a joint project between the and was jointly sponsored by the Ballistic Missile Defense Organization (BMDO) of the Dept of Defense and NASA. The objective of the mission was to test sensors and spacecraft components under extended exposure to the space environment and to make scientific observations of the Moon and a near-Earth asteroid (1620 Geographos).
+
+After two Earth fly-bys, lunar insertion was achieved on February 19th. Lunar mapping took place over approximately two months in two systematic mapping passes over the Moon. After the spectacular success of the Lunar mapping phase of the mission, Clementine suffered an on-board malfunction on May 7, 1994 that resulted in the activation of its altitude thrusters. This exhausted all the fuel for altitude control and left the spacecraft spinning at 80 revolutions per minute. The result of the malfunction prevented Clementine from performing the planned close fly-by of the near-Earth asteroid Geographos scheduled for August 1994.
+
+The main instrumentation on Clementine consisted of four cameras, one with a laser-ranging system. The cameras included an ultraviolet-visual (UVVIS) camera, a long-wavelength infrared (LWIR) camera, the laser-ranger (LIDAR) high-resolution (HIRES) camera, and a near-infrared (NIR) camera. The spacecraft also had two star tracker cameras (A-STAR, B- STAR), used mainly for attitude determination, but they also served as wide-field cameras for various scientific and operational purposes (PDS IMG, 2017).
+
+<b>References:</b>
+
+Cahill, J. T., Lucey, P. G., Gillis, J. J., & Steutel, D. (2004). <em>Verification of quality and compatibility for the newly calibrated Clementine NIR data set.</em> Paper presented at the 35th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2004/pdf/1469.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2004/pdf/1469.pdf</a>
+
+Eliason, E. M., Malaret, E., & Bachman, N. (1994). Clementine EDR Image Software Interface Specification (SIS). <a href='https://pds-imaging.jpl.nasa.gov/documentation/clementine_edrsis.pdf' target='_blank'>https://pds-imaging.jpl.nasa.gov/documentation/clementine_edrsis.pdf</a>
+
+Eliason, E. M., McEwen, A. S., Robinson, M. S., Lee, E. M., Becker, T., Gaddis, L., Weller, L. A., et al. (1999). <em>Digital processing for a global multispectral map of the Moon from the Clementine UVVIS imaging instrument.</em> Paper presented at the 30th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/LPSC99/pdf/1933.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/LPSC99/pdf/1933.pdf</a>
+
+Eliason, E. M., Lee, E. M., Becker, T. L., Weller, L. A., Isbell, C. E., Staid, M. I., Gaddis, L. R., et al. (2003). <em>A near-infrared (NIR) global multispectral map of the Moon from Clementine.</em> Paper presented at the 34th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2003/pdf/2093.pdf target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2003/pdf/2093.pdf</a>
+
+Lucey, P. G., Hinrichs, J., Budney, C., Smith, G., Frost, C., Hawke, B. R., Malaret, E., et al. (1998). <em>Calibration of the Clementine near infrared camera: Ready for prime time.</em> Paper presented at the 29th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/LPSC98/pdf/1576.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/LPSC98/pdf/1576.pdf</a>
+
+Lucey, P. G., Blewett, D. T., Eliason, E. M., Weller, L. A., Sucharski, R., Malaret, E., Hinrichs, J. L., et al. (2000). <em>Optimized calibration constants for the Clementine NIR camera.</em> Paper presented at the 31st Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2000/pdf/1273.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2000/pdf/1273.pdf</a>
+
+McEwen, A. S., & Robinson, M. S. (1997). Mapping of the Moon by Clementine. <em>Advances in Space Research, 19</em>(10), 1523-1533. <a href='https://doi.org/10.1016/S0273-1177(97)00365-7' target='_blank'>https://doi.org/10.1016/S0273-1177(97)00365-7</a>
+
+Nozette, S., Rustan, P. Pleasance, L. P., Kordas, J. F., Lewis, I. T., Park, H. S., Priest, R. E., et al. (1994). The Clementine Mission to the Moon: Scientific Overview. <em>Science, 266</em>(5192), 1835-1839. <a href='https://www.doi.org/10.1126/science.266.5192.1835' target='_blank'>https://www.doi.org/10.1126/science.266.5192.1835</a>
+
+Pieters, C. M., & Pratt, S. (2000). <em>Earth-based near-infrared collection of spectra for the Moon:  A new PDS data set.</em> Paper presented at the 31st Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2000/pdf/2059.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2000/pdf/2059.pdf</a>
+
+Planetary Data Systems (PDS) Cartography and Imaging Sciences Node (IMG) (2017). Clementine Mission. <a href='https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html' target='_blank'>https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html</a>]]></abstract>
+      <purpose><![CDATA[In May and June of 1994,  the NASA/DoD Clementine Mission acquired global,  11-band,  multispectral data of the lunar surface using the ultraviolet-visible (UVVIS) and near-infrared (NIR) camera systems (e.g.,  Nozette et al,  1994; McEwen and Robinson,  1996). The global 5-band UVVIS Digital Image Model (DIM) of the Moon at 100 m was released to the Planetary Data System (PDS) in 2000 (Eliason et al.,  1999). The NIR DIM has six spectral bands (1100,  1250,  1500,  2000,  2600,  and 2780 nm) and will be delivered in 996 quads at 100 m (303 pixels per degree) in early 2004. 
+
+This First Release NIR mosaic is processed to 500 m,  has 6 spectral bands,  and is presented in Simple Cylindrical map projection for the east (0° to 180° E) and west (180° to 360° E) lunar hemispheres. The NIR data have been radiometrically corrected,  geometrically controlled to the Clementine 750-nm mosaic,  and photometrically normalized to form seamless,  uniformly illuminated mosaics of the lunar surface. The first four NIR bands (1100 to 2000 nm) have also been normalized to reflectance based on the approach previously applied to the calibrated UVVIS global mosaics (Pieters et al.,  2000). The 2600 nm and 2780 nm NIR bands are provided as calibrated Clementine digital numbers (in counts/ms).]]></purpose>
+      <supplinf><![CDATA[http://astrogeology.usgs.gov/maps/moon-clementine-near-ir-global-map, http://www.lpi.usra.edu/meetings/lpsc2007/pdf/2092.pdf , https://isis.astrogeology.usgs.gov, https://www.lpi.usra.edu/meetings/lpsc2004/pdf/1469.pdf]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Publication date</current>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>None planned</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>70</northbc>
+        <southbc>-70</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Image Processing</themekey>
+        <themekey>Mineral resources</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>public domain</accconst>
+    <useconst>None</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Moon/Clementine/NIR/thumbs/Lunar_Clementine_NIR_cal_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic>For these products,  we used the radiometric camera model described in Lucey et al. (2000) along with a thermal background correction described in Eliason et al. (2003). Residual radiometric artifacts remain in these data and are clearly visible when a ratio of two NIR bands is generated. The artifacts are attributed to 1) the radiometric camera model having residual errors in the values associated with the instrument operating modes (gain,  offset,  and exposure values); 2) residual errors existing in the thermal background correction; and 3) the shading properties of the sensor array changing with the thermal conditions of the camera that have not been properly characterized.
+
+In addition to the major radiometric and photometric processing,  empirically derived frame offset corrections were applied to produce a second version of the global mosaics with reduced variability across camera modes and adjacent orbits. This additional processing resulted in the "empirically corrected" mosaics and is described in more detail below. Similar before-and-after comparisons are shown for the Aristarchus Plateau region and the eastern portion of the South Pole-Aitken basin region. Finally,  1500/2000-nm ratios of the western hemisphere and the Aristarchus Plateau are shown to illustrate the magnitude of the changes between the calibrated and empirically corrected versions of the NIR mosaics.</logic>
+    <complete>-70 to 70 latitude</complete>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Planetary Data System</origin>
+            <pubdate/>
+            <title/>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/clementine.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>Details of the processing of the NIR mosaics have been described in several publications: Lucey et al.,  1998,  LPS XXIX,  #1576 (25 KB,  PDF); Lucey et al.,  2000,  LPS XXXI,  #1273 (55 KB,  PDF); and Eliason et al.,  2003,  LPS XXXIV,  #2093 (210 KB,  PDF). Processing of the global mosaics based on the radiometric and photometric procedures described in these references resulted in the "standard processing" global mosaics presented above.
+
+FRACTIONAL_REFLECTANCE = (SCALING_FACTOR * DN) 
+
+where: DN = 16-bit pixel value of UVVIS DIM image array. SCALING_FACTOR = 1.3500E-04</procdesc>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>8491</rowcount>
+      <colcount>21833</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>500</absres>
+            <ordres>500</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Moon</ellips>
+        <semiaxis>1737400</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>2 GB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Lunar_Clementine_NIR_cal_500m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Earth</system>
+      <target>Moon</target>
+      <quadsys/>
+      <quadname>LQ-1, LQ-30</quadname>
+      <rada>1737400</rada>
+      <radb/>
+      <radc>1737400</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>70</maxlat>
+      <minlat>-70</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Clementine</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>NIR</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch>Clementine</pdsarch>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>16</bittype>
+    <scale>60.6467008</scale>
+    <bands>6</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

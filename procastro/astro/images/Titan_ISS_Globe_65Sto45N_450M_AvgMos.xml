@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>USGS Astrogeology Science Center</origin>
+        <pubdate/>
+        <title>Titan Cassini ISS Near Global Mosaic 450m v1</title>
+        <edition/>
+        <geoform>Global Mosaic</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Titan/Cassini/Global-Mosaic/Titan_ISS_Globe_65Sto45N_450M_AvgMos</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+The Cassini mission has returned an abundance of data about the surface of Titan. To maximize the science return from these data and to assist with planning for Cassini and future missions, we have begun the process of rigorously registering images and ancillary data from Cassini's Imaging Science Subsystem (ISS) and Radio Detection and Ranging (RADAR) instruments into a single, consistent, precise global Titan reference frame and have created the first controlled near global (all longitudes, +45° to -65° latitude) ISS mosaic of Titan. This has been done via a controlled, photogrammetric least squares bundle adjustment.  Pixel resolution is 450 meters per pixel (m).
+
+Due to the atmosphere of Titan the ISS cameras had to use “methane windows”, areas in Titan’s atmosphere where the reflectance spectrum is most transparent. Additionally, extensive data processing was required to correct the reduced contrast from atmospheric haze and camera imperfections such as dust motes. To accommodate this, multiple images are taken of the same foot print. The images are summed to increase signal to noise ratio, then divided by a flatfield or image of atmospheric haze. This process normalizes the image brightness and also serves to identify upper tropospheric clouds. The resultant images are mosaiced to create global digital maps. 
+
+<b>Mission and Instrument Information:</b>
+
+The Cassini-Huygens mission was a joint endeavor between the Italian Space Agency, the European Space Agency (ESA) and National Aeronautics and Space Administration (NASA).  The Cassini-Huygens mission launched from Cape Canaveral Air Force Base in Florida on October 15, 1997 and ended on September 15, 2017 when Cassini began its Final Entry into Saturn’s Atmosphere. The primary mission ran from July 2004 – June 2008, the first mission extension, Equinox, was from July 2008- October 2010 and was followed by a final extended mission, Solstice, from October 2010 – September 2017. 
+
+The Cassini Imaging Science Subsystem (ISS) consists of two framing cameras. The narrow angle camera is a reflecting telescope with a focal length of 2000 mm and a field of view of 0.35 degrees. The wide-angle camera is a refractor with a focal length of 200 mm and a field of view of 3.5 degrees. The stated objective of the ISS was to obtain global coverage for all medium-sized icy satellites with a resolution better than 1 km/pixel and high-resolution images of selected areas (Porco, 2004). This goal was achieved with image sequences obtained during close flybys supplemented by images from greater distances to complete the coverage (Roatsch, 2016)
+
+<b>References:</b>
+
+Perry, J., McEwen, A., Fussner, S., Turtle, E., West, R., Porco, C., Knowles, B., Dawson, D., & Cassini ISS Team (2005). <em>Processing ISS images of Titan’s Surface.</em> Paper presented at the 36th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20050173947.pdf' target='_blank'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20050173947.pdf</a>
+
+Porco, C., Baker, E., Barbara, J., Beurle, K., Brahic, A., Burns, J. A., Charnoz, S., et al. (2005). Imaging of Titan from the Cassini Spacecraft. <em>Nature, 434,</em> 159-168. <a href='https://doi.org/10.1038/nature03436' target='_blank'>https://doi.org/10.1038/nature03436</a>
+
+Porco C. C., West, R. A., Squyres, S., McEwan, A., Thomas, P., Murray, C. D., Delgenio, A., et al. (2004). Cassini Imaging Science: Instrument Characteristics and Anticipated Scientific Investigations at Saturn. In Russell C.T. (Eds.), <em>The Cassini-Huygens Mission</em> (pp. 363-347). Dordrecht, Netherlands: Springer. <a href='https://doi.org/10.1007/1-4020-3874-7_6' target='_blank'>https://doi.org/10.1007/1-4020-3874-7_6</a>
+
+Roatsch, T., Kersten, E., Matz, K.-D., Scholten, F., & Porco, C. C. (2016). <em>Cartography of the medium-sized saturnian satellites based on Cassini-ISS images.</em> Paper presented at the Enceladus and the Icy Moons of Saturn Conference, Lunar and Planetary Institute, Boulder, CO. <a href='https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf' target='_blank'>https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf</a>]]></abstract>
+      <purpose><![CDATA[]]></purpose>
+      <supplinf><![CDATA[http://www.ciclops.org/view/8212/Map-of-Titan---June-2015?js=1]]></supplinf>
+    </descript>
+    <timeperd>
+      <current/>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress/>
+      <update/>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>45</northbc>
+        <southbc>-65</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey/>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst/>
+    <useconst/>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Titan/Cassini/Global-Mosaic/Titan_ISS_Globe_65Sto45N_450M_AvgMos.cub/full.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic/>
+    <complete/>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin/>
+            <pubdate/>
+            <title/>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/iss.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/cassini_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc/>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>10987</rowcount>
+      <colcount>35953</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Equirectangular</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>450</absres>
+            <ordres>450</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Titan</ellips>
+        <semiaxis>2575000</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>1.5 GB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Titan_ISS_Globe_65Sto45N_450M_AvgMos.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Saturn</system>
+      <target>Titan</target>
+      <quadsys/>
+      <quadname/>
+      <rada>2575000</rada>
+      <radb/>
+      <radc>2575000</radc>
+      <lattype>Planetographic</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive West</londir>
+    </body>
+    <footprin>
+      <maxlat>45</maxlat>
+      <minlat>-65</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Cassini-Huygens</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>ISS</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype/>
+    <scale>99.871</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

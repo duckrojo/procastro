@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Archinal</origin>
+        <origin>B.</origin>
+        <origin>Colvin</origin>
+        <origin>T</origin>
+        <origin>Davies</origin>
+        <origin>M</origin>
+        <origin>Gitlin</origin>
+        <origin>A.</origin>
+        <origin>Kirk</origin>
+        <origin>R.</origin>
+        <origin>Weller</origin>
+        <origin>L.</origin>
+        <pubdate>20100101</pubdate>
+        <title>Europa Voyager - Galileo SSI Global Mosaic 500m v2</title>
+        <edition/>
+        <geoform>Remote-sensing Data, Raster Data, Global Mosaic</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Europa/Voyager-Galileo/Europa_Voyager_GalileoSSI_global_mosaic_500m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This global map base of Europa utilizes the best image quality and moderate resolution coverage supplied by the Galileo SSI (Solid-State Imaging) instrument and Voyager 1 and 2. The image data was selected on the basis of overall image quality, reasonable input resolution (from 20 km/pixel for gap fill to as high as 200 meters per pixel[m]), and availability of moderate viewing and sun angles for topography. The map projections are based on a sphere having a radius of 1,562.09 kilometers. A Simple Cylindrical projection was used at a resolution of 500 m. A plot of the footprints of the original image data used for the mosaic is available as a PDF under "Ancillary Products" on the right of this page.
+
+Digital image processing of the Voyager pictures was done in the Flagstaff Image Processing Facility. The programs and techniques that were used have been developed over a period of several years by a team of scientists and programmers (Batson, 1984). Two levels of digital image processing are commonly used for planetary mapping. Level 1 is intended to restore the pictures to the quality that would have been produced by a “perfect” camera, this is done by removing “artifacts” from lens distortions and electronic recording and transmitting systems. Level 2 processing is done to correct image geometry to match appropriate map projections. Final map/ mosaic complications are done with level 2, geometrically corrected, images (Batson, 1984).   Both level 1 and level 2 processing are done to preserve the original contrast captured by the camera which may include very dark and or very light areas. 
+
+<b>Mission and Instrument Information:</b>
+
+The Voyager I spacecraft launched September 5, 1977 and passed through the Saturnian system on November 12, 1981. Voyager 2 launched August 20, 1977 and made a similar encounter with Jupiter on July 9th, 1979. The spacecraft carried both wide- and narrow- angle cameras, which were able to capture and return moderate- to high- resolution images of the satellites Rhea, Dione, Enceladus, Mimas, Tethys, and Iapetus. The rapid speed of the spacecraft as it approached the satellites resulted in significant mis-matches of image resolution and image blur (Greely & Batson, 2007; Batson, 1984).
+
+Galileo launched on October 18, 1989 from the Kennedy Space Center in Florida aboard the space shuttle Atlantis with the aim to study Jupiter and its moons. It arrived at Jupiter on December 7th, 1995 and ended when the spacecraft entered Jupiter’s atmosphere on September 21, 2003. Galileo made seven flybys of Io during its fourteen-year mission in the Jovian system.
+
+Galileo's Solid-State Imaging (SSI) experiment was designed to study Jupiter and it’s satellites using multi-spectral, high-resolution, charge-coupled device (CCD) camera. The camera was operated in eight filtered band passes from 350-1100nm, the eight -position filter wheel consisted of three broad-band filters: violet(404nm), green(559nm), and red(671nm). The borad-band filters allowed for the reconstruction of visible color photographs. The use of a CCD permitted the SSI to have an image geometry which was independent of brightness gradients, greater sensitivity to incident photons, and a wider spectral range than any camera previously flown on a planetary mission.
+
+<b>References:</b>
+
+Batson, R. (1984). <em>Voyager 1 and 2 Atlas of Six Saturnian Satellites</em> (NASA-SP-474). Washington, DC: National Aeronautics and Space Administration (NASA). <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf' target='_blank'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf</a>
+
+Belton, M. J. S., Klaasen, K. P., Clary, M. C., Anderson, J. L., Anger, C. D., Carr, M. H., Chapman, C. R., et al. (1992). The Galileo Solid-State Imaging experiment. <em>Space Science Reviews, 60</em>(1-4), 413-455. <a href='https://doi.org/10.1007/BF00216864' target='_blank'>https://doi.org/10.1007/BF00216864</a>
+
+Greely, R., & Batson, R. (2007). <em>Planetary Mapping.</em> (ISBN 0-521-30774-0). New York, NY: Cambridge University Press. 
+
+U.S. Geological Survey (2002). <em>Controlled Photomosaic Map of Europa, Je 15M CMN.</em> (U.S. Geological Survey Geologic Investigations Series I–2757). Flagstaff, AZ: US Geological Survey. <a href='http://pubs.usgs.gov/imap/i2757' target='_blank'>http://pubs.usgs.gov/imap/i2757</a>]]></abstract>
+      <purpose><![CDATA[This mosaic updates Voyager mission global maps of Europa with Galileo SSI (Solid-State Imaging) data of superior resolution and geometric fidelity. This product has been used to map lineament locations (Crawford,  Z.A. and Pappalardo,  R.T. 2006. Evidence for Episodic Formation of Europa's Global Lineaments Via Non-Synchronous Rotation. 37th Annual Lunar and Planetary Science Conference 37) and as a base map for formal planetary nomenclature.]]></purpose>
+      <supplinf><![CDATA[http://pubs.usgs.gov/imap/i2757/, Galileo SSI data,  http://pds-imaging.jpl.nasa.gov/volumes/galileo.html#gllSSIREDR ,  (volumes go_0018-0021,  go_0023,  go_1005-1008)  , Voyager ISS data,  http://pds-imaging.jpl.nasa.gov/volumes/voyager.html ,  (volumes vg_0013,  vg_0015-25)]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Publication date</current>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate>19691231</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>None planned</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Satellites</themekey>
+        <themekey>Geology</themekey>
+        <themekey>Cartography</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>None</accconst>
+    <useconst>None</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Europa/Voyager-Galileo/thumbs/Europa_Voyager_GalileoSSI_global_mosaic_500m_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Unknown</attraccr>
+    </attracc>
+    <logic>This map is built on updated radii,  planet constant values (Wo),  and adjusted C-matrices from the Galileo mission. The RAND calculations were based on a sphere,  and so a single mean radius was used for mapping (1562.09 km) (Davies,  M. E.,  Colvin,  T. R.,  Oberst,  J.,  Zeitler,  W.,  Schuster,  P.,  Neukum,  G.,  McEwen,  A. S.,  Phillips,  C. B.,  Thomas,  P. C.,  Veverka,  J.,  Belton,  M. J. S.,  and Schubert,  G. 1998. The Control Networks of the Galilean Satellites and Implications for Global Shape. Icarus 135. doi:10.1006/icar.1998.5982). The results for using an ellipsoid instead of a sphere indicated minimal differences except at high emission angles at the poles and near the equator at longitudes 0 and 180. Given that the poles have very poor resolution coverage or no coverage at all,  using a sphere rather than an ellipsoid is considered sufficient. For the digital global map,  image data with lower emission angles were selected when available at the equator,  thus reducing the effects of the shape chosen in these areas.</logic>
+    <complete>A data gap occurs in the Europa mosaic at the south pole; no coverage exists south of latitude -83 degrees. Only low resolution data (~20 km/pixel) cover the north pole and many high latitudes in the north and south.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Unknown</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>PDS Cartography and Imaging Node</origin>
+            <pubdate/>
+            <title>Galileo SSI and Voyager ISS PDS Archives</title>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/galileo.html#gllSSIREDR</online>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/voyager.html#vgrISSEDR-J</online>
+            <online>http://pds-imaging.jpl.nasa.gov/portal/galileo_mission.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/voyager_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>The individual images were radiometrically calibrated and then were photometrically normalized using a Lunar- Lambert function with empirically derived values (Kirk,  R. L. 2000. Geometric Calibration of the Wide-Angle Mars Orbiter Camera. Lunar and Planetary Institute Science Conference Abstract 31.,  2025; McEwen,  A.S. 1991. Photometric functions for photoclinometry and other applications. Icarus 92. doi:10.1016/0019-1035(91)90053-V). A linear correction based on the statistics of all overlapping areas was then applied to minimize image brightness variations. A final application of a filter seam-removal technique further minimized image boundary seams (Soderblom,  L. A.,  Edwards,  K.,  Eliason,  E. M.,  Sanchez,  E. M.,  and Charette,  M. P. 1978. Global color variations on the Martian surface. Icarus 34.  doi:10.1016/0019-1035(78)90037-4).</procdesc>
+        <procdate>20130806</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>9816</rowcount>
+      <colcount>19631</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>500</absres>
+            <ordres>500</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Europa</ellips>
+        <semiaxis>1562089.9658</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>184 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Jupiter</system>
+      <target>Europa</target>
+      <quadsys/>
+      <quadname/>
+      <rada>1562089.9658</rada>
+      <radb/>
+      <radc>1562089.9658</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive West</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Galileo</missikey>
+      <missikey>Voyager</missikey>
+    </mission>
+    <instr>
+      <instrkey>Voyager 1</instrkey>
+      <instrkey>Voyager 2</instrkey>
+      <instrkey>SSI</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch>Galileo</pdsarch>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>54.53</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

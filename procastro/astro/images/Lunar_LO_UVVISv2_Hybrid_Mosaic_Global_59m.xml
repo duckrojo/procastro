@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin/>
+        <pubdate/>
+        <title>Moon Lunar Orbiter - Clementine UVVISv2 Hybrid Mosaic 59m v1</title>
+        <edition>2</edition>
+        <geoform>Global Mosaic, Raster Data, Merge</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Moon/Lunar-Orbiter/Lunar_LO_UVVISv2_Hybrid_Mosaic_Global_59m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+The is a blend (or overlay) of the U.S. Geological Survey (USGS) Clementine Ultraviolet/Visible (UVVIS) V2 mosaic and the original USGS Lunar Orbiter mosaic. The Clementine 750 nm Version 2 mosaic is a grayscale data set representing the albedo (brightness of the lunar surface) as measured at the 750 nm wavelength by the UVVIS camera. The original base map was radiometrically and geometrically controlled, photometrically modeled global image mosaic compiled using more than 43,000 images from the 750 nanometer filter observations of the UVVIS (Lee et al., 2009). 
+
+The Lunar Orbiter (LO) mosaic of the Moon was constructed using photographs acquired by LO III, IV and V. Work towards constructing the global mosaic spanned over seven years. Earlier work involved scanning and processing more than 30, 000 35-mm film strips from the LO high- and medium-resolution cameras (HR and MR, respectively; Gaddis et al., 2001). Digital film strips were cartographically processed to construct more than 200 individual frames and then geodetically corrected using the most recent lunar control network and topographic model (the Unified Lunar Control Network 2005 or ULCN 2005; Archinal et al, 2006). The result of this work is a moderate resolution, near-global, cartographically controlled digital mosaic of the Moon (Becker et al., 2008). The nominal resolution of the mosaic is ~60 meters per pixel (m).
+
+<b>Mission and Instrument Information:</b>
+
+Five Lunar Orbiter missions were launched by the U.S. in 1966 and 1967 to study the Moon. Lunar Orbiter (LO) images were photographic products acquired on the spacecraft during those five missions (LO-I through -V; Hansen, 1970; Bowker & Hughes, 1971). The first three missions mapped potential Apollo lunar landing sites. Lunar Orbiter IV photographed most of the near and far sides of the Moon medium- and high- resolutions. Lunar Orbiter V completed the photography of the far side and collected additional images of 36 sites of scientific interest. 
+
+On January 25, 1994, the Deep Space Program Science Experiment (DSPSE), better known as Clementine, was launched from Vandenburg Air Force Base aboard a Titan IIG rocket, as a joint project between the and was jointly sponsored by the Ballistic Missile Defense Organization (BMDO) of the Dept of Defense and NASA. The objective of the mission was to test sensors and spacecraft components under extended exposure to the space environment and to make scientific observations of the Moon and a near-Earth asteroid, 1620 Geographos (PDS IMG, 2018). 
+
+The main instrumentation on Clementine consisted of four cameras, one with a laser-ranging system. The cameras included an ultraviolet-visual (UVVIS) camera, a long-wavelength infrared (LWIR) camera, the laser-ranger (LIDAR) high-resolution (HIRES) camera, and a near-infrared (NIR) camera. (PDS IMG, 2018).
+
+<b>References:</b>
+
+Archinal, B. A., Rosiek, M. R., Kirk, R. L., & Redding, B. (2006). The Unified Lunar Control Network 2005, Open-File Report 2006-1367, Reston, VA, U.S. Geological Survey. <a href='http://pubs.usgs.gov/of/2006/1367' target='_blank'>http://pubs.usgs.gov/of/2006/1367</a>
+
+Becker, T., L., Weller, L., Gaddis, L. Cook, D., Archinal, B., Rosiek, M., Isbell, C., et al. (2008). <em>Lunar Orbiter Mosaic of the Moon.</em> Paper presented at the 39th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='http://www.lpi.usra.edu/meetings/lpsc2008/pdf/2357.pdf' target='_blank'>http://www.lpi.usra.edu/meetings/lpsc2008/pdf/2357.pdf </a>
+
+Gaddis, L. R., Sucharski, T., Becker, T., & Gitlin, A. (2001). <em>Cartographic Processing of Digital Lunar Orbiter data.</em> Paper presented at the 32nd Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='http://www.lpi.usra.edu/meetings/lpsc2001/pdf/1892.pdf' target='_blank'>http://www.lpi.usra.edu/meetings/lpsc2001/pdf/1892.pdf </a>
+
+Lee, E. M., Gaddis, L. R., Weller, L., Richie, J. O., Becker, T., Shinaman, J., Rosiek, M. R., & Archinal, B. A. (2009). <em>A New Clementine Basemap of the Moon.</em> Paper presented at the 40th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='http://www.lpi.usra.edu/meetings/lpsc2009/pdf/2445.pdf' target='_blank'>http://www.lpi.usra.edu/meetings/lpsc2009/pdf/2445.pdf</a>
+
+Planetary Data Systems (PDS) Cartography and Imaging Sciences (IMG) (2018). Clementine. <a href='https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html' target='_blank'>https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html</a>]]></abstract>
+      <purpose><![CDATA[This hybrid Clementine and Lunar Orbiter (LO) mosaic represents a blend of the UVVIS Clementine v2 mosaic base which does a good job a representing the albedo of the surface and the Lunar Orbiter mosaic which maintains detailed features on the surface.]]></purpose>
+      <supplinf><![CDATA[http://astrogeology.usgs.gov/Projects/LunarOrbiterDigitization, http://pubs.usgs.gov/of/2006/1367/, http://www.lpi.usra.edu/meetings/lpsc2008/pdf/2357.pdf, https://pds-imaging.jpl.nasa.gov/documentation/clementine_edrsis.pdf]]></supplinf>
+    </descript>
+    <timeperd>
+      <current/>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress/>
+      <update/>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Image Processing</themekey>
+        <themekey>Cartography</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>public domain</accconst>
+    <useconst>None</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Moon/Lunar-Orbiter/thumbs/Lunar_LO_UVVISv2_Hybrid_Mosaic_Global_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Accurate to Control Net</attraccr>
+    </attracc>
+    <logic>For the LO,  Observed Artifacts are: 
+Spacecraft faults: A majority of the frames contain random spacecraft processing faults,  and these artifacts often look like "water mark" or "coffee ring" patterns. The faults occurred during processing of the film onboard the spacecraft. Data in these areas are lost and not recoverable. An overlapping frame covering the same area often does not have a processing fault. No attempt was made to remove these artifacts. White 
+
+Dashes: Every frame contains synchronized read-out (white) dashes along the film strip margins. The global mosaic was constructed with non-cosmetic "raw" frames containing these dashes. A first-order cosmetic enhancement process later removed the dashes on many of the constructed frames. Successful "no-dash" versions of the frames are available on the LO website listed above. Due to the difficulty of isolating the dashes from original data,  the removal was not 100% successful for all frames and the no-dash LO data collection is incomplete. The no-dash LO frames were not included in the mosaic at the present time. "Venetian Blind" 
+
+Striping: Low-contrast striping across each frame remains in the LO mosaic. This "venetian blind" effect is a familiar characteristic of Lunar Orbiter data and it was caused by systematic variations in brightness levels across each film strip. The white dashes along the filmstrip margins also contribute to this apparent banding. 
+
+Film Strip Gaps: A number of frames display narrow data gaps between film strips. The gaps were not removed before mosaicking and can be particularly obvious where an overlapping frame shows through in the mosaic. These gaps were likely caused by data or film distortion during a mission readout process either onboard or transfer to Earth. Although the pre-exposed reseau marks (+) on the film were used rectify each digital film strip for frame construction,  the number and spacing of the reseau marks were inadequate to fully remove the distortion in severe cases. 
+
+DEM Artifacts: There are a few areas in the global mosaic where spikes or artifacts in the ULCN 2005 topographic or digital elevation model (DEM) caused artifacts or errors in the LO mosaic. For each pixel in a LO frame,  radius values from the same site in the DEM file are used to project the pixel onto the surface. Pronounced artifacts in the DEM were propagated to the projected LO image data. The resulting pattern in the LO mosaic is a "log cabin" or "checkerboard" effect where the image data is compromised in a few isolated areas.</logic>
+    <complete>The near side (pole-to-pole) LO mosaic is complete using LO IV HR camera data. Far side coverage is dominated by limb and terminator views acquired by LO V HR and MR cameras. Also included is a single view obtained by LO III HR and MR cameras that provides coverage at the southern far side(centered on crater Tsiolkovskiy). To fill in gaps where possible,  LO IV MR data are included. The mid-latitude empty area across the far side is a LO data gap. Data coverage in this region acquired by LO I,  II and IV could not be cartographically processed due to poor quality,  lack of reseau marks on film,  or unexposed fiducial marks.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Accurate to Control Net</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Astrogeology Science Center</origin>
+            <pubdate/>
+            <title>Lunar Orbiter Digital Photographic Mosaic</title>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/clementine.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/loirp.html</online>
+            <online>https://pdsimage2.wr.usgs.gov/Missions/Lunar_Orbiter/</online>
+            <online>https://pdsimage2.wr.usgs.gov/pub/pigpen/moon/lunar_orbiter/Frames/http://astrogeology.usgs.gov/Projects/LunarOrbiterDigitization</online>
+            <online>https://astrogeology.usgs.gov/missions/lunar-orbiter</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>The Clementine UVVIS v2 750nm mosaic was blended with the Lunar Orbiter mosaic. This is basically the Clementine mosaic pan-sharpened by the more detailed Lunar Orbiter mosaic.</procdesc>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>92160</rowcount>
+      <colcount>184320</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>59.2252938</absres>
+            <ordres>59.2252938</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn>ULCN2005</horizdn>
+        <ellips>Moon</ellips>
+        <semiaxis>1737400</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum>ULCN2005</altdatum>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>17 GB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Lunar_LO_UVVISv2_Hybrid_Mosaic_Global_59m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Earth</system>
+      <target>Moon</target>
+      <quadsys/>
+      <quadname/>
+      <rada>1737400</rada>
+      <radb/>
+      <radc>1737400</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Lunar Orbiter</missikey>
+      <missikey>Clementine</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>UVVIS</instrkey>
+      <instrkey>VIS</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet>ULCN2005</ctrlnet>
+    <bittype>8</bittype>
+    <scale>512</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

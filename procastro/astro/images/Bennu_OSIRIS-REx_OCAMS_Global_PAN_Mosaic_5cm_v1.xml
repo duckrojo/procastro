@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>C.A. Bennett</origin>
+        <origin>D.N.DellaGiustina</origin>
+        <origin>K.J.Becker</origin>
+        <origin>T.L.Becker</origin>
+        <origin>K.L.Edmundson</origin>
+        <origin>D.R. Golish</origin>
+        <origin>et. al.</origin>
+        <pubdate>20200226</pubdate>
+        <title>Bennu OSIRIS-REx OCAMS Global PAN Mosaic 5cm v1</title>
+        <edition>FB34_FB56_ShapeV28_PAN</edition>
+        <geoform>Global Mosaic</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Bennu/OSIRIS-REx/OCAMS/Bennu_OSIRIS-REx_OCAMS_Global_PAN_Mosaic_5cm_v1</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[In early 2019, NASA's OSIRIS-REx (Origins, Spectral Interpretation, Resource Identification, and SecurityRegolith Explorer) mission surveyed asteroid (101955) Bennu with a collection of instruments, including the OSIRIS-REx Camera Suite (OCAMS) PolyCam imager. Using PolyCam panchromatic images, we constructed a globally controlled basemap of Bennu at an approximate ground sample distance of 5cm (5cm/pixel) with a mean spatial accuracy of ~30 cm. The basemap was photometrically normalized using a Minneart phase angle correction. New mapping methods were developed to combine images of Bennu's irregular shape and extremely rough surface into a nearly seamless mosaic. For more see Bennett (2020).
+
+<b>Highlights:</b>
+<ul>
+<li>We produced a global basemap of asteroid Bennu at a ground sample distance of 5 cm.</li>
+<li>New methods were developed to deal with Bennu's rough surface and irregular shape.</li>
+<li>Images were rectified to a 3D digital terrain model with a mean facet size of 80 cm.</li>
+<li>Images were photometrically normalized to 30° phase angle using a Minneart model.</li>
+<li>Overlaps were masked along natural feature boundaries for a nearly seamless result.</li>
+</ul>
+
+This download is an 8bit version of the original mosaic. The mapping used to convert to 8bit was a linear stretch from 0.0 - 0.044 to 1 - 254, maintaining 0 as NoDATA. There are several related images available for download including the original 32bit mosaic in I/F (reflectance). You can find those <a href='https://planetarymaps.usgs.gov/mosaic/Bennu/'>here</a>. This includes:
+<ul>
+<li><a href="https://planetarymaps.usgs.gov/mosaic/Bennu/Bennu_global_FB34_FB56_ShapeV28_PAN_mosaic_reflectance_32bit.zip">PAN_mosaic_reflectance_32bit</a> - this mosaic in 32bit floating point I/F (reflectance).</li>
+<li><a href="https://planetarymaps.usgs.gov/mosaic/Bennu/Bennu_global_FB34_FB56_ShapeV28_BodyFixedXYZ.zip">BodyFixedXYZ</a> - 3 images containing X,Y,Z in a body-fixed system per pixel in the original mosaic.</li>
+<li><a href="https://planetarymaps.usgs.gov/mosaic/Bennu/Bennu_global_FB34_FB56_ShapeV28_EmisAngle_IncAngle_PixelRes.zip">EmisAngle_IncAngle_PixelRes</a> - 3 images showing emission and incidence angles, and original pixel resolution.</li>
+<li><a href="https://planetarymaps.usgs.gov/mosaic/Bennu/Bennu_global_FB34_FB56_ShapeV28_SunIlluminationMask.zip">SunIlluminationMask</a> - A simple image showing masked pixel map.</li>
+</ul>
+
+<b>References:</b>
+
+Bennett, C. A., DellaGiustina, D. N., Becker, K. J., Becker, T. L., Edmundson, T. L., Golish D. R., et. al. (2020). A high-resolution global basemap of (101955) Bennu. <em>Icarus.</em> Advance online publication. <a href='https://doi.org/10.1016/j.icarus.2020.113690'>https://doi.org/10.1016/j.icarus.2020.113690</a>
+
+Lauretta, D. S., Balram-Knutson, S. S., Beshore, E., Boynton, W. V., Drouet d'Aubigny, C., DellaGiustina, D. N., et al. (2017). OSIRIS-REx: Sample Return from Asteroid (101955) Bennu. <em> Space Science Review, 212</em>, 925-984. <a href='https://doi.org/10.1007/s11214-017-0405-1'>https://doi.org/10.1007/s11214-017-0405-1</a>
+
+Williams, B., Antreasian, P., Carranza, E., Jackman, C., Leonard, J., Nelson, D., Page, B., et al. (2018). OSIRIS-REx Flight Dynamics and Navigation Design. <em>Space Science Review, 214</em>(69). <a href='https://doi.org/10.1007/s11214-018-0501-x'>https://doi.org/10.1007/s11214-018-0501-x</a>
+
+Bierhaus, E. B., Clark, B. C., Harris, J. W., Payne, K. S., Dubisher, R. D., Wurts, D. W., Hund, R. A., et al. (2018). The OSIRIS-REx Spacecraft and the Touch-and-Go Sample Acquisition Mechanism (TAGSAM). <em>Space Science Reviews, 214</em>(107). <a href='https://doi.org/10.1007/s11214-018-0521-6'>https://doi.org/10.1007/s11214-018-0521-6</a>
+
+Berry, K., Sutter, B., May, A., Williams, K., Barbee, B. W., Beckman, M., & Williams, B. (2013). <em>OSIRIS-REx Touch-and-gGo (TAG) Mission Design and Analysis.</em> Paper presented at the 36th Annual AAS Guidance and Control Conference, American Astronautical Society, Rocky Mountain Section, Breckenridge, Colorado, USA. <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20130013409.pdf'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20130013409.pdf</a>]]></abstract>
+      <purpose><![CDATA[As OSIRIS-REx is a sample return mission,  a basemap is needed to identify a safe and sampleable location for the spacecraft's sample acquisition maneuver (Berry et al.,  2013; Williams et al.,  2018; Lauretta et al.,  2017). Therefore,  the global basemap must have sufficient resolution to clearly show geologic features including craters,  ridges,  boulders,  and any other potentially hazardous objects.]]></purpose>
+      <supplinf><![CDATA[https://www.sciencedirect.com/science/article/pii/S0019103520300816, https://sbn.psi.edu/pds/resource/orex/ocams.html, https://www.asteroidmission.org/]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Ground condition</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20190321</begdate>
+          <enddate>20190411</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Asteroids</themekey>
+        <themekey>Cartography</themekey>
+        <themekey>Image Processing</themekey>
+        <themekey>Photogrammetry</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Sampling and analysis</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>please cite authors</accconst>
+    <useconst>public domain</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Bennu/OSIRIS-REx/OCAMS/thumbs/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3, GDAL</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Best Effort</attraccr>
+    </attracc>
+    <logic>This is a visual 8bit version of the original 32bit floating point version in I/F (reflectance). The mapping used to convert to 8bit was a linear stretch from 0.0 - 0.044 to 1 - 254,  maintaining 0 as NoDATA.</logic>
+    <complete>Most images that contribute to the global panchromatic basemap were acquired during Flybys 3,  4A,  and 4B. Select data from Flybys 5A and 6A were also incorporated to provide better coverage in high-latitude regions that were poorly illuminated in the earlier flybys.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Accurate to Control Net</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>PDS</origin>
+            <pubdate/>
+            <title>OSIRIS-REx PDS archive</title>
+            <online>https://sbn.psi.edu/pds/resource/orex/</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>OCAMS images were photogrammetrically controlled to correct for spacecraft position and camera pointing uncertainties in reconstructed SPICE kernels. This process improved the registration between the images and the DTM (“image-to-ground”) and between the images themselves (“image-to-image”). Image features were manually registered to the DTM to create ground control points (GCPs). see the reference Bennett 2020 above.</procdesc>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>15709</rowcount>
+      <colcount>31417</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Equirectangular</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>0.05</absres>
+            <ordres>0.05</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn>ShapeV28</horizdn>
+        <ellips>Bennu</ellips>
+        <semiaxis>250</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum>ShapeV28</altdatum>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>Bennu_OSIRIS-REx_OCAMS_Global_PAN_Mosaic_5cm_v1</formname>
+          <transize>471 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Bennu/Bennu_global_FB34_FB56_ShapeV28_GndControl_MinnaertPhase30_PAN_8bit.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Small Bodies</system>
+      <target>Bennu</target>
+      <quadsys/>
+      <quadname/>
+      <rada>250</rada>
+      <radb/>
+      <radc>250</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>OSIRIS-REx</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>OCAMS</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Compatible</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet>ShapeV28</ctrlnet>
+    <bittype>8</bittype>
+    <scale>87.266</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

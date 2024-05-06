@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Arizona State University</origin>
+        <pubdate/>
+        <title>Mars MGS TES Global Bolometric Albedo Map 7410m v1</title>
+        <edition>2001</edition>
+        <geoform>Global Mosaic, Remote-sensing Data, Raster Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Mars/GlobalSurveyor/TES/Mars_MGS_TES_Albedo_mosaic_global_7410m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+The Mars Global Surveyor (MGS) Thermal Emission Spectrometer (TES) has acquired a variety of observations, including broadband visible/near-IR (VISIR) data (0.3 to 2.9 micrometers) and broadband thermal IR data (5.1 to 150 micrometers) using bolometers, in addition to spectrometer observations covering 5.8 to 50 micrometers in wavelength (Christensen et al., 2001).  
+
+The VISIR data have been reduced to Lambert albedo values and gridded at 8 pixels/degree (this data set).  Also, night-time thermal measurements, daytime albedo data, and thermal modeling have been used to generate gridded estimates of surface thermal inertia.  Pixel resolution is 7,410 meters per pixel (m).
+
+<b>Mission and Instrument Information:</b>
+
+Mars Global Surveyor (MGS) was the first successful U.S. mission launched to Mars since the Viking mission in 1976. MGS was launched on November 7, 1996, atop a three-stage Delta II launch vehicle from launch pad 17A at Cape Canaveral Air Station, FL. The thirdstage Star 48B solid rocket later propelled the spacecraft out of Earth orbit and on its way to Mars. After a 20-year absence at the planet, Mars Global Surveyor ushered in a new era of Mars exploration with its five science investigations (NASA JPL, 2010).
+
+MGS arrived at Mars in September, 1997 and has contributed a multitude of findings, including signs of past, persistent water such as an ancient delta and currently active water features in the gullies of canyon walls. After nearly a decade of discovery, MGS went silent in November, 2006 (NASA JPL, 2010).
+
+The MGS TES studied the atmosphere and mapped the mineral composition of the surface by analyzing infrared radiation, which scanned for heat emitted from the surface of Mars (NASA JPL, 2010). The TES has acquired a variety of observations, including broadband visible/near-IR (VISIR) data (0.3 to 2.9 micrometers) and broadband thermal IR data (5.1 to 150 micrometers) using bolometers, in addition to spectrometer observations covering 5.8 to 50 micrometers in wavelength (Christensen et al., 2001). The TES discovered new mineralogical and topographic evidence that suggested Mars had abundant water and thermal activity in its early history (NASA JPL, 2010).
+
+<b>References:</b>
+
+Christensen, P. R., Bandfield, J. L. Hamilton, V. E., Ruff, S. W., Kieffer, H. H., Titus, T. N., Malin, M. C., et al. (2001). Mars Global Surveyor Thermal Emission Spectrometer experiment: Investigation description and surface science results. <em>Journal of Geophysical Research, 106</em>(E10), 23823-23872. <a href='https://doi.org/10.1029/2000JE001370' target='_blank'>https://doi.org/10.1029/2000JE001370</a>
+
+National Aeronautics and Space Administration (NASA) Jet Propulsion Laboratory (JPL) (2010). <em>Mars Global Surveyor.</em> <a href='https://mars.nasa.gov/mgs/overview/' target='_blank'>https://mars.nasa.gov/mgs/overview/</a>]]></abstract>
+      <purpose><![CDATA[Global map of thermal inertia of Mars.]]></purpose>
+      <supplinf><![CDATA[http://pds-geosciences.wustl.edu/missions/mgs/index.htm, http://tes.asu.edu/]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Publication date</current>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Image Processing</themekey>
+        <themekey>Regolith</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>Public domain</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Mars/GlobalSurveyor/TES/Mars_MGS_TES_Albedo_mosaic_global_7410m.cub/full.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic/>
+    <complete/>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>PDS Geosciences Node</origin>
+            <pubdate/>
+            <title>TES Bolometric Albedo Global Map</title>
+            <online>http://geo.pds.nasa.gov/missions/mgs/tesspecial.html</online>
+            <online>http://pds-geosciences.wustl.edu/missions/mgs/index.htm</online>
+            <online>http://tes.asu.edu/data_archive.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc/>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>1440</rowcount>
+      <colcount>2880</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>7410</absres>
+            <ordres>7410</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Mars</ellips>
+        <semiaxis>3396000</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>16 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Mars_MGS_TES_Albedo_mosaic_global_7410m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Mars</system>
+      <target>Mars</target>
+      <quadsys/>
+      <quadname/>
+      <rada>3396000</rada>
+      <radb/>
+      <radc>3396000</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Mars Global Surveyor</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>TES</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Archived</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>32</bittype>
+    <scale>8</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

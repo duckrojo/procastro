@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>NASA</origin>
+        <origin>JPL</origin>
+        <origin>Space Science Institute</origin>
+        <pubdate/>
+        <title>Dione Cassini - Voyager Global Mosaic 154m v1</title>
+        <edition>2010</edition>
+        <geoform>Global Mosaic, Remote-sensing Data, Raster Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Dione/Voyager/Dione_Cassini_Voyager_mosaic_global_154m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This global map of Saturn's moon Dione was created using images taken during flybys by NASA's Cassini spacecraft. Images from NASA's Voyager mission fill the gaps in Cassini's coverage. An extensive system of bright ice cliffs created by tectonic fractures adorns the moon's trailing hemisphere, which is centered on 270 degrees west (Schneck, 2016). The map is a Simple Cylindrical (equidistant) projection and has a scale of 153 meters per pixel (500 feet) at the equator (Roatsch et al., 2016). The resolution of the map is 64 pixels per degree; 154 meters per pixel (m) . The mean radius of Dione used for projection of this map is 563 kilometers (350 miles). 
+
+Like the 2008 version of the map (PIA08413), this updated map has been shifted west by 0.6 degrees of longitude, compared to the 2006 version of the map (PIA08341), in order to conform to the International Astronomical Union longitude system convention for Dione. 
+
+<b>Mission and Instrument Information:</b>
+
+The Voyager I space craft launched September 5, 1977 and passed through the Saturnian system on November 12, 1981. Voyager 2 launched August 20, 1977 and made a similar encounter with the Saturnian system, returning more images of the satellites. The space craft carried both wide- and narrow- angle cameras, which were able to capture and return moderate- to high- resolution images of the satellites Rhea, Dione, Enceladus, Mimas, Tethys, and Iapetus. The rapid speed of the space craft as it approached the satellites resulted in significant mis-matches of image resolution and image blur (Greely & Batson, 2007; Batson, 1984).
+
+The Cassini-Huygens mission was a joint endeavor between the Italian Space Agency, the European Space Agency (ESA) and National Aeronautics and Space Administration (NASA).  The Cassini-Huygens mission launched from Cape Canaveral Air Force Base in Florida on October 15, 1997 and ended on September 15, 2017 when Cassini began its Final Entry into Saturn’s Atmosphere. The primary mission ran from July 2004 – June 2008, the first mission extension (Equinox) was from July 2008- October 2010 and was followed by a final extended mission (Solstice) from October 2010 – September 2017.  The imaging team consists of scientists from the US, England, France, and Germany. The imaging operations center and team lead (Dr. C. Porco) are based at the Space Science Institute in Boulder, Colorado, USA.
+
+The Cassini Imaging Science Subsystem (ISS) consists of two framing cameras. The narrow angle camera is a reflecting telescope with a focal length of 2000 mm and a field of view of 0.35 degrees. The wide-angle camera is a refractor with a focal length of 200 mm and a field of view of 3.5 degrees. The stated objective of the ISS is to obtain global coverage for all medium-sized icy satellites with a resolution better than 1 km/pixel and high-resolution images of selected areas (Porco, 2004). This goal was achieved with image sequences obtained during close flybys supplemented by images from greater distances to complete the coverage (Roatsch, 2016).
+
+<b>References:</b>
+
+Batson, R. (1984). <em>Voyager 1 and 2 Atlas of Six Saturnian Satellites</em> (NASA-SP-474). Washington, DC: National Aeronautics and Space Administration (NASA). <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf' target='_blank'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf</a>
+
+Greely, R., & Batson, R. (2007). <em>Planetary Mapping.</em> (ISBN 0-521-30774-0). New York, NY: Cambridge University Press. 
+
+Roatsch, T., Kersten, E., Matz, K.-D., Scholten, F., & Porco, C. C. (2016). <em>Cartography of the medium-sized saturnian satellites based on Cassini-ISS images.</em> Paper presented at the Enceladus and the Icy Moons of Saturn Conference, Lunar and Planetary Institute, Boulder, CO. <a href='https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf' target='_blank'>https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf</a>
+
+Schnek, P. (2016). <em>Global color and cartographic mapping of Saturn’s midsize icy moons.</em> Paper presented at the Enceladus and the Icy Moons of Saturn Conference, Lunar and Planetary Institute, Boulder, CO. <a href='https://www.hou.usra.edu/meetings/enceladus2016/pdf/3053.pdf' target='_blank'>https://www.hou.usra.edu/meetings/enceladus2016/pdf/3053.pdf</a>]]></abstract>
+      <purpose><![CDATA[To create a mosaic of Dione for planetary studies.]]></purpose>
+      <supplinf><![CDATA[http://www.ciclops.org/view/6264/Map_of_Dione_-_February_2010?js=1, https://solarsystem.nasa.gov/missions/cassini/overview/, http://ciclops.org]]></supplinf>
+    </descript>
+    <timeperd>
+      <current/>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Geomorphology</themekey>
+        <themekey>Satellites</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>Public domain</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Dione/Voyager/Dione_Cassini_Voyager_mosaic_global_154m.cub/full.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Best Effort</attraccr>
+    </attracc>
+    <logic>Like the 2008 version of the map (PIA08413),  this updated map has been shifted west by 0.6 degrees of longitude,  compared to the 2006 version of the map (PIA08341),  in order to conform to the International Astronomical Union longitude system convention for Dione.</logic>
+    <complete>Images from NASA's Voyager mission fill the gaps in Cassini's coverage.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Space Science Institute</origin>
+            <pubdate/>
+            <title/>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/iss.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/voyager.html#vgrISSEDR-J</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/cassini_mission.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/voyager_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc/>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>11520</rowcount>
+      <colcount>23040</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>153.53443263638</absres>
+            <ordres>153.53443263638</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Dione</ellips>
+        <semiaxis>563000</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>254 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Dione_Cassini_Voyager_mosaic_global_154m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Saturn</system>
+      <target>Dione</target>
+      <quadsys/>
+      <quadname/>
+      <rada>563000</rada>
+      <radb/>
+      <radc>563000</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive West</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Voyager</missikey>
+      <missikey>Cassini-Huygens</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>SSI</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch>Cassini</pdsarch>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>64</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

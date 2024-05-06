@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>Cassini Team</origin>
+        <origin>Jet Propulsion Laboratory</origin>
+        <origin>Space Science Institute</origin>
+        <pubdate>20181022</pubdate>
+        <title>Enceladus Cassini Global Mosaic 110m v1</title>
+        <edition>February 2010</edition>
+        <geoform>Global Mosaic, Remote-sensing Data, Raster Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Enceladus/Cassini/Enceladus_Cassini_mosaic_global_110m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This mosaic shows an updated global map of Saturn's icy moon Enceladus that incorporates new images taken during flybys in October and November 2009.  All images were map-projected to the IAU mean radius (252.1 km per pixel). The map is an equidistant (simple cylindrical) projection and has a scale of 110 meters (360 feet) per pixel (m) at the equator. The mean radius of Enceladus used for projection of this map is 252 kilometers (157 miles). Like other recent Enceladus global maps, this mosaic was shifted 3.5 degrees to the west to be consistent with the International Astronomical Union (IAU) longitude definition for Enceladus (Bland, 2018). 
+
+<b>Mission and Instrument Information:</b>
+
+The Cassini-Huygens mission was a joint endeavor between the Italian Space Agency, European Space Agency (ESA) and National Aeronautics and Space Administration (NASA). Cassini-Huygens launched from Cape Canaveral Air Force Base in Florida on October 15, 1997 and ended on September 15, 2017 when Cassini began its Final Entry into Saturn’s Atmosphere. The primary mission ran from July 2004 – June 2008, the first mission extension (Equinox) was from July 2008- October 2010 and was followed by a final extended mission (Solstice) from October 2010 – September 2017. During the Equinox extended mission, Cassini had seven encounters with Enceladus in October and November 2009. The imaging team consists of scientists from the US, England, France, and Germany. The imaging operations center and team lead (Dr. C. Porco) are based at the Space Science Institute in Boulder, Colorado, USA.
+
+The Cassini Imaging Science Subsystem (ISS) consists of two framing cameras. The narrow angle camera is a reflecting telescope with a focal length of 2000 mm and a field of view of 0.35 degrees. The wide-angle camera is a refractor with a focal length of 200 mm and a field of view of 3.5 degrees. The stated objective of the ISS is to obtain global coverage for all medium-sized icy satellites with a resolution better than 1 km/pixel and high-resolution images of selected areas (Porco, 2004). This goal was achieved with image sequences obtained during close flybys supplemented by images from greater distances to complete the coverage (Roatsch, 2016)
+
+<b>References:</b>
+
+Bland, M. T., Becker, T. L., Edmundson, K. L., Roatsch, T., Archinal, B. A., Takir, D., Patterson, G. W., et al. (2018). A new Enceladus global control network, image mosaic, and updated pointing kernels from Cassini's 13‐year mission. <em>Earth and Space Science, 5</em>(10), 604–621. <a href='https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2018EA000399' target='_blank'>https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2018EA000399</a>
+
+Roatsch, T., Kersten, E., Matz, K.-D., Scholten, F., & Porco, C. C. (2016). <em>Cartography of the medium-sized saturnian satellites based on Cassini-ISS images.</em> Paper presented at the Enceladus and the Icy Moons of Saturn Conference, Lunar and Planetary Institute, Boulder, CO. <a href='https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf' target='_blank'>https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf</a>
+
+Porco C. C., West, R. A., Squyres, S., McEwan, A., Thomas, P., Murray, C. D., Delgenio, A., et al. (2004). Cassini Imaging Science: Instrument Characteristics and Anticipated Scientific Investigations at Saturn. In: Russell C. T. (Eds.), <em>The Cassini-Huygens Mission.</em> Dordrecht, Netherlands: Springer. <a href='https://doi.org/10.1007/1-4020-3874-7_6' target='_blank'>https://doi.org/10.1007/1-4020-3874-7_6</a>]]></abstract>
+      <purpose><![CDATA[This mosaic incorporates images acquired during Cassini flybys of Enceladus and includes October and November 2009 imagery.]]></purpose>
+      <supplinf><![CDATA[http://www.ciclops.org/view/6197/Map_of_Enceladus_-_February_2010?js=1, https://doi.org/10.1029/2018EA000399]]></supplinf>
+    </descript>
+    <timeperd>
+      <current/>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress/>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey/>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>Public domain</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Enceladus/Cassini/Enceladus_Cassini_mosaic_global_110m.cub/full.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic/>
+    <complete/>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Space Science Institute</origin>
+            <pubdate/>
+            <title>Map of Enceladus - February 2010</title>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/iss.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/cassini_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc/>
+        <procdate>20100201</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>7201</rowcount>
+      <colcount>14401</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>109.95574287564</absres>
+            <ordres>109.95574287564</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Enceladus</ellips>
+        <semiaxis>252000</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>99 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Enceladus_Cassini_mosaic_global_110m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Saturn</system>
+      <target>Enceladus</target>
+      <quadsys/>
+      <quadname/>
+      <rada>252000</rada>
+      <radb/>
+      <radc>252000</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive West</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Cassini-Huygens</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey/>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>40</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>NASA/JPL-Caltech/SSI</origin>
+        <pubdate>20151010</pubdate>
+        <title>Titan Cassini ISS Global Mosaic 4005m v1</title>
+        <edition>1</edition>
+        <geoform>Global Mosaic, Raster Data, Remote-sensing Data</geoform>
+        <serinfo>
+          <sername>Planetary Image Atlas</sername>
+          <issue>PIA 19658</issue>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Titan/Cassini/Global-Mosaic/Titan_ISS_P19658_Mosaic_Global_4km</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This global digital map of Saturn's moon Titan was created using images taken by the Cassini spacecraft's Imaging Science Subsystem (ISS). The map was produced in June 2015 using data collected through Cassini's flyby on April 7, 2014, known as "T100". The mean radius of Titan used for projection of this map is 1,600 miles (2,575 kilometers). Pixel resolution is 4005 meters per pixel (m). Titan is assumed to be spherical until a control network -- a model of the moon's shape based on multiple images tied together at defined points on the surface -- is created at some point in the future.
+
+Due to the atmosphere of Titan the ISS cameras had to use “methane windows”, areas in Titan’s atmosphere where the reflectance spectrum is most transparent. Additionally, extensive data processing was required to correct the reduced contrast from atmospheric haze and camera imperfections such as dust motes. To accommodate this, multiple images are taken of the same foot print. The images are summed to increase signal to noise ratio, then divided by a flatfield or image of atmospheric haze. This process normalizes the image brightness and also serves to identify upper tropospheric clouds. The resultant images are mosaiced to create global digital maps. 
+
+<b>Mission and Instrument Information:</b>
+
+The Cassini-Huygens mission was a joint endeavor between the Italian Space Agency, the European Space Agency (ESA) and National Aeronautics and Space Administration (NASA).  The Cassini-Huygens mission launched from Cape Canaveral Air Force Base in Florida on October 15, 1997 and ended on September 15, 2017 when Cassini began its Final Entry into Saturn’s Atmosphere. The primary mission ran from July 2004 – June 2008, the first mission extension, Equinox, was from July 2008- October 2010 and was followed by a final extended mission, Solstice, from October 2010 – September 2017. 
+
+The Cassini Imaging Science Subsystem (ISS) consists of two framing cameras. The narrow angle camera is a reflecting telescope with a focal length of 2000 mm and a field of view of 0.35 degrees. The wide-angle camera is a refractor with a focal length of 200 mm and a field of view of 3.5 degrees. The stated objective of the ISS was to obtain global coverage for all medium-sized icy satellites with a resolution better than 1 km/pixel and high-resolution images of selected areas (Porco, 2004). This goal was achieved with image sequences obtained during close flybys supplemented by images from greater distances to complete the coverage (Roatsch, 2016)
+
+<b>References:</b>
+
+Perry, J., McEwen, A., Fussner, S., Turtle, E., West, R., Porco, C., Knowles, B., Dawson, D., & Cassini ISS Team (2005). <em>Processing ISS images of Titan’s Surface.</em> Paper presented at the 36th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20050173947.pdf' target='_blank'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/20050173947.pdf</a>
+
+Porco, C., Baker, E., Barbara, J., Beurle, K., Brahic, A., Burns, J. A., Charnoz, S., et al. (2005). Imaging of Titan from the Cassini Spacecraft. <em>Nature, 434,</em> 159-168. <a href='https://doi.org/10.1038/nature03436' target='_blank'>https://doi.org/10.1038/nature03436</a>
+
+Porco C. C., West, R. A., Squyres, S., McEwan, A., Thomas, P., Murray, C. D., Delgenio, A., et al. (2004). Cassini Imaging Science: Instrument Characteristics and Anticipated Scientific Investigations at Saturn. In Russell C.T. (Eds.), <em>The Cassini-Huygens Mission</em> (pp. 363-347). Dordrecht, Netherlands: Springer. <a href='https://doi.org/10.1007/1-4020-3874-7_6' target='_blank'>https://doi.org/10.1007/1-4020-3874-7_6</a>
+
+Roatsch, T., Kersten, E., Matz, K.-D., Scholten, F., & Porco, C. C. (2016). <em>Cartography of the medium-sized saturnian satellites based on Cassini-ISS images.</em> Paper presented at the Enceladus and the Icy Moons of Saturn Conference, Lunar and Planetary Institute, Boulder, CO. <a href='https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf' target='_blank'>https://www.hou.usra.edu/meetings/enceladus2016/pdf/3032.pdf</a>]]></abstract>
+      <purpose><![CDATA[The Cassini Solstice Mission is a joint United States and European endeavor. The Jet Propulsion Laboratory,  a division of the California Institute of Technology in Pasadena,  manages the mission for NASA's Science Mission Directorate,  Washington,  D.C. The Cassini orbiter was designed,  developed and assembled at JPL. The imaging team consists of scientists from the US,  England,  France,  and Germany. The imaging operations center and team lead (Dr. C. Porco) are based at the Space Science Institute in Boulder,  Colo.]]></purpose>
+      <supplinf><![CDATA[http://ciclops.org/, http://saturn.jpl.nasa.gov/]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Ground condition</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20040701</begdate>
+          <enddate>20140407</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>In Work</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Geomorphology</themekey>
+        <themekey>Image Processing</themekey>
+        <themekey>Remote Sensing</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>None</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Titan/Cassini/Global-Mosaic/thumbs/Titan_ISS_P19658_Mosaic_Global_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Best Effort</attraccr>
+    </attracc>
+    <logic>The map is an equidistant projection and has a scale of 2.5 miles (4 kilometers) per pixel. Actual resolution varies greatly across the map,  with the best coverage (close to the map scale) along the equator near the center of the map at 180 degrees west longitude. The lowest resolution coverage can be seen in the northern mid-latitudes on the sub-Saturn hemisphere. 
+
+The uniform gray area in the northern hemisphere indicates a gap in the imaging coverage of Titan's surface,  to date. The missing data will be imaged by Cassini during flybys on December 15,  2016 and March 5,  2017.</logic>
+    <complete>Mapping coverage in the northern polar region has greatly improved since the previous version of this map in 2011 (see PIA14908). Large dark areas,  now known to be liquid-hydrocarbon-filled lakes and seas,  have since been documented at high latitudes. Titan's north pole was not well illuminated early in Cassini's mission,  because it was winter in the northern hemisphere when the spacecraft arrived at Saturn. Cassini has been better able to observe northern latitudes in more recent years due to seasonal changes in solar illumination. 
+
+This map is an update to the previous versions released in April 2011 and February 2009 (see PIA11149). Data from the past four years (the most recent data in the map is from April 2014) has completely filled in missing data in the north polar region and replaces the earlier imagery of the Xanadu region with higher quality data. A data gap of about 3 to 5 percent of Titan’s surface still remains,  located in the northern mid-latitudes on the sub-Saturn hemisphere of Titan.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Best Effort</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Cassini Imaging Central Labratory for Operations</origin>
+            <pubdate/>
+            <title>Map of Titan - June 2015</title>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/iss.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/cassini_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>This global digital map of Saturn's moon Titan was created using images taken by the Cassini spacecraft's imaging science subsystem (ISS). The map was produced in June 2015 using data collected through Cassini's flyby on April 7,  2014,  known as "T100". 
+
+The images were taken using a filter centered at 938 nanometers,  allowing researchers to examine variations in albedo (or inherent brightness) across the surface of Titan. Because of the scattering of light by Titan's dense atmosphere,  no topographic shading is visible in these images.</procdesc>
+        <procdate>20140407</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>2020</rowcount>
+      <colcount>4040</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Equirectangular</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>4004.7530114</absres>
+            <ordres>4004.7530114</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Titan</ellips>
+        <semiaxis>2575000</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>7.8 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Titan_ISS_P19658_Mosaic_Global_4km.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Saturn</system>
+      <target>Titan</target>
+      <quadsys/>
+      <quadname/>
+      <rada>2575000</rada>
+      <radb/>
+      <radc>2575000</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive West</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey/>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>ISS</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>11.2222</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

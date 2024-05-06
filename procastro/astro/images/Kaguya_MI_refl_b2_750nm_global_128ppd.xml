@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin/>
+        <pubdate>20150801</pubdate>
+        <title>Moon SELENE Kaguya MI Global Reflectance Mosaic 237m v1</title>
+        <edition/>
+        <geoform>Raster Data, Global Mosaic, Remote-sensing Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Moon/Kaguya/MI/SpectralBands/Kaguya_MI_refl_b2_750nm_global_128ppd</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This Multiband Imager (MI) 750nm mosaic is topographically corrected reflectance data acquired by the the SELenological and Engineering Explorer (SELENE) Kaguya mission. The MI has 9 spectral bands, at 415, 750, 900, 950, 1001 nm (UVVIS camera) and 1000, 1050, 1250, 1550 nm (NIR camera). The reflectance has been corrected for the shading effects of topography by the SELENE team (Ohtake et al., 2013) and corresponds to the MAP processing level version 2 (MI_MAP_02) described in Kaguya (SELENE) Product Format Description – Lunar Imager/Spectrometer (LISM (TC/MI/SP)) / SPICE Kernel, version 1.3 (2010). See Supplemental Information below.
+
+Alternative 512ppd (59 meters per pixel [m]) versions of these spectral bands (65N to 65S) are also available here: https://planetarymaps.usgs.gov/mosaic/Lunar_MI_multispectral_maps/
+
+<b>Mission and Instrument Information:</b>
+
+The Japan Aerospace Exploration Agency (JAXA) launched the SELenological and Engineering Explorer (SELENE) Kaguya spacecraft to the Moon in September 2007. The mission concluded June 10, 2009 when the spacecraft was intentionally crashed onto the lunar surface. Subsequent data collection and mapping efforts resulted in “the largest lunar exploration project since the Apollo program” (Haruyama et al., 2008).
+
+The high-performance optical TC, a 10-meter spatial resolution stereo-camera, was part of the Lunar Imager/Spectrometer (LISM) instrument suite (Kato et al., 2006), along with the Multi-band Imager (MI, 20 m; Ohtake et al., 2008)) and Spectral Profiler (SP; Matsunaga et al., 2008).
+
+For use, refer to the JAXA Conditions for material usage page ( http://jda.jaxa.jp/en/service.php ) and please credit JAXA and the SELENE/Kaguya data. ©JAXA/SELENE
+
+<b>References:</b>
+
+Haruyama, J., Matsunaga, T., Ohtake, M., Morota, T., Honda, C., Yokota, Y., Torii, M., Ogawa, Y., & LISM Working Group (2008). Global lunar-surface mapping experiment using the Lunar Imager/Spectrometer on SELENE. <em>Earth Planets Space, 60,</em> 243-255. <a href='https://doi.org/10.1186/BF03352788' target='_blank'>https://doi.org/10.1186/BF03352788</a>
+
+Kato, M., Takizawa, Y., Sasaki, S., & SELENE Project Team (2007). <em>The SELENE Mission: Present status and science goals.</em> Paper presented at the 38th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2007/pdf/1211.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2007/pdf/1211.pdf</a>
+
+Matsunaga, T., Ohtake, M., Haruyama, J., Ogawa, Y., Nakamura, R., Yokota, Y., Morota, T., et al. (2008). Discoveries on the lithology of lunar crater central peaks by SELENE Spectral Profiler. <em>Geophysical Research Letters, 35</em>(23). <a href='https://doi.org/10.1029/2008GL035868' target='_blank'>https://doi.org/10.1029/2008GL035868</a>
+
+Ohtake, M., Haruyama, J., Matsunaga, T., Yokota, Y., Morota, T., Honda, C., & LISM Team (2008). Ohtake, M., et al. (2008). Performance and scientific objectives of the SELENE (KAGUYA) Multiband Imager. <em>Earth Planets Space, 60,</em> 257-264. <a href='https://doi.org/10.1186/BF03352789' target='_blank'>https://doi.org/10.1186/BF03352789</a>
+
+Ohtake, M., Pieters, C. M., Isaacson, P., Besse, S., Yokota, Y., Matsunaga, T., Boardman, J., et al. (2013). One Moon, Many Measurements 3: Spectral reflectance. <em>Icarus, 226</em>(1), 364–374. <a href='https://doi.org/10.1016/j.icarus.2013.05.010' target='_blank'>https://doi.org/10.1016/j.icarus.2013.05.010</a>]]></abstract>
+      <purpose><![CDATA[A goal of the SELENE (KAGUYA) mission is to understand origin and evolution of the Moon by obtaining global element and mineral compositions,  topological structure,  gravity field of the whole Moon,  and electromagnetic and particle environment of the Moon. MI is designed to be a high-resolution multiband imaging camera with a spatial resolution in visible bands of 20 m and a spatial resolution in near-infrared bands of 62 m from the 100 km SELENE (KAGUYA) orbit altitude.]]></purpose>
+      <supplinf><![CDATA[http://jda.jaxa.jp/en/service.php, https://link.springer.com/article/10.1186%2FBF03352789, https://www.sciencedirect.com/science/article/pii/S0019103513002108, https://www.hou.usra.edu/meetings/lpsc2016/pdf/2994.pdf, https://pds-imaging.jpl.nasa.gov/documentation/PDS_KaguyaData_Jan.31.11.pdf, https://pds-imaging.jpl.nasa.gov/portal/kaguya_mission.html,  https://pds-imaging.jpl.nasa.gov/documentation/LISM-SPICE_Format_en_V01.3.pdf]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Ground condition</current>
+      <timeinfo>
+        <rngdates>
+          <begdate>20071019</begdate>
+          <enddate>20081031</enddate>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>In Work</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Geomorphology</themekey>
+        <themekey>Geology</themekey>
+        <themekey>Image Processing</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Selenology</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>None</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Moon/Kaguya/MI/thumbs/Kaguya_MI_refl_b2_750nm_global_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Best Effort</attraccr>
+    </attracc>
+    <logic>The reflectance data was provided by the SELENE team and information about the MAP processing level reflectance can be found in KAGUYA (SELENE) Product Format Description – Lunar Imager/Spectrometer (LISM (TC/MI/SP)) / SPICE Kernel,  version 1.3 (2010). See Source Online Linkage below. Each mosaic was created by the SELENE team by co-registering all the reflectance images acquired within a 1°x1° region,  and then projected using a simple cylindrical projection.</logic>
+    <complete>The MAP level reflectance data has been derived for the entire Moon with some data gaps.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar>Best Effort</horizpar>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>Japan Aerospace Exploration Agency (JAXA)</origin>
+            <pubdate/>
+            <title>KAGUYA (SELENE) Product Format Description – Lunar Imager/Spectrometer (LISM (TC/MI/SP)),  SPICE Kernel,  version 1.3 (2010)</title>
+            <online>http://darts.isas.jaxa.jp/planet/pdap/selene/index.html.en</online>
+            <online>http://www.kaguya.jaxa.jp/index_e.htm</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>KAGUYA (SELENE) Product Format Description – Lunar Imager/Spectrometer (LISM (TC/MI/SP)) / SPICE Kernel,  version 1.3 (2010). See Source Online Linkage below. Original at 2048ppd (15m/p) data was sub-sampled to 128ppd (237m/p).</procdesc>
+        <procdate>20150801</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>23040</rowcount>
+      <colcount>46080</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>236.90117519</absres>
+            <ordres>236.90117519</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Moon</ellips>
+        <semiaxis>1737400</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>4246799109</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Lunar_MI_multispectral_maps/</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Earth</system>
+      <target>Moon</target>
+      <quadsys/>
+      <quadname/>
+      <rada>1737400</rada>
+      <radb/>
+      <radc>1737400</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Kaguya</missikey>
+    </mission>
+    <instr>
+      <instrkey>SELENE</instrkey>
+      <instrkey>MI</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>32</bittype>
+    <scale>128</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

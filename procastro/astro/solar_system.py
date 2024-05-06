@@ -1,5 +1,5 @@
-import os
 import re
+from io import BytesIO
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -12,6 +12,7 @@ from PIL import Image
 
 from astropy import time as apt, units as u, coordinates as apc
 from astropy.table import Table, QTable
+from bs4 import BeautifulSoup
 
 from procastro.astro.projections import rotate_xaxis_to, unit_vector
 from procastro.core.cache import jpl_cache
@@ -323,11 +324,14 @@ def body_map(body,
              ax=None,
              show_poles=True,
              color="red",
+             detail=None,
              ):
     """
 
     Parameters
     ----------
+    detail
+       submap of body
     color
     show_poles
     body
@@ -345,7 +349,7 @@ def body_map(body,
     np_ang = table['NP_ang'].value[0]
     print(f"(lon, lat, np) = ({sub_obs_lon}, {sub_obs_lat}, {np_ang})")
 
-    image = plt.imread(f'{os.path.dirname(__file__)}/images/{body}.jpg')
+    image = map_image(body, detail=detail)
 
     orthographic_image = get_orthographic(image,
                                           sub_obs_lon,
@@ -479,3 +483,63 @@ def path_body(body,
     return QTable([times, times.jd, body_object,
                    body_object.ra.degree, body_object.dec.degree],
                   names=['time', 'jd', 'skycoord', 'ra', 'dec'])
+
+
+def map_image(body, detail=None, warn_multiple=True):
+    month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    def _parse_date(string):
+        if string is None:
+            return ""
+        match len(string):
+            case 8:
+                return f"{string[:4]}-{month[int(string[4:6])-1]}{string[6:8]}"
+
+        raise ValueError(f"Needs to implement parsing for date: {string}")
+
+    directory = (Path(__file__).parents[0] / 'images')
+    files = list(directory.glob("*.xml"))
+
+    keywords = None
+    if detail is not None:
+        keywords = detail.split()
+
+    # filter alternatives
+    body_files = []
+    for file in files:
+        with open(file, 'r', encoding='utf8') as f:
+            data = BeautifulSoup(f.read(), 'xml')
+            body_in_xml = data.find("target").string
+            if body.lower() == body_in_xml.lower():
+                title = data.idinfo("title")[0].string
+                if keywords is not None and not [k for k in keywords if k in title]:
+                    continue
+
+                info = [title,
+                        file,
+                        data.find("browsen").string,
+                        data.idinfo("begdate")[0].string,
+                        data.idinfo("enddate")[0].string,
+                        ]
+                if 'default' in str(file):
+                    body_files.insert(0, info)
+                else:
+                    body_files.append(info)
+    if len(files) == 0:
+        detail_str = f" with detail keywords '{detail}'"
+        raise ValueError(f"No map of '{body}' found{detail_str}")
+
+    # select from alternatives
+    if len(body_files) > 1:
+        if warn_multiple:
+            print("Several map alternatives were available (use space-separated keywords in 'detail' to filter).\n"
+                  "Selected first of:")
+            for bf in body_files:
+                print(f"* {bf[0]} [{_parse_date(bf[3])}..{_parse_date(bf[4])}]")
+
+        body_files = [body_files[0]]
+
+    # fetch alternative
+    response = requests.get(body_files[0][2])
+    return Image.open(BytesIO(response.content))

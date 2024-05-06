@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin/>
+        <pubdate/>
+        <title>Ganymede Voyager - Galileo SSI Color Global Mosaic 1.4km v1</title>
+        <edition>1</edition>
+        <geoform>Global Mosaic, Remote-sensing Data, Raster Data, Image</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Ganymede/Voyager-Galileo/Ganymede_Voyager_GalileoSSI_Global_ClrMosaic_1435m</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+This global mosaic of Ganymede utilizes the best image quality and moderate resolution coverage supplied by Galileo Solid-State Imaging (SSI) and Voyager 1 and 2. The image data was selected based on overall image quality, reasonable input resolution (from 20 km per pixel [km] for gap fill to approximately 400 meters per pixel), and availability of moderate viewing and sun angles for topography. A Simple Cylindrical projection was used to create this mosaic with a resolution of 1000 meters per pixel. 
+
+Digital image processing of the Voyager pictures was done in the Flagstaff Image Processing Facility. The programs and techniques that were used have been developed over a period of several years by a team of scientists and programmers (Batson, 1984). Two levels of digital image processing are commonly used for planetary mapping. Level 1 is intended to restore the pictures to the quality that would have been produced by a “perfect” camera, this is done by removing “artifacts” from lens distortions and electronic recording and transmitting systems. Level 2 processing is done to correct image geometry to match appropriate map projections. Final map/ mosaic complications are done with level 2, geometrically corrected, images (Batson, 1984).   Both level 1 and level 2 processing are done to preserve the original contrast captured by the camera which may include very dark and or very light areas. 
+
+<b>Mission and Instrument Information:</b>
+
+The Voyager I space craft launched September 5, 1977 and passed through the Saturnian system on November 12, 1981. Voyager 2 launched August 20, 1977 and made a similar encounter with the Saturnian system, returning more images of the satellites. The space craft carried both wide- and narrow- angle cameras, which were able to capture and return moderate- to high- resolution images of the satellites Rhea, Dione, Enceladus, Mimas, Tethys, and Iapetus. The rapid speed of the space craft as it approached the satellites resulted in significant mis-matches of image resolution and image blur (Greely & Batson, 2007; Batson, 1984).
+
+Galileo launched on October 18, 1989 from the Kennedy Space Center in Florida aboard the space shuttle Atlantis with the aim to study Jupiter and its moons. It arrived at Jupiter on December 7th, 1995 and ended when the spacecraft entered Jupiter’s atmosphere on September 21, 2003. Galileo made seven flybys of Io during its fourteen-year mission in the Jovian system.  
+
+Galileo's Solid-State Imaging (SSI) experiment was designed to study Jupiter and it’s satellites using multi-spectral, high-resolution, charge-coupled device (CCD) camera. The camera was operated in eight filtered band passes from 350-1100nm, the eight -position filter wheel consisted of three broad-band filters: violet(404nm), green(559nm), and red(671nm). The borad-band filters allowed for the reconstruction of visible color photographs. The use of a CCD permitted the SSI to have an image geometry which was independent of brightness gradients, greater sensitivity to incident photons, and a wider spectral range than any camera previously flown on a planetary mission.
+
+<b>References:</b>
+
+Batson, R. M. (1984). <em>Voyager 1 and 2 Atlas of Six Saturnian Satellites</em> (NASA-SP-474). Washington, DC: National Aeronautics and Space Administration (NASA). <a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf' target='_blank'>https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf</a>
+
+Batson, R. M. (1987). Digital cartography of the planets—New methods, its status, and its future.  <em>Photogrammetric Engineering and Remote Sensing, 53</em>(9), 1211–1218. 
+
+Becker, T. L., Archinal, B. A., Colvin, T., Davies, M., Gitlin, A., Kirk, R. L., & Weller, L. (2001). <em>Final digital global maps of Ganymede, Europa, and Callisto.</em> Paper presented at the 32nd Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2001/pdf/2009.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2001/pdf/2009.pdf</a>
+
+Gaddis, L. R., Anderson, J., Becker, K., Becker, T., Cook, D., Edwards, K., Eliason, E., et al. (1997). <em>An overview of the Integrated Software for Imaging Spectrometers (ISIS).</em> Paper presented at the 28th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc97/pdf/1226.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc97/pdf/1226.pdf</a>
+
+Greely, R., & Batson, R. (2007). <em>Planetary Mapping.</em> (ISBN 0-521-30774-0). New York, NY: Cambridge University Press. 
+
+Kirk, R. L., Thompson, K. T., Becker, T. L., & Lee, E. M. (2000). <em>Photometric modeling for planetary cartography.</em> Paper presented at the 31st Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='https://www.lpi.usra.edu/meetings/lpsc2000/pdf/2025.pdf' target='_blank'>https://www.lpi.usra.edu/meetings/lpsc2000/pdf/2025.pdf</a>
+
+McEwen, A. S. (1991). Photometric functions for photoclinometry and other applications. <em>Icarus, 92,</em> 298–311. <a href='https://doi.org/10.1016/0019-1035(91)90053-V' target='_blank'>https://doi.org/10.1016/0019-1035(91)90053-V</a>]]></abstract>
+      <purpose><![CDATA[To create a global mosaic using the best available images.]]></purpose>
+      <supplinf><![CDATA[http://pubs.usgs.gov/imap/i2762/, https://www.hou.usra.edu/meetings/lpsc2019/pdf/2324.pdf]]></supplinf>
+    </descript>
+    <timeperd>
+      <current/>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>None planned</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>0</westbc>
+        <eastbc>0</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Image Processing</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>Public domain</accconst>
+    <useconst>None</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Ganymede/Voyager-Galileo/thumbs/Ganymede_Voyager_GalileoSSI_global_ClrMosaic_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr/>
+    </attracc>
+    <logic>The geometric control network was computed at the RAND Corporation [1][2]; this map of Ganymede utilized RAND’s November 1999 solution. The process to determine the control network involved selecting control points on the individual images,  making pixel measurements of their locations,  using reseau locations to correct for geometric distortions,  and converting the measurements to millimeters in the focal plane. These data are combined with the camera focal lengths and navigation solutions as input to photogrammetric triangulation software that solves for the best-fit sphere,  the coordinates of the control points,  the three orien-tation angles of the camera at each exposure (right ascension,  declination,  and twist),  and an angle (W0) which defines the orientation of Ganymede in space. W0 - in this solution 44.064° - is the angle along the equator to the east,  between the 0° meridian and the equator’s intersection with the celestial equator at the standard epoch J2000.0. This solution places the crater Anat at its defined longitude of 128° [3].
+
+&lt;b&gt;References:&lt;/b&gt; 
+&lt;br&gt;&lt;br&gt;
+[1] Davies,  M.E.,  et al.,  (1998). The control networks of the Galilean satellites and implications for global shape: Icarus,  v. 135,  p. 372–376. https://doi.org/10.1006/icar.1998.5982
+&lt;br&gt;&lt;br&gt;
+[2] Davies,  M.E.,  and Katayama,  F.Y.,  (1981). Coordinates of features on the Galilean satellites: Journal of Geophysical Research,  v. 86,  no. A10,  p. 8635–8657. https://www.rand.org/pubs/notes/N1617.html
+&lt;br&gt;&lt;br&gt;
+[3] Davies,  M.E.,  et al.,   (1996).  Report of the IAU/IAG/COSPAR Working Group on Cartographic Coordinates and Rotational Elements of the Planets and Satellites,  1994: Celestial Mechanics and Dynamical Astronomy,  v. 63,  p. 127–148. https://link.springer.com/article/10.1007/s10569-007-9072-y
+&lt;br&gt;&lt;br&gt;</logic>
+    <complete>The image data was selected on the basis of overall image quality,  reasonable input resolution (from 20 km/pixel for gap fill to approximately 400 meters/pixel),  and availability of moderate viewing and sun angles for topography.</complete>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin/>
+            <pubdate/>
+            <title/>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/galileo.html#gllSSIREDR</online>
+            <online>https://pds-imaging.jpl.nasa.gov/volumes/voyager.html#vgrISSEDR-J</online>
+            <online>http://pds-imaging.jpl.nasa.gov/portal/galileo_mission.html</online>
+            <online>https://pds-imaging.jpl.nasa.gov/portal/voyager_mission.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>This global map base uses the best image quality and moderate resolution coverage supplied by Galileo SSI and Voyager 1 and 2 (Batson,  1987; Becker and others,  2001). The monochrome and color data were both processed using Integrated Software for Imagers and Spectrometers (ISIS,  version 2) (Gaddis and others,  1997). The individual images were radiometrically calibrated and photometrically normalized using a Lunar-Lambert function with empirically derived values (McEwen,  1991; Kirk and others,  2000). A linear correction based on the statistics of all overlapping areas was then applied to minimize image brightness variations. The image data were selected on the basis of overall image quality,  reasonable original input resolution (from 20 km/pixel for gap fill to as much as 400 m/pixel),  and availability of moderate emission/incidence angles for topography and albedo. The black and white monochrome base mosaic was constructed separately from the three-band color mosaic. Although consistency was achieved where possible,  different filters were included for the mono-chrome global image coverage as necessary: clear for Voyager 1 and 2; clear,  near-IR (757 nm),  and green (559 nm) for Galileo SSI. Individual images were projected to a Sinusoidal Equal-Area projection at an image resolution of 1.0 km/pixel. The global color map was processed in Sinusoidal projection with an image resolution of 6.0 km/pixel. The color utilized the SSI filters 1-micron (991 nm) wavelength for red,  SSI 559 nm for green,  and SSI 413 nm for violet. Where SSI color coverage was lacking in the longitude range of 210°–250°,  Voyager 2 wide-angle images were included to complete the global coverage . The chosen filters for the Voyager 2 data were about 530 nm for green,  and  about 480–500 nm for blue. The red band was synthesized in this area based on statistics calculated from the surrounding SSI 1-micron (991 nm) data and SSI and Voyager data in the green and blue bands. The final global color map was then scaled up to 1.0 km/pixel and merged with the monochrome base mosaic. The north pole and south pole regions that lack digital color coverage have been completed with the monochrome map coverage. The final constructed Sinusoidal projection mosaic was then reprojected to the Mercator and Polar Stereographic projections included on this sheet. The color of the final mosaic was enhanced using commercial software.</procdesc>
+        <procdate/>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>5760</rowcount>
+      <colcount>11520</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>1435.72146209</absres>
+            <ordres>1435.72146209</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Ganymede</ellips>
+        <semiaxis>2632344.9707</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>190 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://planetarymaps.usgs.gov/mosaic/Ganymede_Voyager_GalileoSSI_Global_ClrMosaic_1435m.tif</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Jupiter</system>
+      <target>Ganymede</target>
+      <quadsys/>
+      <quadname/>
+      <rada>2632344.9707</rada>
+      <radb/>
+      <radc>2632344.9707</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>0 to 360</londom>
+      <londir>Positive West</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>360</maxlon>
+      <minlon>0</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Voyager</missikey>
+      <missikey>Galileo</missikey>
+    </mission>
+    <instr>
+      <instrkey/>
+      <instrkey>SSI</instrkey>
+    </instr>
+    <pdsstat>PDS 3 Like</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>32</scale>
+    <bands>3</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>

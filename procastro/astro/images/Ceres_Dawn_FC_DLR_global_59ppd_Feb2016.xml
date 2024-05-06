@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin>USGS Astrogeology Science Center</origin>
+        <pubdate>20160204</pubdate>
+        <title>Ceres Dawn FC Global Mosaic 140m v1</title>
+        <edition>Feb. 2016</edition>
+        <geoform>Global Mosaic, Remote-sensing Data</geoform>
+        <serinfo>
+          <sername/>
+          <issue/>
+        </serinfo>
+        <pubinfo>
+          <pubplace>Flagstaff, AZ</pubplace>
+          <publish>USGS Astrogeology Science Center</publish>
+        </pubinfo>
+        <onlink>https://astrogeology.usgs.gov/search/map/Ceres/Dawn/DLR/FramingCamera/Ceres_Dawn_FC_DLR_global_59ppd_Feb2016</onlink>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract><![CDATA[<b>Product Information:</b>
+
+The Dawn Framing Camera (FC) captured images of Ceres with a resolution of about 140 meters per pixel (m) in 2015 (Preusker et al., 2016).  German Aerospace Center (DLR) map-projected these images and produced a global high resolution controlled mosaic of Ceres at 140m. The images were taken with different viewing angles and different illumination conditions.
+
+Note: 35 meters per pixel versions (LAMO mosaics, v2) have been released by the Small Bodies (SBN) in PDS3 and GeoTIFF (under EXTRAS): <a href='https://sbn.psi.edu/pds/resource/dawn/dwncfcmosaics.html' target='_blank'>Dawn Framing Camera Ceres Image Mosaics</a>
+
+<b>Mission and Instrument Information:</b>
+
+The Dawn spacecraft launched on September 25, 2007 onboard a Delta II-Heavy Rocket, the instrument payload consisted of two identical framing cameras (FC1 & FC2), a visible and infrared mapping spectrometer (VIR, and a gamma ray and neutron detector (GRaND).  DAWN is a National Aeronautics and Space Administration (NASA) Discovery Program mission managed by the Jet Propulsion Laboratory (JPL ), with the principal investigator and science operations center located at the University of California, Los Angeles. The framing cameras were built by the Max Planck Institute for Solar System Research, with significant contributions by the German Aerospace Center, Institute of Planetary Research and in coordination with the Institute of Computer and Communication Network Engineering (Polansky et al., 2016). 
+
+Dawn spacecraft orbited Ceres in a series of science orbits designed to gradually increase the resolution and quality of science measurements as the mission at each target (Vesta & Ceres) progressed. The four science orbits are: rotation characteristic (RC) at 14,000 km, survey at 4,900 km, high altitude mapping orbit (HAMO) 1,950 km, and low altitude mapping orbit (LAMO) 850 km.  HAMO provided the opportunity to collect data for the global topography model by collecting six complete clear-image maps: two at nadir and four at of nadir attitudes (Polansky et al., 2016). 
+
+<b>References:</b>
+
+Polanskey, C., Joy, S., & Raymond, C. (2016). <em>Dawn Ceres Mission: Science Operations Performance.</em> Paper presented at the SpaceOps Conference, Daejeon, Korea. <a href='https://arc.aiaa.org/doi/abs/10.2514/6.2016-2442' target='_blank' >https://arc.aiaa.org/doi/abs/10.2514/6.2016-2442</a>
+
+Preusker, F., Scholten, F., Matz, K. D., Elgner, S., Jaumann, R., Roatsch, T., Joy, S. P., Polanskey, C. A., Raymond, C. A., & Russell, C. T. (2016). <em>Dawn at Ceres - Shape model and rotational state.</em> Paper presented at the 47th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. <a href='http://www.hou.usra.edu/meetings/lpsc2016/pdf/1954.pdf' target='_blank'>http://www.hou.usra.edu/meetings/lpsc2016/pdf/1954.pdf</a>
+
+Raymond, C. A., Jaumann, R., Nathues, A., Sierks, H., Roatsch, R., Preusker, F., Scholten, F., et al. (2011). The Dawn Topography Investigation. In Russell, C. & Raymond, C. (Eds.), <em>The Dawn Mission to Minor Planets 4 Vesta and 1 Ceres</em> (pp. 487-510). New York, NY: Springer. <a href='https://doi.org/10.1007/978-1-4614-4903-4_16' target='_blank'>https://doi.org/10.1007/978-1-4614-4903-4_16</a> 
+
+Roatsch, T., Kersten, E., Matz, K.-D., Preusker, F., Scholten, F., Jaumann, R., Raymond, C. A., & Russell, C. T. (2016). High-resolution Ceres High Altitude Mapping Orbit Atlas derived from Dawn Framing Camera images. <em>Planetary and Space Sciences, 125,</em> 103-107. <a href='https://doi.org/10.1016/j.pss.2016.05.011' target='_blank'>https://doi.org/10.1016/j.pss.2016.05.011</a>]]></abstract>
+      <purpose><![CDATA[One of the major goals of the mission was a global mapping of Vesta and Ceres.]]></purpose>
+      <supplinf><![CDATA[http://dawndata.igpp.ucla.edu, http://www.sciencedirect.com/science/article/pii/S0032063312002589, https://sbn.psi.edu/pds/resource/dawn/dwncfcmosaics.html]]></supplinf>
+    </descript>
+    <timeperd>
+      <current>Publication date</current>
+      <timeinfo>
+        <rngdates>
+          <begdate/>
+          <enddate/>
+        </rngdates>
+      </timeinfo>
+    </timeperd>
+    <status>
+      <progress>In Work</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-180</westbc>
+        <eastbc>180</eastbc>
+        <northbc>90</northbc>
+        <southbc>-90</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>Astropedia</themekt>
+        <themekey>Image Processing</themekey>
+        <themekey>Remote Sensing</themekey>
+        <themekey>Dwarf planets</themekey>
+      </theme>
+    </keywords>
+    <accscope>PDS</accscope>
+    <accconst>None</accconst>
+    <useconst>Please cite authors</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </ptcontac>
+    <browse>
+      <browsen>http://astropedia.astrogeology.usgs.gov/download/Ceres/Dawn/DLR/FramingCamera/thumbs/Ceres_Dawn_FC_DLR_global_Feb2016_1024.jpg</browsen>
+      <browsed/>
+      <browset>JPEG</browset>
+    </browse>
+    <native>ISIS v3</native>
+  </idinfo>
+  <dataqual>
+    <attracc>
+      <attraccr>Unknown</attraccr>
+    </attracc>
+    <logic>The Framing Camera is a multispectral imager that also serves as an optical navigation camera. The detector is a 1024x1024 pixel Atmel/Thomson TH7888A CCD with 14 micron pixels. It has eight filters numbered F1 through F8,  including a broadband (clear) filter and narrow band filters ranging from 438 nm to 965 nm. The Framing camera instrument includes two redundant cameras of identical design,  referred to as FC1 and FC2. For full information about the FC instrument,  see Schroeder and Gutierrez-Marques (2011). Reference: Schroeder,  S.E.,  and P. Gutierrez-Marques,  Calibration Pipeline,  MPS Report DA-FC-MPAE-RP-272,  Issue 2,  Rev. a,  20 July 2011.</logic>
+    <complete>not yet documented</complete>
+    <posacc>
+      <horizpa>
+        <horizpar/>
+      </horizpa>
+      <vertacc>
+        <vertaccr/>
+      </vertacc>
+    </posacc>
+    <lineage>
+      <srcinfo>
+        <srccite>
+          <citeinfo>
+            <origin>German Aerospace Center (DLR)</origin>
+            <pubdate/>
+            <title>Ceres Dawn FC Global Mosaic 140m</title>
+            <online>https://sbn.psi.edu/pds/resource/dawn/dwncfcmosaics.html</online>
+          </citeinfo>
+        </srccite>
+        <srcscale/>
+        <typesrc/>
+        <srctime>
+          <timeinfo>
+            <sngdate>
+              <caldate/>
+            </sngdate>
+          </timeinfo>
+        </srctime>
+      </srcinfo>
+      <procstep>
+        <procdesc>The first step of the processing chain is to orthorectify the images to the proper scale and map projection type. This process requires detailed high-resolution information of the local topography of Ceres. The global topgraphy was calculated during the stereo processing of the images and was used here. The shape model was used for the calculation of the ray intersection points while the map projection itself was done onto a sphere with a mean radius of 470 km. The next step was the mosaicing of all images to one global mosaic of Ceres,  the so called basemap.</procdesc>
+        <procdate>20160201</procdate>
+      </procstep>
+    </lineage>
+  </dataqual>
+  <spdoinfo>
+    <direct>Raster</direct>
+    <rastinfo>
+      <rasttype>Grid Cell</rasttype>
+      <rowcount>10546</rowcount>
+      <colcount>21093</colcount>
+    </rastinfo>
+  </spdoinfo>
+  <spref>
+    <horizsys>
+      <planar>
+        <mapproj>
+          <mapprojn>Simple Cylindrical</mapprojn>
+          <mapprojp>
+            <otherprj/>
+          </mapprojp>
+        </mapproj>
+        <planci>
+          <plance>row and column</plance>
+          <coordrep>
+            <absres>140</absres>
+            <ordres>140</ordres>
+          </coordrep>
+          <plandu/>
+        </planci>
+      </planar>
+      <geodetic>
+        <horizdn/>
+        <ellips>Ceres</ellips>
+        <semiaxis>470000</semiaxis>
+        <denflat>1.0E-10</denflat>
+      </geodetic>
+    </horizsys>
+    <vertdef>
+      <altsys>
+        <altdatum/>
+        <altres/>
+        <altunits/>
+        <altenc>attribute values</altenc>
+      </altsys>
+    </vertdef>
+  </spref>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>None</distliab>
+    <stdorder>
+      <digform>
+        <digtinfo>
+          <formname>cub</formname>
+          <transize>214 MB</transize>
+        </digtinfo>
+        <digtopt>
+          <onlinopt>
+            <computer>
+              <networka>
+                <networkr>https://asc-astropedia.s3.us-west-2.amazonaws.com/Ceres/Dawn/DLR/FramingCamera/Ceres_Dawn_FC_DLR_global_59ppd_Feb2016.cub</networkr>
+              </networka>
+            </computer>
+          </onlinopt>
+        </digtopt>
+      </digform>
+      <fees>None</fees>
+    </stdorder>
+  </distinfo>
+  <solarsys>
+    <planetsr>USGS Astrogeology Astropedia</planetsr>
+    <body>
+      <system>Small Bodies</system>
+      <target>Ceres</target>
+      <quadsys/>
+      <quadname/>
+      <rada>470000</rada>
+      <radb/>
+      <radc>470000</radc>
+      <lattype>Planetocentric</lattype>
+      <londom>-180 to 180</londom>
+      <londir>Positive East</londir>
+    </body>
+    <footprin>
+      <maxlat>90</maxlat>
+      <minlat>-90</minlat>
+      <maxlon>180</maxlon>
+      <minlon>-180</minlon>
+    </footprin>
+    <feature>
+      <featkey/>
+    </feature>
+    <litho>
+      <lithokey/>
+    </litho>
+    <tempo>
+      <tempokey/>
+    </tempo>
+    <mission>
+      <missikey>Dawn</missikey>
+    </mission>
+    <instr>
+      <instrkey>framing camera (FC)</instrkey>
+      <instrkey/>
+    </instr>
+    <pdsstat>PDS 3 Archived</pdsstat>
+    <pdsarch/>
+    <rover>
+      <sol/>
+      <featname/>
+      <feattarg/>
+    </rover>
+    <sample>
+      <strdepth/>
+      <endepth/>
+    </sample>
+    <ctrlnet/>
+    <bittype>8</bittype>
+    <scale>58.5926</scale>
+    <bands>1</bands>
+    <wkt/>
+  </solarsys>
+  <metainfo>
+    <metd>20240506</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>USGS Astrogeology Science Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>2255 N. Gemini Drive</address>
+          <city>Flagstaff</city>
+          <state>AZ</state>
+          <postal>86001</postal>
+        </cntaddr>
+        <cntvoice>928-556-7011</cntvoice>
+        <cntemail>astroweb@usgs.gov</cntemail>
+      </cntinfo>
+    </metc>
+    <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+    <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+    <mettc>local time</mettc>
+    <metextns>
+      <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+    </metextns>
+  </metainfo>
+</metadata>
