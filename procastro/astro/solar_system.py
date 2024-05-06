@@ -1,6 +1,5 @@
 import os
 import re
-import warnings
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -14,9 +13,11 @@ from PIL import Image
 from astropy import time as apt, units as u, coordinates as apc
 from astropy.table import Table, QTable
 
+from procastro.astro.projections import rotate_xaxis_to, unit_vector
 from procastro.core.cache import jpl_cache
 import procastro as pa
 
+TwoValues = tuple[float, float]
 
 @jpl_cache
 def _request_horizons_online(specifications):
@@ -43,7 +44,7 @@ def _request_horizons_online(specifications):
     url_api = "https://ssd.jpl.nasa.gov/api/horizons.api?"
     custom_spec = {}
     prev = ""
-    for spec in specifications:
+    for spec in specifications.split("\n"):
         if spec[:6] == r"!$$SOF":
             continue
         kv = spec.strip().split("=")
@@ -77,23 +78,22 @@ def get_jpl_ephemeris(specification):
     if isinstance(specification, dict):
         specification = f"""!$$SOF\n{"\n".join([f'{k}={v}' for k, v in specification.items()])}"""
 
-    lines = specification.splitlines()
-
-    if len(lines) == 1:  # filename is given
+    specification = specification.strip()
+    if specification.count("\n") == 0:  # filename is given
         filename = Path(specification)
         if not filename.exists():
             raise FileNotFoundError(f"File '{filename}' does not exists")
         with open(filename, 'r') as fp:
             line = fp.readline()
             if line[:6] == r"!$$SOF":
-                ephemeris = _request_horizons_online(fp.readlines())
+                ephemeris = _request_horizons_online(fp.read())
             else:
                 ephemeris = open(specification, 'r').readlines()
     else:
-        if lines[0][:6] != r"!$$SOF":
+        if specification[:6] != r"!$$SOF":
             raise ValueError(f"Multiline Horizons specification invalid:"
-                             f"{lines}")
-        ephemeris = _request_horizons_online(lines)
+                             f"{specification}")
+        ephemeris = _request_horizons_online(specification)
 
     return ephemeris
 
@@ -155,8 +155,6 @@ def parse_jpl_ephemeris(ephemeris):
                 moon_presence = False
         previous = line
 
-    # previous = change_names(previous)
-
     pattern = ""
     spaces = 0
     col_seps = re.split(r'( +)', previous.rstrip())
@@ -202,7 +200,9 @@ def parse_jpl_ephemeris(ephemeris):
                                                                                                 expand=True)
         coords = coords.astype(float)
         df[f'ra_{name}'] = coords.rah + (coords.ram + coords.ras / 60) / 60
-        df[f'dec_{name}'] = (coords.decd.abs() + (coords.decm + coords.decs / 60) / 60) * np.sign(coords.decd)
+        sign = np.sign(coords.decd)
+        sign += sign == 0
+        df[f'dec_{name}'] = (coords.decd.abs() + (coords.decm + coords.decs / 60) / 60) * sign
 
     # convert two values into their own columns
     for column in two_values_col:
@@ -301,7 +301,7 @@ def jpl_body_from_str(body):
 def jpl_times_from_time(times):
     if times.isscalar:
         times = apt.Time([times])
-    times_str = "\n".join([f"'{s}'" for s in times.jd])
+    times_str = " ".join([f"'{s}'" for s in times.jd])
     return {'TLIST_TYPE': 'JD',
             'TIME_TYPE': 'UT',
             'TLIST': times_str}
@@ -318,38 +318,138 @@ def jpl_observer_from_location(site):
 def body_map(body,
              observer,
              time: apt.Time,
+             locations: list[TwoValues] | dict[str, TwoValues] = None,
              ax=None,
+             show_poles=True,
+             color="red",
              ):
+    """
+
+    Parameters
+    ----------
+    color
+    show_poles
+    body
+    observer
+    time
+    locations:
+       a list of (lon, lat) coordinates
+    ax
+    """
     site = apc.EarthLocation.of_site(observer)
     request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
     table = read_jpl(request)
-    projection = ccrs.Orthographic(table['ObsSub_LON'].value[0],
-                                   table['ObsSub_LAT'].value[0])
+    sub_obs_lon = table['ObsSub_LON'].value[0]
+    sub_obs_lat = table['ObsSub_LAT'].value[0]
+    np_ang = table['NP_ang'].value[0]
+    print(f"(lon, lat, np) = ({sub_obs_lon}, {sub_obs_lat}, {np_ang})")
 
-    f, ax = pa.figaxes(10)
-    pa.change_axes_projection(ax, projection)
     image = plt.imread(f'{os.path.dirname(__file__)}/images/{body}.jpg')
-    ax.imshow(image,
-              origin='lower',
-              transform=ccrs.PlateCarree(),
-              extent=[-180, 180, -90, 90],
-              )
 
+    orthographic_image = get_orthographic(image,
+                                          sub_obs_lon,
+                                          sub_obs_lat,
+                                          show_poles=show_poles)
+
+    rotated_image = orthographic_image.rotate(-np_ang,
+                                             resample=Image.Resampling.BICUBIC,
+                                             expand=False, fillcolor=(255, 255, 255))
+
+    f, ax = pa.figaxes(ax)
+    ax.imshow(rotated_image)
     ax.axis('off')
-    ax.set_global()  # the whole globe limits
+
+    def _center_vector(normalized_vector, radius=0.5, center=(0.5, 0.5)):
+        return np.array(normalized_vector) * radius + np.array(center)
+
+    if len(locations) > 0:
+        print(f"Location offset from {body.capitalize()}'s center (Delta_RA, Delta_Dec) in arcsec:")
+
+        if isinstance(locations, list):
+            locations = {str(i): v for i, v in enumerate(locations) }
+        max_len = max([len(str(k)) for k in locations.keys()])
+        for name, location in locations.items():
+            rot_x, rot_y = rotate_xaxis_to(unit_vector(*location, degrees=True),
+                                           sub_obs_lon,
+                                           sub_obs_lat,
+                                           z_pole_angle=np_ang,
+                                           )[1:3]
+            delta_ra = table['Ang_diam'].value[0]*rot_x/2
+            delta_dec = table['Ang_diam'].value[0]*rot_y/2
+
+            ax.plot(*_center_vector((rot_x, rot_y)),
+                    transform=ax.transAxes,
+                    marker='d', color=color)
+            ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", $\\Delta\\delta$ {delta_dec:.0f}\"",
+                        _center_vector((rot_x, rot_y)),
+                        xycoords='axes fraction',
+                        color=color,
+                        )
+
+            format = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
+            print(format.format(name=str(name),
+                                delta_ra=delta_ra, delta_dec=delta_dec))
+    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}")
+
+    if show_poles:
+        ax.plot([0, 1], [0.5, 0.5],
+                color='blue',
+                transform=ax.transAxes)
+        ax.plot([0.5, 0.5], [0, 1],
+                color='blue',
+                transform=ax.transAxes)
+
+        for lat_pole in [-90, 90]:
+            pole = rotate_xaxis_to(unit_vector(0, lat_pole, degrees=True),
+                                   sub_obs_lon,
+                                   sub_obs_lat,
+                                   z_pole_angle=np_ang,
+                                   )
+            ax.plot(*_center_vector(pole[1:3]),
+                    transform=ax.transAxes,
+                    alpha=1 - 0.5*(pole[0] < 0),
+                    marker='o', color='black')
+
+            return ax
+
+
+def get_orthographic(platecarree_image,
+                     sub_obs_lon,
+                     sub_obs_lat,
+                     show_poles=True,
+                     ):
+    projection = ccrs.Orthographic(sub_obs_lon,
+                                   sub_obs_lat)
+
+    f = plt.figure(figsize=(3, 3))
+    tmp_ax = f.add_axes((0, 0, 1, 1),
+                        transform=f.transFigure,
+                        projection=projection)
+
+    tmp_ax.imshow(platecarree_image,
+                  origin='upper',
+                  transform=ccrs.PlateCarree(),
+                  extent=(-180, 180, -90, 90),
+                  )
+    if show_poles:
+        tmp_ax.plot(0, 90,
+                    transform=ccrs.PlateCarree(),
+                    marker='d', color='black')
+        tmp_ax.plot(0, -90,
+                    transform=ccrs.PlateCarree(),
+                    marker='d', color='black')
+
+    tmp_ax.axis('off')
+    tmp_ax.set_global()  # the whole globe limits
     f.canvas.draw()
 
     image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
 
-    image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
-    image = Image.fromarray(image, 'RGB')
+    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
+    orthographic_image = Image.fromarray(orthographic_image, 'RGB')
+    plt.close(f)
 
-    image = image.rotate(table['NP_ang'],
-                         resample=Image.Resampling.BICUBIC,
-                         expand=False, fillcolor=(255, 255, 255))
-    # image = white_transparent(image)
-
-    ax.imshow(image)
+    return orthographic_image
 
 
 def path_body(body,

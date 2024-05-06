@@ -261,8 +261,6 @@ def simbad_between_polygons(include_polygon: apc.SkyCoord | Sequence,
              f" AND flux.flux>{brightest} AND flux.flux<{dimmest};"
              )
 
-    print(query)
-
     return Simbad.query_tap(query)
 
 

@@ -23,6 +23,7 @@ class _AstroCache:
         def wrapper(hashable_first_argument, **kwargs):
             """Instance is just the first argument to the function which would need a __hash__:
              in a method it refers to self."""
+            cache = True
             try:
                 if hashable_first_argument in self._cache:
                     return self._cache[hashable_first_argument]
@@ -40,7 +41,7 @@ class _AstroCache:
                     del self._cache[self._queue.get_nowait()]
 
                 self._queue.put_nowait(hashable_first_argument)
-                self._cache[hashable_first_argument] = ret
+                self._cache[hashable_first_argument] = ret.copy()
 
             return ret
 
