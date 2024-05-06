@@ -1,12 +1,12 @@
 import os
 import re
 from pathlib import Path
-
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import requests
 
+import matplotlib.pyplot as plt
+import matplotlib.transforms as mtransforms
 import cartopy.crs as ccrs
 from PIL import Image
 
@@ -18,6 +18,7 @@ from procastro.core.cache import jpl_cache
 import procastro as pa
 
 TwoValues = tuple[float, float]
+
 
 @jpl_cache
 def _request_horizons_online(specifications):
@@ -66,7 +67,7 @@ def read_jpl(specification):
 
 
 def get_jpl_ephemeris(specification):
-    """Read JPL's Horizons ephemeris file returning the adequate datatype in a astropy.Table with named columns
+    """Read JPL's Horizons ephemeris file returning the adequate datatype in an astropy.Table with named columns
 
     Parameters
     ----------
@@ -237,11 +238,11 @@ def parse_jpl_ephemeris(ephemeris):
     for column in ut_col:
         if column not in df:
             continue
-        newdate = df[column].str.strip().str.replace(" ", "T")
+        new_date = df[column].str.strip().str.replace(" ", "T")
         for idx, month in enumerate(['Jan', "Feb", "Mar", "Apr", "May", "Jun",
                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]):
-            newdate = newdate.str.strip().str.replace(month, f"{idx+1:02d}")
-        df[jd_col] = [apt.Time(ut_date).jd for ut_date in newdate]
+            new_date = new_date.str.strip().str.replace(month, f"{idx+1:02d}")
+        df[jd_col] = [apt.Time(ut_date).jd for ut_date in new_date]
 
     df['jd'] = df[jd_col]
 
@@ -352,52 +353,54 @@ def body_map(body,
                                           show_poles=show_poles)
 
     rotated_image = orthographic_image.rotate(-np_ang,
-                                             resample=Image.Resampling.BICUBIC,
-                                             expand=False, fillcolor=(255, 255, 255))
+                                              resample=Image.Resampling.BICUBIC,
+                                              expand=False, fillcolor=(255, 255, 255))
 
     f, ax = pa.figaxes(ax)
     ax.imshow(rotated_image)
     ax.axis('off')
 
-    def _center_vector(normalized_vector, radius=0.5, center=(0.5, 0.5)):
-        return np.array(normalized_vector) * radius + np.array(center)
+    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}")
+    transform_norm_to_axes = (mtransforms.Affine2D().scale(0.5) +
+                              mtransforms.Affine2D().translate(0.5, 0.5) +
+                              ax.transAxes)
 
     if len(locations) > 0:
         print(f"Location offset from {body.capitalize()}'s center (Delta_RA, Delta_Dec) in arcsec:")
 
         if isinstance(locations, list):
-            locations = {str(i): v for i, v in enumerate(locations) }
+            locations = {str(i): v for i, v in enumerate(locations)}
         max_len = max([len(str(k)) for k in locations.keys()])
         for name, location in locations.items():
-            rot_x, rot_y = rotate_xaxis_to(unit_vector(*location, degrees=True),
-                                           sub_obs_lon,
-                                           sub_obs_lat,
-                                           z_pole_angle=np_ang,
-                                           )[1:3]
-            delta_ra = table['Ang_diam'].value[0]*rot_x/2
-            delta_dec = table['Ang_diam'].value[0]*rot_y/2
+            rot_xy = rotate_xaxis_to(unit_vector(*location, degrees=True),
+                                     sub_obs_lon,
+                                     sub_obs_lat,
+                                     z_pole_angle=np_ang,
+                                     )[1:3]
+            delta_ra, delta_dec = table['Ang_diam'].value[0]*rot_xy/2
 
-            ax.plot(*_center_vector((rot_x, rot_y)),
-                    transform=ax.transAxes,
+            ax.plot(*rot_xy,
+                    transform=transform_norm_to_axes,
                     marker='d', color=color)
             ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", $\\Delta\\delta$ {delta_dec:.0f}\"",
-                        _center_vector((rot_x, rot_y)),
-                        xycoords='axes fraction',
+                        rot_xy,
+                        xycoords=transform_norm_to_axes,
                         color=color,
                         )
 
-            format = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
-            print(format.format(name=str(name),
-                                delta_ra=delta_ra, delta_dec=delta_dec))
-    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}")
+            format_str = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
+            print(format_str.format(name=str(name),
+                                    delta_ra=delta_ra, delta_dec=delta_dec))
 
     if show_poles:
-        ax.plot([0, 1], [0.5, 0.5],
+        ax.plot([-1, 1], [0, 0],
                 color='blue',
-                transform=ax.transAxes)
-        ax.plot([0.5, 0.5], [0, 1],
+                transform=transform_norm_to_axes,
+                )
+        ax.plot([0, 0], [-1, 1],
                 color='blue',
-                transform=ax.transAxes)
+                transform=transform_norm_to_axes,
+                )
 
         for lat_pole in [-90, 90]:
             pole = rotate_xaxis_to(unit_vector(0, lat_pole, degrees=True),
@@ -405,12 +408,12 @@ def body_map(body,
                                    sub_obs_lat,
                                    z_pole_angle=np_ang,
                                    )
-            ax.plot(*_center_vector(pole[1:3]),
-                    transform=ax.transAxes,
+            ax.plot(*pole[1:3],
+                    transform=transform_norm_to_axes,
                     alpha=1 - 0.5*(pole[0] < 0),
                     marker='o', color='black')
 
-            return ax
+    return ax
 
 
 def get_orthographic(platecarree_image,
