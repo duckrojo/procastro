@@ -1,12 +1,17 @@
+import os
 from typing import Optional
 
 import queue
 
 __all__ = ['astrofile_cache', 'jpl_cache']
 
+import pandas as pd
+
+from procastro import user_confdir
+
 
 class _AstroCache:
-    def __init__(self, max_cache=200, disk_lifetime=0, hashable_kw=None):
+    def __init__(self, max_cache=200, disk_lifetime=0, hashable_kw=None, label_on_disk=None):
         """
 
         Parameters
@@ -22,7 +27,14 @@ class _AstroCache:
         self.set_max_cache(self._max_cache)
 
         if disk_lifetime:
-            raise NotImplementedError("DISK caching in the works still")
+            if not label_on_disk:
+                raise ValueError('label_on_disk must be specified if disk_lifetime is specified.')
+            self.cache_directory = user_confdir(f'cache/{label_on_disk}', use_directory=True)
+            self.config_file = user_confdir(f'cache/{label_on_disk}/config.csv')
+            if not os.path.exists(self.config_file):
+                pd.DataFrame(columns=['filename', 'save_time']).to_csv(self.config_file)
+            self.config_df = pd.read_csv(self.config_file)
+            raise NotImplementedError("File cache not fully implemented yet")
 
         if hashable_kw is None:
             self.hashable_kw = []
