@@ -1,3 +1,4 @@
+import copy
 import os
 import pickle
 import tempfile
@@ -8,7 +9,7 @@ import pandas as pd
 __all__ = ['astrofile_cache', 'jpl_cache']
 
 
-from procastro import user_confdir
+from .misc_general import user_confdir
 import astropy.time as apt
 
 
@@ -22,13 +23,13 @@ class _AstroCache:
         Parameters
         ----------
         max_cache
-        disk_lifetime
          how many days to cache in disk, if more than that has elapsed, it will be reread.
         """
         self._queue: Optional[queue.Queue] = None
 
         self._max_cache: int = max_cache
         self.set_max_cache(self._max_cache)
+        self.lifetime = lifetime
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
@@ -57,6 +58,23 @@ class _AstroCache:
     def available(self):
         return not self._queue.full()
 
+    def _delete_cache(self):
+        compound_hash = self._queue.get_nowait()
+        if self._store_on_disk:
+            os.remove(self._cache[compound_hash][1])
+        del self._cache[compound_hash]
+
+        return compound_hash
+
+    def _store_cache(self, compound_hash, content):
+        self._queue.put_nowait(compound_hash)
+        if self._store_on_disk:
+            with tempfile.NamedTemporaryFile(dir=self.cache_directory, delete=False) as fp:
+                fp.write(content)
+                self._cache[compound_hash] = (apt.Time.now().isot, fp.name)
+        else:
+            self._cache[compound_hash] = (apt.Time.now().isot, copy.copy(content))
+
     def __call__(self, method):
         def wrapper(hashable_first_argument, **kwargs):
             """Instance is just the first argument to the function which would need a __hash__:
@@ -67,34 +85,39 @@ class _AstroCache:
 
             try:
                 if compound_hash in self._cache:
-                    # todo check expiration time
-                    if self._store_on_disk:
-                        return open(self._cache[compound_hash][1], 'rb').read()
-                    else:
-                        return self._cache[compound_hash]
+                    pass
             except TypeError:
                 # disable cache if type is not hashable (numpy array for instance)
                 cache = False
 
+            if cache and (compound_hash in self._cache):
+                # expire cache if too old
+                if (self.lifetime and
+                    apt.Time.now() - apt.Time(self._cache[compound_hash][0],
+                                              format='isot', scale='utc') > self.lifetime):
+
+                    # empty queue of all objects older than the one requested
+                    old_compound_hash = self._delete_cache()
+                    while old_compound_hash != compound_hash:
+                        old_compound_hash = self._delete_cache()
+
+                # use disk or memory cache
+                elif self._store_on_disk:
+                    return open(self._cache[compound_hash][1], 'rb').read()
+
+                else:
+                    return self._cache[compound_hash][1]
+
             ret = method(hashable_first_argument, **kwargs)
 
-            # if caching
+            # save if caching
             if cache and self._queue is not None:
 
                 # delete oldest cache if limit reached
                 if self._queue.full():
-                    to_delete = self._queue.get_nowait()
-                    if self._store_on_disk:
-                        os.remove(self._cache[to_delete][1])
-                    del self._cache[to_delete]
+                    self._delete_cache()
 
-                self._queue.put_nowait(compound_hash)
-                if self._store_on_disk:
-                    with tempfile.NamedTemporaryFile(dir=self.cache_directory, delete=False) as fp:
-                        fp.write(ret)
-                        self._cache[compound_hash] = (apt.Time.now(), fp.name)
-                else:
-                    self._cache[compound_hash] = (apt.Time.now(), ret.copy())
+                self._store_cache(compound_hash, ret)
 
             return ret
 
