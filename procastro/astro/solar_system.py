@@ -7,6 +7,8 @@ import requests
 
 import matplotlib.pyplot as plt
 import matplotlib.transforms as mtransforms
+import matplotlib.collections as mcol
+import matplotlib.path as mpath
 import cartopy.crs as ccrs
 from PIL import Image
 
@@ -14,7 +16,7 @@ from astropy import time as apt, units as u, coordinates as apc
 from astropy.table import Table, QTable
 from bs4 import BeautifulSoup
 
-from procastro.astro.projections import rotate_xaxis_to, unit_vector
+from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 from procastro.core.cache import jpl_cache
 import procastro as pa
 
@@ -283,11 +285,11 @@ def jpl_body_from_str(body):
               'venus': 299,
               'moon': 301,
               'luna': 301,
-              'mars': 399,
-              'jupiter': 499,
-              'saturn': 599,
-              'uranus': 699,
-              'neptune': 799,
+              'mars': 499,
+              'jupiter': 599,
+              'saturn': 699,
+              'uranus': 799,
+              'neptune': 899,
               }
     match body:
         case int():
@@ -300,7 +302,19 @@ def jpl_body_from_str(body):
     return {'COMMAND': body}
 
 
-def jpl_times_from_time(times):
+def jpl_times_from_time(times: str | apt.Time):
+    """
+Return dict with correct time batch call for JPL's horizon
+    Parameters
+    ----------
+    times
+
+    Returns
+    -------
+
+    """
+    if isinstance(times, str):
+        times = apt.Time(times, format='isot', scale='utc')
     if times.isscalar:
         times = apt.Time([times])
     times_str = " ".join([f"'{s}'" for s in times.jd])
@@ -322,14 +336,21 @@ def body_map(body,
              time: apt.Time,
              locations: list[TwoValues] | dict[str, TwoValues] = None,
              ax=None,
-             show_poles=True,
-             color="red",
+             show_poles="blue",
              detail=None,
+             color="red", color_phase='black',
+             color_background='black', color_title='white',
              ):
     """
 
     Parameters
     ----------
+    color_title
+       Color of title
+    color_background
+       Color of background
+    color_phase
+       Color of phase shading, None to skip
     detail
        submap of body
     color
@@ -347,7 +368,8 @@ def body_map(body,
     sub_obs_lon = table['ObsSub_LON'].value[0]
     sub_obs_lat = table['ObsSub_LAT'].value[0]
     np_ang = table['NP_ang'].value[0]
-    print(f"(lon, lat, np) = ({sub_obs_lon}, {sub_obs_lat}, {np_ang})")
+
+    lunar_to_observer = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=np_ang)
 
     image = map_image(body, detail=detail)
 
@@ -359,12 +381,23 @@ def body_map(body,
     rotated_image = orthographic_image.rotate(-np_ang,
                                               resample=Image.Resampling.BICUBIC,
                                               expand=False, fillcolor=(255, 255, 255))
+    x_offset = 0.5
+    y_offset = 0
+    ny, nx = rotated_image.size
+    yy, xx = np.mgrid[-ny/2 + y_offset: ny/2 + y_offset, -nx/2 + x_offset: nx/2 + x_offset]
+    rr = np.sqrt(yy**2 + xx**2).flatten()
+    rotated_image.putdata([item if r < nx/2 - 1 else (0, 0, 0, 0)
+                           for r, item in zip(rr, rotated_image.convert("RGBA").getdata())])
 
     f, ax = pa.figaxes(ax)
+    f.patch.set_facecolor(color_background)
+    ax.set_facecolor(color_background)
     ax.imshow(rotated_image)
     ax.axis('off')
 
-    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}")
+    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}",
+                 color=color_title,
+                 )
     transform_norm_to_axes = (mtransforms.Affine2D().scale(0.5) +
                               mtransforms.Affine2D().translate(0.5, 0.5) +
                               ax.transAxes)
@@ -376,46 +409,107 @@ def body_map(body,
             locations = {str(i): v for i, v in enumerate(locations)}
         max_len = max([len(str(k)) for k in locations.keys()])
         for name, location in locations.items():
-            rot_xy = rotate_xaxis_to(unit_vector(*location, degrees=True),
-                                     sub_obs_lon,
-                                     sub_obs_lat,
-                                     z_pole_angle=np_ang,
-                                     )[1:3]
+            rot_xy = lunar_to_observer.apply(unit_vector(*location, degrees=True))[1:3]
             delta_ra, delta_dec = table['Ang_diam'].value[0]*rot_xy/2
 
             ax.plot(*rot_xy,
                     transform=transform_norm_to_axes,
-                    marker='d', color=color)
+                    marker='d', color=color,
+                    zorder=10,
+                    )
             ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", $\\Delta\\delta$ {delta_dec:.0f}\"",
                         rot_xy,
                         xycoords=transform_norm_to_axes,
                         color=color,
+                        zorder=10,
                         )
 
             format_str = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
             print(format_str.format(name=str(name),
                                     delta_ra=delta_ra, delta_dec=delta_dec))
+        print("")
 
     if show_poles:
         ax.plot([-1, 1], [0, 0],
                 color='blue',
                 transform=transform_norm_to_axes,
+                zorder=9,
                 )
         ax.plot([0, 0], [-1, 1],
                 color='blue',
                 transform=transform_norm_to_axes,
+                zorder=9,
                 )
 
         for lat_pole in [-90, 90]:
-            pole = rotate_xaxis_to(unit_vector(0, lat_pole, degrees=True),
-                                   sub_obs_lon,
-                                   sub_obs_lat,
-                                   z_pole_angle=np_ang,
-                                   )
+            pole = lunar_to_observer.apply(unit_vector(0, lat_pole, degrees=True))
             ax.plot(*pole[1:3],
                     transform=transform_norm_to_axes,
                     alpha=1 - 0.5*(pole[0] < 0),
-                    marker='o', color='black')
+                    marker='o', color='blue',
+                    zorder=9,
+                    )
+
+    if color_phase:
+        n_phase = 50
+        equatorial_to_border = new_x_axis_at(0, 90)
+        border_to_terminator = current_x_axis_to(table['SunSub_LON'].value[0],
+                                                 table['SunSub_LAT'].value[0],
+                                                 )
+
+        print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
+        terminator_rotation = lunar_to_observer*border_to_terminator*equatorial_to_border
+        terminator = terminator_rotation.apply(unit_vector(np.linspace(0, 360, 50),
+                                                           0)
+                                               )
+
+        visible_terminator = np.array([(np.arctan2(t[2], t[1]), t[1], t[2])
+                                       for t in terminator if t[0] > 0])
+        angles = visible_terminator[:,0]
+        angles[angles < angles[np.argmax(angles[:-1]-angles[1:])]] += 2*np.pi
+        visible_terminator[:, 0] = angles
+        visible_sorted_terminator = sorted(visible_terminator, key=lambda x: x[0])
+        sub_sun = lunar_to_observer.apply(unit_vector(table['SunSub_LON'].value[0],
+                                                      table['SunSub_LAT'].value[0],
+                                                      )
+                                          )
+        sorted_angles = np.array(visible_sorted_terminator)[:, 0]
+        angle_low = sorted_angles[0]
+        angle_top = sorted_angles[-1]
+        if angle_top < angle_low:
+            angle_low -= 2 * np.pi
+
+        mid_from_low = (angle_low + angle_top) / 2
+        dark_from_low = (np.array([0, np.cos(mid_from_low), np.sin(mid_from_low)]) * sub_sun).sum() < 0
+
+        if dark_from_low:
+            angle_perimeter = np.linspace(angle_low, angle_top, n_phase)
+            visible_sorted_terminator = visible_sorted_terminator[::-1]
+        else:
+            angle_perimeter = np.linspace(angle_top, angle_low + 2*np.pi, n_phase)
+        perimeter = np.array([np.array([0, np.cos(ang), np.sin(ang)])
+                              for ang in angle_perimeter]
+                             + visible_sorted_terminator)
+
+        clip_path = mpath.Path(vertices=perimeter[:, 1:3], closed=True)
+
+        col = mcol.PathCollection([clip_path],
+                                  color=color_phase, alpha=0.7,
+                                  ls='', edgecolors='face',
+                                  zorder=4,
+                                  transform=transform_norm_to_axes,
+                                  )
+
+        ax.add_collection(col)
+
+        plt.plot(*list(zip(*visible_sorted_terminator))[1: 3],
+                 color=color_phase,
+                 transform=transform_norm_to_axes)
+
+        plt.plot(*sub_sun[1:3],
+                 marker='d', color='yellow',
+                 alpha=1 - 0.5 * (sub_sun[0] < 0),
+                 transform=transform_norm_to_axes)
 
     return ax
 
@@ -423,8 +517,22 @@ def body_map(body,
 def get_orthographic(platecarree_image,
                      sub_obs_lon,
                      sub_obs_lat,
-                     show_poles=True,
+                     show_poles="blue",
                      ):
+    """
+Returns ortographic projection with the specified center
+    Parameters
+    ----------
+    platecarree_image
+    sub_obs_lon
+    sub_obs_lat
+    show_poles
+       Color to mark poles, set to "" if don't want to mark
+
+    Returns
+    -------
+
+    """
     projection = ccrs.Orthographic(sub_obs_lon,
                                    sub_obs_lat)
 
@@ -441,10 +549,10 @@ def get_orthographic(platecarree_image,
     if show_poles:
         tmp_ax.plot(0, 90,
                     transform=ccrs.PlateCarree(),
-                    marker='d', color='black')
+                    marker='d', color=show_poles)
         tmp_ax.plot(0, -90,
                     transform=ccrs.PlateCarree(),
-                    marker='d', color='black')
+                    marker='d', color=show_poles)
 
     tmp_ax.axis('off')
     tmp_ax.set_global()  # the whole globe limits
@@ -537,6 +645,7 @@ def map_image(body, detail=None, warn_multiple=True):
                   "Selected first of:")
             for bf in body_files:
                 print(f"* {bf[0]} [{_parse_date(bf[3])}..{_parse_date(bf[4])}]")
+            print("")
 
         body_files = [body_files[0]]
 

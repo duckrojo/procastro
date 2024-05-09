@@ -1,5 +1,5 @@
 import numpy as np
-from ..projections import rotate_xaxis_to, unit_vector
+from ..projection import new_x_axis_at, unit_vector
 
 
 def _close_enough(*scalars_or_vectors, tolerance=1e-10, verbose=True):
@@ -26,27 +26,27 @@ def test_rotate_xaxis_to():
 
     random_lat = np.random.randint(0, 90)
     random_lon = np.random.randint(-180, 180)
-    assert _close_enough(rotate_xaxis_to(unit_vector(random_lon, random_lat), random_lon, random_lat),
+    assert _close_enough(new_x_axis_at(unit_vector(random_lon, random_lat), random_lon, random_lat),
                          np.array([1, 0, 0])
                          )
 
-    only_y = rotate_xaxis_to(vector, -90, 0, 0)
+    only_y = new_x_axis_at(vector, -90, 0, 0)
     assert _close_enough(only_y, np.array([0, 1, 0]))
 
-    only_z = rotate_xaxis_to(vector, 0, -90, 0)
+    only_z = new_x_axis_at(vector, 0, -90, 0)
     assert _close_enough(only_z, np.array([0, 0, 1]))
 
-    y_equal_z = rotate_xaxis_to(vector, -90, 0, -45)
+    y_equal_z = new_x_axis_at(vector, -90, 0, -45)
     assert _close_enough(y_equal_z[1], y_equal_z[2])
 
-    y_equal_minus_z = rotate_xaxis_to(vector,  -90, 0, 45)
+    y_equal_minus_z = new_x_axis_at(vector, -90, 0, 45)
     assert _close_enough(y_equal_minus_z[1], - y_equal_minus_z[2])
     assert y_equal_minus_z[2] < 0
 
-    x_equal_minus_z = rotate_xaxis_to(vector, 0, 45, 0)
+    x_equal_minus_z = new_x_axis_at(vector, 0, 45, 0)
     assert _close_enough(x_equal_minus_z[0], - x_equal_minus_z[2])
     assert x_equal_minus_z[2] < 0
 
-    x_equal_y_equal_z = rotate_xaxis_to(vector, -45, -45)
+    x_equal_y_equal_z = new_x_axis_at(vector, -45, -45)
     assert _close_enough(x_equal_y_equal_z[0], x_equal_y_equal_z[2],
                          np.sqrt(x_equal_y_equal_z[1]**2/2))
