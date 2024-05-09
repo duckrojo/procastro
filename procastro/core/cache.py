@@ -11,6 +11,7 @@ __all__ = ['astrofile_cache', 'jpl_cache']
 
 from .misc_general import user_confdir
 import astropy.time as apt
+import astropy.units as u
 
 
 class _AstroCache:
@@ -25,10 +26,8 @@ class _AstroCache:
         max_cache
          how many days to cache in disk, if more than that has elapsed, it will be reread.
         """
-        self._queue: Optional[queue.Queue] = None
 
         self._max_cache: int = max_cache
-        self.set_max_cache(self._max_cache)
         self.lifetime = lifetime
 
         if label_on_disk is not None:
@@ -42,15 +41,29 @@ class _AstroCache:
             self.cache_directory = user_confdir(f'cache/{label_on_disk}', use_directory=True)
             self.config_file = user_confdir(f'cache/{label_on_disk}/config.pickle')
             if not os.path.exists(self.config_file):
-                pickle.dump(self._cache, open(self.config_file, 'wb'))
-            self._cache = pd.read_pickle(self.config_file)
+                pickle.dump({}, open(self.config_file, 'wb'))
+            self._cache = pickle.load(open(self.config_file, 'rb'))
         else:
             self._cache: dict[any, tuple[apt.Time, any]] = {}
             self.cache_directory = None
             self.config_file = None
 
+        sorted_hash = [ch
+                       for ch, tm
+                       in sorted([(h, apt.Time(t))
+                                  for h, (t, c)
+                                  in self._cache.items()],
+                                 key=lambda x: x[1])
+                       ]
+        self._queue: Optional[queue.Queue] = None
+        self.set_max_cache(self._max_cache)
+        if self._queue is not None:
+            for h in sorted_hash:
+                self._queue.put_nowait(h)
+
         if hashable_kw is None:
-            self.hashable_kw = []
+            hashable_kw = []
+        self._hashable_kw = hashable_kw
 
     def __bool__(self):
         return self._max_cache > 0
@@ -62,6 +75,7 @@ class _AstroCache:
         compound_hash = self._queue.get_nowait()
         if self._store_on_disk:
             os.remove(self._cache[compound_hash][1])
+            self._update_config_file()
         del self._cache[compound_hash]
 
         return compound_hash
@@ -69,11 +83,15 @@ class _AstroCache:
     def _store_cache(self, compound_hash, content):
         self._queue.put_nowait(compound_hash)
         if self._store_on_disk:
-            with tempfile.NamedTemporaryFile(dir=self.cache_directory, delete=False) as fp:
-                fp.write(content)
+            with tempfile.NamedTemporaryFile(mode="wb", dir=self.cache_directory, delete=False) as fp:
+                pickle.dump(content, fp)
                 self._cache[compound_hash] = (apt.Time.now().isot, fp.name)
+            self._update_config_file()
         else:
             self._cache[compound_hash] = (apt.Time.now().isot, copy.copy(content))
+
+    def _update_config_file(self):
+        pickle.dump(self._cache, open(self.config_file, 'wb'))
 
     def __call__(self, method):
         def wrapper(hashable_first_argument, **kwargs):
@@ -81,7 +99,7 @@ class _AstroCache:
              in a method it refers to self."""
             cache = True
             compound_hash = tuple([hashable_first_argument] +
-                                  [kwargs[kw] for kw in self.hashable_kw if kw in kwargs])
+                                  [kwargs[kw] for kw in self._hashable_kw])
 
             try:
                 if compound_hash in self._cache:
@@ -94,7 +112,7 @@ class _AstroCache:
                 # expire cache if too old
                 if (self.lifetime and
                     apt.Time.now() - apt.Time(self._cache[compound_hash][0],
-                                              format='isot', scale='utc') > self.lifetime):
+                                              format='isot', scale='utc') > self.lifetime * u.day):
 
                     # empty queue of all objects older than the one requested
                     old_compound_hash = self._delete_cache()
@@ -103,7 +121,7 @@ class _AstroCache:
 
                 # use disk or memory cache
                 elif self._store_on_disk:
-                    return open(self._cache[compound_hash][1], 'rb').read()
+                    return pickle.load(open(self._cache[compound_hash][1], 'rb'))
 
                 else:
                     return self._cache[compound_hash][1]
@@ -143,12 +161,12 @@ class _AstroCache:
         if old_queue is None:
             return
 
-        try:
-            # if reducing cache, get rid of the extra caches
-            if delta > 0:
-                for af in range(delta):
-                    del self._cache[self._queue.get_nowait()]  # both delete elements from indexing and the cache.
+        # if reducing cache, get rid of the extra caches
+        if delta > 0:
+            for af in range(delta):
+                self._delete_cache()
 
+        try:
             # copy old queue into new
             while True:
                 self._queue.put_nowait(old_queue.get_nowait())
@@ -158,3 +176,5 @@ class _AstroCache:
 
 astrofile_cache = _AstroCache()
 jpl_cache = _AstroCache(max_cache=50)
+usgs_map_cache = _AstroCache(max_cache=30, lifetime=7, hashable_kw=['detail'], label_on_disk='USGSmap')
+
