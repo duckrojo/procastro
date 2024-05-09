@@ -36,13 +36,31 @@ procastro_dir.mkdir(exist_ok=True)
 
 def defaults_confdir(file: str,
                      ):
+    """
+Returns full path to file with default configuration.
+
+    Parameters
+    ----------
+    file: str
+       Name of the file for which the default configuration is requested.
+
+    Returns
+    -------
+
+    """
     return Path(__file__).parent.joinpath("..", "defaults", file)
 
 
-def user_confdir(file: str,
-                 start_with_default: bool = True):
-    full_file = procastro_dir.joinpath(file)
-    default_file = defaults_confdir(file)
+def user_confdir(section: str,
+                 start_with_default: bool = True,
+                 use_directory: bool = False):
+    """returns full path for a _file_ configuration
+
+     """
+    default_file = defaults_confdir(section)
+    full_file = procastro_dir.joinpath(section)
+    if use_directory:
+        full_file.mkdir(exist_ok=True, parents=True)
 
     # if this is the first time the file is checked, then copy it to the user directory
     if start_with_default and not full_file.exists() and default_file.exists():

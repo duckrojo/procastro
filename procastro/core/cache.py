@@ -1,12 +1,22 @@
+import os
+import pickle
+import tempfile
 from typing import Optional
-
 import queue
+import pandas as pd
 
 __all__ = ['astrofile_cache', 'jpl_cache']
 
 
+from procastro import user_confdir
+import astropy.time as apt
+
+
 class _AstroCache:
-    def __init__(self, max_cache=200, disk_lifetime=0, hashable_kw=None):
+    def __init__(self,
+                 max_cache=200, lifetime=0,
+                 hashable_kw=None, label_on_disk=None
+                 ):
         """
 
         Parameters
@@ -15,14 +25,28 @@ class _AstroCache:
         disk_lifetime
          how many days to cache in disk, if more than that has elapsed, it will be reread.
         """
-        self._cache: dict = {}
-        self._max_cache: int = max_cache
         self._queue: Optional[queue.Queue] = None
 
+        self._max_cache: int = max_cache
         self.set_max_cache(self._max_cache)
 
-        if disk_lifetime:
-            raise NotImplementedError("DISK caching in the works still")
+        if label_on_disk is not None:
+            if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
+                raise ValueError(f"label_on_disk contains invalid file characters '{label_on_disk}'")
+            self._store_on_disk = True
+        else:
+            self._store_on_disk = False
+
+        if self._store_on_disk:
+            self.cache_directory = user_confdir(f'cache/{label_on_disk}', use_directory=True)
+            self.config_file = user_confdir(f'cache/{label_on_disk}/config.pickle')
+            if not os.path.exists(self.config_file):
+                pickle.dump(self._cache, open(self.config_file, 'wb'))
+            self._cache = pd.read_pickle(self.config_file)
+        else:
+            self._cache: dict[any, tuple[apt.Time, any]] = {}
+            self.cache_directory = None
+            self.config_file = None
 
         if hashable_kw is None:
             self.hashable_kw = []
@@ -43,7 +67,11 @@ class _AstroCache:
 
             try:
                 if compound_hash in self._cache:
-                    return self._cache[compound_hash]
+                    # todo check expiration time
+                    if self._store_on_disk:
+                        return open(self._cache[compound_hash][1], 'rb').read()
+                    else:
+                        return self._cache[compound_hash]
             except TypeError:
                 # disable cache if type is not hashable (numpy array for instance)
                 cache = False
@@ -55,10 +83,18 @@ class _AstroCache:
 
                 # delete oldest cache if limit reached
                 if self._queue.full():
-                    del self._cache[self._queue.get_nowait()]
+                    to_delete = self._queue.get_nowait()
+                    if self._store_on_disk:
+                        os.remove(self._cache[to_delete][1])
+                    del self._cache[to_delete]
 
                 self._queue.put_nowait(compound_hash)
-                self._cache[compound_hash] = ret.copy()
+                if self._store_on_disk:
+                    with tempfile.NamedTemporaryFile(dir=self.cache_directory, delete=False) as fp:
+                        fp.write(ret)
+                        self._cache[compound_hash] = (apt.Time.now(), fp.name)
+                else:
+                    self._cache[compound_hash] = (apt.Time.now(), ret.copy())
 
             return ret
 
