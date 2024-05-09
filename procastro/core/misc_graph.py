@@ -503,7 +503,7 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
         if clear or len(fig.axes) == 0:
             fig.clf()
             axs = fig.add_subplot(nrows, ncols, 1,
-                                  subplot_kw=dict(projection=projection),
+                                  projection=projection,
                                   )
         else:
             axs = fig.axes[0]
@@ -513,7 +513,7 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
             fig.clf()
         if len(fig.axes) == 0:
             fig.add_subplot(nrows, ncols, 1,
-                            subplot_kw=dict(projection=projection),
+                            projection=projection,
                             )
         axs = fig.axes[0]
     elif isinstance(axes, plt.Axes):
@@ -526,6 +526,7 @@ def figaxes(axes: Union[int, plt.Figure, plt.Axes] = None,
                          "recognized".format(axes, ))
 
     return fig, axs
+
 
 class MultiBaseLocator(Locator):
 

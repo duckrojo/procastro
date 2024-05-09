@@ -465,17 +465,16 @@ def body_map(body,
 
         visible_terminator = np.array([(np.arctan2(t[2], t[1]), t[1], t[2])
                                        for t in terminator if t[0] > 0])
-        angles = visible_terminator[:,0]
-        angles[angles < angles[np.argmax(angles[:-1]-angles[1:])]] += 2*np.pi
+        angles = visible_terminator[:, 0]
+        angles[angles <= angles[np.argmin(angles[:-1]-angles[1:])]] += 2*np.pi
         visible_terminator[:, 0] = angles
         visible_sorted_terminator = sorted(visible_terminator, key=lambda x: x[0])
         sub_sun = lunar_to_observer.apply(unit_vector(table['SunSub_LON'].value[0],
                                                       table['SunSub_LAT'].value[0],
                                                       )
                                           )
-        sorted_angles = np.array(visible_sorted_terminator)[:, 0]
-        angle_low = sorted_angles[0]
-        angle_top = sorted_angles[-1]
+        angle_low = visible_sorted_terminator[0][0]
+        angle_top = visible_sorted_terminator[-1][0]
         if angle_top < angle_low:
             angle_low -= 2 * np.pi
 
@@ -494,8 +493,8 @@ def body_map(body,
         clip_path = mpath.Path(vertices=perimeter[:, 1:3], closed=True)
 
         col = mcol.PathCollection([clip_path],
-                                  color=color_phase, alpha=0.7,
-                                  ls='', edgecolors='face',
+                                  facecolors=color_phase, alpha=0.7,
+                                  ls='', edgecolors=(0, 0, 0, 0),
                                   zorder=4,
                                   transform=transform_norm_to_axes,
                                   )
