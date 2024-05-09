@@ -17,7 +17,7 @@ from astropy.table import Table, QTable
 from bs4 import BeautifulSoup
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
-from procastro.core.cache import jpl_cache
+from procastro.core.cache import jpl_cache, usgs_map_cache
 import procastro as pa
 
 TwoValues = tuple[float, float]
@@ -371,7 +371,7 @@ def body_map(body,
 
     lunar_to_observer = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=np_ang)
 
-    image = map_image(body, detail=detail)
+    image = usgs_map_image(body, detail=detail)
 
     orthographic_image = get_orthographic(image,
                                           sub_obs_lon,
@@ -466,7 +466,20 @@ def body_map(body,
         visible_terminator = np.array([(np.arctan2(t[2], t[1]), t[1], t[2])
                                        for t in terminator if t[0] > 0])
         angles = visible_terminator[:, 0]
-        angles[angles <= angles[np.argmin(angles[:-1]-angles[1:])]] += 2*np.pi
+
+        # first, let's put all angles monotonous ascending or descending from first item
+        delta_angles = angles[1:] - angles[:-1]
+        ups = np.where(delta_angles < -1)[0]
+        downs = np.where(delta_angles > 1)[0]
+        for up in ups:
+            angles[up + 1:] += 2 * np.pi
+        for down in downs:
+            angles[down + 1:] -= 2 * np.pi
+        # then, wherever there is the jump, is where the angle shold start
+        descending = angles[1] < angles[0]
+        delta_angles = (angles[1:] - angles[:-1])
+        angles[:np.argmax(np.absolute(delta_angles)) + 1] += (1 - 2 * descending) * 2 * np.pi
+
         visible_terminator[:, 0] = angles
         visible_sorted_terminator = sorted(visible_terminator, key=lambda x: x[0])
         sub_sun = lunar_to_observer.apply(unit_vector(table['SunSub_LON'].value[0],
@@ -494,16 +507,12 @@ def body_map(body,
 
         col = mcol.PathCollection([clip_path],
                                   facecolors=color_phase, alpha=0.7,
-                                  ls='', edgecolors=(0, 0, 0, 0),
+                                  edgecolors=(0, 0, 0, 0),
                                   zorder=4,
                                   transform=transform_norm_to_axes,
                                   )
 
         ax.add_collection(col)
-
-        plt.plot(*list(zip(*visible_sorted_terminator))[1: 3],
-                 color=color_phase,
-                 transform=transform_norm_to_axes)
 
         plt.plot(*sub_sun[1:3],
                  marker='d', color='yellow',
@@ -592,7 +601,8 @@ def path_body(body,
                   names=['time', 'jd', 'skycoord', 'ra', 'dec'])
 
 
-def map_image(body, detail=None, warn_multiple=True):
+@usgs_map_cache
+def usgs_map_image(body, detail=None, warn_multiple=True):
     month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
