@@ -335,6 +335,84 @@ def jpl_observer_from_location(site):
             }
 
 
+
+def _add_phase_shadow(ax,
+                      sub_obs,
+                      sub_sun,
+                      np_ang,
+                      color,
+                      transform_from_normal,
+                      precision=50):
+
+    equatorial_to_border = new_x_axis_at(0, 90)
+    border_to_terminator = current_x_axis_to(*sub_sun)
+    lunar_to_observer = new_x_axis_at(*sub_obs, z_pole_angle=np_ang)
+    terminator_rotation = lunar_to_observer * border_to_terminator * equatorial_to_border
+
+    terminator = terminator_rotation.apply(unit_vector(np.linspace(0, 360, precision),
+                                                       0)
+                                           )
+
+    visible_terminator = np.array([(np.arctan2(t[2], t[1]), t[1], t[2])
+                                   for t in terminator if t[0] > 0])
+    angles = visible_terminator[:, 0]
+
+    # first, let's put all angles monotonous ascending or descending from first item
+    delta_angles = angles[1:] - angles[:-1]
+    ups = np.where(delta_angles < -1)[0]
+    downs = np.where(delta_angles > 1)[0]
+    descending = np.sign(delta_angles).mean() < 0
+    if descending:
+        for down in downs:
+            angles[down + 1:] -= 2 * np.pi
+    else:
+        for up in ups:
+            angles[up + 1:] += 2 * np.pi
+
+    # then, actualize the deltas and wherever there is the largest jump, is where the angle should start
+    delta_angles = angles[1:] - angles[:-1]
+    switch_idx = np.argmax(np.absolute(delta_angles))
+    angles[:switch_idx + 1] += (1 - 2 * descending) * 2 * np.pi
+
+    visible_terminator[:, 0] = angles
+    visible_sorted_terminator = sorted(visible_terminator, key=lambda x: x[0])
+    sub_sun = lunar_to_observer.apply(unit_vector(*sub_sun))
+
+    angle_low = visible_sorted_terminator[0][0]
+    angle_top = visible_sorted_terminator[-1][0]
+    if angle_top < angle_low:
+        angle_low -= 2 * np.pi
+
+    mid_from_low = (angle_low + angle_top) / 2
+    dark_from_low = (np.array([0, np.cos(mid_from_low), np.sin(mid_from_low)]) * sub_sun).sum() < 0
+
+    if dark_from_low:
+        angle_perimeter = np.linspace(angle_low, angle_top, precision)
+        visible_sorted_terminator = visible_sorted_terminator[::-1]
+    else:
+        angle_perimeter = np.linspace(angle_top, angle_low + 2 * np.pi, precision)
+    perimeter = np.array([np.array([0, np.cos(ang), np.sin(ang)])
+                          for ang in angle_perimeter]
+                         + visible_sorted_terminator)
+
+    clip_path = mpath.Path(vertices=perimeter[:, 1:3], closed=True)
+
+    col = mcol.PathCollection([clip_path],
+                              facecolors=color, alpha=0.7,
+                              edgecolors='none',
+                              zorder=7,
+                              transform=transform_from_normal,
+                              )
+    ax.add_collection(col)
+
+    sub_sun_marker = plt.plot(*sub_sun[1:3],
+                              marker='d', color='yellow',
+                              alpha=1 - 0.5 * (sub_sun[0] < 0),
+                              transform=transform_from_normal)
+
+    return col, sub_sun_marker
+
+
 def body_map(body,
              observer,
              time: apt.Time,
@@ -435,6 +513,9 @@ def body_map(body,
 
     f, ax = pa.figaxes(ax)
     f.patch.set_facecolor(color_background)
+    ax.set_facecolor(color_background)
+    ax.imshow(rotated_image,
+              )
     ax.axis('off')
 
     ax.set_facecolor(color_background)
@@ -471,6 +552,7 @@ def body_map(body,
             artists.extend(ax.plot(*rot_xy,
                                    transform=transform_norm_to_axes,
                                    marker='d', color=color,
+                                   alpha=1 - 0.5 * (rot_xy[0] < 0),
                                    zorder=10,
                                    )
                            )
@@ -479,6 +561,7 @@ def body_map(body,
                                        rot_xy,
                                        xycoords=transform_norm_to_axes,
                                        color=color,
+                                       alpha=1 - 0.5 * (rot_xy[0] < 0),
                                        zorder=10,
                                        )
                            )
@@ -543,78 +626,16 @@ def body_map(body,
                                )
 
     if color_phase:
-        n_phase = 50
-        equatorial_to_border = new_x_axis_at(0, 90)
-        border_to_terminator = current_x_axis_to(table['SunSub_LON'].value[0],
-                                                 table['SunSub_LAT'].value[0],
-                                                 )
+        _add_phase_shadow(ax,
+                          (sub_obs_lon, sub_obs_lat),
+                          (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
+                          np_ang,
+                          color_phase,
+                          transform_norm_to_axes,
+                          precision=50)
 
         print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
-        terminator_rotation = lunar_to_observer * border_to_terminator * equatorial_to_border
-        terminator = terminator_rotation.apply(unit_vector(np.linspace(0, 360, 50),
-                                                           0)
-                                               )
 
-        visible_terminator = np.array([(np.arctan2(t[2], t[1]), t[1], t[2])
-                                       for t in terminator if t[0] > 0])
-        angles = visible_terminator[:, 0]
-
-        # first, let's put all angles monotonous ascending or descending from first item
-        delta_angles = angles[1:] - angles[:-1]
-        ups = np.where(delta_angles < -1)[0]
-        downs = np.where(delta_angles > 1)[0]
-        descending = np.sign(delta_angles).mean() < 0
-        if descending:
-            for down in downs:
-                angles[down + 1:] -= 2 * np.pi
-        else:
-            for up in ups:
-                angles[up + 1:] += 2 * np.pi
-
-        # then, actualize the deltas and wherever there is the largest jump, is where the angle should start
-        delta_angles = angles[1:] - angles[:-1]
-        switch_idx = np.argmax(np.absolute(delta_angles))
-        angles[:switch_idx + 1] += (1 - 2 * descending) * 2 * np.pi
-
-        visible_terminator[:, 0] = angles
-        visible_sorted_terminator = sorted(visible_terminator, key=lambda x: x[0])
-        sub_sun = lunar_to_observer.apply(unit_vector(table['SunSub_LON'].value[0],
-                                                      table['SunSub_LAT'].value[0],
-                                                      )
-                                          )
-        angle_low = visible_sorted_terminator[0][0]
-        angle_top = visible_sorted_terminator[-1][0]
-        if angle_top < angle_low:
-            angle_low -= 2 * np.pi
-
-        mid_from_low = (angle_low + angle_top) / 2
-        dark_from_low = (np.array([0, np.cos(mid_from_low), np.sin(mid_from_low)]) * sub_sun).sum() < 0
-
-        if dark_from_low:
-            angle_perimeter = np.linspace(angle_low, angle_top, n_phase)
-            visible_sorted_terminator = visible_sorted_terminator[::-1]
-        else:
-            angle_perimeter = np.linspace(angle_top, angle_low + 2*np.pi, n_phase)
-        perimeter = np.array([np.array([0, np.cos(ang), np.sin(ang)])
-                              for ang in angle_perimeter]
-                             + visible_sorted_terminator)
-
-        clip_path = mpath.Path(vertices=perimeter[:, 1:3], closed=True)
-
-        col = mcol.PathCollection([clip_path],
-                                  facecolors=color_phase, alpha=0.7,
-                                  edgecolors='none',
-                                  zorder=7,
-                                  transform=transform_norm_to_axes,
-                                  )
-        artists.append(col)
-        ax.add_collection(col)
-
-        artists.extend(plt.plot(*sub_sun[1:3],
-                                marker='d', color='yellow',
-                                alpha=1 - 0.5 * (sub_sun[0] < 0),
-                                transform=transform_norm_to_axes)
-                       )
 
     if return_axes:
         return ax
