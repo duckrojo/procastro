@@ -1,6 +1,8 @@
 import re
 from io import BytesIO
 from pathlib import Path
+
+import matplotlib
 import numpy as np
 import pandas as pd
 import requests
@@ -15,6 +17,8 @@ from PIL import Image
 from astropy import time as apt, units as u, coordinates as apc
 from astropy.table import Table, QTable
 from bs4 import BeautifulSoup
+from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.axes import Axes
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 from procastro.core.cache import jpl_cache, usgs_map_cache
@@ -335,11 +339,14 @@ def body_map(body,
              observer,
              time: apt.Time,
              locations: list[TwoValues] | dict[str, TwoValues] = None,
-             ax=None,
-             show_poles="blue",
              detail=None,
+             ax: Axes | None = None,
+             rad_lim=None,
+             return_axes=True,
+             show_poles="blue",
              color="red", color_phase='black',
              color_background='black', color_title='white',
+             color_local_time='grey',
              ):
     """
 
@@ -362,6 +369,37 @@ def body_map(body,
        a list of (lon, lat) coordinates
     ax
     """
+
+    if not time.isscalar:
+        try:
+            if ax is None:
+                f, ax = pa.figaxes()
+            else:
+                f = ax.figure
+
+            title = ax.text(0, 1, "",
+                            color='w',
+                            transform=ax.transAxes, ha="left", va="top")
+
+            def animate(itime):
+                ax.clear()
+                title.set_text(time[itime].isot)
+                return *body_map(body, observer, time[itime],
+                                 detail=detail, locations=locations, ax=ax,
+                                 show_poles=show_poles, rad_lim=rad_lim,
+                                 color=color, color_phase=color_phase,
+                                 color_background=color_background, color_title=color_title,
+                                 return_axes=False,
+                                 ), title
+
+            if rad_lim is not None:
+                ax.set_xlim([-rad_lim, rad_lim])
+                ax.set_ylim([-rad_lim, rad_lim])
+            ani = FuncAnimation(f, animate, interval=40, blit=True, repeat=True, frames=len(time))
+            ani.save(f"{body}_{time[0]}.gif", dpi=300, writer=PillowWriter(fps=25))
+        except:
+            raise NotImplemented("Movie is not yet implemented. You should pass a single time to body_map")
+
     site = apc.EarthLocation.of_site(observer)
     request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
     table = read_jpl(request)
@@ -391,16 +429,25 @@ def body_map(body,
 
     f, ax = pa.figaxes(ax)
     f.patch.set_facecolor(color_background)
-    ax.set_facecolor(color_background)
-    ax.imshow(rotated_image)
     ax.axis('off')
+
+    ax.set_facecolor(color_background)
+    ang_rad = table['Ang_diam'].value[0]/2
+    artists = [ax.imshow(rotated_image,
+                         extent=[-ang_rad, ang_rad, -ang_rad, ang_rad],
+                         ),
+               ]
+    if rad_lim is not None:
+        ax.set_xlim([-rad_lim, rad_lim])
+        ax.set_ylim([-rad_lim, rad_lim])
 
     ax.set_title(f"{body.capitalize()} on {time.isot[:16]}",
                  color=color_title,
                  )
-    transform_norm_to_axes = (mtransforms.Affine2D().scale(0.5) +
-                              mtransforms.Affine2D().translate(0.5, 0.5) +
-                              ax.transAxes)
+    transform_norm_to_axes = mtransforms.Affine2D().scale(ang_rad) + ax.transData
+    # transform_norm_to_axes = (mtransforms.Affine2D().scale(0.5) +
+    #                           mtransforms.Affine2D().translate(0.5, 0.5) +
+    #                           ax.transAxes)
 
     if len(locations) > 0:
         print(f"Location offset from {body.capitalize()}'s center (Delta_RA, Delta_Dec) in arcsec:")
@@ -412,17 +459,19 @@ def body_map(body,
             rot_xy = lunar_to_observer.apply(unit_vector(*location, degrees=True))[1:3]
             delta_ra, delta_dec = table['Ang_diam'].value[0]*rot_xy/2
 
-            ax.plot(*rot_xy,
-                    transform=transform_norm_to_axes,
-                    marker='d', color=color,
-                    zorder=10,
-                    )
-            ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", $\\Delta\\delta$ {delta_dec:.0f}\"",
-                        rot_xy,
-                        xycoords=transform_norm_to_axes,
-                        color=color,
-                        zorder=10,
-                        )
+            artists.extend(ax.plot(*rot_xy,
+                                   transform=transform_norm_to_axes,
+                                   marker='d', color=color,
+                                   zorder=10,
+                                   )
+                           )
+            artists.append(ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", $\\Delta\\delta$ {delta_dec:.0f}\"",
+                                       rot_xy,
+                                       xycoords=transform_norm_to_axes,
+                                       color=color,
+                                       zorder=10,
+                                       )
+                           )
 
             format_str = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
             print(format_str.format(name=str(name),
@@ -430,25 +479,56 @@ def body_map(body,
         print("")
 
     if show_poles:
-        ax.plot([-1, 1], [0, 0],
-                color='blue',
-                transform=transform_norm_to_axes,
-                zorder=9,
-                )
-        ax.plot([0, 0], [-1, 1],
-                color='blue',
-                transform=transform_norm_to_axes,
-                zorder=9,
-                )
+        artists.extend(ax.plot([-1, 1], [0, 0],
+                               color='blue',
+                               transform=transform_norm_to_axes,
+                               zorder=9,
+                               )
+                       )
+        artists.extend(ax.plot([0, 0], [-1, 1],
+                               color='blue',
+                               transform=transform_norm_to_axes,
+                               zorder=9,
+                               )
+                       )
 
         for lat_pole in [-90, 90]:
             pole = lunar_to_observer.apply(unit_vector(0, lat_pole, degrees=True))
-            ax.plot(*pole[1:3],
-                    transform=transform_norm_to_axes,
-                    alpha=1 - 0.5*(pole[0] < 0),
-                    marker='o', color='blue',
-                    zorder=9,
-                    )
+            artists.extend(ax.plot(*pole[1:3],
+                                   transform=transform_norm_to_axes,
+                                   alpha=1 - 0.5*(pole[0] < 0),
+                                   marker='o', color='blue',
+                                   zorder=9,
+                                   )
+                           )
+
+    if color_local_time:
+        for ltime in range(24):
+            longitude_as_local_time = new_x_axis_at((12-ltime)*15, 0)
+            local_time_to_body = current_x_axis_to(table['SunSub_LON'].value[0],
+                                                   table['SunSub_LAT'].value[0],
+                                                   )
+            local_time_rotation = lunar_to_observer * local_time_to_body * longitude_as_local_time
+            local_time = local_time_rotation.apply(unit_vector(0, np.linspace(-90, 90, 50),
+                                                               degrees=True)
+                                                   )
+            visible = np.array([(y, z) for x, y, z in local_time if x > 0])
+            n_visible = len(visible)
+            if n_visible:
+                artists.extend(ax.plot(visible[:, 0], visible[:, 1],
+                                       color=color_local_time,
+                                       alpha=0.7,
+                                       transform=transform_norm_to_axes,
+                                       zorder=6,
+                                       )
+                               )
+
+                artists.append(ax.annotate(f"{ltime}$^h$", (visible[n_visible // 2][0],
+                                                          visible[n_visible // 2][1]),
+                                           color=color_local_time,
+                                           xycoords=transform_norm_to_axes,
+                                           )
+                               )
 
     if color_phase:
         n_phase = 50
@@ -458,7 +538,7 @@ def body_map(body,
                                                  )
 
         print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
-        terminator_rotation = lunar_to_observer*border_to_terminator*equatorial_to_border
+        terminator_rotation = lunar_to_observer * border_to_terminator * equatorial_to_border
         terminator = terminator_rotation.apply(unit_vector(np.linspace(0, 360, 50),
                                                            0)
                                                )
@@ -471,14 +551,18 @@ def body_map(body,
         delta_angles = angles[1:] - angles[:-1]
         ups = np.where(delta_angles < -1)[0]
         downs = np.where(delta_angles > 1)[0]
-        for up in ups:
-            angles[up + 1:] += 2 * np.pi
-        for down in downs:
-            angles[down + 1:] -= 2 * np.pi
-        # then, wherever there is the jump, is where the angle shold start
-        descending = angles[1] < angles[0]
-        delta_angles = (angles[1:] - angles[:-1])
-        angles[:np.argmax(np.absolute(delta_angles)) + 1] += (1 - 2 * descending) * 2 * np.pi
+        descending = np.sign(delta_angles).mean() < 0
+        if descending:
+            for down in downs:
+                angles[down + 1:] -= 2 * np.pi
+        else:
+            for up in ups:
+                angles[up + 1:] += 2 * np.pi
+
+        # then, actualize the deltas and wherever there is the largest jump, is where the angle should start
+        delta_angles = angles[1:] - angles[:-1]
+        switch_idx = np.argmax(np.absolute(delta_angles))
+        angles[:switch_idx + 1] += (1 - 2 * descending) * 2 * np.pi
 
         visible_terminator[:, 0] = angles
         visible_sorted_terminator = sorted(visible_terminator, key=lambda x: x[0])
@@ -507,19 +591,23 @@ def body_map(body,
 
         col = mcol.PathCollection([clip_path],
                                   facecolors=color_phase, alpha=0.7,
-                                  edgecolors=(0, 0, 0, 0),
-                                  zorder=4,
+                                  edgecolors='none',
+                                  zorder=7,
                                   transform=transform_norm_to_axes,
                                   )
-
+        artists.append(col)
         ax.add_collection(col)
 
-        plt.plot(*sub_sun[1:3],
-                 marker='d', color='yellow',
-                 alpha=1 - 0.5 * (sub_sun[0] < 0),
-                 transform=transform_norm_to_axes)
+        artists.extend(plt.plot(*sub_sun[1:3],
+                                marker='d', color='yellow',
+                                alpha=1 - 0.5 * (sub_sun[0] < 0),
+                                transform=transform_norm_to_axes)
+                       )
 
-    return ax
+    if return_axes:
+        return ax
+    else:
+        return tuple(artists)
 
 
 def get_orthographic(platecarree_image,
@@ -543,6 +631,9 @@ Returns ortographic projection with the specified center
     """
     projection = ccrs.Orthographic(sub_obs_lon,
                                    sub_obs_lat)
+
+    backend = plt.get_backend()
+    plt.switch_backend('agg')
 
     f = plt.figure(figsize=(3, 3))
     tmp_ax = f.add_axes((0, 0, 1, 1),
@@ -571,6 +662,8 @@ Returns ortographic projection with the specified center
     orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
     orthographic_image = Image.fromarray(orthographic_image, 'RGB')
     plt.close(f)
+
+    plt.switch_backend(backend)
 
     return orthographic_image
 
