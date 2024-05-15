@@ -346,7 +346,7 @@ def body_map(body,
              show_poles="blue",
              color="red", color_phase='black',
              color_background='black', color_title='white',
-             color_local_time='grey',
+             color_local_time='black',
              ):
     """
 
@@ -408,6 +408,12 @@ def body_map(body,
     np_ang = table['NP_ang'].value[0]
 
     lunar_to_observer = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=np_ang)
+    local_time_to_body = current_x_axis_to(table['SunSub_LON'].value[0],
+                                           table['SunSub_LAT'].value[0],
+                                           )
+    body_to_local_time = new_x_axis_at(table['SunSub_LON'].value[0],
+                                       table['SunSub_LAT'].value[0],
+                                       )
 
     image = usgs_map_image(body, detail=detail)
 
@@ -456,8 +462,11 @@ def body_map(body,
             locations = {str(i): v for i, v in enumerate(locations)}
         max_len = max([len(str(k)) for k in locations.keys()])
         for name, location in locations.items():
-            rot_xy = lunar_to_observer.apply(unit_vector(*location, degrees=True))[1:3]
+            position = unit_vector(*location, degrees=True)
+            rot_xy = lunar_to_observer.apply(position)[1: 3]
             delta_ra, delta_dec = table['Ang_diam'].value[0]*rot_xy/2
+
+            local_time_location = (np.arctan2(*body_to_local_time.apply(position)[:2][::-1]) + np.pi) * 12 / np.pi
 
             artists.extend(ax.plot(*rot_xy,
                                    transform=transform_norm_to_axes,
@@ -465,7 +474,8 @@ def body_map(body,
                                    zorder=10,
                                    )
                            )
-            artists.append(ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", $\\Delta\\delta$ {delta_dec:.0f}\"",
+            artists.append(ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", "
+                                       f"$\\Delta\\delta$ {delta_dec:.0f}\"",
                                        rot_xy,
                                        xycoords=transform_norm_to_axes,
                                        color=color,
@@ -473,8 +483,9 @@ def body_map(body,
                                        )
                            )
 
-            format_str = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
-            print(format_str.format(name=str(name),
+            format_str = (f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
+                          f"   (LocalSolarTime: {{local_time_location:+7.2f}}h)")
+            print(format_str.format(name=str(name), local_time_location=local_time_location,
                                     delta_ra=delta_ra, delta_dec=delta_dec))
         print("")
 
@@ -505,21 +516,21 @@ def body_map(body,
     if color_local_time:
         for ltime in range(24):
             longitude_as_local_time = new_x_axis_at((12-ltime)*15, 0)
-            local_time_to_body = current_x_axis_to(table['SunSub_LON'].value[0],
-                                                   table['SunSub_LAT'].value[0],
-                                                   )
+
             local_time_rotation = lunar_to_observer * local_time_to_body * longitude_as_local_time
             local_time = local_time_rotation.apply(unit_vector(0, np.linspace(-90, 90, 50),
                                                                degrees=True)
                                                    )
             visible = np.array([(y, z) for x, y, z in local_time if x > 0])
             n_visible = len(visible)
-            if n_visible:
+            if n_visible > 25:
                 artists.extend(ax.plot(visible[:, 0], visible[:, 1],
                                        color=color_local_time,
                                        alpha=0.7,
+                                       ls=':',
                                        transform=transform_norm_to_axes,
                                        zorder=6,
+                                       linewidth=0.5,
                                        )
                                )
 
@@ -527,6 +538,7 @@ def body_map(body,
                                                           visible[n_visible // 2][1]),
                                            color=color_local_time,
                                            xycoords=transform_norm_to_axes,
+                                           alpha=0.7,
                                            )
                                )
 
