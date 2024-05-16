@@ -6,7 +6,7 @@ from typing import Optional
 import queue
 import pandas as pd
 
-__all__ = ['astrofile_cache', 'jpl_cache']
+__all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
 
 from .misc_general import user_confdir

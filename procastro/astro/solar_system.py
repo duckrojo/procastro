@@ -2,7 +2,6 @@ import re
 from io import BytesIO
 from pathlib import Path
 
-import matplotlib
 import numpy as np
 import pandas as pd
 import requests
@@ -335,84 +334,6 @@ def jpl_observer_from_location(site):
             }
 
 
-
-def _add_phase_shadow(ax,
-                      sub_obs,
-                      sub_sun,
-                      np_ang,
-                      color,
-                      transform_from_normal,
-                      precision=50):
-
-    equatorial_to_border = new_x_axis_at(0, 90)
-    border_to_terminator = current_x_axis_to(*sub_sun)
-    lunar_to_observer = new_x_axis_at(*sub_obs, z_pole_angle=np_ang)
-    terminator_rotation = lunar_to_observer * border_to_terminator * equatorial_to_border
-
-    terminator = terminator_rotation.apply(unit_vector(np.linspace(0, 360, precision),
-                                                       0)
-                                           )
-
-    visible_terminator = np.array([(np.arctan2(t[2], t[1]), t[1], t[2])
-                                   for t in terminator if t[0] > 0])
-    angles = visible_terminator[:, 0]
-
-    # first, let's put all angles monotonous ascending or descending from first item
-    delta_angles = angles[1:] - angles[:-1]
-    ups = np.where(delta_angles < -1)[0]
-    downs = np.where(delta_angles > 1)[0]
-    descending = np.sign(delta_angles).mean() < 0
-    if descending:
-        for down in downs:
-            angles[down + 1:] -= 2 * np.pi
-    else:
-        for up in ups:
-            angles[up + 1:] += 2 * np.pi
-
-    # then, actualize the deltas and wherever there is the largest jump, is where the angle should start
-    delta_angles = angles[1:] - angles[:-1]
-    switch_idx = np.argmax(np.absolute(delta_angles))
-    angles[:switch_idx + 1] += (1 - 2 * descending) * 2 * np.pi
-
-    visible_terminator[:, 0] = angles
-    visible_sorted_terminator = sorted(visible_terminator, key=lambda x: x[0])
-    sub_sun = lunar_to_observer.apply(unit_vector(*sub_sun))
-
-    angle_low = visible_sorted_terminator[0][0]
-    angle_top = visible_sorted_terminator[-1][0]
-    if angle_top < angle_low:
-        angle_low -= 2 * np.pi
-
-    mid_from_low = (angle_low + angle_top) / 2
-    dark_from_low = (np.array([0, np.cos(mid_from_low), np.sin(mid_from_low)]) * sub_sun).sum() < 0
-
-    if dark_from_low:
-        angle_perimeter = np.linspace(angle_low, angle_top, precision)
-        visible_sorted_terminator = visible_sorted_terminator[::-1]
-    else:
-        angle_perimeter = np.linspace(angle_top, angle_low + 2 * np.pi, precision)
-    perimeter = np.array([np.array([0, np.cos(ang), np.sin(ang)])
-                          for ang in angle_perimeter]
-                         + visible_sorted_terminator)
-
-    clip_path = mpath.Path(vertices=perimeter[:, 1:3], closed=True)
-
-    col = mcol.PathCollection([clip_path],
-                              facecolors=color, alpha=0.7,
-                              edgecolors='none',
-                              zorder=7,
-                              transform=transform_from_normal,
-                              )
-    ax.add_collection(col)
-
-    sub_sun_marker = plt.plot(*sub_sun[1:3],
-                              marker='d', color='yellow',
-                              alpha=1 - 0.5 * (sub_sun[0] < 0),
-                              transform=transform_from_normal)
-
-    return col, sub_sun_marker
-
-
 def body_map(body,
              observer,
              time: apt.Time,
@@ -462,13 +383,21 @@ def body_map(body,
             def animate(itime):
                 ax.clear()
                 title.set_text(time[itime].isot)
-                return *body_map(body, observer, time[itime],
-                                 detail=detail, locations=locations, ax=ax,
-                                 show_poles=show_poles, rad_lim=rad_lim,
-                                 color=color, color_phase=color_phase,
-                                 color_background=color_background, color_title=color_title,
-                                 return_axes=False,
-                                 ), title
+                body_map(body, observer, time[itime],
+                         detail=detail, locations=locations, ax=ax,
+                         show_poles=show_poles, rad_lim=rad_lim,
+                         color=color, color_phase=color_phase,
+                         color_background=color_background, color_title=color_title,
+                         )
+
+                f.canvas.draw()
+                image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+
+                image = Image.fromarray(image_flat.reshape(*reversed(f.canvas.get_width_height()), 3),
+                                        'RGB')
+                plt.close(f)
+
+#                plt.switch_backend(backend)
 
             if rad_lim is not None:
                 ax.set_xlim([-rad_lim, rad_lim])
@@ -485,10 +414,7 @@ def body_map(body,
     sub_obs_lat = table['ObsSub_LAT'].value[0]
     np_ang = table['NP_ang'].value[0]
 
-    lunar_to_observer = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=np_ang)
-    local_time_to_body = current_x_axis_to(table['SunSub_LON'].value[0],
-                                           table['SunSub_LAT'].value[0],
-                                           )
+    lunar_to_observer = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=-np_ang)
     body_to_local_time = new_x_axis_at(table['SunSub_LON'].value[0],
                                        table['SunSub_LAT'].value[0],
                                        )
@@ -498,9 +424,14 @@ def body_map(body,
     orthographic_image = get_orthographic(image,
                                           sub_obs_lon,
                                           sub_obs_lat,
+                                          # marks=[(table['SunSub_LON'].value[0],
+                                          #         table['SunSub_LAT'].value[0],),
+                                          #        (table['ObsSub_LON'].value[0],
+                                          #         table['ObsSub_LAT'].value[0],),
+                                          #        ] + list(locations.values()),
                                           show_poles=show_poles)
 
-    rotated_image = orthographic_image.rotate(-np_ang,
+    rotated_image = orthographic_image.rotate(np_ang,
                                               resample=Image.Resampling.BICUBIC,
                                               expand=False, fillcolor=(255, 255, 255))
     x_offset = 0.5
@@ -518,23 +449,27 @@ def body_map(body,
               )
     ax.axis('off')
 
+    print(f"Sub Observer longitude/latitude: {table['ObsSub_LON'][0]}/{table['ObsSub_LAT'][0]}")
+    print(f"Sub Solar longitude/latitude: {table['SunSub_LON'][0]}/{table['SunSub_LAT'][0]}")
+    print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
+    print(f"North Pole angle/distances: {table['NP_ang'][0]}/{table['NP_dist'][0]}")
+
     ax.set_facecolor(color_background)
     ang_rad = table['Ang_diam'].value[0]/2
     artists = [ax.imshow(rotated_image,
                          extent=[-ang_rad, ang_rad, -ang_rad, ang_rad],
                          ),
                ]
-    if rad_lim is not None:
-        ax.set_xlim([-rad_lim, rad_lim])
-        ax.set_ylim([-rad_lim, rad_lim])
+    if rad_lim is None:
+        rad_lim = ang_rad
 
-    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}",
+    ax.set_xlim([-rad_lim, rad_lim])
+    ax.set_ylim([-rad_lim, rad_lim])
+
+    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}: radius {ang_rad}",
                  color=color_title,
                  )
     transform_norm_to_axes = mtransforms.Affine2D().scale(ang_rad) + ax.transData
-    # transform_norm_to_axes = (mtransforms.Affine2D().scale(0.5) +
-    #                           mtransforms.Affine2D().translate(0.5, 0.5) +
-    #                           ax.transAxes)
 
     if len(locations) > 0:
         print(f"Location offset from {body.capitalize()}'s center (Delta_RA, Delta_Dec) in arcsec:")
@@ -597,45 +532,23 @@ def body_map(body,
                            )
 
     if color_local_time:
-        for ltime in range(24):
-            longitude_as_local_time = new_x_axis_at((12-ltime)*15, 0)
-
-            local_time_rotation = lunar_to_observer * local_time_to_body * longitude_as_local_time
-            local_time = local_time_rotation.apply(unit_vector(0, np.linspace(-90, 90, 50),
-                                                               degrees=True)
-                                                   )
-            visible = np.array([(y, z) for x, y, z in local_time if x > 0])
-            n_visible = len(visible)
-            if n_visible > 25:
-                artists.extend(ax.plot(visible[:, 0], visible[:, 1],
-                                       color=color_local_time,
-                                       alpha=0.7,
-                                       ls=':',
-                                       transform=transform_norm_to_axes,
-                                       zorder=6,
-                                       linewidth=0.5,
-                                       )
-                               )
-
-                artists.append(ax.annotate(f"{ltime}$^h$", (visible[n_visible // 2][0],
-                                                          visible[n_visible // 2][1]),
-                                           color=color_local_time,
-                                           xycoords=transform_norm_to_axes,
-                                           alpha=0.7,
-                                           )
-                               )
+        _add_local_time(ax,
+                        (sub_obs_lon, sub_obs_lat),
+                        (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
+                        np_ang,
+                        color_phase,
+                        transform_norm_to_axes,
+                        )
 
     if color_phase:
-        _add_phase_shadow(ax,
-                          (sub_obs_lon, sub_obs_lat),
-                          (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
-                          np_ang,
-                          color_phase,
-                          transform_norm_to_axes,
-                          precision=50)
-
-        print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
-
+        new_artists = _add_phase_shadow(ax,
+                                        (sub_obs_lon, sub_obs_lat),
+                                        (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
+                                        np_ang,
+                                        color_phase,
+                                        transform_norm_to_axes,
+                                        )
+        artists.extend(new_artists)
 
     if return_axes:
         return ax
@@ -643,9 +556,53 @@ def body_map(body,
         return tuple(artists)
 
 
+def _add_local_time(ax,
+                    sub_obs,
+                    sub_sun,
+                    np_ang,
+                    color,
+                    transform_from_norm,
+                    precision=50,
+                    ):
+    lunar_to_observer = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
+    local_time_to_body = current_x_axis_to(*sub_sun)
+
+    artists = []
+    for ltime in range(24):
+        longitude_as_local_time = new_x_axis_at((12-ltime)*15, 0)
+
+        local_time_rotation = lunar_to_observer * local_time_to_body * longitude_as_local_time
+        local_time = local_time_rotation.apply(unit_vector(0, np.linspace(-90, 90, precision),
+                                                           degrees=True)
+                                               )
+        visible = np.array([(y, z) for x, y, z in local_time if x > 0])
+        n_visible = len(visible)
+        if n_visible > 25:
+            lines = ax.plot(visible[:, 0], visible[:, 1],
+                            color=color,
+                            alpha=0.7,
+                            ls=':',
+                            transform=transform_from_norm,
+                            zorder=6,
+                            linewidth=0.5,
+                            )
+
+            text = ax.annotate(f"{ltime}$^h$", (visible[n_visible // 2][0],
+                                                visible[n_visible // 2][1]),
+                               color=color,
+                               xycoords=transform_from_norm,
+                               alpha=0.7, ha='center', va='center',
+                               )
+
+            artists.extend([lines, text])
+
+    return tuple(artists)
+
+
 def get_orthographic(platecarree_image,
                      sub_obs_lon,
                      sub_obs_lat,
+                     marks=None,
                      show_poles="blue",
                      ):
     """
@@ -656,7 +613,7 @@ Returns ortographic projection with the specified center
     sub_obs_lon
     sub_obs_lat
     show_poles
-       Color to mark poles, set to "" if don't want to mark
+       Color to mark poles, set to "" to skip
 
     Returns
     -------
@@ -686,8 +643,16 @@ Returns ortographic projection with the specified center
                     transform=ccrs.PlateCarree(),
                     marker='d', color=show_poles)
 
+    if marks is not None:
+        for mark in marks:
+            tmp_ax.plot(*mark,
+                        transform=ccrs.PlateCarree(),
+                        marker='x', color=show_poles
+                        )
+
     tmp_ax.axis('off')
     tmp_ax.set_global()  # the whole globe limits
+#    tmp_ax.gridlines()
     f.canvas.draw()
 
     image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
@@ -787,3 +752,52 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
     # fetch alternative
     response = requests.get(body_files[0][2])
     return Image.open(BytesIO(response.content))
+
+
+def _add_phase_shadow(ax,
+                      sub_obs,
+                      sub_sun,
+                      np_ang,
+                      color,
+                      transform_from_normal,
+                      precision=50):
+
+    def vector_to_observer(vector):
+        rotation = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
+        return rotation.apply(vector)
+
+    upper_vector_terminator = np.cross(unit_vector(*sub_obs), unit_vector(*sub_sun))
+    upper_shadow_from_sun = new_x_axis_at(*sub_sun).apply(upper_vector_terminator)
+    upper_angle_from_sun = (np.arctan2(*upper_shadow_from_sun[1:][::-1]) - np.pi / 2) * 180 / np.pi
+
+    terminator = unit_vector(-90, np.linspace(-90, 90, precision))
+    visible_terminator_at_body = current_x_axis_to(*sub_sun, z_pole_angle=-upper_angle_from_sun).apply(terminator)
+    visible_terminator = vector_to_observer(visible_terminator_at_body)
+
+    angle_top, angle_low = np.arctan2(*visible_terminator[:, 1:][[-1, 0]].transpose()[::-1]
+                                      )
+    if angle_top > angle_low:
+        angle_top -= 2 * np.pi
+
+    angle_perimeter = np.linspace(angle_top, angle_low, precision)
+    perimeter = np.array([np.array([0, np.cos(ang), np.sin(ang)])
+                          for ang in angle_perimeter]
+                         + list(visible_terminator))
+
+    clip_path = mpath.Path(vertices=perimeter[:, 1:3], closed=True)
+
+    col = mcol.PathCollection([clip_path],
+                              facecolors=color, alpha=0.7,
+                              edgecolors='none',
+                              zorder=7,
+                              transform=transform_from_normal,
+                              )
+    ax.add_collection(col)
+
+    sub_sun_marker = ax.plot(*vector_to_observer(unit_vector(*sub_sun))[1:],
+                             marker='d', color='yellow',
+                             alpha=1 - 0.5 * (sub_sun[0] < 0),
+                             transform=transform_from_normal)
+
+    return col, sub_sun_marker
+
