@@ -18,6 +18,7 @@ from astropy.table import Table, QTable
 from bs4 import BeautifulSoup
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.axes import Axes
+from matplotlib.colors import to_rgba
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 from procastro.core.cache import jpl_cache, usgs_map_cache
@@ -340,10 +341,11 @@ def body_map(body,
              locations: list[TwoValues] | dict[str, TwoValues] = None,
              detail=None,
              ax: Axes | None = None,
-             rad_lim=None,
+             radius_to_plot=None,
              return_axes=True,
-             show_poles="blue",
-             color="red", color_phase='black',
+             reread_usgs=False,
+             color_poles="blue",
+             color_location="red", color_phase='black',
              color_background='black', color_title='white',
              color_local_time='black',
              ):
@@ -351,22 +353,36 @@ def body_map(body,
 
     Parameters
     ----------
+    reread_usgs:
+       Reread USGS data even if cache exists if True. Use this when you want to get the full list of available maps
+    return_axes:
+       return axes if True, otherwise return artists
+    radius_to_plot:
+       this defines the limits to show in the axes in arcsec, if None then it will be set to the radius of the body.
     color_title
-       Color of title
+       Color of title.  None or blank to skip
     color_background
        Color of background
     color_phase
-       Color of phase shading, None to skip
+       Color of phase shading. None or blank to skip
     detail
-       submap of body
-    color
-    show_poles
-    body
-    observer
-    time
+       keywords to choose submap of body, None
+    color_location
+       color of the location marks
+    color_local_time:
+       color of the local timemarks. None or blank to skip
+    color_poles
+       color of the poles. None or blank to skip
+    body:
+       Body to show
+    observer:
+       Location of observer as understood by astropy.EarthLocation.of_site
+    time:
+       time in astropy.Time format
     locations:
        a list of (lon, lat) coordinates
-    ax
+    ax:
+       matplotlib.Axes to use
     """
 
     if not time.isscalar:
@@ -385,8 +401,8 @@ def body_map(body,
                 title.set_text(time[itime].isot)
                 body_map(body, observer, time[itime],
                          detail=detail, locations=locations, ax=ax,
-                         show_poles=show_poles, rad_lim=rad_lim,
-                         color=color, color_phase=color_phase,
+                         color_poles=color_poles, radius_to_plot=radius_to_plot,
+                         color_location=color_location, color_phase=color_phase,
                          color_background=color_background, color_title=color_title,
                          )
 
@@ -399,9 +415,9 @@ def body_map(body,
 
 #                plt.switch_backend(backend)
 
-            if rad_lim is not None:
-                ax.set_xlim([-rad_lim, rad_lim])
-                ax.set_ylim([-rad_lim, rad_lim])
+            if radius_to_plot is not None:
+                ax.set_xlim([-radius_to_plot, radius_to_plot])
+                ax.set_ylim([-radius_to_plot, radius_to_plot])
             ani = FuncAnimation(f, animate, interval=40, blit=True, repeat=True, frames=len(time))
             ani.save(f"{body}_{time[0]}.gif", dpi=300, writer=PillowWriter(fps=25))
         except:
@@ -419,7 +435,7 @@ def body_map(body,
                                        table['SunSub_LAT'].value[0],
                                        )
 
-    image = usgs_map_image(body, detail=detail)
+    image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
     orthographic_image = get_orthographic(image,
                                           sub_obs_lon,
@@ -429,7 +445,7 @@ def body_map(body,
                                           #        (table['ObsSub_LON'].value[0],
                                           #         table['ObsSub_LAT'].value[0],),
                                           #        ] + list(locations.values()),
-                                          show_poles=show_poles)
+                                          show_poles=color_poles)
 
     rotated_image = orthographic_image.rotate(np_ang,
                                               resample=Image.Resampling.BICUBIC,
@@ -439,7 +455,9 @@ def body_map(body,
     ny, nx = rotated_image.size
     yy, xx = np.mgrid[-ny/2 + y_offset: ny/2 + y_offset, -nx/2 + x_offset: nx/2 + x_offset]
     rr = np.sqrt(yy**2 + xx**2).flatten()
-    rotated_image.putdata([item if r < nx/2 - 1 else (0, 0, 0, 0)
+
+    color_background_rgb = (*[int(c*255) for c in to_rgba(color_background)[:3]], 0)
+    rotated_image.putdata([item if r < nx/2 - 1 else color_background_rgb
                            for r, item in zip(rr, rotated_image.convert("RGBA").getdata())])
 
     f, ax = pa.figaxes(ax)
@@ -460,15 +478,16 @@ def body_map(body,
                          extent=[-ang_rad, ang_rad, -ang_rad, ang_rad],
                          ),
                ]
-    if rad_lim is None:
-        rad_lim = ang_rad
+    if radius_to_plot is None:
+        radius_to_plot = ang_rad
 
-    ax.set_xlim([-rad_lim, rad_lim])
-    ax.set_ylim([-rad_lim, rad_lim])
+    ax.set_xlim([-radius_to_plot, radius_to_plot])
+    ax.set_ylim([-radius_to_plot, radius_to_plot])
 
-    ax.set_title(f"{body.capitalize()} on {time.isot[:16]}: radius {ang_rad}",
-                 color=color_title,
-                 )
+    if color_title is not None and color_title:
+        ax.set_title(f"{body.capitalize()} on {time.isot[:16]}: radius {ang_rad}",
+                     color=color_title,
+                     )
     transform_norm_to_axes = mtransforms.Affine2D().scale(ang_rad) + ax.transData
 
     if len(locations) > 0:
@@ -486,7 +505,7 @@ def body_map(body,
 
             artists.extend(ax.plot(*rot_xy,
                                    transform=transform_norm_to_axes,
-                                   marker='d', color=color,
+                                   marker='d', color=color_location,
                                    alpha=1 - 0.5 * (rot_xy[0] < 0),
                                    zorder=10,
                                    )
@@ -495,7 +514,7 @@ def body_map(body,
                                        f"$\\Delta\\delta$ {delta_dec:.0f}\"",
                                        rot_xy,
                                        xycoords=transform_norm_to_axes,
-                                       color=color,
+                                       color=color_location,
                                        alpha=1 - 0.5 * (rot_xy[0] < 0),
                                        zorder=10,
                                        )
@@ -507,7 +526,7 @@ def body_map(body,
                                     delta_ra=delta_ra, delta_dec=delta_dec))
         print("")
 
-    if show_poles:
+    if color_poles is not None and color_poles:
         artists.extend(ax.plot([-1, 1], [0, 0],
                                color='blue',
                                transform=transform_norm_to_axes,
@@ -540,7 +559,7 @@ def body_map(body,
                         transform_norm_to_axes,
                         )
 
-    if color_phase:
+    if color_phase is not None and color_phase:
         new_artists = _add_phase_shadow(ax,
                                         (sub_obs_lon, sub_obs_lat),
                                         (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
@@ -603,7 +622,7 @@ def get_orthographic(platecarree_image,
                      sub_obs_lon,
                      sub_obs_lat,
                      marks=None,
-                     show_poles="blue",
+                     show_poles="",
                      ):
     """
 Returns ortographic projection with the specified center
@@ -694,6 +713,20 @@ def path_body(body,
 
 @usgs_map_cache
 def usgs_map_image(body, detail=None, warn_multiple=True):
+    """
+
+    Parameters
+    ----------
+    body
+    detail
+    warn_multiple
+    no_cache
+       If True then it will reread options from USGS even if cache exists
+
+    Returns
+    -------
+
+    """
     month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -734,14 +767,16 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
                     body_files.insert(0, info)
                 else:
                     body_files.append(info)
-    if len(files) == 0:
-        detail_str = f" with detail keywords '{detail}'"
-        raise ValueError(f"No map of '{body}' found{detail_str}")
 
+    detail_str = f" with detail keywords '{detail}'"
+    if len(body_files) == 0:
+        raise ValueError(f"No map of '{body}' found{detail_str}")
     # select from alternatives
-    if len(body_files) > 1:
+    elif len(body_files) > 1:
         if warn_multiple:
-            print("Several map alternatives were available (use space-separated keywords in 'detail' to filter).\n"
+            if not detail_str:
+                suggest = f" (use space-separated keywords in 'detail' to filter).\n"
+            print(f"Several map alternatives for {body} were available{detail_str}\n{suggest}"                  
                   "Selected first of:")
             for bf in body_files:
                 print(f"* {bf[0]} [{_parse_date(bf[3])}..{_parse_date(bf[4])}]")

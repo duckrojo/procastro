@@ -17,18 +17,22 @@ import astropy.units as u
 class _AstroCache:
     def __init__(self,
                  max_cache=200, lifetime=0,
-                 hashable_kw=None, label_on_disk=None
+                 hashable_kw=None, label_on_disk=None,
+                 force: str | None = None,
                  ):
         """
 
         Parameters
         ----------
+        force :
+          Keyword which, if True, will force to recompute the cache.
         max_cache
-         how many days to cache in disk, if more than that has elapsed, it will be reread.
+          how many days to cache in disk, if more than that has elapsed, it will be reread.
         """
 
         self._max_cache: int = max_cache
         self.lifetime = lifetime
+        self.force = force
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
@@ -100,6 +104,9 @@ class _AstroCache:
             cache = True
             compound_hash = tuple([hashable_first_argument] +
                                   [kwargs[kw] for kw in self._hashable_kw])
+
+            if kwargs.pop(self.force, False):
+                cache = False
 
             try:
                 if compound_hash in self._cache:
@@ -176,5 +183,7 @@ class _AstroCache:
 
 astrofile_cache = _AstroCache()
 jpl_cache = _AstroCache(max_cache=50)
-usgs_map_cache = _AstroCache(max_cache=30, lifetime=7, hashable_kw=['detail'], label_on_disk='USGSmap')
+usgs_map_cache = _AstroCache(max_cache=30, lifetime=7,
+                             hashable_kw=['detail'], label_on_disk='USGSmap',
+                             force="no_cache")
 
