@@ -197,7 +197,7 @@ def parse_jpl_ephemeris(ephemeris):
 
     # dataframe with each field separated
     df = pd.DataFrame({'incoming': incoming}).incoming.str.extract(pattern)
-    df = df.replace(re.compile(r" +n\.a\."), np.nan).astype(str)
+    df = df.replace(re.compile(r" +n\.a\."), np.nan).infer_objects(copy=False).astype(str)
 
     # convert sexagesimal coordinates to float
     for coord, name in coords_col.items():
@@ -335,24 +335,71 @@ def jpl_observer_from_location(site):
             }
 
 
+def _body_map_video(body,
+                    observer,
+                    time: apt.Time,
+                    ax: Axes | None = None,
+                    color_background="black",
+                    **kwargs,
+                    ):
+
+    backend = plt.get_backend()
+    plt.switch_backend('agg')
+
+    if ax is None:
+        f, ax = pa.figaxes()
+    else:
+        f = ax.figure
+
+    f.set_facecolor(color_background)
+    title = ax.text(0, 1, "",
+                    color='w',
+                    transform=ax.transAxes, ha="left", va="top")
+
+    def animate(itime):
+        ax.clear()
+        title.set_text(time[itime].isot)
+        artists = body_map(body, observer, time[itime],
+                           return_axes=False, verbose=False,
+                           ax=ax,
+                           **kwargs)
+        return artists
+
+    ani = FuncAnimation(f, animate, interval=40, blit=False, repeat=True, frames=len(time))
+
+    filename = f"{body}_{time[0].isot.replace(":", "")[:17]}.gif"
+    ani.save(filename,
+             dpi=300, writer=PillowWriter(fps=25),
+             )
+    print(f"saved file {filename}")
+    plt.switch_backend(backend)
+
+
 def body_map(body,
              observer,
              time: apt.Time,
              locations: list[TwoValues] | dict[str, TwoValues] = None,
-             detail=None,
-             ax: Axes | None = None,
+             detail=None, reread_usgs=False,
              radius_to_plot=None,
-             return_axes=True,
-             reread_usgs=False,
-             color_poles="blue",
+             ax: Axes | None = None, return_axes=True, verbose=True,
              color_location="red", color_phase='black',
              color_background='black', color_title='white',
-             color_local_time='black',
+             color_local_time='black', color_poles="blue",
              ):
     """
 
     Parameters
     ----------
+    body:
+       Body to show
+    observer:
+       Location of observer as understood by astropy.EarthLocation.of_site
+    time:
+       time in astropy.Time format. If passed a single element it returns an image, else a video
+    locations:
+       a list of (lon, lat) coordinates
+    verbose:
+       Whether to print coordinates and selected info
     reread_usgs:
        Reread USGS data even if cache exists if True. Use this when you want to get the full list of available maps
     return_axes:
@@ -373,55 +420,21 @@ def body_map(body,
        color of the local timemarks. None or blank to skip
     color_poles
        color of the poles. None or blank to skip
-    body:
-       Body to show
-    observer:
-       Location of observer as understood by astropy.EarthLocation.of_site
-    time:
-       time in astropy.Time format
-    locations:
-       a list of (lon, lat) coordinates
     ax:
        matplotlib.Axes to use
     """
 
     if not time.isscalar:
-        try:
-            if ax is None:
-                f, ax = pa.figaxes()
-            else:
-                f = ax.figure
-
-            title = ax.text(0, 1, "",
-                            color='w',
-                            transform=ax.transAxes, ha="left", va="top")
-
-            def animate(itime):
-                ax.clear()
-                title.set_text(time[itime].isot)
-                body_map(body, observer, time[itime],
-                         detail=detail, locations=locations, ax=ax,
-                         color_poles=color_poles, radius_to_plot=radius_to_plot,
-                         color_location=color_location, color_phase=color_phase,
-                         color_background=color_background, color_title=color_title,
-                         )
-
-                f.canvas.draw()
-                image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
-
-                image = Image.fromarray(image_flat.reshape(*reversed(f.canvas.get_width_height()), 3),
-                                        'RGB')
-                plt.close(f)
-
-#                plt.switch_backend(backend)
-
-            if radius_to_plot is not None:
-                ax.set_xlim([-radius_to_plot, radius_to_plot])
-                ax.set_ylim([-radius_to_plot, radius_to_plot])
-            ani = FuncAnimation(f, animate, interval=40, blit=True, repeat=True, frames=len(time))
-            ani.save(f"{body}_{time[0]}.gif", dpi=300, writer=PillowWriter(fps=25))
-        except:
-            raise NotImplemented("Movie is not yet implemented. You should pass a single time to body_map")
+        _body_map_video(body, observer, time,
+                        locations=locations,
+                        detail=detail, reread_usgs=reread_usgs,
+                        radius_to_plot=radius_to_plot,
+                        ax=ax,
+                        color_poles=color_poles, color_local_time=color_local_time,
+                        color_location=color_location, color_phase=color_phase,
+                        color_background=color_background, color_title=color_title,
+                        )
+        return
 
     site = apc.EarthLocation.of_site(observer)
     request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
@@ -440,11 +453,6 @@ def body_map(body,
     orthographic_image = get_orthographic(image,
                                           sub_obs_lon,
                                           sub_obs_lat,
-                                          # marks=[(table['SunSub_LON'].value[0],
-                                          #         table['SunSub_LAT'].value[0],),
-                                          #        (table['ObsSub_LON'].value[0],
-                                          #         table['ObsSub_LAT'].value[0],),
-                                          #        ] + list(locations.values()),
                                           show_poles=color_poles)
 
     rotated_image = orthographic_image.rotate(np_ang,
@@ -467,17 +475,18 @@ def body_map(body,
               )
     ax.axis('off')
 
-    print(f"Sub Observer longitude/latitude: {table['ObsSub_LON'][0]}/{table['ObsSub_LAT'][0]}")
-    print(f"Sub Solar longitude/latitude: {table['SunSub_LON'][0]}/{table['SunSub_LAT'][0]}")
-    print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
-    print(f"North Pole angle/distances: {table['NP_ang'][0]}/{table['NP_dist'][0]}")
+    if verbose:
+        print(f"Sub Observer longitude/latitude: {table['ObsSub_LON'][0]}/{table['ObsSub_LAT'][0]}")
+        print(f"Sub Solar longitude/latitude: {table['SunSub_LON'][0]}/{table['SunSub_LAT'][0]}")
+        print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
+        print(f"North Pole angle/distances: {table['NP_ang'][0]}/{table['NP_dist'][0]}")
 
     ax.set_facecolor(color_background)
     ang_rad = table['Ang_diam'].value[0]/2
-    artists = [ax.imshow(rotated_image,
-                         extent=[-ang_rad, ang_rad, -ang_rad, ang_rad],
-                         ),
-               ]
+    ax.imshow(rotated_image,
+              extent=[-ang_rad, ang_rad, -ang_rad, ang_rad],
+              )
+
     if radius_to_plot is None:
         radius_to_plot = ang_rad
 
@@ -485,13 +494,14 @@ def body_map(body,
     ax.set_ylim([-radius_to_plot, radius_to_plot])
 
     if color_title is not None and color_title:
-        ax.set_title(f"{body.capitalize()} on {time.isot[:16]}: radius {ang_rad}",
+        ax.set_title(f'{body.capitalize()} on {time.isot[:16]}. Radius {ang_rad:.1f}"',
                      color=color_title,
                      )
     transform_norm_to_axes = mtransforms.Affine2D().scale(ang_rad) + ax.transData
 
     if len(locations) > 0:
-        print(f"Location offset from {body.capitalize()}'s center (Delta_RA, Delta_Dec) in arcsec:")
+        if verbose:
+            print(f"Location offset from {body.capitalize()}'s center (Delta_RA, Delta_Dec) in arcsec:")
 
         if isinstance(locations, list):
             locations = {str(i): v for i, v in enumerate(locations)}
@@ -503,52 +513,50 @@ def body_map(body,
 
             local_time_location = (np.arctan2(*body_to_local_time.apply(position)[:2][::-1]) + np.pi) * 12 / np.pi
 
-            artists.extend(ax.plot(*rot_xy,
-                                   transform=transform_norm_to_axes,
-                                   marker='d', color=color_location,
-                                   alpha=1 - 0.5 * (rot_xy[0] < 0),
-                                   zorder=10,
-                                   )
-                           )
-            artists.append(ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", "
-                                       f"$\\Delta\\delta$ {delta_dec:.0f}\"",
-                                       rot_xy,
-                                       xycoords=transform_norm_to_axes,
-                                       color=color_location,
-                                       alpha=1 - 0.5 * (rot_xy[0] < 0),
-                                       zorder=10,
-                                       )
-                           )
+            ax.plot(*rot_xy,
+                    transform=transform_norm_to_axes,
+                    marker='d', color=color_location,
+                    alpha=1 - 0.5 * (rot_xy[0] < 0),
+                    zorder=10,
+                    )
+
+            ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", "
+                        f"$\\Delta\\delta$ {delta_dec:.0f}\"",
+                        rot_xy,
+                        xycoords=transform_norm_to_axes,
+                        color=color_location,
+                        alpha=1 - 0.5 * (rot_xy[0] < 0),
+                        zorder=10,
+                        )
 
             format_str = (f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
                           f"   (LocalSolarTime: {{local_time_location:+7.2f}}h)")
-            print(format_str.format(name=str(name), local_time_location=local_time_location,
-                                    delta_ra=delta_ra, delta_dec=delta_dec))
-        print("")
+            if verbose:
+                print(format_str.format(name=str(name), local_time_location=local_time_location,
+                                        delta_ra=delta_ra, delta_dec=delta_dec))
+        if verbose:
+            print("")
 
     if color_poles is not None and color_poles:
-        artists.extend(ax.plot([-1, 1], [0, 0],
-                               color='blue',
-                               transform=transform_norm_to_axes,
-                               zorder=9,
-                               )
-                       )
-        artists.extend(ax.plot([0, 0], [-1, 1],
-                               color='blue',
-                               transform=transform_norm_to_axes,
-                               zorder=9,
-                               )
-                       )
+        ax.plot([-1, 1], [0, 0],
+                color='blue',
+                transform=transform_norm_to_axes,
+                zorder=9,
+                )
+        ax.plot([0, 0], [-1, 1],
+                color='blue',
+                transform=transform_norm_to_axes,
+                zorder=9,
+                )
 
         for lat_pole in [-90, 90]:
             pole = lunar_to_observer.apply(unit_vector(0, lat_pole, degrees=True))
-            artists.extend(ax.plot(*pole[1:3],
-                                   transform=transform_norm_to_axes,
-                                   alpha=1 - 0.5*(pole[0] < 0),
-                                   marker='o', color='blue',
-                                   zorder=9,
-                                   )
-                           )
+            ax.plot(*pole[1:3],
+                    transform=transform_norm_to_axes,
+                    alpha=1 - 0.5*(pole[0] < 0),
+                    marker='o', color='blue',
+                    zorder=9,
+                    )
 
     if color_local_time:
         _add_local_time(ax,
@@ -560,19 +568,18 @@ def body_map(body,
                         )
 
     if color_phase is not None and color_phase:
-        new_artists = _add_phase_shadow(ax,
-                                        (sub_obs_lon, sub_obs_lat),
-                                        (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
-                                        np_ang,
-                                        color_phase,
-                                        transform_norm_to_axes,
-                                        )
-        artists.extend(new_artists)
+        _add_phase_shadow(ax,
+                          (sub_obs_lon, sub_obs_lat),
+                          (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
+                          np_ang,
+                          color_phase,
+                          transform_norm_to_axes,
+                          )
 
     if return_axes:
         return ax
     else:
-        return tuple(artists)
+        return ax.collections + ax.lines + ax.texts + ax.images
 
 
 def _add_local_time(ax,
@@ -685,7 +692,7 @@ Returns ortographic projection with the specified center
     return orthographic_image
 
 
-def path_body(body,
+def body_path(body,
               observer,
               times: apt.Time,
               use_jpl: bool = False,
@@ -774,8 +781,7 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
     # select from alternatives
     elif len(body_files) > 1:
         if warn_multiple:
-            if not detail_str:
-                suggest = f" (use space-separated keywords in 'detail' to filter).\n"
+            suggest = f" (use space-separated keywords in 'detail' to filter).\n" if not detail_str else ""
             print(f"Several map alternatives for {body} were available{detail_str}\n{suggest}"                  
                   "Selected first of:")
             for bf in body_files:
