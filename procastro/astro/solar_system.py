@@ -1,31 +1,30 @@
+import logging
 import re
 from io import BytesIO
 from pathlib import Path
-
-import numpy as np
-import pandas as pd
 import requests
-
-import matplotlib.pyplot as plt
-import matplotlib.transforms as mtransforms
-import matplotlib.collections as mcol
-import matplotlib.path as mpath
-import cartopy.crs as ccrs
-from PIL import Image
-
-from astropy import time as apt, units as u, coordinates as apc
-from astropy.table import Table, QTable
+import numpy as np
+from numpy import ma
 from bs4 import BeautifulSoup
+
 from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
+from matplotlib import pyplot as plt, transforms as mtransforms, collections as mcol, path as mpath
+import cartopy.crs as ccrs
+from PIL import Image
+
+from astropy import time as apt, units as u, coordinates as apc, io as io
+from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 from procastro.core.cache import jpl_cache, usgs_map_cache
 import procastro as pa
 
 TwoValues = tuple[float, float]
-
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+logger = logging.getLogger("astro")
+# todo: improve logger as part of the procastro system
 
 @jpl_cache
 def _request_horizons_online(specifications):
@@ -123,10 +122,13 @@ def parse_jpl_ephemeris(ephemeris):
                  'PAB_LON', 'PAB_LAT', 'App_Lon_Sun',  'I_dRA_cosD', 'I_d_DEC__dt',
                  'Sky_motion', 'Sky_mot_PA', 'RelVel_ANG', 'Lun_Sky_Brt', 'sky_SNR',
                  'sat_primary_X', 'sat_primary_Y', 'a_app_Azi', 'a_app_Elev',
-                 'ang_sep', 'T_O_M', 'MN_Illu_'
+                 'ang_sep', 'T_O_M', 'MN_Illu_',
+                 'd_DEC__slash_dt', 'd_ELV__slash_dt',
+                 'Theta', 'Area_3sig',
+                 'I_d_DEC__slash_dt',
                  ]
-    str_col = ['_slash_r', 'Cnst', 'L_Ap_Sid_Time', 'L_Ap_SOL_Time', 'L_Ap_Hour_Ang', ]
-    convert_dict = {k: float for k in float_col} | {k: str for k in str_col}
+    str_col = ['_slash_r', 'Cnst', 'L_Ap_Sid_Time', 'L_Ap_SOL_Time', 'L_Ap_Hour_Ang',
+               'moon_presence']
 
     ut_col = ['Date___UT___HR_MN']
     jd_col = 'Date_________JDUT'
@@ -139,6 +141,18 @@ def parse_jpl_ephemeris(ephemeris):
                        ]
     two_values_col = ['X__sat_primary__Y', 'Azi_____a_app____Elev']
     slash_col = ['ang_sep_slash_v', 'T_O_M_slash_MN_Illu_']
+
+    convert_dict = ({k: float for k in float_col} |
+                    {k: str for k in str_col + ut_col + list(coords_col.keys()) +
+                     sexagesimal_col + two_values_col + slash_col})
+
+    def month_name_to_number(str):
+        for idx, month in enumerate(['Jan', "Feb", "Mar", "Apr", "May", "Jun",
+                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]):
+            if month in str:
+                return str.replace(month, f'{idx + 1:02d}')
+        else:
+            raise ValueError("No month name found")
 
     def change_names(string):
         string, _ = re.subn(r'1(\D)', r'one\1', string)
@@ -163,25 +177,32 @@ def parse_jpl_ephemeris(ephemeris):
                 moon_presence = False
         previous = line
 
-    pattern = ""
     spaces = 0
     col_seps = re.split(r'( +)', previous.rstrip())
 
     if col_seps[0] == '':
         col_seps.pop(0)
     date = col_seps.pop(0)
+
     chars = len(date)
-    pattern += f'(?P<{change_names(date)}>.{{{chars}}})'
+    col_names = [change_names(date)]
+    cum_chars = chars
+    col_ends = [cum_chars]
+
     if moon_presence:
-        pattern += f'(?P<moon_presence>.{{3}})'
         spaces = len(col_seps.pop(0)) - 3
+        col_names.append('moon_presence')
+        cum_chars += 3
+        col_ends.append(cum_chars)
 
     for val in col_seps:
         if val[0] == '\0':
             break
         elif val[0] != ' ':
             chars = len(val) + spaces
-            pattern += f'(?P<{change_names(val)}>.{{{chars}}})'
+            col_names.append(change_names(val))
+            cum_chars += chars
+            col_ends.append(cum_chars)
         else:
             spaces = len(val)
 
@@ -193,67 +214,92 @@ def parse_jpl_ephemeris(ephemeris):
 
         if re.match(r"\$\$EOE", line.rstrip()):
             break
-        incoming.append(line.rstrip())
+
+        incoming.append(line.replace("n.a.", "    ").rstrip())
 
     # dataframe with each field separated
-    df = pd.DataFrame({'incoming': incoming}).incoming.str.extract(pattern)
-    df = df.replace(re.compile(r" +n\.a\."), np.nan).infer_objects(copy=False).astype(str)
+    table = io.ascii.read(incoming,
+                          format='fixed_width_no_header',
+                          names=col_names,
+                          col_ends=col_ends,
+                          converters=convert_dict,
+                          )
+
+    def splitter(iterable, dtype=None, n_elements=None, separator=None):
+        if dtype is None:
+            def dtype(data):
+                return data
+
+        ret = []
+        mask = []
+        for value in iterable:
+            if ma.is_masked(value):
+                ret.append([0] * n_elements)
+                mask.append([True] * n_elements)
+                continue
+
+            ret.append([dtype(v) for v in value.split(separator)])
+            if n_elements is None:
+                n_elements = len(ret[-1])
+            mask.append([False] * n_elements)
+
+        if isinstance(iterable, MaskedColumn):
+            return ma.masked_array(ret, mask=mask)
+        else:
+            return np.array(ret)
 
     # convert sexagesimal coordinates to float
     for coord, name in coords_col.items():
-        if coord not in df:
+        if coord not in table.columns:
             continue
-        coords = pd.DataFrame()
-        coords[['rah', 'ram', 'ras', 'decd', 'decm', 'decs']] = df[coord].str.strip().str.split(re.compile(" +"),
-                                                                                                expand=True)
-        coords = coords.astype(float)
-        df[f'ra_{name}'] = coords.rah + (coords.ram + coords.ras / 60) / 60
-        sign = np.sign(coords.decd)
-        sign += sign == 0
-        df[f'dec_{name}'] = (coords.decd.abs() + (coords.decm + coords.decs / 60) / 60) * sign
+
+        coords = splitter(table[coord], dtype=float, n_elements=6)
+        table[f'ra_{name}'] = coords[:, 0] + (coords[:, 1] + coords[:, 2] / 60) / 60
+        sign = np.sign(coords[:, 3])
+        sign += sign == 0  # dec == 0 is positive +1, not 0
+        table[f'dec_{name}'] = sign * (np.abs(coords[:, 3]) + (coords[:, 4] + coords[:, 5] / 60) / 60)
 
     # convert two values into their own columns
     for column in two_values_col:
-        if column not in df:
+        if column not in table.columns:
             continue
         local_pattern = re.compile(r"([a-zA-Z]+?)_+(.+?)_+([a-zA-Z]+?)$")
         match = re.match(local_pattern, column)
         left, right = f"{match[2]}_{match[1]}", f"{match[2]}_{match[3]}",
-        new_df = df[column].str.strip().str.split(re.compile(" +"), n=2, expand=True)
-        if len(new_df.columns) == 1:
-            new_df[1] = new_df[0]
-        df[[left, right]] = new_df
+        vals = splitter(table[column], n_elements=2)
+        table[left] = vals[:, 0]
+        table[right] = vals[:, 1]
 
-    # convert two values into their own columns
+    # convert slash-separated two values
     for column in slash_col:
-        if column not in df:
+        if column not in table.columns:
             continue
         local_pattern = re.compile(r"(.+)_slash_(.+)$")
         match = re.match(local_pattern, column)
         left, right = match[1], match[2]
-        df[[left, right]] = df[column].str.split('/', expand=True)
+        vals = splitter(table[column], n_elements=2, separator='/')
+        table[left] = vals[:, 0]
+        table[right] = vals[:, 1]
 
+    # convert sexagesimal column to float
     for column in sexagesimal_col:
-        if column not in df:
+        if column not in table.columns:
             continue
-        sexagesimal = pd.DataFrame()
-        sexagesimal[['h', 'm', 's']] = df[column].str.strip().str.split(re.compile(" +"), expand=True)
-        sexagesimal = sexagesimal.astype(float)
-        df[f'{column}_float'] = sexagesimal.h + (sexagesimal.m + sexagesimal.s / 60) / 60
+        sexagesimal = splitter(table[column], n_elements=3, dtype=float)
+        sign = np.sign(sexagesimal[:, 0])
+        sign += sign == 0  # 0 is positive
+        table[f'{column}_float'] = sign * (sexagesimal[:, 0] + (sexagesimal[:, 1] + sexagesimal[:, 2] / 60) / 60)
 
     # convert UT date to JD
     for column in ut_col:
-        if column not in df:
+        if column not in table.columns:
             continue
-        new_date = df[column].str.strip().str.replace(" ", "T")
-        for idx, month in enumerate(['Jan', "Feb", "Mar", "Apr", "May", "Jun",
-                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]):
-            new_date = new_date.str.strip().str.replace(month, f"{idx+1:02d}")
-        df[jd_col] = [apt.Time(ut_date).jd for ut_date in new_date]
 
-    df['jd'] = df[jd_col]
+        table[jd_col] = [apt.Time(month_name_to_number(s.replace(" ", "T"))).jd for s in table[column]]
 
-    return Table.from_pandas(df.astype({k: v for k, v in convert_dict.items() if k in df}))
+    table['jd'] = table[jd_col]
+
+    return table
 
 
 def path_from_jpl(body,
@@ -337,7 +383,7 @@ def jpl_observer_from_location(site):
 
 def _body_map_video(body,
                     observer,
-                    time: apt.Time,
+                    time: apt.Time | None,
                     ax: Axes | None = None,
                     color_background="black",
                     **kwargs,
@@ -356,16 +402,22 @@ def _body_map_video(body,
                     color='w',
                     transform=ax.transAxes, ha="left", va="top")
 
+    site = apc.EarthLocation.of_site(observer)
+    request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
+    ephemeris_lines = read_jpl(request)
+
     def animate(itime):
         ax.clear()
-        title.set_text(time[itime].isot)
-        artists = body_map(body, observer, time[itime],
+        time_title = time[itime].isot
+        title.set_text(time_title)
+        logger.info(f" - Computing {time_title} ({itime+1:d}/{len(time)})")
+        artists = body_map(body, ephemeris_lines[itime],
                            return_axes=False, verbose=False,
                            ax=ax,
                            **kwargs)
         return artists
 
-    ani = FuncAnimation(f, animate, interval=40, blit=False, repeat=True, frames=len(time))
+    ani = FuncAnimation(f, animate, interval=60, blit=False, repeat=True, frames=len(time))
 
     filename = f"{body}_{time[0].isot.replace(":", "")[:17]}.gif"
     ani.save(filename,
@@ -377,7 +429,7 @@ def _body_map_video(body,
 
 def body_map(body,
              observer,
-             time: apt.Time,
+             time: apt.Time | None = None,
              locations: list[TwoValues] | dict[str, TwoValues] = None,
              detail=None, reread_usgs=False,
              radius_to_plot=None,
@@ -395,7 +447,8 @@ def body_map(body,
     observer:
        Location of observer as understood by astropy.EarthLocation.of_site
     time:
-       time in astropy.Time format. If passed a single element it returns an image, else a video
+       time in astropy.Time format. If passed a single element it returns an image, else a video.
+       If time is omitted, then observer must be a JPL ephemeris epoch in a Table Row
     locations:
        a list of (lon, lat) coordinates
     verbose:
@@ -424,7 +477,12 @@ def body_map(body,
        matplotlib.Axes to use
     """
 
-    if not time.isscalar:
+    if time is None:
+        if not isinstance(observer, Table.Row):
+            raise TypeError("Time can only be omitted when observer is a JPL ephemeris in a astropy.Table.Row object.")
+        ephemeris_line = observer
+        time = apt.Time(ephemeris_line['jd'], format='jd')
+    elif not time.isscalar:
         _body_map_video(body, observer, time,
                         locations=locations,
                         detail=detail, reread_usgs=reread_usgs,
@@ -435,17 +493,18 @@ def body_map(body,
                         color_background=color_background, color_title=color_title,
                         )
         return
+    else:
+        site = apc.EarthLocation.of_site(observer)
+        request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
+        ephemeris_line = read_jpl(request)[0]
 
-    site = apc.EarthLocation.of_site(observer)
-    request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
-    table = read_jpl(request)
-    sub_obs_lon = table['ObsSub_LON'].value[0]
-    sub_obs_lat = table['ObsSub_LAT'].value[0]
-    np_ang = table['NP_ang'].value[0]
+    sub_obs_lon = ephemeris_line['ObsSub_LON']
+    sub_obs_lat = ephemeris_line['ObsSub_LAT']
+    np_ang = ephemeris_line['NP_ang']
 
     lunar_to_observer = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=-np_ang)
-    body_to_local_time = new_x_axis_at(table['SunSub_LON'].value[0],
-                                       table['SunSub_LAT'].value[0],
+    body_to_local_time = new_x_axis_at(ephemeris_line['SunSub_LON'],
+                                       ephemeris_line['SunSub_LAT'],
                                        )
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
@@ -476,13 +535,13 @@ def body_map(body,
     ax.axis('off')
 
     if verbose:
-        print(f"Sub Observer longitude/latitude: {table['ObsSub_LON'][0]}/{table['ObsSub_LAT'][0]}")
-        print(f"Sub Solar longitude/latitude: {table['SunSub_LON'][0]}/{table['SunSub_LAT'][0]}")
-        print(f"Sub Solar angle/distances: {table['SN_ang'][0]}/{table['SN_dist'][0]}")
-        print(f"North Pole angle/distances: {table['NP_ang'][0]}/{table['NP_dist'][0]}")
+        print(f"Sub Observer longitude/latitude: {ephemeris_line['ObsSub_LON']}/{ephemeris_line['ObsSub_LAT']}")
+        print(f"Sub Solar longitude/latitude: {ephemeris_line['SunSub_LON']}/{ephemeris_line['SunSub_LAT']}")
+        print(f"Sub Solar angle/distances: {ephemeris_line['SN_ang']}/{ephemeris_line['SN_dist']}")
+        print(f"North Pole angle/distances: {ephemeris_line['NP_ang']}/{ephemeris_line['NP_dist']}")
 
     ax.set_facecolor(color_background)
-    ang_rad = table['Ang_diam'].value[0]/2
+    ang_rad = ephemeris_line['Ang_diam']/2
     ax.imshow(rotated_image,
               extent=[-ang_rad, ang_rad, -ang_rad, ang_rad],
               )
@@ -509,7 +568,7 @@ def body_map(body,
         for name, location in locations.items():
             position = unit_vector(*location, degrees=True)
             rot_xy = lunar_to_observer.apply(position)[1: 3]
-            delta_ra, delta_dec = table['Ang_diam'].value[0]*rot_xy/2
+            delta_ra, delta_dec = ephemeris_line['Ang_diam']*rot_xy/2
 
             local_time_location = (np.arctan2(*body_to_local_time.apply(position)[:2][::-1]) + np.pi) * 12 / np.pi
 
@@ -529,11 +588,12 @@ def body_map(body,
                         zorder=10,
                         )
 
-            format_str = (f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
-                          f"   (LocalSolarTime: {{local_time_location:+7.2f}}h)")
+            format_str1 = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
+            format_str2 = f"   (LocalSolarTime: {{local_time_location:+7.2f}}h)"
+
             if verbose:
-                print(format_str.format(name=str(name), local_time_location=local_time_location,
-                                        delta_ra=delta_ra, delta_dec=delta_dec))
+                print((format_str1 + format_str2).format(name=str(name), local_time_location=local_time_location,
+                                                         delta_ra=delta_ra, delta_dec=delta_dec))
         if verbose:
             print("")
 
@@ -561,7 +621,7 @@ def body_map(body,
     if color_local_time:
         _add_local_time(ax,
                         (sub_obs_lon, sub_obs_lat),
-                        (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
+                        (ephemeris_line['SunSub_LON'], ephemeris_line['SunSub_LAT']),
                         np_ang,
                         color_phase,
                         transform_norm_to_axes,
@@ -570,7 +630,7 @@ def body_map(body,
     if color_phase is not None and color_phase:
         _add_phase_shadow(ax,
                           (sub_obs_lon, sub_obs_lat),
-                          (table['SunSub_LON'].value[0], table['SunSub_LAT'].value[0]),
+                          (ephemeris_line['SunSub_LON'], ephemeris_line['SunSub_LAT']),
                           np_ang,
                           color_phase,
                           transform_norm_to_axes,
