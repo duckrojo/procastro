@@ -26,6 +26,7 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 # todo: improve logger as part of the procastro system
 
+
 @jpl_cache
 def _request_horizons_online(specifications):
     default_spec = {'MAKE_EPHEM': 'YES',
@@ -106,6 +107,7 @@ def get_jpl_ephemeris(specification):
 
 
 def parse_jpl_ephemeris(ephemeris):
+    ephemeris = ephemeris.copy()
 
     float_col = ['Date_________JDUT', 'APmag', 'S_brt',
                  'dRA_cosD', 'd_DEC__dt', 'dAZ_cosE', 'd_ELV__dt',
@@ -146,11 +148,11 @@ def parse_jpl_ephemeris(ephemeris):
                     {k: str for k in str_col + ut_col + list(coords_col.keys()) +
                      sexagesimal_col + two_values_col + slash_col})
 
-    def month_name_to_number(str):
+    def month_name_to_number(string):
         for idx, month in enumerate(['Jan', "Feb", "Mar", "Apr", "May", "Jun",
                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]):
-            if month in str:
-                return str.replace(month, f'{idx + 1:02d}')
+            if month in string:
+                return string.replace(month, f'{idx + 1:02d}')
         else:
             raise ValueError("No month name found")
 
@@ -558,7 +560,7 @@ def body_map(body,
                      )
     transform_norm_to_axes = mtransforms.Affine2D().scale(ang_rad) + ax.transData
 
-    if len(locations) > 0:
+    if locations is not None and len(locations) > 0:
         if verbose:
             print(f"Location offset from {body.capitalize()}'s center (Delta_RA, Delta_Dec) in arcsec:")
 
@@ -695,6 +697,8 @@ def get_orthographic(platecarree_image,
 Returns ortographic projection with the specified center
     Parameters
     ----------
+    marks
+       list of (lon, lat) marks to add
     platecarree_image
     sub_obs_lon
     sub_obs_lat
