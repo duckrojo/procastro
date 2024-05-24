@@ -2,6 +2,7 @@ import logging
 import re
 from io import BytesIO
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 import requests
 import numpy as np
 from numpy import ma
@@ -49,7 +50,6 @@ def _request_horizons_online(specifications):
                     'CSV_FORMAT': "'NO'",
                     'OBJ_DATA': "'YES'",
                     }
-    url_api = "https://ssd.jpl.nasa.gov/api/horizons.api?"
     custom_spec = {}
     prev = ""
     for spec in specifications.split("\n"):
@@ -62,9 +62,18 @@ def _request_horizons_online(specifications):
         else:
             custom_spec[prev] += " " + kv[0]
 
-    url = url_api + "&".join([f"{k}={v}" for k, v in (default_spec | custom_spec).items()])
+    url_api = "https://ssd.jpl.nasa.gov/api/horizons.api?"
+    full_specs = [f"{k}={v}" for k, v in (default_spec | custom_spec).items()]
 
-    return eval(requests.get(url, allow_redirects=True).content)['result'].splitlines()
+    url = url_api + "&".join(full_specs)
+    if len(url) > 1000:
+        with NamedTemporaryFile(delete_on_close=False) as fp:
+            fp.write("\n".join(full_specs))
+            fp.close()
+            return requests.post(url, data={'format': 'text'}, files={'input': fp.name}).text.splitlines()
+
+    else:
+        return eval(requests.get(url, allow_redirects=True).content)['result'].splitlines()
 
 
 def read_jpl(specification):
@@ -369,6 +378,9 @@ Return dict with correct time batch call for JPL's horizon
         times = apt.Time(times, format='isot', scale='utc')
     if times.isscalar:
         times = apt.Time([times])
+    if len(times) > 10000:
+        raise ValueError("Horizon's interface only accepts a maximum of 10,000 discrete times to provide to TLIST")
+
     times_str = " ".join([f"'{s}'" for s in times.jd])
     return {'TLIST_TYPE': 'JD',
             'TIME_TYPE': 'UT',
@@ -423,7 +435,7 @@ def _body_map_video(body,
 
     filename = f"{body}_{time[0].isot.replace(":", "")[:17]}.gif"
     ani.save(filename,
-             dpi=300, writer=PillowWriter(fps=25),
+             dpi=300, writer=PillowWriter(fps=10),
              )
     print(f"saved file {filename}")
     plt.switch_backend(backend)
