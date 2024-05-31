@@ -8,7 +8,7 @@ import numpy as np
 from numpy import ma
 from bs4 import BeautifulSoup
 
-from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
 from matplotlib import pyplot as plt, transforms as mtransforms, collections as mcol, path as mpath
@@ -63,14 +63,24 @@ def _request_horizons_online(specifications):
             custom_spec[prev] += " " + kv[0]
 
     url_api = "https://ssd.jpl.nasa.gov/api/horizons.api?"
-    full_specs = [f"{k}={v}" for k, v in (default_spec | custom_spec).items()]
+    full_specs = [f"{k}={v}" for k, v in (default_spec | custom_spec).items()
+                  if k != 'TLIST']
+    if 'TLIST' in custom_spec:
+        epochs = custom_spec['TLIST'].split(' ')
+        epochs[0] = 'TLIST=' + epochs[0]
+        full_specs.extend(epochs)
 
     url = url_api + "&".join(full_specs)
     if len(url) > 1000:
-        with NamedTemporaryFile(delete_on_close=False) as fp:
+        url_api_file = "https://ssd.jpl.nasa.gov/api/horizons_file.api?"
+        with NamedTemporaryFile(mode="w", delete_on_close=False) as fp:
+            fp.write("!$$SOF\n")
             fp.write("\n".join(full_specs))
             fp.close()
-            return requests.post(url, data={'format': 'text'}, files={'input': fp.name}).text.splitlines()
+            return requests.post(url_api_file,
+                                 data={'format': 'text'},
+                                 files={'input': open(fp.name)}
+                                 ).text.splitlines()
 
     else:
         return eval(requests.get(url, allow_redirects=True).content)['result'].splitlines()
@@ -400,6 +410,10 @@ def _body_map_video(body,
                     time: apt.Time | None,
                     ax: Axes | None = None,
                     color_background="black",
+                    radius_to_plot = None,
+                    fps=10, dpi=None,
+                    title=None,
+                    filename=None,
                     **kwargs,
                     ):
 
@@ -412,31 +426,68 @@ def _body_map_video(body,
         f = ax.figure
 
     f.set_facecolor(color_background)
-    title = ax.text(0, 1, "",
-                    color='w',
-                    transform=ax.transAxes, ha="left", va="top")
 
     site = apc.EarthLocation.of_site(observer)
     request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
     ephemeris_lines = read_jpl(request)
 
+    field = 'Ang_diam'
+
+    if radius_to_plot is None:
+        radius_to_plot = np.max(ephemeris_lines[field])/2
+
+    if title is None:
+        mean_rad = np.mean(ephemeris_lines[field])
+        if mean_rad > 120:
+            rad_unit = "'"
+            divider = 60
+        elif mean_rad > 1:
+            rad_unit = '"'
+            divider = 1
+        else:
+            rad_unit = 'mas'
+            divider = 0.001
+        title = f'{body.capitalize()} on {{time}} from {observer} (R$_{body[0].upper()}$: {{field:.1f}}{rad_unit})'
+
     def animate(itime):
         ax.clear()
-        time_title = time[itime].isot
-        title.set_text(time_title)
-        logger.info(f" - Computing {time_title} ({itime+1:d}/{len(time)})")
-        artists = body_map(body, ephemeris_lines[itime],
+
+        logger.info(f" - Computing {time[itime].isot} ({itime + 1:d}/{len(time)})")
+        ephemeris = ephemeris_lines[itime]
+        y, m, d, h, mn, s = time[itime].ymdhms
+
+        time_label = f"{y}.{m:02d}.{d:02d} {h:02d}:{mn+s/60:04.1f} UT"
+        artists = body_map(body, ephemeris,
                            return_axes=False, verbose=False,
-                           ax=ax,
+                           color_background=color_background,
+                           ax=ax, radius_to_plot=radius_to_plot,
+                           title=title.format(time=time_label,
+                                              field=ephemeris[field]/divider,),
                            **kwargs)
         return artists
 
     ani = FuncAnimation(f, animate, interval=60, blit=False, repeat=True, frames=len(time))
 
-    filename = f"{body}_{time[0].isot.replace(":", "")[:17]}.gif"
-    ani.save(filename,
-             dpi=300, writer=PillowWriter(fps=10),
-             )
+    if filename is None:
+        filename = f"{body}_{time[0].isot.replace(":", "")[:17]}.gif"
+    elif '.' not in filename:
+        filename += '.gif'
+
+    match filename[filename.index("."):].lower():
+        case ".mpg" | ".mpeg" | ".mp4":
+            writer = FFMpegWriter(fps=fps)
+        case ".gif":
+            writer = PillowWriter(fps=fps)
+        case _:
+            raise ValueError("Invalid filename extension")
+
+    try:
+        ani.save(filename,
+                 dpi=dpi, writer=writer,
+                 )
+    except FileNotFoundError:
+        raise FileNotFoundError(f"Codex for extension {filename[filename.index("."):]} not available.")
+
     print(f"saved file {filename}")
     plt.switch_backend(backend)
 
@@ -445,8 +496,10 @@ def body_map(body,
              observer,
              time: apt.Time | None = None,
              locations: list[TwoValues] | dict[str, TwoValues] = None,
+             title=None,
              detail=None, reread_usgs=False,
              radius_to_plot=None,
+             fps=10, dpi=75, filename=None,
              ax: Axes | None = None, return_axes=True, verbose=True,
              color_location="red", color_phase='black',
              color_background='black', color_title='white',
@@ -489,6 +542,10 @@ def body_map(body,
        color of the poles. None or blank to skip
     ax:
        matplotlib.Axes to use
+    fps:
+       frames-per-second for gif files
+    dpi:
+       dot-per-inch for gif files
     """
 
     if time is None:
@@ -501,7 +558,7 @@ def body_map(body,
                         locations=locations,
                         detail=detail, reread_usgs=reread_usgs,
                         radius_to_plot=radius_to_plot,
-                        ax=ax,
+                        ax=ax, fps=fps, dpi=dpi, filename=filename,
                         color_poles=color_poles, color_local_time=color_local_time,
                         color_location=color_location, color_phase=color_phase,
                         color_background=color_background, color_title=color_title,
@@ -567,7 +624,14 @@ def body_map(body,
     ax.set_ylim([-radius_to_plot, radius_to_plot])
 
     if color_title is not None and color_title:
-        ax.set_title(f'{body.capitalize()} on {time.isot[:16]}. Radius {ang_rad:.1f}"',
+        if title is None:
+            radius = ang_rad
+            rad_unit = '"'
+            if radius > 120:
+                radius /= 60
+                rad_unit = "'"
+            title = f'{body.capitalize()} on {time.isot[:16]} (R$_{body[0].upper()}$: {radius:.1f}{rad_unit})'
+        ax.set_title(title,
                      color=color_title,
                      )
     transform_norm_to_axes = mtransforms.Affine2D().scale(ang_rad) + ax.transData
@@ -581,12 +645,12 @@ def body_map(body,
         max_len = max([len(str(k)) for k in locations.keys()])
         for name, location in locations.items():
             position = unit_vector(*location, degrees=True)
-            rot_xy = lunar_to_observer.apply(position)[1: 3]
-            delta_ra, delta_dec = ephemeris_line['Ang_diam']*rot_xy/2
+            rot_xy = lunar_to_observer.apply(position)
+            delta_ra, delta_dec = ephemeris_line['Ang_diam']*rot_xy[1:]/2
 
             local_time_location = (np.arctan2(*body_to_local_time.apply(position)[:2][::-1]) + np.pi) * 12 / np.pi
 
-            ax.plot(*rot_xy,
+            ax.plot(*rot_xy[1:],
                     transform=transform_norm_to_axes,
                     marker='d', color=color_location,
                     alpha=1 - 0.5 * (rot_xy[0] < 0),
@@ -594,8 +658,9 @@ def body_map(body,
                     )
 
             ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", "
-                        f"$\\Delta\\delta$ {delta_dec:.0f}\"",
-                        rot_xy,
+                        f"$\\Delta\\delta$ {delta_dec:.0f}\" "
+                        f"LT{local_time_location:04.1f}$^h$",
+                        rot_xy[1:],
                         xycoords=transform_norm_to_axes,
                         color=color_location,
                         alpha=1 - 0.5 * (rot_xy[0] < 0),
@@ -877,7 +942,9 @@ def _add_phase_shadow(ax,
                       np_ang,
                       color,
                       transform_from_normal,
-                      precision=50):
+                      precision=50,
+                      marker_color='yellow',
+                      ):
 
     def vector_to_observer(vector):
         rotation = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
@@ -911,10 +978,16 @@ def _add_phase_shadow(ax,
                               )
     ax.add_collection(col)
 
-    sub_sun_marker = ax.plot(*vector_to_observer(unit_vector(*sub_sun))[1:],
-                             marker='d', color='yellow',
-                             alpha=1 - 0.5 * (sub_sun[0] < 0),
+    projected_sub_sun = vector_to_observer(unit_vector(*sub_sun))
+    sub_sun_marker = ax.plot(*projected_sub_sun[1:],
+                             marker='d', color=marker_color,
+                             alpha=1 - 0.5 * (projected_sub_sun[0] < 0),
                              transform=transform_from_normal)
+    ax.annotate(f"{np.abs(sub_sun[1]):.1f}$^\\circ${'N' if sub_sun[1] > 0 else 'S'}",
+                projected_sub_sun[1:],
+                xycoords=transform_from_normal,
+                color=marker_color,
+                )
 
     return col, sub_sun_marker
 
