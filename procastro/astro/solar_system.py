@@ -65,13 +65,16 @@ def _request_horizons_online(specifications):
     url_api = "https://ssd.jpl.nasa.gov/api/horizons.api?"
     full_specs = [f"{k}={v}" for k, v in (default_spec | custom_spec).items()
                   if k != 'TLIST']
-    if 'TLIST' in custom_spec:
-        epochs = custom_spec['TLIST'].split(' ')
-        epochs[0] = 'TLIST=' + epochs[0]
-        full_specs.extend(epochs)
 
     url = url_api + "&".join(full_specs)
+    if 'TLIST' in custom_spec:
+        url += f'&TLIST={custom_spec["TLIST"]}'
     if len(url) > 1000:
+        if 'TLIST' in custom_spec:
+            epochs = custom_spec['TLIST'].split(' ')
+            epochs[0] = 'TLIST=' + epochs[0]
+            full_specs.extend(epochs)
+
         url_api_file = "https://ssd.jpl.nasa.gov/api/horizons_file.api?"
         with NamedTemporaryFile(mode="w", delete_on_close=False) as fp:
             fp.write("!$$SOF\n")
