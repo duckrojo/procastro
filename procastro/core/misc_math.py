@@ -141,15 +141,18 @@ def parabolic_x(yy_or_xx: list,
     if central_idx is not None:
         if not (0 < central_idx < len(yy_or_xx) - 1):
             raise ValueError(f"central_idx has to be within [1, {len(yy_or_xx)-1}] (not {central_idx}), cannot be a border of `yy_or_xx`")
-        yy_or_xx = yy_or_xx[central_idx - 1: central_idx + 2]
-        if yy is not None:
+        if yy is None:
+            yy = yy_or_xx[central_idx - 1: central_idx + 2]
+            xx = [central_idx - 1, central_idx, central_idx + 1]
+        else:
+            xx = yy_or_xx[central_idx - 1: central_idx + 2]
             yy = yy[central_idx - 1: central_idx + 2]
-
-    if yy is None:
-        yy = yy_or_xx
-        xx = [-1, 0, 1]
     else:
-        xx = yy_or_xx
+        if yy is None:
+            yy = yy_or_xx
+            xx = [-1, 0, 1]
+        else:
+            xx = yy_or_xx
 
     x1, x2, x3 = xx
     y1, y2, y3 = yy

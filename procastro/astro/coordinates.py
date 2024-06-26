@@ -419,10 +419,10 @@ def hour_angle_for_altitude(dec, site_lat, altitude):
 
 
 def find_time_for_altitude(location, time,
+                           ref_altitude_deg: str | float,
                            search_delta_hour: float = 2,
                            search_span_hour: float = 16,
                            fine_span_min: float = 20,
-                           ref_altitude_deg: str | float = "min",
                            find: str = "next",
                            body: str = "sun",
                            ):
@@ -432,6 +432,8 @@ def find_time_for_altitude(location, time,
     Parameters
     ----------
     location
+    ref_altitude_deg : float, str
+       Altitude for which to compute the time. It can also be "min" or "max"
     search_delta_hour
     search_span_hour
     fine_span_min
@@ -440,8 +442,6 @@ def find_time_for_altitude(location, time,
        find can be: 'next', 'previous'/'prev', or 'around'
     time: apt.Time
        starting time for the search. It must be within 4 hours of the middle of day to work with default parameters.
-    ref_altitude_deg : float, str
-       Altitude for which to compute the time. It can also be "min" or "max"
     """
     find_actions = {"next": 1,
                     "previous": -1,
@@ -469,7 +469,7 @@ def find_time_for_altitude(location, time,
         vertex = False
 
     # following is number hours from time that has the requested elevation, roughly
-    closest_idx = pa.parabolic_x(altitude_rough - ref_altitude, central_idx=central_idx, vertex=vertex) + central_idx
+    closest_idx = pa.parabolic_x(altitude_rough - ref_altitude, central_idx=central_idx, vertex=vertex)
     closest_rough = closest_idx * search_delta_hour * multiplier * u.hour + rough_offset
 
     fine_span = time + closest_rough + np.arange(-fine_span_min, fine_span_min) * u.min
@@ -487,7 +487,7 @@ def find_time_for_altitude(location, time,
     # following is number hours from time that has the requested elevation, roughly
     closest_idx = pa.parabolic_x(altitude - ref_altitude,
                                  central_idx=central_idx,
-                                 vertex=vertex) + central_idx
+                                 vertex=vertex)
 
     if not (0 < closest_idx < len(altitude) - 1):
         if isinstance(ref_altitude_deg, str):
