@@ -413,7 +413,7 @@ def _body_map_video(body,
                     time: apt.Time | None,
                     ax: Axes | None = None,
                     color_background="black",
-                    radius_to_plot = None,
+                    radius_to_plot=None,
                     fps=10, dpi=None,
                     title=None,
                     filename=None,
@@ -507,11 +507,18 @@ def body_map(body,
              color_location="red", color_phase='black',
              color_background='black', color_title='white',
              color_local_time='black', color_poles="blue",
+             show_angles=True,
              ):
     """
 
     Parameters
     ----------
+    filename:
+      Save to this file
+    title:
+      Title in plot
+    show_angles:
+       Whether to show incoming and emission angles
     body:
        Body to show
     observer:
@@ -524,7 +531,7 @@ def body_map(body,
     verbose:
        Whether to print coordinates and selected info
     reread_usgs:
-       Reread USGS data even if cache exists if True. Use this when you want to get the full list of available maps
+       Reread USGS data even if cache exists when True. Use this when you want to get the full list of available maps
     return_axes:
        return axes if True, otherwise return artists
     radius_to_plot:
@@ -565,6 +572,7 @@ def body_map(body,
                         color_poles=color_poles, color_local_time=color_local_time,
                         color_location=color_location, color_phase=color_phase,
                         color_background=color_background, color_title=color_title,
+                        show_angles=show_angles,
                         )
         return
     else:
@@ -576,10 +584,10 @@ def body_map(body,
     sub_obs_lat = ephemeris_line['ObsSub_LAT']
     np_ang = ephemeris_line['NP_ang']
 
-    lunar_to_observer = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=-np_ang)
-    body_to_local_time = new_x_axis_at(ephemeris_line['SunSub_LON'],
-                                       ephemeris_line['SunSub_LAT'],
-                                       )
+    rotate_body_to_subobs = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=-np_ang)
+    rotate_body_to_subsol = new_x_axis_at(ephemeris_line['SunSub_LON'],
+                                          ephemeris_line['SunSub_LAT'],
+                                          )
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
@@ -648,10 +656,14 @@ def body_map(body,
         max_len = max([len(str(k)) for k in locations.keys()])
         for name, location in locations.items():
             position = unit_vector(*location, degrees=True)
-            rot_xy = lunar_to_observer.apply(position)
+            rot_xy = rotate_body_to_subobs.apply(position)
             delta_ra, delta_dec = ephemeris_line['Ang_diam']*rot_xy[1:]/2
 
-            local_time_location = (np.arctan2(*body_to_local_time.apply(position)[:2][::-1]) + np.pi) * 12 / np.pi
+            location_with_obs_in_x = rotate_body_to_subobs.apply(position)
+            location_with_sun_in_x = rotate_body_to_subsol.apply(position)
+            local_time_location = (np.arctan2(*location_with_sun_in_x[:2][::-1]) + np.pi) * 12 / np.pi
+            incoming_angle = np.arccos(location_with_sun_in_x[0])*180/np.pi
+            emission_angle = np.arccos(location_with_obs_in_x[0])*180/np.pi
 
             ax.plot(*rot_xy[1:],
                     transform=transform_norm_to_axes,
@@ -660,9 +672,15 @@ def body_map(body,
                     zorder=10,
                     )
 
+            incoming_emission = f"{incoming_angle:.0f}/{emission_angle:.0f}"
+            if show_angles:
+                ie_plot = f", i/e {incoming_emission}$^{{\\circ}}$"
+                ie_text = f", inc/emi: {incoming_emission}"
+            else:
+                ie_plot = ie_text = ""
             ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", "
-                        f"$\\Delta\\delta$ {delta_dec:.0f}\" "
-                        f"LT{local_time_location:04.1f}$^h$",
+                        f"$\\Delta\\delta$ {delta_dec:.0f}\", "
+                        f"LT{local_time_location:04.1f}$^h${ie_plot}",
                         rot_xy[1:],
                         xycoords=transform_norm_to_axes,
                         color=color_location,
@@ -671,7 +689,7 @@ def body_map(body,
                         )
 
             format_str1 = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
-            format_str2 = f"   (LocalSolarTime: {{local_time_location:+7.2f}}h)"
+            format_str2 = f"   (LocalSolarTime: {{local_time_location:+7.2f}}h{ie_text})"
 
             if verbose:
                 print((format_str1 + format_str2).format(name=str(name), local_time_location=local_time_location,
@@ -692,7 +710,7 @@ def body_map(body,
                 )
 
         for lat_pole in [-90, 90]:
-            pole = lunar_to_observer.apply(unit_vector(0, lat_pole, degrees=True))
+            pole = rotate_body_to_subobs.apply(unit_vector(0, lat_pole, degrees=True))
             ax.plot(*pole[1:3],
                     transform=transform_norm_to_axes,
                     alpha=1 - 0.5*(pole[0] < 0),
@@ -722,49 +740,6 @@ def body_map(body,
         return ax
     else:
         return ax.collections + ax.lines + ax.texts + ax.images
-
-
-def _add_local_time(ax,
-                    sub_obs,
-                    sub_sun,
-                    np_ang,
-                    color,
-                    transform_from_norm,
-                    precision=50,
-                    ):
-    lunar_to_observer = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
-    local_time_to_body = current_x_axis_to(*sub_sun)
-
-    artists = []
-    for ltime in range(24):
-        longitude_as_local_time = new_x_axis_at((12-ltime)*15, 0)
-
-        local_time_rotation = lunar_to_observer * local_time_to_body * longitude_as_local_time
-        local_time = local_time_rotation.apply(unit_vector(0, np.linspace(-90, 90, precision),
-                                                           degrees=True)
-                                               )
-        visible = np.array([(y, z) for x, y, z in local_time if x > 0])
-        n_visible = len(visible)
-        if n_visible > 25:
-            lines = ax.plot(visible[:, 0], visible[:, 1],
-                            color=color,
-                            alpha=0.7,
-                            ls=':',
-                            transform=transform_from_norm,
-                            zorder=6,
-                            linewidth=0.5,
-                            )
-
-            text = ax.annotate(f"{ltime}$^h$", (visible[n_visible // 2][0],
-                                                visible[n_visible // 2][1]),
-                               color=color,
-                               xycoords=transform_from_norm,
-                               alpha=0.7, ha='center', va='center',
-                               )
-
-            artists.extend([lines, text])
-
-    return tuple(artists)
 
 
 def get_orthographic(platecarree_image,
@@ -822,7 +797,6 @@ Returns ortographic projection with the specified center
 
     tmp_ax.axis('off')
     tmp_ax.set_global()  # the whole globe limits
-#    tmp_ax.gridlines()
     f.canvas.draw()
 
     image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
@@ -939,6 +913,52 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
     return Image.open(BytesIO(response.content))
 
 
+def _add_local_time(ax,
+                    sub_obs,
+                    sub_sun,
+                    np_ang,
+                    color,
+                    transform_from_norm,
+                    precision=50,
+                    ):
+
+    """"Adds every hour of body's local time as labeled iso-longitude lines"""
+    lunar_to_observer = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
+    local_time_to_body = current_x_axis_to(*sub_sun)
+
+    artists = []
+    for ltime in range(24):
+        longitude_as_local_time = new_x_axis_at((12-ltime)*15, 0)
+
+        local_time_rotation = lunar_to_observer * local_time_to_body * longitude_as_local_time
+        local_time = local_time_rotation.apply(unit_vector(0, np.linspace(-90, 90, precision),
+                                                           degrees=True)
+                                               )
+        # do not plot arcs that are in the hidden side of the object
+        visible = np.array([(y, z) for x, y, z in local_time if x > 0])
+        n_visible = len(visible)
+        if n_visible > precision//2:  # if more than half the arc is visible then plot it.
+            lines = ax.plot(visible[:, 0], visible[:, 1],
+                            color=color,
+                            alpha=0.7,
+                            ls=':',
+                            transform=transform_from_norm,
+                            zorder=6,
+                            linewidth=0.5,
+                            )
+
+            text = ax.annotate(f"{ltime}$^h$", (visible[n_visible // 2][0],
+                                                visible[n_visible // 2][1]),
+                               color=color,
+                               xycoords=transform_from_norm,
+                               alpha=0.7, ha='center', va='center',
+                               )
+
+            artists.extend([lines, text])
+
+    return tuple(artists)
+
+
 def _add_phase_shadow(ax,
                       sub_obs,
                       sub_sun,
@@ -949,29 +969,34 @@ def _add_phase_shadow(ax,
                       marker_color='yellow',
                       ):
 
-    def vector_to_observer(vector):
-        rotation = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
-        return rotation.apply(vector)
+    rotate_body_to_subobs = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
+    rotate_body_to_subsol = new_x_axis_at(*sub_sun)
 
     upper_vector_terminator = np.cross(unit_vector(*sub_obs), unit_vector(*sub_sun))
     upper_shadow_from_sun = new_x_axis_at(*sub_sun).apply(upper_vector_terminator)
     upper_angle_from_sun = (np.arctan2(*upper_shadow_from_sun[1:][::-1]) - np.pi / 2) * 180 / np.pi
 
-    terminator = unit_vector(-90, np.linspace(-90, 90, precision))
-    visible_terminator_at_body = current_x_axis_to(*sub_sun, z_pole_angle=-upper_angle_from_sun).apply(terminator)
-    visible_terminator = vector_to_observer(visible_terminator_at_body)
+    starting_terminator = new_x_axis_at(0, 90).apply(unit_vector(np.linspace(0, 360, precision), 0))
+    terminator_at_body = current_x_axis_to(*sub_sun, z_pole_angle=-upper_angle_from_sun).apply(starting_terminator)
+    terminator_sub_obs = np.array([(y, z) for x, y, z in rotate_body_to_subobs.apply(terminator_at_body) if x > 0])
 
-    angle_top, angle_low = np.arctan2(*visible_terminator[:, 1:][[-1, 0]].transpose()[::-1]
-                                      )
-    if angle_top > angle_low:
-        angle_top -= 2 * np.pi
+    delta = ((terminator_sub_obs[1:,0] - terminator_sub_obs[:-1,0])**2 +
+             (terminator_sub_obs[1:,1] - terminator_sub_obs[:-1,1])**2)
+    max_delta = np.argmax(delta)
+    if delta[max_delta] > 4/precision:
+        terminator_sub_obs = np.roll(terminator_sub_obs, -(max_delta+1), axis=0)
 
-    angle_perimeter = np.linspace(angle_top, angle_low, precision)
-    perimeter = np.array([np.array([0, np.cos(ang), np.sin(ang)])
+    angle_first, angle_last = np.arctan2(*np.array(terminator_sub_obs)[[0, -1]].transpose()[::-1])
+
+    if angle_first > angle_last:
+        angle_last += 2*np.pi
+
+    angle_perimeter = np.linspace(angle_last, angle_first, precision)
+    perimeter = np.array([np.array([np.cos(ang), np.sin(ang)])
                           for ang in angle_perimeter]
-                         + list(visible_terminator))
+                         + list(terminator_sub_obs))
 
-    clip_path = mpath.Path(vertices=perimeter[:, 1:3], closed=True)
+    clip_path = mpath.Path(vertices=perimeter, closed=True)
 
     col = mcol.PathCollection([clip_path],
                               facecolors=color, alpha=0.7,
@@ -981,7 +1006,7 @@ def _add_phase_shadow(ax,
                               )
     ax.add_collection(col)
 
-    projected_sub_sun = vector_to_observer(unit_vector(*sub_sun))
+    projected_sub_sun = rotate_body_to_subobs.apply(unit_vector(*sub_sun))
     sub_sun_marker = ax.plot(*projected_sub_sun[1:],
                              marker='d', color=marker_color,
                              alpha=1 - 0.5 * (projected_sub_sun[0] < 0),
@@ -993,4 +1018,3 @@ def _add_phase_shadow(ax,
                 )
 
     return col, sub_sun_marker
-
