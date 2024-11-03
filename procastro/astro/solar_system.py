@@ -8,6 +8,7 @@ import numpy as np
 from numpy import ma
 from bs4 import BeautifulSoup
 
+
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.axes import Axes
 from matplotlib.colors import to_rgba
@@ -26,6 +27,83 @@ TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 # todo: improve logger as part of the procastro system
+
+
+def _cross2(a: np.ndarray,
+            b: np.ndarray) -> np.ndarray:
+    """Workaround as np.cross does not return according to code inspection"""
+
+    return np.cross(a,b)
+
+
+class body_geometry:
+    """
+    keeps geometry or a body at a single time with info as returned from Horizons's JPL
+
+    Attributes
+    ----------
+    sub_obs: TwoTuple
+       Longitude and latitude in body of sub observer point.
+    sub_obs_np: float
+       East of North angle for the North Pole of the object as seen from sub-observer point
+    sub_sun: TwoTuple
+       Longitude and latitude in body of sub solar point.
+
+
+    """
+    def __init__(self,
+                 ephemeris):
+        self._ephemeris = ephemeris
+        self.sub_obs = ephemeris['ObsSub_LON'], ephemeris['ObsSub_LAT']
+        self.sub_obs_np = ephemeris['NP_ang']
+        self.sub_sun = ephemeris['SunSub_LON'], ephemeris['SunSub_LAT'],
+        self.ang_diam = ephemeris['Ang_diam']
+
+        self._rotate_to_subobs = new_x_axis_at(*self.sub_obs, z_pole_angle=-self.sub_obs_np)
+        self._rotate_to_subsol = new_x_axis_at(*self.sub_sun)
+
+    def print(self):
+        print(f"Sub Observer longitude/latitude: {self._ephemeris['ObsSub_LON']}/{self._ephemeris['ObsSub_LAT']}")
+        print(f"Sub Solar longitude/latitude: {self._ephemeris['SunSub_LON']}/{self._ephemeris['SunSub_LAT']}")
+        print(f"Sub Solar angle/distances w/r to sub-observer: "
+              f"{self._ephemeris['SN_ang']}/{self._ephemeris['SN_dist']}")
+        print(f"North Pole angle/distances w/r to sub-observer: "
+              f"{self._ephemeris['NP_ang']}/{self._ephemeris['NP_dist']}")
+
+    def location(self, lon, lat,
+                 label: str | None = None,
+                 max_title_len: int = 0,
+                 ):
+        position = unit_vector(lon, lat, degrees=True)
+
+        unit_with_obs_x = self._rotate_to_subobs.apply(position)
+        unit_with_sun_x = self._rotate_to_subsol.apply(position)
+
+        delta_ra, delta_dec = self.ang_diam * unit_with_obs_x[1:] / 2
+        local_time_location = (np.arctan2(*unit_with_sun_x[:2][::-1]) + np.pi) * 12 / np.pi
+        incoming_angle = np.arccos(unit_with_sun_x[0]) * 180 / np.pi
+        emission_angle = np.arccos(unit_with_obs_x[0]) * 180 / np.pi
+
+        if label is not None:
+            format_str = [f"{{name:{max_title_len + 1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}",
+                          f"   (LocalSolarTime: {{local_time_location:+06.2f}}h, ",
+                          f"inc/emi ang: {{incoming_angle:.0f}}/{{emission_angle:.0f}}deg)"]
+            print("".join(format_str).format(name=str(label),
+                                             local_time_location=local_time_location,
+                                             delta_ra=delta_ra,
+                                             delta_dec=delta_dec,
+                                             emission_angle=emission_angle,
+                                             incoming_angle=incoming_angle))
+        return {'delta_ra': delta_ra,
+                'delta_dec': delta_dec,
+                'unit_ra': unit_with_obs_x[1],
+                'unit_dec': unit_with_obs_x[2],
+                'local_time': local_time_location,
+                'incoming': incoming_angle,
+                'outgoing': emission_angle,
+                'visible': unit_with_obs_x[0] > 0,
+                }
+
 
 
 @jpl_cache
@@ -507,7 +585,7 @@ def body_map(body,
              color_location="red", color_phase='black',
              color_background='black', color_title='white',
              color_local_time='black', color_poles="blue",
-             show_angles=True,
+             show_angles=False,
              ):
     """
 
@@ -580,23 +658,14 @@ def body_map(body,
         request = jpl_observer_from_location(site) | jpl_times_from_time(time) | jpl_body_from_str(body)
         ephemeris_line = read_jpl(request)[0]
 
-    sub_obs_lon = ephemeris_line['ObsSub_LON']
-    sub_obs_lat = ephemeris_line['ObsSub_LAT']
-    np_ang = ephemeris_line['NP_ang']
-
-    rotate_body_to_subobs = new_x_axis_at(sub_obs_lon, sub_obs_lat, z_pole_angle=-np_ang)
-    rotate_body_to_subsol = new_x_axis_at(ephemeris_line['SunSub_LON'],
-                                          ephemeris_line['SunSub_LAT'],
-                                          )
+    geometry = body_geometry(ephemeris_line)
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
-    orthographic_image = get_orthographic(image,
-                                          sub_obs_lon,
-                                          sub_obs_lat,
+    orthographic_image = get_orthographic(image, *geometry.sub_obs,
                                           show_poles=color_poles)
 
-    rotated_image = orthographic_image.rotate(np_ang,
+    rotated_image = orthographic_image.rotate(geometry.sub_obs_np,
                                               resample=Image.Resampling.BICUBIC,
                                               expand=False, fillcolor=(255, 255, 255))
     x_offset = 0.5
@@ -617,13 +686,10 @@ def body_map(body,
     ax.axis('off')
 
     if verbose:
-        print(f"Sub Observer longitude/latitude: {ephemeris_line['ObsSub_LON']}/{ephemeris_line['ObsSub_LAT']}")
-        print(f"Sub Solar longitude/latitude: {ephemeris_line['SunSub_LON']}/{ephemeris_line['SunSub_LAT']}")
-        print(f"Sub Solar angle/distances: {ephemeris_line['SN_ang']}/{ephemeris_line['SN_dist']}")
-        print(f"North Pole angle/distances: {ephemeris_line['NP_ang']}/{ephemeris_line['NP_dist']}")
+        geometry.print()
 
     ax.set_facecolor(color_background)
-    ang_rad = ephemeris_line['Ang_diam']/2
+    ang_rad = geometry.ang_diam/2
     ax.imshow(rotated_image,
               extent=[-ang_rad, ang_rad, -ang_rad, ang_rad],
               )
@@ -655,45 +721,29 @@ def body_map(body,
             locations = {str(i): v for i, v in enumerate(locations)}
         max_len = max([len(str(k)) for k in locations.keys()])
         for name, location in locations.items():
-            position = unit_vector(*location, degrees=True)
-            rot_xy = rotate_body_to_subobs.apply(position)
-            delta_ra, delta_dec = ephemeris_line['Ang_diam']*rot_xy[1:]/2
+            location = geometry.location(*location, label=name if verbose else None,
+                                         max_title_len=max_len)
 
-            location_with_obs_in_x = rotate_body_to_subobs.apply(position)
-            location_with_sun_in_x = rotate_body_to_subsol.apply(position)
-            local_time_location = (np.arctan2(*location_with_sun_in_x[:2][::-1]) + np.pi) * 12 / np.pi
-            incoming_angle = np.arccos(location_with_sun_in_x[0])*180/np.pi
-            emission_angle = np.arccos(location_with_obs_in_x[0])*180/np.pi
+            incoming_emission = f"{location['incoming']:.0f}/{location['outgoing']:.0f}"
+            ie_plot = f", i/e {incoming_emission}$^{{\\circ}}$" if show_angles else ""
 
-            ax.plot(*rot_xy[1:],
+            ax.plot(location['unit_ra'], location['unit_dec'],
                     transform=transform_norm_to_axes,
                     marker='d', color=color_location,
-                    alpha=1 - 0.5 * (rot_xy[0] < 0),
+                    alpha=1 - 0.5 * location['visible'],
                     zorder=10,
                     )
 
-            incoming_emission = f"{incoming_angle:.0f}/{emission_angle:.0f}"
-            if show_angles:
-                ie_plot = f", i/e {incoming_emission}$^{{\\circ}}$"
-                ie_text = f", inc/emi: {incoming_emission}"
-            else:
-                ie_plot = ie_text = ""
-            ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {delta_ra:+.0f}\", "
-                        f"$\\Delta\\delta$ {delta_dec:.0f}\", "
-                        f"LT{local_time_location:04.1f}$^h${ie_plot}",
-                        rot_xy[1:],
+            ax.annotate(f"{str(name)}: $\\Delta\\alpha$ {location['delta_ra']:+.0f}\", "
+                        f"$\\Delta\\delta$ {location['delta_dec']:.0f}\", "
+                        f"LT{location['local_time']:04.1f}$^h${ie_plot}",
+                        (location['unit_ra'], location['unit_dec']),
                         xycoords=transform_norm_to_axes,
                         color=color_location,
-                        alpha=1 - 0.5 * (rot_xy[0] < 0),
+                        alpha=1 - 0.5 * location['visible'],
                         zorder=10,
                         )
 
-            format_str1 = f"{{name:{max_len+1}s}} {{delta_ra:+10.2f}} {{delta_dec:+10.2f}}"
-            format_str2 = f"   (LocalSolarTime: {{local_time_location:+7.2f}}h{ie_text})"
-
-            if verbose:
-                print((format_str1 + format_str2).format(name=str(name), local_time_location=local_time_location,
-                                                         delta_ra=delta_ra, delta_dec=delta_dec))
         if verbose:
             print("")
 
@@ -710,28 +760,28 @@ def body_map(body,
                 )
 
         for lat_pole in [-90, 90]:
-            pole = rotate_body_to_subobs.apply(unit_vector(0, lat_pole, degrees=True))
-            ax.plot(*pole[1:3],
+            pole = geometry.location(0, lat_pole)
+            ax.plot(pole['unit_ra'], pole['unit_dec'],
                     transform=transform_norm_to_axes,
-                    alpha=1 - 0.5*(pole[0] < 0),
+                    alpha=1 - 0.5*pole['visible'],
                     marker='o', color='blue',
                     zorder=9,
                     )
 
     if color_local_time:
         _add_local_time(ax,
-                        (sub_obs_lon, sub_obs_lat),
-                        (ephemeris_line['SunSub_LON'], ephemeris_line['SunSub_LAT']),
-                        np_ang,
+                        geometry.sub_obs,
+                        geometry.sub_sun,
+                        geometry.sub_obs_np,
                         color_phase,
                         transform_norm_to_axes,
                         )
 
     if color_phase is not None and color_phase:
         _add_phase_shadow(ax,
-                          (sub_obs_lon, sub_obs_lat),
-                          (ephemeris_line['SunSub_LON'], ephemeris_line['SunSub_LAT']),
-                          np_ang,
+                          geometry.sub_obs,
+                          geometry.sub_sun,
+                          geometry.sub_obs_np,
                           color_phase,
                           transform_norm_to_axes,
                           )
@@ -972,7 +1022,7 @@ def _add_phase_shadow(ax,
     rotate_body_to_subobs = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
     rotate_body_to_subsol = new_x_axis_at(*sub_sun)
 
-    upper_vector_terminator = np.cross(unit_vector(*sub_obs), unit_vector(*sub_sun))
+    upper_vector_terminator = _cross2(unit_vector(*sub_obs), unit_vector(*sub_sun))
     upper_shadow_from_sun = new_x_axis_at(*sub_sun).apply(upper_vector_terminator)
     upper_angle_from_sun = (np.arctan2(*upper_shadow_from_sun[1:][::-1]) - np.pi / 2) * 180 / np.pi
 
