@@ -659,6 +659,8 @@ def body_map(body,
         ephemeris_line = read_jpl(request)[0]
 
     geometry = body_geometry(ephemeris_line)
+    if verbose:
+        geometry.print()
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
@@ -684,9 +686,6 @@ def body_map(body,
     ax.imshow(rotated_image,
               )
     ax.axis('off')
-
-    if verbose:
-        geometry.print()
 
     ax.set_facecolor(color_background)
     ang_rad = geometry.ang_diam/2

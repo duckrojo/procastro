@@ -183,7 +183,7 @@ class _AstroCache:
 
 astrofile_cache = _AstroCache()
 jpl_cache = _AstroCache(max_cache=50)
-usgs_map_cache = _AstroCache(max_cache=30, lifetime=7,
+usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
                              hashable_kw=['detail'], label_on_disk='USGSmap',
                              force="no_cache")
 
