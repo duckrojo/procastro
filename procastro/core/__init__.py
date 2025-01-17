@@ -17,10 +17,7 @@
 #
 
 
-from . import astrodir
-from .astrodir import *
-from . import astrofile
-from .astrofile import *
+from ..deprecated import astrodir
 from . import astrocalib
 from .astrocalib import *
 from . import misc_arr

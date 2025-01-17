@@ -21,7 +21,7 @@ __all__ = ['AstroDir']
 from typing import Optional
 
 import procastro as pa
-from .internal_functions import common_trim_fcn, extract_common, python_to_trim
+from procastro.core.internal_functions import common_trim_fcn, extract_common, python_to_trim
 import numpy as np
 import warnings
 import sys
