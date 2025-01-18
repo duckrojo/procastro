@@ -2,9 +2,14 @@ import re
 import numpy as np
 
 
-def trim_to_python(value):
+def trim_to_python(value, maxlims=None):
     result = re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]', value).groups()
-    return int(result[2]), int(result[3]), int(result[0]), int(result[1])
+    if maxlims is None:
+        return int(result[2]), int(result[3]), int(result[0]), int(result[1])
+
+    ret = int(result[2]), int(result[3]), int(result[0]), int(result[1])
+    return (ret[0], ret[1] if maxlims[0] > ret[1] else maxlims[0] + ret[0] - 1,
+            ret[2], ret[3] if maxlims[1] > ret[3] else maxlims[1] + ret[2] - 1)
 
 
 def python_to_trim(trim):
@@ -35,4 +40,5 @@ def extract_common(tdata, trim, common_trim):
         delta[1] = None if delta[1] == 0 else delta[1]
         delta[3] = None if delta[3] == 0 else delta[3]
 
-        return tdata[-delta[0]:delta[1], -delta[2]:delta[3]], True
+        ret = tdata[-delta[0]:delta[1], -delta[2]:delta[3]]
+        return ret, True

@@ -1,21 +1,42 @@
 from pathlib import Path
+from random import random
 from typing import Any
 
 import numpy as np
+from astropy.table import Table
 
 import procastro as pa
+from procastro.core.astrofile.static_identify import static_identify
+from procastro.core.astrofile.static_read import static_read
+from procastro.core.astrofile.static_write import static_write
 from procastro.core.cache import astrofile_cache
-
+from procastro.core.calib.base import CalibBase
 from procastro.core.logging import io_logger
+
+# TYPING CONSTRUCTS
+PADataReturn = np.ndarray | Table  # returns an array if there is no spectral information, otherwise table
+
+__all__ = ['AstroFile']
 
 
 def _identity(x):
     return x
 
 
-def check_first_astrofile(fcn):
+def _check_first_astrofile(fcn):
+    """
+Decorator that raises error if first argument is not AstroFile
+
+    Parameters
+    ----------
+    fcn
+
+    Returns
+    -------
+
+    """
     def wrapper(self, arg1, *args, **kwargs):
-        if not isinstance(arg1, AstroFileBase):
+        if not isinstance(arg1, AstroFile):
             raise TypeError(f"First argument of function {fcn.__name__} needs to be an AstroFile instances.")
         return fcn(self, arg1, *args, **kwargs)
 
@@ -24,49 +45,109 @@ def check_first_astrofile(fcn):
 
 def _numerize_other(fcn):
     def wrapper(self, other):
-        if isinstance(other, AstroFileBase):
+        if isinstance(other, AstroFile):
             other = other.data
         return fcn(self, other)
 
     return wrapper
 
 
-class AstroFileBase:
-    def __init__(self, filename, *args, **kwargs):
+class AstroFile:
+    def __init__(self, filename, format_spec=None, *args, **kwargs):
+        self._random = random()
+
         self._sort_key = None
         self._corrupt = False
-        self._data_file = filename
         self._calib = None
 
+        self._data_file = filename
+        self._format = static_identify(filename, options=format_spec)
+
         self._meta = None
-        self.data(update_meta=True)
+        first_read = self.data
+
+    ########################################################
+    #
+    # .meta and .data might be overriden for complex types that want to secure the existence of
+    # particular headers or some extra mathematical operations in data (mosaics at least)
+    #
+    ##################################
 
     @property
     def meta(self):
         return self._meta
 
-    @astrofile_cache
     @property
-    def data(self, update_meta=False):
+    @astrofile_cache
+    def data(self) -> PADataReturn:
+        """
+    Returns ndarray with the data if single spectral channel (filter)... otherwise, it returns a Table with each
+    wavelength channel
+        """
+        data = self.read()
 
-        variable_that_must_be_defined_by_child = 0
+        if self._calib is not None:
+            data = self._calib(self, data=data)
 
-        if update_meta:
-            self._meta = variable_that_must_be_defined_by_child
+        return data
 
-        raise NotImplementedError("Childs must implement this method keeping the decorators "
-                                  "and the update_meta condition")
+    ##########################################
+    #
+    # The following methods are unlikely to need modifications in subclasses
+    #
+    ##########################################
 
-    def writer(self):
-        raise NotImplementedError("Childs must implement this method")
+    def read(self) -> PADataReturn:
+        """This function should always re-read from file updating meta and forcing cache update"""
+
+        data, meta = static_read(self._format, self._data_file)
+
+        self._meta = {k.upper(): v for k, v in meta.items()}
+        self._random = random()
+
+        return data
+
+    def write(self, filename=None, backup_extension=".bak"):
+        if self._format != "FITS":
+            if static_identify(filename) != "FITS":
+                raise ValueError("Filename must be FITS for .write()... use .write_as() for alternative formats")
+            if filename is None:
+                raise ValueError("Filename must be provided explicitly when original type was not FITS")
+        else:
+            filename = self._data_file
+
+        filename = str(filename)
+
+        if Path(filename + backup_extension).exists():
+            io_logger(f"Backup file {filename + backup_extension} already exists, not overwriting it")
+        else:
+            io_logger(f"Backing up in: {filename + backup_extension}")
+            static_write("FITS", filename + backup_extension, self.data, self.meta,
+                         overwrite=True)
+
+        static_write("FITS", filename, self.data, self.meta,
+                     overwrite=True)
+
+    def write_as(self, filename, overwrite=False):
+        file_type = static_identify(filename)
+
+        io_logger(f"Saving in {filename} using file type {file_type}")
+        static_write(file_type, filename, self.data, self.meta,
+                     overwrite=overwrite)
 
     def forced_data(self):
-        self.data(force=True, update_meta=True)
+        return self.data(force=True)
+
+    def add_calib(self, calib):
+        if not isinstance(calib, CalibBase):
+            raise TypeError("'calib' must be a CalibBase instance")
+        self._calib = calib
 
     def __hash__(self):
-        """This is important for cache. If calib changes, then the astrofile hash should change as well. ."""
-        # todo: manually changing some of the header's keywords might affect the output as well losing uniqueness.
-        return hash((self._data_file, self._calib))
+        """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random
+         provides a method to force reloading of cache."""
+
+        return hash((self._data_file, self._calib, self._random))
 
     def set_values(self, **kwargs):
         """
@@ -96,6 +177,8 @@ class AstroFileBase:
                 del self._meta[k]
             else:
                 self._meta[k] = v
+
+        self._random = random()
 
     def values(self,
                *args,
@@ -302,23 +385,23 @@ class AstroFileBase:
         return True in ret
 
     # Object Comparison is done according to the sort_key if defined
-    @check_first_astrofile
+    @_check_first_astrofile
     def __lt__(self, other):
         return self[None] < other[None]
 
-    @check_first_astrofile
+    @_check_first_astrofile
     def __le__(self, other):
         return self[None] <= other[None]
 
-    @check_first_astrofile
+    @_check_first_astrofile
     def __gt__(self, other):
         return self[None] > other[None]
 
-    @check_first_astrofile
+    @_check_first_astrofile
     def __eq__(self, other):
         return self[None] == other[None]
 
-    @check_first_astrofile
+    @_check_first_astrofile
     def __ne__(self, other):
         return self[None] != other[None]
 
@@ -458,16 +541,25 @@ class AstroFileBase:
             filename = f"Array {'x'.join([str(i) for i in self._data_file.shape])}"
         else:
             filename = str(self._data_file)
-        return '<AstroFile{}: {}>'.format(self._calib or "",
-                                          filename, )
+
+        calib = "" if self._calib is None else self._calib.short()
+        return '<AstroFile{}: {}>'.format(calib, filename, )
 
     def __new__(cls, *args, **kwargs):
         """
         If passed an AstroFile, then do not create a new instance, just pass
         that one. If passed None, return None
         """
-        if args and ((isinstance(args[0], AstroFileBase) and len(kwargs) == 0) or args[0]) is None:
+        if args and ((isinstance(args[0], AstroFile) and len(kwargs) == 0) or args[0]) is None:
             return args[0]
 
-        return super().__new__(cls, *args, **kwargs)
+        return super().__new__(cls)
 
+
+if __name__ == "__main__":
+    af = pa.AstroFile("../../../sample_files/image.fits.gz")
+    mb = pa.AstroFile("../../../sample_files/image_mbias.fits")
+    mf = pa.AstroFile("../../../sample_files/image_mflat.fits")
+    cal = pa.CalibRaw2D(bias=mb, flat=mf)
+    af.add_calib(cal)
+    af.imshowz()

@@ -16,10 +16,8 @@
 # Boston, MA  02110-1301, USA.
 #
 
-
-from ..deprecated import astrodir
-from . import astrocalib
-from .astrocalib import *
+from .calib import raw2d
+from procastro.core.calib.raw2d import *
 from . import misc_arr
 from .misc_arr import *
 from . import misc_general
@@ -30,12 +28,13 @@ from . import misc_math
 from .misc_math import *
 from . import interactive_graphics
 from .interactive_graphics import *
+from . import astrofile
+from .astrofile import *
 
 __all__ = []
-__all__ += astrodir.__all__
+__all__ += raw2d.__all__
 __all__ += astrofile.__all__
-__all__ += astrocalib.__all__
-#__all__ += cache.__all__
+
 __all__ += misc_arr.__all__
 __all__ += misc_general.__all__
 __all__ += misc_graph.__all__

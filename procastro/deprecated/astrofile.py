@@ -27,12 +27,11 @@ from pathlib import PurePath, Path
 import procastro as pa
 from procastro.core.internal_functions import trim_to_python
 from procastro.core.logging import io_logger
-from procastro.core.astrocalib import AstroCalib
+from procastro.core.calib.raw2d import CalibRaw2D
 from procastro.core.cache import astrofile_cache
 
 import astropy.time as apt
 import numpy as np
-import os.path as path
 import astropy.io.fits as pf
 
 
@@ -373,7 +372,7 @@ class AstroFile(object):
                 self.header_cache[0][k] = v
 
         if self._calib is None:
-            self._calib = AstroCalib(pa.AstroFile(mbias, header=mbias_header),
+            self._calib = CalibRaw2D(pa.AstroFile(mbias, header=mbias_header),
                                      pa.AstroFile(mflat, header=mflat_header),
                                      auto_trim=auto_trim)
 
@@ -389,14 +388,14 @@ class AstroFile(object):
     #     return hash((self.filename, self._calib))
 
     def set_calib(self,
-                  calib: "AstroCalib",
+                  calib: "CalibRaw2D",
                   ):
-        if not isinstance(calib, AstroCalib):
+        if not isinstance(calib, CalibRaw2D):
             raise TypeError("calib needs to be AstroCalib in .set_calib()")
         self._calib = calib
 
     def get_calib(self,
-                  ) -> AstroCalib:
+                  ) -> CalibRaw2D:
         return self._calib
 
     def get_trims(self):
@@ -424,7 +423,7 @@ class AstroFile(object):
 
         # Creating of new AstroCalib upon change of calibration is on purpose as it will
         # prevent using the cached value when reading
-        calib = AstroCalib(mbias, self._calib.flat,
+        calib = CalibRaw2D(mbias, self._calib.flat,
                            bias_header=header,
                            flat_header=self._calib.flat_header,
                            auto_trim=self._calib.auto_trim_keyword)
@@ -443,7 +442,7 @@ class AstroFile(object):
 
         # Creating of new AstroCalib upon change of calibration is on purpose as it will
         # prevent using the cached value when reading
-        calib = AstroCalib(self._calib.bias, mflat,
+        calib = CalibRaw2D(self._calib.bias, mflat,
                            flat_header=header,
                            bias_header=self._calib.flat_header,
                            auto_trim=self._calib.auto_trim_keyword)

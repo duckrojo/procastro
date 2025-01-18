@@ -1,20 +1,20 @@
 
 
-__all__ = ['AstroCalib']
+__all__ = ['CalibRaw2D']
 
 from typing import Union, Optional
 
 import numpy as np
-from astropy.io.fits import Header
 
 import procastro as pa
 import warnings
 
-from .logging import io_logger
-from .internal_functions import trim_to_python, common_trim_fcn, extract_common
+from procastro.core.calib.base import CalibBase
+from procastro.core.logging import io_logger
+from procastro.core.internal_functions import trim_to_python, common_trim_fcn, extract_common
 
 
-class AstroCalib(object):
+class CalibRaw2D(CalibBase):
     """
     Object to hold calibration frames.
 
@@ -34,10 +34,6 @@ class AstroCalib(object):
         Master Bias
     flat : np.ndarray, AstroFile
         Master Flat
-    bias_header : astropy.io.fits.Header, optional
-        Header of the master bias
-    flat_header : astropy.io.fits.Header, optional
-        Header of the master bias
     auto_trim : str
         Header field name which is used to cut a portion of the data. This
         field should contain the dimensions of the section to be cut.
@@ -45,24 +41,35 @@ class AstroCalib(object):
     """
 
     def __init__(self,
-                 bias: 'np.ndarray | pa.AstroFile | None' = None,
-                 flat: 'np.ndarray | pa.AstroFile | None' = None,
-                 bias_header: Header | dict | None = None,
-                 flat_header: Header | dict | None = None,
-                 auto_trim: Optional[str] = None):
+                 bias: 'pa.AstroFile | None' = None,
+                 flat: 'pa.AstroFile | None' = None,
+                 auto_trim: bool | str = True,
+                 **kwargs):
 
-        # Its always created false, if the add_*() has something, then its
+        # It is always created false, if the add_*() has something, then its
         # turned true.
-        self.has_bias = self.has_flat = False
+        super().__init__(**kwargs)
 
-        self.bias: Union[np.ndarray, int, float] = 0.0
-        self.flat: Union[np.ndarray, int, float] = 1.0
-        self.bias_header = bias_header
-        self.flat_header = flat_header
+        possible_trims = ['TRIMSEC','DATASEC']
 
-        if auto_trim is not None:
-            auto_trim = auto_trim.lower()
-        self.auto_trim_keyword: str | None = auto_trim
+        try:
+            meta = bias.meta
+        except AttributeError:
+            try:
+                meta = flat.meta
+            except AttributeError:
+                meta = {}
+
+        if isinstance(auto_trim, str):
+            self.auto_trim_keyword = auto_trim.upper()
+        elif auto_trim:
+            for k in possible_trims:
+                if k.upper() in meta:
+                    self.auto_trim_keyword = k.upper()
+                    break
+            else:
+                io_logger.warning("No Trim keyword found in flat or bias")
+                self.auto_trim_keyword = None
 
         if bias is not None:
             self.add_bias(bias)
@@ -71,20 +78,19 @@ class AstroCalib(object):
 
     def copy(self):
         """returs a new version of itself with same values"""
-        return AstroCalib(self.bias, self.flat,
+        return CalibRaw2D(self.bias, self.flat,
                           bias_header=self.bias_header,
                           flat_header=self.flat_header,
                           auto_trim=self.auto_trim_keyword)
 
     def _add_calib(self, calib, label, default):
-        if isinstance(calib, (int, float, np.ndarray)):
+        if isinstance(calib, (int, float)):
             setattr(self, label, calib)
             # following avoids a positive flag
             if calib == default:
                 return
         elif isinstance(calib, pa.AstroFile):
-            setattr(self, f"{label}_header", calib.read_headers())
-            setattr(self, label, calib.reader())
+            setattr(self, label, calib)
         else:
             raise ValueError(f"Master {label} supplied was not recognized.")
 
@@ -125,7 +131,12 @@ class AstroCalib(object):
         self._add_calib(flat, "flat", 1)
         return self
 
-    def reduce(self, data, data_trim=None, verbose=True):
+    def __call__(self,
+                 astrofile,
+                 data,
+                 data_trim=None,
+                 verbose=True,
+                 ):
         """
         Process given "data" using the bias and flat contained in this instance
 
@@ -146,40 +157,44 @@ class AstroCalib(object):
         bias = self.bias
 
         in_data = [data]
-        if data_trim is None:
-            io_logger.warning("Trim info not found on raw frames... using full figure instead")
-            trim = [(1, data.shape[0], 1, data.shape[1])]
-        else:
-            trim = [data_trim]
+        try:
+            label_trim = astrofile.meta[self.auto_trim_keyword]
+        except KeyError:
+            io_logger.warning(f"Trim info "
+                              f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
+                              f"not found on raw frames..."
+                              f"using full figure instead")
+            label_trim = (1, data.shape[0], 1, data.shape[1])
+        trims = [label_trim]
 
-        for label in ['bias', 'flat']:
-            tdata = vars()[label]
+        # a first loop to get trim info
+        for frame in [bias, flat]:
+            tdata = frame.data
             in_data.append(tdata)
 
-            tmp_header = getattr(self, f'{label}_header')
-            if tmp_header is not None:
-                tmp_header = tmp_header[0]
+            tmp_header = frame.meta
 
             if tmp_header is None or self.auto_trim_keyword not in tmp_header.keys():
                 if not isinstance(tdata, (int, float)):
 
                     io_logger.warning(f"Trim info "
                                       f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
-                                      f"not found on {label} frames..."
+                                      f"not found on {frame} frames... "
                                       f"using full figure instead")
                     label_trim = (1, tdata.shape[0], 1, tdata.shape[1])
                 else:
-                    label_trim = trim[0]
-                trim.append(label_trim)
+                    label_trim = trims[0]
+                trims.append(label_trim)
             else:
-                trim.append(trim_to_python(tmp_header[self.auto_trim_keyword.lower()]))
+                trims.append(trim_to_python(tmp_header[self.auto_trim_keyword.upper()], maxlims=tdata.shape))
 
-        if len(set(trim)) != 1:
-            common_trim = common_trim_fcn(trim)
+        if len(set(trims)) != 1:
+            common_trim = common_trim_fcn(trims)
 
             out_data = []
-            for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trim):
-                if isinstance(tdata, (int, float)):  # if tdata is bias = 0 or flat = 1.0, dont trim
+            # a second loop to apply common trim
+            for label, tdata, trim in zip(['data', 'bias', 'flat'], in_data, trims):
+                if isinstance(tdata, (int, float)):  # if tdata is bias = 0 or flat = 1.0, don't trim
                     out_data.append(tdata)
                     trimmed = False
                 else:

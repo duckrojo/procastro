@@ -143,7 +143,7 @@ class AstroDir(object):
         self.files = files
         self.props = {}
 
-        calib = pa.AstroCalib(mbias, mflat,
+        calib = pa.CalibRaw2D(mbias, mflat,
                               auto_trim=auto_trim,
                               bias_header=bias_header,
                               flat_header=flat_header)
