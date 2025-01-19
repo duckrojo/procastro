@@ -54,15 +54,13 @@ def _numerize_other(fcn):
 
 
 class AstroFile:
-    def __init__(self, filename, spectral=False, file_options=None, meta=None):
+    def __init__(self, filename, file_options=None, meta=None):
         """
 
         Parameters
         ----------
         filename: str, np.ndarray
-          Filename or np.ndarray to be used as AstroFile afterwards
-        spectral: bool
-           whether it has spectral content
+          Filename or np.ndarray to be used as AstroFile afterward
         file_options: dict
            dictionary with extra information for file readding. (colnames: a list with a name for each channel)
         meta: dict
@@ -75,7 +73,7 @@ class AstroFile:
         self._corrupt = False
         self._calib = None
 
-        self._spectral_axis = spectral
+        self._spectral_axis = False
 
         self._data_file = filename
         if file_options is None:
@@ -125,28 +123,6 @@ class AstroFile:
         self._meta |= {k.upper(): v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
         self._random = random()
 
-        if self._spectral_axis:
-            n_axes = len(data.shape)
-            nx = data.shape[-1]
-
-            if n_axes == 1:
-                data = data.reshape(1,nx)
-            else:
-                for remove_ax in range((n_axes - 2 > 0) * (n_axes - 2)):
-                    data = data[0]
-
-            n_channels = data.shape[0]
-
-            try:
-                column_names = self._data_file_options['colnames']
-            except KeyError:
-                column_names = [f"{i}" for i in range(n_channels)]
-
-            table = Table()
-            for name, column in zip(column_names, data):
-                table[name] = column
-            return table
-
         return data
 
     def write(self, filename=None, backup_extension=".bak"):
@@ -184,12 +160,6 @@ class AstroFile:
     def add_calib(self, calib):
         if not isinstance(calib, CalibBase):
             raise TypeError("'calib' must be a CalibBase instance")
-
-        from procastro import CalibRaw2D
-
-        if isinstance(calib, CalibRaw2D) and self._spectral_axis:
-            io_logger("Cannot add CalibRaw2D calibration to spectral file")
-            return
 
         self._calib = calib
 
@@ -277,7 +247,7 @@ class AstroFile:
             elif isinstance(args[0], str):
                 args = args[0].split(',')
 
-        hdr = self.meta()
+        hdr = self.meta
         ret = []
         for k in args:
             k = k.strip()
@@ -541,15 +511,10 @@ class AstroFile:
             io_logger("Cannot show image of spectra, use plot instead")
         return pa.imshowz(self.data, *args, **kwargs)
 
-    def plot(self, row_or_channel=0):
+    def plot(self, row=0):
         data = self.data
-        if self._spectral_axis:
-            if isinstance(row_or_channel, int):
-                row_or_channel = data.colnames[row_or_channel]
-            elif not isinstance(row_or_channel, str):
-                raise ValueError("row_or_channel with spectral data can only the name of the column to plot (str),"
-                                 " or the position in .colnames (int)")
-        return plt.plot(data[row_or_channel])
+
+        return plt.plot(data[row])
 
     def stats(self, *args,
               verbose_heading=True,
@@ -613,15 +578,19 @@ class AstroFile:
         else:
             return ret
 
-    def __repr__(self):
+    def _get_calib_filename_str(self):
         if isinstance(self._data_file, np.ndarray):
             filename = f"Array {'x'.join([str(i) for i in self._data_file.shape])}"
         else:
             filename = str(Path(self._data_file).name)
 
-        typ = "Spec" if self._spectral_axis else "Img"
         calib = "" if self._calib is None else self._calib.short()
-        return '<AstroFile {}{}: {}>'.format(typ, calib, filename, )
+
+        return calib, filename
+
+    def __repr__(self):
+        calib, filename = self._get_calib_filename_str()
+        return '<AstroFile Img{}: {}>'.format(calib, filename, )
 
     def __new__(cls, *args, **kwargs):
         """
@@ -663,12 +632,10 @@ class AstroFile:
 
 
 if __name__ == "__main__":
+
     af = pa.AstroFile("../../../sample_files/image.fits.gz")
     mb = pa.AstroFile("../../../sample_files/image_mbias.fits")
     mf = pa.AstroFile("../../../sample_files/image_mflat.fits")
     cal = pa.CalibRaw2D(bias=mb, flat=mf)
     af.add_calib(cal)
     af.imshowz()
-
-    sp = pa.AstroFile("../../../sample_files/arc.fits", spectral=True)
-    sp.plot()
