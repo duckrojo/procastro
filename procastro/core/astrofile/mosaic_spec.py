@@ -3,7 +3,7 @@ from random import random
 import numpy as np
 from astropy.table import Table, vstack
 
-from procastro.core.astrofile.base import _identity
+from procastro.core.statics import identity
 from procastro.core.astrofile.spec import AstroFileSpec
 
 
@@ -28,11 +28,11 @@ class AstroFileMosaicSpec(AstroFileSpec):
         self._data_file = f"multi x{len(astrofiles)}"
         self.singles = [AstroFileSpec(af, **kwargs) for af in astrofiles]
 
-        self.offset_key = offset_key
+        self.offset_key = offset_key.upper()
         self.offset_values = self.update_offset(offset)
 
         # first read storing in cache
-        _identity(self.data)
+        identity(self.data)
 
     def update_offset(self, offset):
         if offset is None:
@@ -61,7 +61,16 @@ class AstroFileMosaicSpec(AstroFileSpec):
             table['pix'] += offset
 
             ret = vstack([ret, single.data])
+
+            meta_of_key = meta[self.offset_key] if self.offset_key in meta else None
             meta |= single.meta
+
+            if meta_of_key is None:
+                meta_of_key = []
+            elif not isinstance(meta_of_key, list):
+                meta_of_key = [meta_of_key]
+
+            meta[self.offset_key] = meta_of_key + [single.meta[self.offset_key]]
 
         self._meta = meta
         self._random = random()
@@ -72,5 +81,10 @@ class AstroFileMosaicSpec(AstroFileSpec):
 if __name__ == "__main__":
     import procastro as pa
 
-    sp = pa.AstroFileMosaicSpec("../../../sample_files/arc.fits")
+    name_pattern = "ob{trace:02d}_{chip:d}_arc_{element}.fits"
+    sp = pa.AstroFileMosaicSpec(["../../../sample_files/ob06_6_arc_Ar.fits",
+                                 "../../../sample_files/ob06_1_arc_Ar.fits",
+                                 ],
+                                meta_from_name=name_pattern,
+                                )
     sp.plot()

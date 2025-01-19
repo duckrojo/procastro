@@ -70,11 +70,6 @@ class AstroFileSpec(AstroFile):
         plt.plot(x, data[channel])
         plt.xlabel(x_label)
 
-    def __repr__(self):
-        calib, filename = self._get_calib_filename_str()
-
-        return '<AstroFile Spec{}: {}>'.format(calib, filename, )
-
 
 if __name__ == '__main__':
     import procastro as pa

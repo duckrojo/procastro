@@ -13,15 +13,12 @@ from procastro.core.astrofile.static_write import static_write
 from procastro.core.cache import astrofile_cache
 from procastro.core.calib.base import CalibBase
 from procastro.core.logging import io_logger
+from procastro.core.statics import dict_from_pattern, identity
 
 # TYPING CONSTRUCTS
 PADataReturn = np.ndarray | Table  # returns an array if there is no spectral information, otherwise table
 
 __all__ = ['AstroFile']
-
-
-def _identity(x):
-    return x
 
 
 def _check_first_astrofile(fcn):
@@ -54,7 +51,13 @@ def _numerize_other(fcn):
 
 
 class AstroFile:
-    def __init__(self, filename, file_options=None, meta=None, do_not_read=False):
+    def __init__(self,
+                 filename,
+                 file_options: dict | None=None,
+                 meta: dict | None = None,
+                 meta_from_name: str = "",
+                 do_not_read: bool = False,
+                 ):
         """
 
         Parameters
@@ -69,8 +72,8 @@ class AstroFile:
 
         self._random = random()
 
-        self._sort_key = None
         self._corrupt = False
+        self._sort_key = None
         self._calib = None
 
         self._spectral_axis = False
@@ -81,9 +84,12 @@ class AstroFile:
         self._data_file_options: dict = file_options
         self._format = static_identify(filename, options=file_options)
 
-        self._meta = meta if meta is not None else {}
+        self._meta = {k: v for k, v in meta.items()} if meta is not None else {}
+        if meta_from_name:
+            self._meta |= dict_from_pattern(meta_from_name, filename)
+
         if not do_not_read:
-            _identity(self.data)  # first read
+            identity(self.data)  # first read
 
     ########################################################
     #
@@ -110,7 +116,7 @@ class AstroFile:
 
     @property
     def meta(self):
-        return self._meta
+        return {k.upper(): v for k, v in self._meta.items()}
 
     @property
     @astrofile_cache
@@ -238,7 +244,7 @@ class AstroFile:
                 return None
 
         if cast is None:
-            cast = _identity
+            cast = identity
 
         if len(args) == 1:
             # If first argument is tuple use those values as searches
@@ -252,16 +258,16 @@ class AstroFile:
         ret = []
         for k in args:
             k = k.strip()
-            k_lc = k.lower()
-            if k_lc in hdr:
-                ret.append(cast(hdr[k_lc]))
+            k_uc = k.upper()
+            if k_uc in hdr:
+                ret.append(cast(hdr[k_uc]))
             elif k in hdr:
                 ret.append(cast(hdr[k]))
-            elif k_lc == "filename":
+            elif k_uc == "filename":
                 ret.append(self._data_file)
-            elif k_lc == "basename":
+            elif k_uc == "basename":
                 ret.append(str(Path(self._data_file).name))
-            elif k_lc == "dirname":
+            elif k_uc == "dirname":
                 ret.append(str(Path(self._data_file).parent))
             else:
                 ret.append(None)
@@ -307,7 +313,7 @@ class AstroFile:
         if key is None:
             key = self._sort_key
 
-        return self.values(key, single_in_list=True)
+        return self.values(key, single_in_list=False)
 
     def filter(self, **kwargs) -> bool:
         """
@@ -591,7 +597,7 @@ class AstroFile:
 
     def __repr__(self):
         calib, filename = self._get_calib_filename_str()
-        return '<AstroFile Img{}: {}>'.format(calib, filename, )
+        return '<{}{}: {}>'.format(self.__class__.__name__, calib, filename, )
 
     def __new__(cls, *args, **kwargs):
         """
