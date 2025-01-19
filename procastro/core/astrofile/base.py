@@ -139,9 +139,9 @@ class AstroFile:
         filename = str(filename)
 
         if Path(filename + backup_extension).exists():
-            io_logger(f"Backup file {filename + backup_extension} already exists, not overwriting it")
+            io_logger.warning(f"Backup file {filename + backup_extension} already exists, not overwriting it")
         else:
-            io_logger(f"Backing up in: {filename + backup_extension}")
+            io_logger.warning(f"Backing up in: {filename + backup_extension}")
             static_write("FITS", filename + backup_extension, self.data, self.meta,
                          overwrite=True)
 
@@ -151,7 +151,7 @@ class AstroFile:
     def write_as(self, filename, overwrite=False):
         file_type = static_identify(filename)
 
-        io_logger(f"Saving in {filename} using file type {file_type}")
+        io_logger.warning(f"Saving in {filename} using file type {file_type}")
         static_write(file_type, filename, self.data, self.meta,
                      overwrite=overwrite)
 
@@ -284,7 +284,7 @@ class AstroFile:
 
         """
 
-        for found in self.values(item):
+        for found in self.values(item, single_in_list=True):
             if found is not None:
                 return True
 
@@ -509,7 +509,7 @@ class AstroFile:
         """
 
         if self._spectral_axis:
-            io_logger("Cannot show image of spectra, use plot instead")
+            io_logger.warning("Cannot show image of spectra, use plot instead")
         return pa.imshowz(self.data, *args, **kwargs)
 
     def plot(self, row=0):

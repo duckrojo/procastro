@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 from astropy.table import Table
 from matplotlib import pyplot as plt
 
@@ -45,13 +46,20 @@ class AstroFileSpec(AstroFile):
         from procastro import CalibRaw2D
 
         if isinstance(calib, CalibRaw2D) and self._spectral_axis:
-            io_logger("Cannot add CalibRaw2D calibration to spectral file")
+            io_logger.warning("Cannot add CalibRaw2D calibration to spectral file")
             return
 
         super().add_calib(calib)
 
-    def plot(self, channel=0):
+    def plot(self, channel=0, dispersion='pix'):
         data = self.data
+
+        if dispersion in data.colnames:
+            x = data[dispersion]
+            x_label = dispersion
+        else:
+            x = np.arange(len(data))
+            x_label = ""
 
         if isinstance(channel, int):
             channel = data.colnames[channel]
@@ -59,7 +67,8 @@ class AstroFileSpec(AstroFile):
             raise ValueError("channel with spectral data can only the name of the column to plot (str),"
                              " or the position in .colnames (int)")
 
-        plt.plot(data[channel])
+        plt.plot(x, data[channel])
+        plt.xlabel(x_label)
 
     def __repr__(self):
         calib, filename = self._get_calib_filename_str()
