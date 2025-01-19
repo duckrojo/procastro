@@ -54,7 +54,7 @@ def _numerize_other(fcn):
 
 
 class AstroFile:
-    def __init__(self, filename, file_options=None, meta=None):
+    def __init__(self, filename, file_options=None, meta=None, do_not_read=False):
         """
 
         Parameters
@@ -82,30 +82,23 @@ class AstroFile:
         self._format = static_identify(filename, options=file_options)
 
         self._meta = meta if meta is not None else {}
-        _identity(self.data)  # first call
+        if not do_not_read:
+            _identity(self.data)  # first read
 
     ########################################################
     #
-    # .meta and .data might be overridden for complex types that want to secure the existence of
-    # particular headers or some extra mathematical operations in data (mosaics at least)
+    # .read() is the function that reads the data that later is accessed by .meta and .data (returning data and
+    # storing meta in self) ... this is likely the main function that any subclass will need to edit
     #
     ##################################
 
-    @property
-    def meta(self):
-        return self._meta
+    def read(self) -> PADataReturn:
+        """This function should always re-read from file updating meta and forcing cache update"""
 
-    @property
-    @astrofile_cache
-    def data(self) -> PADataReturn:
-        """
-    Returns ndarray with the data if single spectral channel (filter)... otherwise, it returns a Table with each
-    wavelength channel
-        """
-        data = self.read()
+        data, meta = static_read(self._format, self._data_file)
 
-        if self._calib is not None:
-            data = self._calib(self, data=data)
+        self._meta |= {k.upper(): v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
+        self._random = random()
 
         return data
 
@@ -115,13 +108,21 @@ class AstroFile:
     #
     ##########################################
 
-    def read(self) -> PADataReturn:
-        """This function should always re-read from file updating meta and forcing cache update"""
+    @property
+    def meta(self):
+        return self._meta
 
-        data, meta = static_read(self._format, self._data_file)
+    @property
+    @astrofile_cache
+    def data(self) -> PADataReturn:
+        """
+        Returns the data in AstroFile by calling .read() the first time and then applying calibration,
+        but caching afterward until caching update
+        """
+        data = self.read()
 
-        self._meta |= {k.upper(): v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
-        self._random = random()
+        if self._calib is not None:
+            data = self._calib(self, data=data)
 
         return data
 
