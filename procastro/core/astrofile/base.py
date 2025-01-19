@@ -1,9 +1,10 @@
 from pathlib import Path
 from random import random
-from typing import Any
 
 import numpy as np
 from astropy.table import Table
+from astropy import time as apt
+from matplotlib import pyplot as plt
 
 import procastro as pa
 from procastro.core.astrofile.static_identify import static_identify
@@ -53,22 +54,41 @@ def _numerize_other(fcn):
 
 
 class AstroFile:
-    def __init__(self, filename, format_spec=None, *args, **kwargs):
+    def __init__(self, filename, spectral=False, file_options=None, meta=None):
+        """
+
+        Parameters
+        ----------
+        filename: str, np.ndarray
+          Filename or np.ndarray to be used as AstroFile afterwards
+        spectral: bool
+           whether it has spectral content
+        file_options: dict
+           dictionary with extra information for file readding. (colnames: a list with a name for each channel)
+        meta: dict
+           Initial meta information, anything here will be overwritten by file reading if field matches name.
+        """
+
         self._random = random()
 
         self._sort_key = None
         self._corrupt = False
         self._calib = None
 
-        self._data_file = filename
-        self._format = static_identify(filename, options=format_spec)
+        self._spectral_axis = spectral
 
-        self._meta = None
-        first_read = self.data
+        self._data_file = filename
+        if file_options is None:
+            file_options = {}
+        self._data_file_options: dict = file_options
+        self._format = static_identify(filename, options=file_options)
+
+        self._meta = meta if meta is not None else {}
+        _identity(self.data)  # first call
 
     ########################################################
     #
-    # .meta and .data might be overriden for complex types that want to secure the existence of
+    # .meta and .data might be overridden for complex types that want to secure the existence of
     # particular headers or some extra mathematical operations in data (mosaics at least)
     #
     ##################################
@@ -102,15 +122,38 @@ class AstroFile:
 
         data, meta = static_read(self._format, self._data_file)
 
-        self._meta = {k.upper(): v for k, v in meta.items()}
+        self._meta |= {k.upper(): v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
         self._random = random()
+
+        if self._spectral_axis:
+            n_axes = len(data.shape)
+            nx = data.shape[-1]
+
+            if n_axes == 1:
+                data = data.reshape(1,nx)
+            else:
+                for remove_ax in range((n_axes - 2 > 0) * (n_axes - 2)):
+                    data = data[0]
+
+            n_channels = data.shape[0]
+
+            try:
+                column_names = self._data_file_options['colnames']
+            except KeyError:
+                column_names = [f"{i}" for i in range(n_channels)]
+
+            table = Table()
+            for name, column in zip(column_names, data):
+                table[name] = column
+            return table
 
         return data
 
     def write(self, filename=None, backup_extension=".bak"):
         if self._format != "FITS":
             if static_identify(filename) != "FITS":
-                raise ValueError("Filename must be FITS for .write()... use .write_as() for alternative formats")
+                raise ValueError("Must provide a FITS filename for .write()... "
+                                 "use .write_as() for alternative formats")
             if filename is None:
                 raise ValueError("Filename must be provided explicitly when original type was not FITS")
         else:
@@ -141,6 +184,13 @@ class AstroFile:
     def add_calib(self, calib):
         if not isinstance(calib, CalibBase):
             raise TypeError("'calib' must be a CalibBase instance")
+
+        from procastro import CalibRaw2D
+
+        if isinstance(calib, CalibRaw2D) and self._spectral_axis:
+            io_logger("Cannot add CalibRaw2D calibration to spectral file")
+            return
+
         self._calib = calib
 
     def __hash__(self):
@@ -201,8 +251,6 @@ class AstroFile:
           and "dirname" from the filename itself if available.
         cast : function, optional
           Function to use for casting each element of the result.
-        hdu :  int, optional
-          HDU to read.
 
         Returns
         -------
@@ -251,6 +299,25 @@ class AstroFile:
             return ret[0]
         else:
             return ret
+
+    def __contains__(self, item):
+        """
+
+        Parameters
+        ----------
+        item: any, list
+        if it is a list then search for the presence of any elements.  Stops searching as it finds one
+
+        Returns
+        -------
+
+        """
+
+        for found in self.values(item):
+            if found is not None:
+                return True
+
+        return False
 
     def __getitem__(self, key):
         """
@@ -470,11 +537,23 @@ class AstroFile:
             For details on what keyword arguments are available
         """
 
+        if self._spectral_axis:
+            io_logger("Cannot show image of spectra, use plot instead")
         return pa.imshowz(self.data, *args, **kwargs)
 
+    def plot(self, row_or_channel=0):
+        data = self.data
+        if self._spectral_axis:
+            if isinstance(row_or_channel, int):
+                row_or_channel = data.colnames[row_or_channel]
+            elif not isinstance(row_or_channel, str):
+                raise ValueError("row_or_channel with spectral data can only the name of the column to plot (str),"
+                                 " or the position in .colnames (int)")
+        return plt.plot(data[row_or_channel])
+
     def stats(self, *args,
-              verbose_heading = True,
-              extra_headers = None,
+              verbose_heading=True,
+              extra_headers=None,
               ):
         """
         Calculates statistical data from the file, a request can include header
@@ -490,8 +569,8 @@ class AstroFile:
 
         Returns
         -------
-        list
-            List containing the requested data
+        list:
+            A List containing the requested data in the requested order
 
         """
         extra_headers = extra_headers or []
@@ -525,7 +604,7 @@ class AstroFile:
                 ret.append(np.median(data))
             else:
                 raise ValueError("Unknown stat '{}' was requested for "
-                                 "file {}".format(stat, self.filename))
+                                 "file {}".format(stat, self._data_file))
         for h in extra_headers:
             ret.append(self[h])
 
@@ -535,15 +614,14 @@ class AstroFile:
             return ret
 
     def __repr__(self):
-        if isinstance(self._data_file, str):
-            filename = self._data_file
-        elif isinstance(self._data_file, np.ndarray):
+        if isinstance(self._data_file, np.ndarray):
             filename = f"Array {'x'.join([str(i) for i in self._data_file.shape])}"
         else:
-            filename = str(self._data_file)
+            filename = str(Path(self._data_file).name)
 
+        typ = "Spec" if self._spectral_axis else "Img"
         calib = "" if self._calib is None else self._calib.short()
-        return '<AstroFile{}: {}>'.format(calib, filename, )
+        return '<AstroFile {}{}: {}>'.format(typ, calib, filename, )
 
     def __new__(cls, *args, **kwargs):
         """
@@ -555,6 +633,34 @@ class AstroFile:
 
         return super().__new__(cls)
 
+    def jd_from_ut(self, target='jd', source='date-obs'):
+        """
+        Add jd in header's cache to keyword 'target' using ut on keyword
+        'source'
+
+        Parameters
+        ----------
+        target : str
+            Target keyword for JD storage
+        source : str or list
+            Input value in UT format, if a tuple is given it will join the
+            values obtained from both keywords following the UT format
+            (day+T+time)
+
+        """
+        newhd = {}
+        target = target.lower()
+        if isinstance(source, tuple) is True:  # a 2-element tuple with date and time keywords are eexpected.
+            ut_time = f"{self[source[0]]}T{self[source[1]]}"
+        else:
+            ut_time = self[source]
+
+        try:
+            newhd[target] = apt.Time(ut_time).jd
+        except ValueError:
+            raise ValueError(f"File {self._data_file} has invalid time specificiation: {ut_time}")
+        self.set_values(**newhd)
+
 
 if __name__ == "__main__":
     af = pa.AstroFile("../../../sample_files/image.fits.gz")
@@ -563,3 +669,6 @@ if __name__ == "__main__":
     cal = pa.CalibRaw2D(bias=mb, flat=mf)
     af.add_calib(cal)
     af.imshowz()
+
+    sp = pa.AstroFile("../../../sample_files/arc.fits", spectral=True)
+    sp.plot()

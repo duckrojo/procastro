@@ -153,6 +153,9 @@ class CalibRaw2D(CalibBase):
 
         """
 
+        if len(data.shape) != 2:
+            return data
+
         flat = self.flat
         bias = self.bias
 
