@@ -1,3 +1,7 @@
+import re
+from pathlib import Path
+
+from procastro.core.logging import io_logger
 
 
 def static_guess_spectral_offset(meta) -> dict:
@@ -14,3 +18,24 @@ def static_guess_spectral_offset(meta) -> dict:
 
     # for now, only imacs is supported
     return imacs_f2_offset
+
+
+def static_guess_type_from_file(filename, hints):
+    if hints is None:
+        hints = {}
+
+    if 'force' in hints:
+        return hints['force']
+
+    filename = Path(filename).name
+
+    if filename in hints:
+        return hints[filename]
+
+    for hint, value in hints.items():
+        hint = hint.replace("*", ".*?")
+        if re.search(hint, filename):
+            return value
+
+    io_logger.warning("Assuming image file for 'file'")
+    return 'img'

@@ -46,10 +46,11 @@ class AstroFileMosaicSpec(AstroFileSpec):
     def read(self):
         ret = Table()
         meta = {}
-        for single in self.singles:
+        for idx, single in enumerate(self.singles):
             table = single.data
             if 'pix' not in table.colnames:
                 table['pix'] = np.arange(len(table))
+            table['astrofile'] = idx
 
             if self.offset_key not in single:
                 io_logger.warning(f"No {self.offset_key} information found in {single}. "

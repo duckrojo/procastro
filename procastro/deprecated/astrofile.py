@@ -943,31 +943,31 @@ class AstroFile(object):
     #     else:
     #         return ret
     #
-    def jd_from_ut(self, target='jd', source='date-obs'):
-        """
-        Add jd in header's cache to keyword 'target' using ut on keyword
-        'source'
-
-        Parameters
-        ----------
-        target : str
-            Target keyword for JD storage
-        source : str or list
-            Input value in UT format, if a tuple is given it will join the
-            values obtained from both keywords following the UT format
-            (day+T+time)
-
-        """
-        newhd = {}
-        target = target.lower()
-        if isinstance(source, list) is True:
-            newhd[target] = apt.Time(self[source[0]] + "T" + self[source[1]]).jd
-        else:
-            try:
-                newhd[target] = apt.Time(self[source]).jd
-            except ValueError:
-                raise ValueError(f"File {self.filename} has invalid time specificiation")
-        self.set_values(**newhd)
+    # def jd_from_ut(self, target='jd', source='date-obs'):
+    #     """
+    #     Add jd in header's cache to keyword 'target' using ut on keyword
+    #     'source'
+    #
+    #     Parameters
+    #     ----------
+    #     target : str
+    #         Target keyword for JD storage
+    #     source : str or list
+    #         Input value in UT format, if a tuple is given it will join the
+    #         values obtained from both keywords following the UT format
+    #         (day+T+time)
+    #
+    #     """
+    #     newhd = {}
+    #     target = target.lower()
+    #     if isinstance(source, list) is True:
+    #         newhd[target] = apt.Time(self[source[0]] + "T" + self[source[1]]).jd
+    #     else:
+    #         try:
+    #             newhd[target] = apt.Time(self[source]).jd
+    #         except ValueError:
+    #             raise ValueError(f"File {self.filename} has invalid time specificiation")
+    #     self.set_values(**newhd)
 
     def merger(self, start=1, end=None):
         """

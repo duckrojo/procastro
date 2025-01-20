@@ -30,10 +30,14 @@ from . import interactive_graphics
 from .interactive_graphics import *
 from . import astrofile
 from .astrofile import *
+from . import astrodir
+from .astrodir import *
 
 __all__ = []
 __all__ += raw2d.__all__
+
 __all__ += astrofile.__all__
+__all__ += astrodir.__all__
 
 __all__ += misc_arr.__all__
 __all__ += misc_general.__all__

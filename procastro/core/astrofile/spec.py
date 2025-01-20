@@ -24,7 +24,7 @@ class AstroFileSpec(AstroFile):
         nx = data.shape[-1]
 
         if n_axes == 1:
-            data = data.reshape(1,nx)
+            data = data.reshape(1, nx)
         else:
             for remove_ax in range((n_axes - 2 > 0) * (n_axes - 2)):
                 data = data[0]
@@ -47,9 +47,11 @@ class AstroFileSpec(AstroFile):
 
         if isinstance(calib, CalibRaw2D) and self._spectral_axis:
             io_logger.warning("Cannot add CalibRaw2D calibration to spectral file")
-            return
+            return self
 
         super().add_calib(calib)
+
+        return self
 
     def plot(self, channel=0, dispersion='pix'):
         data = self.data

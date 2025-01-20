@@ -168,7 +168,13 @@ class AstroFile:
         if not isinstance(calib, CalibBase):
             raise TypeError("'calib' must be a CalibBase instance")
 
-        self._calib = calib
+        if calib is not None:
+            self._calib = calib
+
+        return self
+
+    def get_calib(self):
+        return self._calib
 
     def __hash__(self):
         """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random
