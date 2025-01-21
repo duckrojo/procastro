@@ -1,20 +1,15 @@
 
-
-__all__ = ['CalibRaw2D']
-
-from typing import Union, Optional
-
-import numpy as np
-
 import procastro as pa
 import warnings
 
-from procastro.core.calib.base import CalibBase
+from procastro.core import calib
 from procastro.core.logging import io_logger
 from procastro.core.internal_functions import trim_to_python, common_trim_fcn, extract_common
 
+__all__ = ['CalibRaw2D']
 
-class CalibRaw2D(CalibBase):
+
+class CalibRaw2D(calib.CalibBase):
     """
     Object to hold calibration frames.
 
@@ -50,6 +45,11 @@ class CalibRaw2D(CalibBase):
         # turned true.
         super().__init__(**kwargs)
 
+        self.has_bias = self.has_flat = False
+
+        self.bias: 'AstroFileBase | float' = 0.0
+        self.flat: 'AstroFileBase | float' = 1.0
+
         possible_trims = ['TRIMSEC','DATASEC']
 
         try:
@@ -75,6 +75,16 @@ class CalibRaw2D(CalibBase):
             self.add_bias(bias)
         if flat is not None:
             self.add_flat(flat)
+
+    def __str__(self):
+        base = super().__str__()
+
+        ret = [label for label in ['bias', 'flat'] if hasattr(self, f"has_{label}")]
+
+        return f"<{base}: {' + '.join(ret)}>"
+
+    def short(self):
+        return f"({'B' if self.has_bias else ''}{'F' if self.has_flat else ''})"
 
     def copy(self):
         """returs a new version of itself with same values"""

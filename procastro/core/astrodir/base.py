@@ -7,12 +7,7 @@ from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
 
 from procastro.core import astrofile, astrodir
-from procastro.core.astrofile.static_guess import static_guess_type_from_file
-
-astrofile_type = {'img': astrofile.AstroFile,
-                  'spec': astrofile.AstroFileSpec,
-                  'mspec': astrofile.AstroFileMosaicSpec,
-                  }
+from procastro.core.calib import raw2d
 
 __all__ = ['AstroDir']
 
@@ -31,7 +26,7 @@ class AstroDir:
     def __init__(self,
                  files,
                  directory: str | Path = None,
-                 type_hints=None,
+                 spectral=False,
                  bias=None,
                  flat=None,
                  **kwargs):
@@ -44,29 +39,33 @@ class AstroDir:
         directory: str, Path
           if None, then files
         """
+        if directory is None:
+            directory = ""
         directory = Path(directory)
-        self.directory = directory
+        self.directory: Path = directory
         self._last_sort_key = None
+        self.spectral = spectral
 
         if isinstance(files, str):
-            files = glob.glob(directory + files)
+            files = glob.glob(str(directory / files))
 
         if bias is not None or flat is not None:
-            calib = pa.CalibRaw2D(bias=bias, flat=flat)
+            calib = raw2d.CalibRaw2D(bias=bias, flat=flat)
         else:
             calib = None
 
         astro_files = []
         for file in files:
-            if isinstance(file, pa.AstroDir):
+            if isinstance(file, astrodir.AstroDir):
                 for astro_file in file:
                     astro_files.append(astro_file)
                 continue
 
             if isinstance(file, (str, Path)):
-                use_astrofile = astrofile_type[static_guess_type_from_file(file, type_hints)]
-                astro_file = use_astrofile(directory / file, **kwargs).add_calib(calib)
-            elif isinstance(file, pa.AstroFile):
+                astro_file = astrofile.AstroFile(str(directory / file),
+                                                 spectral=self.spectral,
+                                                 **kwargs).add_calib(calib)
+            elif isinstance(file, astrofile.AstroFile):
                 astro_file = file
             else:
                 raise TypeError(f"Unrecognized file specification: {file}")
@@ -115,11 +114,12 @@ class AstroDir:
 
         return None
 
+    @property
+    def filename(self):
+        return ', '.join([Path(af.filename).name for af in self])
+
     def __repr__(self):
-        ret = []
-        for af in self:
-            ret.append(repr(af).split(": ")[1])
-        return "<AstroFile container: {0:s}>".format(', '.join(ret),)
+        return "<AstroFile container: {0:s}>".format(self.filename)
 
     def __getitem__(self, item):
 
@@ -227,26 +227,40 @@ class AstroDir:
 
         return astrodir.AstroDir(self.astro_files + other_af)
 
-    def mosaic_by(self, *keys):
+    def iter_by(self, *keys, combine=False):
         values = self.values(*keys)
         table = Table(values.transpose().tolist()+[range(len(self))], names=list(keys) + ['idx'])
 
-        astro_files = []
         for group in table.group_by(keys).groups:
             ref = self[group['idx'].data][0]
+            ret = ref
+
             if len(group) > 1:
-                if isinstance(ref, astrofile.AstroFile):
-                    raise NotImplementedError("AstroFileMosaic needs to be implemented firs")
-                    astro_files.append(astrofile.AstroFileMosaic(self[group['idx'].data], calib=ref.get_calib()))
-                elif isinstance(ref, astrofile.AstroFileSpec):
-                    astro_files.append(astrofile.AstroFileMosaicSpec(self[group['idx'].data], calib=ref.get_calib()))
-                else:
-                    raise NotImplementedError("Can only group plain AstroFile and AstroFileSpec for now.  The"
-                                              " complex subclasses need to implement concatenate first")
+                ret = AstroDir(self[group['idx'].data], directory=self.directory)
+                if combine:
+                    ret = astrofile.AstroFileMosaic(ret, astrocalib=ref.get_calib())
 
-            else:
-                astro_files.append(ref)
+            yield ret
 
-        return astrodir.AstroDir(astro_files, directory=self.directory)
+    def combine_by(self, *keys, in_place=True):
 
+        astro_files = [astro_file for astro_file in self.iter_by(combine=True, *keys)]
 
+        if in_place:
+            self.astro_files = astro_files
+            ret = self
+        else:
+            ret = AstroDir(astro_files, directory=self.directory)
+
+        return ret
+
+    def __iter__(self):
+        self._idx = 0
+        return self
+
+    def __next__(self):
+        self._idx += 1
+        if self._idx >= len(self) - 1:
+            raise StopIteration
+
+        return self[self._idx]

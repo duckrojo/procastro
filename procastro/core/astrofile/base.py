@@ -7,11 +7,11 @@ from astropy import time as apt
 from matplotlib import pyplot as plt
 
 import procastro as pa
+from procastro.core import calib
 from procastro.core.astrofile.static_identify import static_identify
 from procastro.core.astrofile.static_read import static_read
 from procastro.core.astrofile.static_write import static_write
 from procastro.core.cache import astrofile_cache
-from procastro.core.calib.base import CalibBase
 from procastro.core.logging import io_logger
 from procastro.core.statics import dict_from_pattern, identity
 
@@ -51,12 +51,16 @@ def _numerize_other(fcn):
 
 
 class AstroFile:
+    _initialized = False
+
     def __init__(self,
                  filename,
-                 file_options: dict | None=None,
+                 file_options: dict | None = None,
                  meta: dict | None = None,
                  meta_from_name: str = "",
                  do_not_read: bool = False,
+                 astrocalib: calib.CalibBase | None = None,
+                 spectral: bool = False,
                  ):
         """
 
@@ -70,13 +74,21 @@ class AstroFile:
            Initial meta information, anything here will be overwritten by file reading if field matches name.
         """
 
+        if self._initialized:
+            return
+
         self._random = random()
 
         self._corrupt = False
         self._sort_key = None
-        self._calib = None
 
-        self._spectral_axis = False
+        self._calib = [calib.CalibBase()]
+        if astrocalib is not None:
+            if not isinstance(astrocalib, list):
+                astrocalib = [astrocalib]
+            self._calib.extend(astrocalib)
+
+        self.spectral = spectral
 
         self._data_file = filename
         if file_options is None:
@@ -90,6 +102,8 @@ class AstroFile:
 
         if not do_not_read:
             identity(self.data)  # first read
+
+        self._initialized = True
 
     ########################################################
     #
@@ -106,6 +120,28 @@ class AstroFile:
         self._meta |= {k.upper(): v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
         self._random = random()
 
+        if self.spectral:
+            n_axes = len(data.shape)
+            nx = data.shape[-1]
+
+            if n_axes == 1:
+                data = data.reshape(1, nx)
+            else:
+                for remove_ax in range((n_axes - 2 > 0) * (n_axes - 2)):
+                    data = data[0]
+
+            n_channels = data.shape[0]
+
+            try:
+                column_names = self._data_file_options['colnames']
+            except KeyError:
+                column_names = [f"{i}" for i in range(n_channels)]
+
+            table = Table()
+            for name, column in zip(column_names, data):
+                table[name] = column
+            return table
+
         return data
 
     ##########################################
@@ -113,6 +149,9 @@ class AstroFile:
     # The following methods are unlikely to need modifications in subclasses
     #
     ##########################################
+
+    def get_format(self):
+        return self._format
 
     @property
     def meta(self):
@@ -125,10 +164,10 @@ class AstroFile:
         Returns the data in AstroFile by calling .read() the first time and then applying calibration,
         but caching afterward until caching update
         """
-        data = self.read()
 
-        if self._calib is not None:
-            data = self._calib(self, data=data)
+        data = self.read()
+        for calibration in self._calib:
+            data = calibration(self, data)
 
         return data
 
@@ -164,12 +203,18 @@ class AstroFile:
     def forced_data(self):
         return self.data(force=True)
 
-    def add_calib(self, calib):
-        if not isinstance(calib, CalibBase):
+    def add_calib(self, astrocalib):
+        if astrocalib is None:
+            return self
+
+        if not isinstance(astrocalib, calib.CalibBase):
             raise TypeError("'calib' must be a CalibBase instance")
 
-        if calib is not None:
-            self._calib = calib
+        if self.spectral and isinstance(astrocalib, calib.CalibRaw2D):
+            raise TypeError("'calib' cannot be a raw2d.CalibRaw2D instance")
+
+        if astrocalib is not None:
+            self._calib = astrocalib
 
         return self
 
@@ -510,25 +555,6 @@ class AstroFile:
         """
         self._sort_key = key
 
-    def imshowz(self, *args, **kwargs):
-        """
-        Plots frame after being processed using a zscale algorithm
-
-        See Also
-        --------
-        misc_graph.imshowz :
-            For details on what keyword arguments are available
-        """
-
-        if self._spectral_axis:
-            io_logger.warning("Cannot show image of spectra, use plot instead")
-        return pa.imshowz(self.data, *args, **kwargs)
-
-    def plot(self, row=0):
-        data = self.data
-
-        return plt.plot(data[row])
-
     def stats(self, *args,
               verbose_heading=True,
               extra_headers=None,
@@ -597,21 +623,36 @@ class AstroFile:
         else:
             filename = str(Path(self._data_file).name)
 
-        calib = "" if self._calib is None else self._calib.short()
+        astrocalib = "".join([calib.short() for calib in self._calib])
 
-        return calib, filename
+        return astrocalib, filename
+
+    @property
+    def filename(self):
+        return self._data_file
 
     def __repr__(self):
-        calib, filename = self._get_calib_filename_str()
-        return '<{}{}: {}>'.format(self.__class__.__name__, calib, filename, )
+        astrocalib, filename = self._get_calib_filename_str()
+        return '<{}{}: {}>'.format(self.__class__.__name__, astrocalib, filename, )
 
     def __new__(cls, *args, **kwargs):
         """
         If passed an AstroFile, then do not create a new instance, just pass
         that one. If passed None, return None
         """
-        if args and ((isinstance(args[0], AstroFile) and len(kwargs) == 0) or args[0]) is None:
-            return args[0]
+        if args:
+            if args[0] is None:
+                same_params = True
+            else:
+                same_params = False
+                if isinstance(args[0], AstroFile):
+                    if 'spectral' in kwargs and args[0].spectral == kwargs['spectral']:
+                        same_params = True
+                    elif 'calib' in kwargs and args[0].get_calib() == kwargs['calib']:
+                        same_params = True
+
+            if same_params:
+                return args[0]
 
         return super().__new__(cls)
 
@@ -640,8 +681,45 @@ class AstroFile:
         try:
             newhd[target] = apt.Time(ut_time).jd
         except ValueError:
-            raise ValueError(f"File {self._data_file} has invalid time specificiation: {ut_time}")
+            raise ValueError(f"File {self._data_file} has invalid time specification: {ut_time}")
         self.set_values(**newhd)
+
+    def imshowz(self, *args, **kwargs):
+        """
+        Plots frame after being processed using a zscale algorithm
+
+        See Also
+        --------
+        misc_graph.imshowz :
+            For details on what keyword arguments are available
+        """
+
+        if self.spectral:
+            io_logger.warning("Cannot show image of spectra, use plot instead")
+        return pa.imshowz(self.data, *args, **kwargs)
+
+    def plot(self, channel=0, dispersion='pix'):
+        if not self.spectral:
+            io_logger.warning("Cannot plot image, use imshowz instead")
+            return
+
+        data = self.data
+
+        if dispersion in data.colnames:
+            x = data[dispersion]
+            x_label = dispersion
+        else:
+            x = np.arange(len(data))
+            x_label = ""
+
+        if isinstance(channel, int):
+            channel = data.colnames[channel]
+        elif not isinstance(channel, str):
+            raise ValueError("channel with spectral data can only the name of the column to plot (str),"
+                             " or the position in .colnames (int)")
+
+        plt.plot(x, data[channel])
+        plt.xlabel(x_label)
 
 
 if __name__ == "__main__":
