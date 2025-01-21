@@ -24,6 +24,9 @@ def static_guess_type_from_file(filename, hints):
     if hints is None:
         hints = {}
 
+    if isinstance(hints, str):
+        hints = {'force': hints}
+
     if 'force' in hints:
         return hints['force']
 
@@ -37,5 +40,5 @@ def static_guess_type_from_file(filename, hints):
         if re.search(hint, filename):
             return value
 
-    io_logger.warning("Assuming image file for 'file'")
+    io_logger.warning(f"Assuming image file for '{filename}'")
     return 'img'
