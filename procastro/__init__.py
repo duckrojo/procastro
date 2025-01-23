@@ -22,11 +22,8 @@
 """
 Framework to easily handle multiple astronomy data files
 """
-from . import astro
 from . import core
 from .core import *
-#from . import timeseries
-#from . import obsrv
 import logging as _log
 
 

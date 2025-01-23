@@ -6,8 +6,9 @@ import numpy as np
 from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
 
+import procastro.core.astrofile.astrofile
 from procastro.core import astrofile, astrodir
-from procastro.core.calib import raw2d
+from procastro.calib import raw2d
 
 __all__ = ['AstroDir']
 
@@ -62,10 +63,10 @@ class AstroDir:
                 continue
 
             if isinstance(file, (str, Path)):
-                astro_file = astrofile.AstroFile(str(directory / file),
-                                                 spectral=self.spectral,
-                                                 **kwargs).add_calib(calib)
-            elif isinstance(file, astrofile.AstroFile):
+                astro_file = procastro.core.astrofile.astrofile.AstroFile(str(directory / file),
+                                                                          spectral=self.spectral,
+                                                                          **kwargs).add_calib(calib)
+            elif isinstance(file, procastro.core.astrofile.astrofile.AstroFile):
                 astro_file = file
             else:
                 raise TypeError(f"Unrecognized file specification: {file}")
@@ -229,16 +230,14 @@ class AstroDir:
 
     def iter_by(self, *keys, combine=False):
         values = self.values(*keys)
-        table = Table(values.transpose().tolist()+[range(len(self))], names=list(keys) + ['idx'])
+        table = Table([values.transpose().tolist()]+[list(range(len(self)))], names=list(keys) + ['idx'])
 
         for group in table.group_by(keys).groups:
             ref = self[group['idx'].data][0]
-            ret = ref
 
-            if len(group) > 1:
-                ret = AstroDir(self[group['idx'].data], directory=self.directory)
-                if combine:
-                    ret = astrofile.AstroFileMosaic(ret, astrocalib=ref.get_calib())
+            ret = AstroDir(self[group['idx'].data], directory=self.directory)
+            if combine:
+                ret = astrofile.AstroFileMosaic(ret, astrocalib=ref.get_calib())
 
             yield ret
 
@@ -255,12 +254,12 @@ class AstroDir:
         return ret
 
     def __iter__(self):
-        self._idx = 0
+        self._idx = -1
         return self
 
     def __next__(self):
-        self._idx += 1
         if self._idx >= len(self) - 1:
             raise StopIteration
+        self._idx += 1
 
         return self[self._idx]

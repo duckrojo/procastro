@@ -1,10 +1,11 @@
 import procastro as pa
+import procastro.core.astrofile.astrofile
 import procastro.timeseries as tm
 
 raw = pa.AstroDir("./data/raw")
 
-dark = pa.AstroFile("./data/dark.fits")
-flat = pa.AstroFile("./data/flat.fits")
+dark = procastro.core.astrofile.astrofile.AstroFile("./data/dark.fits")
+flat = procastro.core.astrofile.astrofile.AstroFile("./data/flat.fits")
 
 target_coords = [[570, 269], [436, 539]] # Coordinates of 1 target and 1 reference
 # Coordinates in y, x format!!!

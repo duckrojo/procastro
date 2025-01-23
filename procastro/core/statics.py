@@ -1,6 +1,12 @@
 import re
 
+import numpy as np
+from astropy.table import Table
+
 _format_fcn = {'d': int, 'f': float, 's': str}
+
+
+PADataReturn = np.ndarray | Table  # returns an array if there is no spectral information, otherwise table
 
 
 def upper(x):

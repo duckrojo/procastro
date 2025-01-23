@@ -1,8 +1,7 @@
-
-import procastro as pa
 import warnings
 
-from procastro.core import calib
+import procastro.core.astrofile.astrofile
+from procastro import calib
 from procastro.core.logging import io_logger
 from procastro.core.internal_functions import trim_to_python, common_trim_fcn, extract_common
 
@@ -99,7 +98,7 @@ class CalibRaw2D(calib.CalibBase):
             # following avoids a positive flag
             if calib == default:
                 return
-        elif isinstance(calib, pa.AstroFile):
+        elif isinstance(calib, procastro.core.astrofile.astrofile.AstroFile):
             setattr(self, label, calib)
         else:
             raise ValueError(f"Master {label} supplied was not recognized.")
@@ -142,8 +141,8 @@ class CalibRaw2D(calib.CalibBase):
         return self
 
     def __call__(self,
-                 astrofile,
                  data,
+                 meta=None,
                  data_trim=None,
                  verbose=True,
                  ):
@@ -162,6 +161,7 @@ class CalibRaw2D(calib.CalibBase):
             Reduced data
 
         """
+        data, meta = super().__call__(data, meta)
 
         if len(data.shape) != 2:
             return data
@@ -171,7 +171,7 @@ class CalibRaw2D(calib.CalibBase):
 
         in_data = [data]
         try:
-            label_trim = astrofile.meta[self.auto_trim_keyword]
+            label_trim = meta[self.auto_trim_keyword]
         except KeyError:
             io_logger.warning(f"Trim info "
                               f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
@@ -224,4 +224,4 @@ class CalibRaw2D(calib.CalibBase):
             warnings.filterwarnings("ignore", category=RuntimeWarning)
             de_flat = debias / flat
 
-        return de_flat
+        return de_flat, meta

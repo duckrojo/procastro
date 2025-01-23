@@ -4,7 +4,8 @@ from astropy.io import fits as pf
 from astropy.table import Table
 
 
-def static_read(file_type, filename):
+def static_read(file_type,
+                filename):
 
     match file_type:
         case "FITS":

@@ -1,4 +1,4 @@
-from ..astrofile import AstroFile, AstroCalib
+from procastro.deprecated.astrofile import AstroFile, CalibRaw2D
 from numpy.testing import assert_equal, assert_almost_equal
 import astropy.io.fits as pf
 import numpy as np
@@ -33,7 +33,7 @@ class TestAstroCalib(object):
 
     def test_reduce(self, tmpdir):
         # Appends calibration files to AstroCalib
-        calib = AstroCalib()
+        calib = CalibRaw2D()
 
         bias = AstroFile(os.path.join(self.path, "bias.fits"))
         calib.add_bias(bias)

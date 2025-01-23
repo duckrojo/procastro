@@ -38,7 +38,8 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 import astropy.io.fits as pf
 import numpy as np
-from typing import Optional, Tuple, Union, Dict, Any
+from typing import Optional, Tuple, Union
+
 from procastro.core.interactive_graphics import BindingsImshowz
 from pathlib import Path, PurePath
 

@@ -1,6 +1,5 @@
 import pytest
-from ..astrodir import AstroDir
-from ..astrofile import AstroFile
+from procastro.deprecated.astrodir import AstroDir
 from numpy.testing import assert_equal, assert_almost_equal
 from .test_utils import create_random_fit, create_empty_fit
 import astropy.io.fits as pf

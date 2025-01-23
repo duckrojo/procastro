@@ -1,4 +1,5 @@
-from procastro import AstroDir, AstroFile
+from procastro import AstroDir
+from ..core.astrofile.astrofile import AstroFile
 from procastro.timeseries import Photometry
 from numpy.testing import assert_equal
 from .test_utils import create_targeted_fit, create_bias

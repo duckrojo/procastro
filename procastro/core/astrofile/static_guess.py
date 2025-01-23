@@ -5,7 +5,7 @@ from procastro.core.logging import io_logger
 
 
 def static_guess_spectral_offset(meta) -> dict:
-    """"The idea is for this function to guess the instrument after reading the meta information."""
+    """The idea is for this function to guess the instrument after reading the meta information."""
     imacs_f2_offset = {4: 0,
                        7: 35 + 2048,
                        3: 0,

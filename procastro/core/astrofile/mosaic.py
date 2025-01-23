@@ -1,14 +1,12 @@
 from pathlib import Path
 from random import random
 
-import numpy as np
 from astropy.table import Table, vstack
 
 from procastro.core.astrofile.static_guess import static_guess_spectral_offset
-from procastro.core.logging import io_logger
 from procastro.core.statics import identity
 from procastro.core.astrodir import AstroDir
-from procastro.core.astrofile import AstroFile
+from procastro.core.astrofile.astrofile import AstroFile
 
 __all__ = ['AstroFileMosaic']
 
@@ -78,20 +76,6 @@ class AstroFileMosaic(AstroFile):
         ret = Table()
         meta = {}
         for idx, single in enumerate(self.singles):
-            table = single.data
-            if 'pix' not in table.colnames:
-                table['pix'] = np.arange(len(table))
-            table['astrofile'] = idx
-
-            if self.offset_key in single.meta:
-                chip = str(single[self.offset_key])
-                offset = self.offset_values[chip]
-                table['pix'] += offset
-            elif self.offset_key in table.colnames:
-                table['pix'] += np.array(self.offset_values)[table[self.offset_key]]
-            else:
-                io_logger.warning(f"No {self.offset_key} information found in {single}. "
-                                  f"Using risky 0 offset along dispersion")
 
             ret = vstack([ret, single.data])
 
@@ -103,7 +87,8 @@ class AstroFileMosaic(AstroFile):
             elif not isinstance(meta_of_key, list):
                 meta_of_key = [meta_of_key]
 
-            meta[self.offset_key] = meta_of_key + [single.meta[self.offset_key]]
+            new_key = single.meta[self.offset_key] if self.offset_key in single.meta else None
+            meta[self.offset_key] = meta_of_key + [new_key]
 
         self._meta = meta
         self._random = random()

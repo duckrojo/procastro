@@ -1,14 +1,13 @@
-from pathlib import Path
-
 import procastro as pa
+import procastro.core.astrofile.astrofile
 from procastro.core import functions
-from procastro.core.calib import CalibBase
+from procastro.calib import CalibBase
 from procastro.core.logging import io_logger
 
 
 class WavSol (CalibBase):
     def __init__(self,
-                 pixwav: pa.AstroDir | pa.AstroFile,
+                 pixwav: pa.AstroDir | procastro.core.astrofile.astrofile.AstroFile,
                  arcs=None,
                  refit=True,
                  group_by=None,
@@ -20,7 +19,7 @@ class WavSol (CalibBase):
             group_by = [[]]
         self.group_by = group_by
 
-        if isinstance(pixwav, pa.AstroFile):
+        if isinstance(pixwav, procastro.core.astrofile.astrofile.AstroFile):
             pixwav = pa.AstroDir([pixwav])
         if not pixwav[0].spectral:
             raise TypeError("pixwav must have spectral data")
@@ -36,10 +35,12 @@ class WavSol (CalibBase):
         self.pixwav = pixwav
 
     def __call__(self,
-                 astrofile: pa.AstroFile,
                  data,
+                 meta=None,
                  ):
-        group_key = tuple(astrofile.values(*self.group_by))
+        data, meta = super().__call__(data, meta=meta)
+
+        group_key = tuple([meta[val] for val in self.group_by])
         data['wav'] = self.function[group_key](data['pix'])
 
-        return data
+        return data, meta
