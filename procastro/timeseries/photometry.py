@@ -16,7 +16,6 @@
 # Boston, MA  02110-1301, USA.
 #
 #
-import matplotlib.backend_bases
 
 from matplotlib import patches
 
@@ -28,8 +27,8 @@ import matplotlib.pyplot as plt
 import logging
 import astropy.timeseries as ts
 import astropy.time as apt
-from ..core.interactive_graphics import BindingsFunctions
-from typing import Optional, Union
+from procastro.misc.interactive_graphics import BindingsFunctions
+from typing import Optional
 import pathlib
 
 TwoValues = tuple[float, float]

@@ -4,12 +4,11 @@ import pickle
 import tempfile
 from typing import Optional
 import queue
-import pandas as pd
 
 __all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
 
-from .misc_general import user_confdir
+from procastro.misc.misc_general import user_confdir
 import astropy.time as apt
 import astropy.units as u
 

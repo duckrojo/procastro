@@ -22,18 +22,9 @@
 """
 Framework to easily handle multiple astronomy data files
 """
-from . import core
-from .core import *
-import logging as _log
 
+from .astrofile import *
+from .astrodir import *
 
-__all__ = ['astro', 'dplogger']
-__all__ += core.__all__
-
-dplogger = _log.getLogger('procastro')
-_ch = _log.StreamHandler()
-_formatter = _log.Formatter('%(name)s (%(module)s.%(funcName)s) %(levelname)s: %(message)s')
-_ch.setFormatter(_formatter)
-dplogger.addHandler(_ch)
 
 __version__ = "0.0.0"

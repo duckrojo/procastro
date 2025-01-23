@@ -1,16 +1,12 @@
 from procastro import AstroDir
-from ..core.astrofile.astrofile import AstroFile
 from procastro.timeseries import Photometry
-from numpy.testing import assert_equal
-from .test_utils import create_targeted_fit, create_bias
+from .test_utils import create_targeted_fit
 from unittest.mock import patch
 import matplotlib.pyplot as plt
 import astropy.io.fits as pf
-import numpy as np
-import copy
 import pytest
 import os
-import pdb
+
 
 class TestPhotometry(object):
     @pytest.fixture(autouse=True)

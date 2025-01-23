@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from procastro.core.logging import io_logger
+from procastro.logging import io_logger
 
 
 def static_guess_spectral_offset(meta) -> dict:

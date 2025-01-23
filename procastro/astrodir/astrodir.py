@@ -5,10 +5,8 @@ from pathlib import Path
 import numpy as np
 from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
+import procastro as pa
 
-import procastro.core.astrofile.astrofile
-from procastro.core import astrofile, astrodir
-from procastro.calib import raw2d
 
 __all__ = ['AstroDir']
 
@@ -28,8 +26,6 @@ class AstroDir:
                  files,
                  directory: str | Path = None,
                  spectral=False,
-                 bias=None,
-                 flat=None,
                  **kwargs):
         """
 
@@ -50,23 +46,23 @@ class AstroDir:
         if isinstance(files, str):
             files = glob.glob(str(directory / files))
 
-        if bias is not None or flat is not None:
-            calib = raw2d.CalibRaw2D(bias=bias, flat=flat)
-        else:
-            calib = None
+        # if bias is not None or flat is not None:
+        #     calib = CalibRaw2D(bias=bias, flat=flat)
+        # else:
+        #     calib = None
 
         astro_files = []
         for file in files:
-            if isinstance(file, astrodir.AstroDir):
+            if isinstance(file, AstroDir):
                 for astro_file in file:
                     astro_files.append(astro_file)
                 continue
 
             if isinstance(file, (str, Path)):
-                astro_file = procastro.core.astrofile.astrofile.AstroFile(str(directory / file),
-                                                                          spectral=self.spectral,
-                                                                          **kwargs).add_calib(calib)
-            elif isinstance(file, procastro.core.astrofile.astrofile.AstroFile):
+                astro_file = pa.AstroFile(str(directory / file),
+                                          spectral=self.spectral,
+                                          **kwargs)
+            elif isinstance(file, pa.AstroFile):
                 astro_file = file
             else:
                 raise TypeError(f"Unrecognized file specification: {file}")
@@ -221,23 +217,24 @@ class AstroDir:
         return np.array(ret)
 
     def __add__(self, other):
-        if isinstance(other, astrodir.AstroDir):
+        if isinstance(other, pa.AstroDir):
             other_af = [af for af in other]
         else:
             raise NotImplemented("Only AstroDirs can be added together")
 
-        return astrodir.AstroDir(self.astro_files + other_af)
+        return pa.AstroDir(self.astro_files + other_af)
 
     def iter_by(self, *keys, combine=False):
         values = self.values(*keys)
-        table = Table([values.transpose().tolist()]+[list(range(len(self)))], names=list(keys) + ['idx'])
+        content = [values.transpose().tolist()] + [list(range(len(self)))]
+        table = Table(content, names=list(keys) + ['idx'])
 
         for group in table.group_by(keys).groups:
             ref = self[group['idx'].data][0]
 
             ret = AstroDir(self[group['idx'].data], directory=self.directory)
             if combine:
-                ret = astrofile.AstroFileMosaic(ret, astrocalib=ref.get_calib())
+                ret = pa.AstroFileMosaic(ret, astrocalib=ref.get_calib())
 
             yield ret
 

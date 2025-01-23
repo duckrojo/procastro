@@ -3,10 +3,10 @@ from random import random
 
 from astropy.table import Table, vstack
 
-from procastro.core.astrofile.static_guess import static_guess_spectral_offset
-from procastro.core.statics import identity
-from procastro.core.astrodir import AstroDir
-from procastro.core.astrofile.astrofile import AstroFile
+from .static_guess import static_guess_spectral_offset
+from procastro.statics import identity
+from procastro.astrodir import AstroDir
+from .astrofile import AstroFile
 
 __all__ = ['AstroFileMosaic']
 
@@ -53,7 +53,12 @@ class AstroFileMosaic(AstroFile):
 
         super().__init__(astrofiles[0], spectral=spectral, do_not_read=True, **kwargs)
 
-        self.singles = [AstroFile(af, spectral=spectral, **kwargs) for af in astrofiles]
+        ret = []
+        for af in astrofiles:
+            ret.append(AstroFile(af, spectral=spectral, **kwargs))
+            pass
+        self.singles = ret
+        # self.singles = [AstroFile(af, spectral=spectral, **kwargs) for af in astrofiles]
 
         self._data_file = tuple([af.filename for af in astrofiles])
 
@@ -72,25 +77,19 @@ class AstroFileMosaic(AstroFile):
 
         return self.offset_values
 
+    def __getitem__(self, item):
+        return self.singles[item]
+
     def read(self):
         ret = Table()
-        meta = {}
+
         for idx, single in enumerate(self.singles):
 
-            ret = vstack([ret, single.data])
+            new_table = single.data
+            new_table.meta |= single.meta
+            ret = vstack([ret, new_table])
 
-            meta_of_key = meta[self.offset_key] if self.offset_key in meta else None
-            meta |= single.meta
-
-            if meta_of_key is None:
-                meta_of_key = []
-            elif not isinstance(meta_of_key, list):
-                meta_of_key = [meta_of_key]
-
-            new_key = single.meta[self.offset_key] if self.offset_key in single.meta else None
-            meta[self.offset_key] = meta_of_key + [new_key]
-
-        self._meta = meta
+        self._meta = ret.meta
         self._random = random()
 
         return ret

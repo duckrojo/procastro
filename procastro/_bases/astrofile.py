@@ -1,15 +1,16 @@
 
 __all__ = ['AstroFileBase']
 
-from procastro.core.cache import astrofile_cache
-from procastro.core.statics import PADataReturn
+from procastro.cache.cache import astrofile_cache
+from procastro.statics import PADataReturn
 
 
 class AstroFileBase:
-    def __init__(self, filename, **kwargs):
+    def __init__(self, *args, **kwargs):
+        if len(kwargs) > 0 or len(args) > 0:
+            raise TypeError(f"Extra unknown arguments {args} or kwargs {kwargs} passed to AstroFileBase")
         self._calib = []
         self._meta = {}
-        pass
 
     def get_calib(self):
         return self._calib

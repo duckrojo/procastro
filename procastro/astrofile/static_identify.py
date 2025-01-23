@@ -2,14 +2,14 @@ import re
 
 import numpy as np
 
-import procastro.core.astrofile.astrofile
-from procastro.core import astrofile
+
+import procastro as pa
 
 
 def static_identify(filename, options=None):
 
     # Check if AstroFile
-    if isinstance(filename, procastro.core.astrofile.astrofile.AstroFile):
+    if isinstance(filename, pa.AstroFile):
         return filename.get_format()
 
     # Check if np.ndarray

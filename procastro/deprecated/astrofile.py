@@ -25,10 +25,11 @@ import warnings
 from pathlib import PurePath, Path
 
 import procastro as pa
-from procastro.core.internal_functions import trim_to_python
-from procastro.core.logging import io_logger
-from procastro.core.calib.raw2d import CalibRaw2D
-from procastro.core.cache import astrofile_cache
+import procastro.astrofile.astrofile
+from procastro.statics import trim_to_python
+from procastro.logging import io_logger
+from procastro.calib.raw2d import CalibRaw2D
+from procastro.cache.cache import astrofile_cache
 
 import astropy.time as apt
 import numpy as np
@@ -372,8 +373,8 @@ class AstroFile(object):
                 self.header_cache[0][k] = v
 
         if self._calib is None:
-            self._calib = CalibRaw2D(pa.AstroFile(mbias, header=mbias_header),
-                                     pa.AstroFile(mflat, header=mflat_header),
+            self._calib = CalibRaw2D(procastro.astrofile.astrofile.AstroFile(mbias, header=mbias_header),
+                                     procastro.astrofile.astrofile.AstroFile(mflat, header=mflat_header),
                                      auto_trim=auto_trim)
 
     def read_headers(self):

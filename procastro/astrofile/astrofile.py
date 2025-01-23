@@ -3,19 +3,16 @@ from random import random
 
 import numpy as np
 from astropy import time as apt
-from astropy.table import Table
 
-from procastro.calib import CalibBase
+from procastro._bases.astrofile import AstroFileBase
+from . import static_read, static_identify, static_write
 
-from .static_identify import static_identify
-from .static_read import static_read
-from .static_write import static_write
-from ..logging import io_logger
-from ..statics import dict_from_pattern, identity, PADataReturn
-from .base import AstroFileBase
-import procastro as pa
+from procastro.logging import io_logger
+from procastro.statics import dict_from_pattern, identity, PADataReturn
 
 __all__ = ['AstroFile']
+
+from .._bases.calib import CalibBase
 
 
 def _check_first_astrofile(fcn):
@@ -71,16 +68,16 @@ class AstroFile(AstroFileBase):
            Initial meta information, anything here will be overwritten by file reading if field matches name.
         """
 
-        super().__init__(filename, **kwargs)
         if self._initialized:
             return
 
+        super().__init__(**kwargs)
         self._random = random()
 
         self._corrupt = False
         self._sort_key = None
 
-        self._calib = [CalibBase()]
+        self._calib = []
         if astrocalib is not None:
             if not isinstance(astrocalib, list):
                 astrocalib = [astrocalib]
@@ -92,7 +89,7 @@ class AstroFile(AstroFileBase):
         if file_options is None:
             file_options = {}
         self._data_file_options: dict = file_options
-        self._format = static_identify(filename, options=file_options)
+        self._format = static_identify.static_identify(filename, options=file_options)
 
         self._meta = {k: v for k, v in meta.items()} if meta is not None else {}
         if meta_from_name:
@@ -113,32 +110,13 @@ class AstroFile(AstroFileBase):
     def read(self) -> PADataReturn:
         """This function should always re-read from file updating meta and forcing cache update"""
 
-        data, meta = static_read(self._format, self._data_file)
+        data, meta = static_read.static_read(self._format, self._data_file)
 
         self._meta |= {k.upper(): v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
         self._random = random()
 
         if self.spectral:
-            n_axes = len(data.shape)
-            nx = data.shape[-1]
-
-            if n_axes == 1:
-                data = data.reshape(1, nx)
-            else:
-                for remove_ax in range((n_axes - 2 > 0) * (n_axes - 2)):
-                    data = data[0]
-
-            n_channels = data.shape[0]
-
-            try:
-                column_names = self._data_file_options['colnames']
-            except KeyError:
-                column_names = [f"{i}" for i in range(n_channels)]
-
-            table = Table()
-            for name, column in zip(column_names, data):
-                table[name] = column
-            return table
+            return static_read.static_ndarray_to_table(data, file_options=self._data_file_options)
 
         return data
 
@@ -153,7 +131,7 @@ class AstroFile(AstroFileBase):
 
     def write(self, filename=None, backup_extension=".bak"):
         if self._format != "FITS":
-            if static_identify(filename) != "FITS":
+            if static_identify.static_identify(filename) != "FITS":
                 raise ValueError("Must provide a FITS filename for .write()... "
                                  "use .write_as() for alternative formats")
             if filename is None:
@@ -167,18 +145,18 @@ class AstroFile(AstroFileBase):
             io_logger.warning(f"Backup file {filename + backup_extension} already exists, not overwriting it")
         else:
             io_logger.warning(f"Backing up in: {filename + backup_extension}")
-            static_write("FITS", filename + backup_extension, self.data, self.meta,
-                         overwrite=True)
+            static_write.static_write("FITS", filename + backup_extension, self.data, self.meta,
+                                      overwrite=True)
 
-        static_write("FITS", filename, self.data, self.meta,
-                     overwrite=True)
+        static_write.static_write("FITS", filename, self.data, self.meta,
+                                  overwrite=True)
 
     def write_as(self, filename, overwrite=False):
-        file_type = static_identify(filename)
+        file_type = static_identify.static_identify(filename)
 
         io_logger.warning(f"Saving in {filename} using file type {file_type}")
-        static_write(file_type, filename, self.data, self.meta,
-                     overwrite=overwrite)
+        static_write.static_write(file_type, filename, self.data, self.meta,
+                                  overwrite=overwrite)
 
     def forced_data(self):
         return self.data(force=True)
@@ -618,15 +596,14 @@ class AstroFile(AstroFileBase):
         that one. If passed None, return None
         """
         if args:
-            if args[0] is None:
-                same_params = True
-            else:
+            same_params = True
+            if isinstance(args[0], AstroFile):
+                if 'spectral' in kwargs and args[0].spectral != kwargs['spectral']:
+                    same_params = False
+                elif 'calib' in kwargs and args[0].get_calib() != kwargs['calib']:
+                    same_params = False
+            elif args[0] is not None:
                 same_params = False
-                if isinstance(args[0], AstroFile):
-                    if 'spectral' in kwargs and args[0].spectral == kwargs['spectral']:
-                        same_params = True
-                    elif 'calib' in kwargs and args[0].get_calib() == kwargs['calib']:
-                        same_params = True
 
             if same_params:
                 return args[0]

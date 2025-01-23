@@ -18,10 +18,12 @@
 #
 __all__ = ['AstroDir']
 
-from typing import Optional
 
 import procastro as pa
-from procastro.core.internal_functions import common_trim_fcn, extract_common, python_to_trim
+import procastro.astrofile.astrofile
+from procastro.statics import python_to_trim, common_trim_fcn, extract_common
+
+from typing import Optional
 import numpy as np
 import warnings
 import sys
@@ -109,17 +111,17 @@ class AstroDir(object):
 
         if isinstance(path, str):
             file_n_dir = glob.glob(path)
-        elif isinstance(path, pa.AstroFile):
+        elif isinstance(path, procastro.astrofile.astrofile.AstroFile):
             file_n_dir = [path]
         else:
             file_n_dir = path
         for f in file_n_dir:
             if isinstance(f, str) and pth.isdir(f):
                 for sf in os.listdir(f):
-                    nf = pa.AstroFile(f + '/' + sf,
-                                      hduh=hduh,
-                                      hdud=hdud,
-                                      auto_trim=auto_trim)
+                    nf = procastro.astrofile.astrofile.AstroFile(f + '/' + sf,
+                                                                 hduh=hduh,
+                                                                 hdud=hdud,
+                                                                 auto_trim=auto_trim)
                     try:
                         if nf:
                             files.append(nf)
@@ -129,9 +131,9 @@ class AstroDir(object):
 
                 nf = False
             else:
-                nf = pa.AstroFile(f, hduh=hduh,
-                                  hdud=hdud,
-                                  auto_trim=auto_trim)
+                nf = procastro.astrofile.astrofile.AstroFile(f, hduh=hduh,
+                                                             hdud=hdud,
+                                                             auto_trim=auto_trim)
 
             try:
                 if nf:
