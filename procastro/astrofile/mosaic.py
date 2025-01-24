@@ -53,12 +53,7 @@ class AstroFileMosaic(AstroFile):
 
         super().__init__(astrofiles[0], spectral=spectral, do_not_read=True, **kwargs)
 
-        ret = []
-        for af in astrofiles:
-            ret.append(AstroFile(af, spectral=spectral, **kwargs))
-            pass
-        self.singles = ret
-        # self.singles = [AstroFile(af, spectral=spectral, **kwargs) for af in astrofiles]
+        self.singles = [AstroFile(af, spectral=spectral, **kwargs) for af in astrofiles]
 
         self._data_file = tuple([af.filename for af in astrofiles])
 

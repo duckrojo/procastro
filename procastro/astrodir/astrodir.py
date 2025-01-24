@@ -230,11 +230,9 @@ class AstroDir:
         table = Table(content, names=list(keys) + ['idx'])
 
         for group in table.group_by(keys).groups:
-            ref = self[group['idx'].data][0]
-
             ret = AstroDir(self[group['idx'].data], directory=self.directory)
             if combine:
-                ret = pa.AstroFileMosaic(ret, astrocalib=ref.get_calib())
+                ret = pa.AstroFileMosaic(ret)
 
             yield ret
 

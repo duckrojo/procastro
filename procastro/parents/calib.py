@@ -1,7 +1,7 @@
 
 __all__ = ['CalibBase']
 
-from procastro._bases.astrofile import AstroFileBase
+from procastro.parents.astrofile import AstroFileBase
 from procastro.statics import PADataReturn
 
 
@@ -19,7 +19,7 @@ class CalibBase:
         return "AstroCalib"
 
     def __repr__(self):
-        return f"<{str(self)}>"
+        return f"{str(self)}"
 
     def __call__(self,
                  data: "pa.AstroFile | PADataReturn",

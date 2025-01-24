@@ -4,7 +4,7 @@ from random import random
 import numpy as np
 from astropy import time as apt
 
-from procastro._bases.astrofile import AstroFileBase
+from procastro.parents.astrofile import AstroFileBase
 from . import static_read, static_identify, static_write
 
 from procastro.logging import io_logger
@@ -12,7 +12,7 @@ from procastro.statics import dict_from_pattern, identity, PADataReturn
 
 __all__ = ['AstroFile']
 
-from .._bases.calib import CalibBase
+from ..parents.calib import CalibBase
 
 
 def _check_first_astrofile(fcn):
@@ -116,7 +116,8 @@ class AstroFile(AstroFileBase):
         self._random = random()
 
         if self.spectral:
-            return static_read.static_ndarray_to_table(data, file_options=self._data_file_options)
+            table = static_read.static_ndarray_to_table(data, file_options=self._data_file_options)
+            return table
 
         return data
 
@@ -674,3 +675,8 @@ class AstroFile(AstroFileBase):
 
         plt.plot(x, data[channel])
         plt.xlabel(x_label)
+
+    def __len__(self):
+        if not self.spectral:
+            raise TypeError(f"object of type '{type(self)} only has len() if it is of spectral type")
+        return len(self.data)
