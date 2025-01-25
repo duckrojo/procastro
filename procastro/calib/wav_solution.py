@@ -53,7 +53,7 @@ class WavSol (CalibBase):
         self.function = {}
         self.pixwavs = {}
         self.mask = {}
-        for astrofile in pixwav.combine_by(*group_by, in_place=False):
+        for astrofile in pixwav.mosaic_by(*group_by, in_place=False):
             option = tuple(astrofile.values(*group_by, single_in_list=True))
             table = astrofile.data
             pix = table['pix']

@@ -5,10 +5,10 @@ from pathlib import Path
 import numpy as np
 from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
-import procastro as pa
-
 
 __all__ = ['AstroDir']
+
+import procastro as pa
 
 
 class AstroDir:
@@ -45,11 +45,6 @@ class AstroDir:
 
         if isinstance(files, str):
             files = glob.glob(str(directory / files))
-
-        # if bias is not None or flat is not None:
-        #     calib = CalibRaw2D(bias=bias, flat=flat)
-        # else:
-        #     calib = None
 
         astro_files = []
         for file in files:
@@ -224,21 +219,21 @@ class AstroDir:
 
         return pa.AstroDir(self.astro_files + other_af)
 
-    def iter_by(self, *keys, combine=False):
+    def iter_by(self, *keys, combine=None):
         values = self.values(*keys)
         content = [values.transpose().tolist()] + [list(range(len(self)))]
         table = Table(content, names=list(keys) + ['idx'])
 
         for group in table.group_by(keys).groups:
             ret = AstroDir(self[group['idx'].data], directory=self.directory)
-            if combine:
-                ret = pa.AstroFileMosaic(ret)
+            if combine is not None:
+                ret = combine(ret)
 
             yield ret
 
-    def combine_by(self, *keys, in_place=True):
+    def _group_by(self, *keys, combinator=None, in_place=True):
 
-        astro_files = [astro_file for astro_file in self.iter_by(combine=True, *keys)]
+        astro_files = [astro_file for astro_file in self.iter_by(combine=combinator, *keys)]
 
         if in_place:
             self.astro_files = astro_files
@@ -247,6 +242,14 @@ class AstroDir:
             ret = AstroDir(astro_files, directory=self.directory)
 
         return ret
+
+    def timeseries_by(self, *keys, in_place=True):
+
+        return self._group_by(*keys, combinator=pa.AstroFileTimeSeries, in_place=in_place)
+
+    def mosaic_by(self, *keys, in_place=True):
+
+        return self._group_by(*keys, combinator=pa.AstroFileMosaic, in_place=in_place)
 
     def __iter__(self):
         self._idx = -1

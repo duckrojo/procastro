@@ -78,10 +78,7 @@ class AstroFile(AstroFileBase):
         self._sort_key = None
 
         self._calib = []
-        if astrocalib is not None:
-            if not isinstance(astrocalib, list):
-                astrocalib = [astrocalib]
-            self._calib.extend(astrocalib)
+        self.add_calib(astrocalib)
 
         self.spectral = spectral
 
@@ -166,11 +163,13 @@ class AstroFile(AstroFileBase):
         if astrocalib is None:
             return self
 
-        if not isinstance(astrocalib, CalibBase):
-            raise TypeError("'calib' must be a CalibBase instance")
+        if not isinstance(astrocalib, list):
+            astrocalib = [astrocalib]
 
-        if astrocalib is not None:
-            self._calib = astrocalib
+        for calib in astrocalib:
+            if not isinstance(calib, CalibBase):
+                raise TypeError(f"'calib' must be a CalibBase instance, not {type(calib)}: {calib}")
+            self._calib.append(calib)
 
         return self
 
