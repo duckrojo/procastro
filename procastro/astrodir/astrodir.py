@@ -9,6 +9,8 @@ from astropy.utils.exceptions import AstropyUserWarning
 __all__ = ['AstroDir']
 
 import procastro as pa
+from procastro.logging import io_logger
+from procastro.statics import dict_from_pattern, glob_from_pattern
 
 
 class AstroDir:
@@ -43,8 +45,18 @@ class AstroDir:
         self._last_sort_key = None
         self.spectral = spectral
 
+        meta_from_name = None
+        original_filename = files
         if isinstance(files, str):
+            if 0 < files.count('{') == files.count('}'):
+                meta_from_name = files
+                files = glob_from_pattern(files)
+
             files = glob.glob(str(directory / files))
+            if not len(files):
+                io_logger.warning(f"No files found with pattern '{original_filename}'")
+        elif isinstance(files, pa.AstroFile):
+            files = [files]
 
         astro_files = []
         for file in files:
@@ -55,6 +67,7 @@ class AstroDir:
 
             if isinstance(file, (str, Path)):
                 astro_file = pa.AstroFile(str(directory / file),
+                                          meta_from_name=meta_from_name,
                                           spectral=self.spectral,
                                           **kwargs)
             elif isinstance(file, pa.AstroFile):
@@ -181,7 +194,7 @@ class AstroDir:
 
         return AstroDir([f for f in self if f.filter(*args, **kwargs)])
 
-    def values(self, *args, cast=None, single_in_list=False):
+    def values(self, *args, cast=None, by_values=False, single_in_list=False):
         """
         Gets the header values specified in 'args' from each file.
         A function can be specified to be used over the returned values for
@@ -192,11 +205,13 @@ class AstroDir:
         single_in_list
         cast : function, optional
             Function output used to cas the output
+        by_values: bool
+          If True, then return an array of size (n_files x n_values)
+          If False, then return an array of size (n_values x n_files)
 
         Returns
         -------
-        List of integers or tuples
-            Type depends on whether a single value or multiple tuples were given
+        numpy array with the values.
 
         """
 
@@ -206,34 +221,40 @@ class AstroDir:
         warnings.filterwarnings("once",
                                 "non-standard convention",
                                 AstropyUserWarning)
-        ret = [f.values(*args, cast=cast, single_in_list=single_in_list) for f in self]
+        ret = np.array([f.values(*args, cast=cast, single_in_list=single_in_list)
+                        for f in self])
 
         warnings.resetwarnings()
-        return np.array(ret)
 
-    def __add__(self, other):
-        if isinstance(other, pa.AstroDir):
-            other_af = [af for af in other]
-        else:
-            raise NotImplemented("Only AstroDirs can be added together")
+        if by_values:
+            ret = ret.transpose()
 
-        return pa.AstroDir(self.astro_files + other_af)
+        return ret
 
     def iter_by(self, *keys, combine=None):
-        values = self.values(*keys)
-        content = [values.transpose().tolist()] + [list(range(len(self)))]
+        values = self.values(*keys, single_in_list=True)
+        content = values.transpose().tolist() + [list(range(len(self)))]
         table = Table(content, names=list(keys) + ['idx'])
 
-        for group in table.group_by(keys).groups:
+        if len(table) == 0:
+            return
+
+        groups = table.group_by(keys).groups
+        for group in groups:
             ret = AstroDir(self[group['idx'].data], directory=self.directory)
             if combine is not None:
                 ret = combine(ret)
 
             yield ret
 
-    def _group_by(self, *keys, combinator=None, in_place=True):
+    def _combine_by(self, *keys, combinator=None, in_place=True) -> "AstroDir":
 
-        astro_files = [astro_file for astro_file in self.iter_by(combine=combinator, *keys)]
+        astro_files = []
+        for astro_file in self.iter_by(*keys, combine=combinator):
+            astro_files.append(astro_file)
+            pass
+
+#        astro_files = [astro_file for astro_file in self.iter_by(*keys, combine=combinator)]
 
         if in_place:
             self.astro_files = astro_files
@@ -245,11 +266,11 @@ class AstroDir:
 
     def timeseries_by(self, *keys, in_place=True):
 
-        return self._group_by(*keys, combinator=pa.AstroFileTimeSeries, in_place=in_place)
+        return self._combine_by(*keys, combinator=pa.AstroFileTimeSeries, in_place=in_place)
 
     def mosaic_by(self, *keys, in_place=True):
 
-        return self._group_by(*keys, combinator=pa.AstroFileMosaic, in_place=in_place)
+        return self._combine_by(*keys, combinator=pa.AstroFileMosaic, in_place=in_place)
 
     def __iter__(self):
         self._idx = -1
@@ -261,3 +282,29 @@ class AstroDir:
         self._idx += 1
 
         return self[self._idx]
+
+    def __add__(self, other):
+        sp_img = ['imaging', 'spectral']
+        spectral = self.spectral
+        directory = self.directory
+
+        if isinstance(other, pa.AstroDir):
+            if other.spectral != self.spectral:
+                spectral = None
+                io_logger.warning(f"Warning, mixing spectral and not spectral AstroDir: "
+                                  f"{sp_img[self.spectral]} + {sp_img[other.spectral]}.")
+            if other.directory != self.directory:
+                io_logger.warning(f"Warning, mixing AstroDir with different directories, "
+                                  f"using: {directory}")
+
+            astrofiles = [af for af in other]
+
+        elif isinstance(other, pa.AstroFile):
+            astrofiles = [other]
+
+        else:
+            raise TypeError("Can only add AstroFile or AstroDir to AstroDir")
+
+        return pa.AstroDir(self.astro_files + astrofiles,
+                           spectral=spectral,
+                           directory=directory)

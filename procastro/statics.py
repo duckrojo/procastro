@@ -17,8 +17,14 @@ def identity(x):
     return x
 
 
+def glob_from_pattern(pattern):
+    return re.sub(r"{(\w+?)(:.+?)?}", r"*", pattern)
+
+
 def dict_from_pattern(pattern, string, key_to_upper=True):
-    compiled_pattern = re.compile(re.sub(r"{(\w+?)(:.+?)?}", r"(?P<\1>.+?)", pattern))
+    pattern1 = re.sub(r"{(\w+?)(:.+?)?}", r"(?P<\1>.+?)", pattern)
+    pattern2 = re.sub(r"[\\/]+", r"[\\\\/]+", pattern1)
+    compiled_pattern = re.compile(pattern2)
     casts = re.findall(r"{(\w+?)(?::.*?(\w))?}", pattern)
     transform = {k: _format_fcn[v] if v in _format_fcn else str for k, v in casts}
     match = re.search(compiled_pattern, string)
