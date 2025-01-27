@@ -1,7 +1,11 @@
 import re
 
+import matplotlib
 import numpy as np
 from astropy.table import Table
+from matplotlib import pyplot as plt
+
+from procastro.other.case_insensitivity import CaseInsensitiveDict
 
 _format_fcn = {'d': int, 'f': float, 's': str}
 
@@ -21,7 +25,7 @@ def glob_from_pattern(pattern):
     return re.sub(r"{(\w+?)(:.+?)?}", r"*", pattern)
 
 
-def dict_from_pattern(pattern, string, key_to_upper=True):
+def dict_from_pattern(pattern, string):
     pattern1 = re.sub(r"{(\w+?)(:.+?)?}", r"(?P<\1>.+?)", pattern)
     pattern2 = re.sub(r"[\\/]+", r"[\\\\/]+", pattern1)
     compiled_pattern = re.compile(pattern2)
@@ -32,15 +36,14 @@ def dict_from_pattern(pattern, string, key_to_upper=True):
         return {}
 
     groups = match.groupdict()
-    caser = upper if key_to_upper else identity
 
-    casted_match = {caser(k): transform[k](match[k]) for k, v in groups.items()}
+    casted_match = CaseInsensitiveDict({k: transform[k](match[k]) for k, v in groups.items()})
 
     return casted_match
 
 
 def trim_to_python(value, maxlims=None):
-    result = re.search(r'\[(\d+):(\d+),(\d+):(\d+)\]', value).groups()
+    result = re.search(r'\[(\d+):(\d+),(\d+):(\d+)]', value).groups()
     if maxlims is None:
         return int(result[2]), int(result[3]), int(result[0]), int(result[1])
 
@@ -79,3 +82,14 @@ def extract_common(tdata, trim, common_trim):
 
         ret = tdata[-delta[0]:delta[1], -delta[2]:delta[3]]
         return ret, True
+
+
+def prepare_mosaic_axes(n, ncols, base=True) -> list[matplotlib.axes.Axes]:
+    f = plt.figure()
+    gs = f.add_gridspec(ncols=ncols, nrows=int(np.ceil(n / ncols)) + int(base))
+    axs = gs.subplots()
+    dummy = [ax.remove() for ax in axs[-1]]
+    ret = list(axs[:-1].flatten()) + list([f.add_subplot(gs[-1, :])] if base else [])
+    for ax in ret[:-2]:
+        ax.axis('off')
+    return ret

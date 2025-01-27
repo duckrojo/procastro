@@ -3,9 +3,12 @@ from pathlib import Path
 from procastro.logging import io_logger
 from procastro.statics import identity
 from .astrofile import AstroFile
+import procastro as pa
+# from ..astrodir import AstroDir
 
 
 class AstroFileMulti(AstroFile):
+    _initialized = False
 
     @property
     def filename(self):
@@ -18,9 +21,12 @@ class AstroFileMulti(AstroFile):
                  astrofiles: "str | AstroDir | list[AstroFile]",
                  spectral: bool = None,
                  **kwargs):
+        # The initialized check at super() is not enough since it will be calling AstroFile before
+        # super() thus entering in an infinite loop if called with its subclass
+        if self._initialized:
+            return
 
-        if isinstance(astrofiles, str):
-            astrofiles = [astrofiles]
+        astrofiles = pa.AstroDir(astrofiles)
 
         if spectral is None:
             try:
@@ -37,9 +43,6 @@ class AstroFileMulti(AstroFile):
 
         # first read storing in cache
         identity(self.data)
-
-    def __getitem__(self, item):
-        return self.singles[item]
 
     def add_calib(self, astrocalibs):
         if astrocalibs is None:

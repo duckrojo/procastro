@@ -2,6 +2,7 @@
 __all__ = ['AstroFileBase']
 
 from procastro.cache.cache import astrofile_cache
+from procastro.other.case_insensitivity import CaseInsensitiveDict
 from procastro.statics import PADataReturn
 
 
@@ -20,7 +21,7 @@ class AstroFileBase:
 
     @property
     def meta(self):
-        return {k.upper(): v for k, v in self._meta.items()}
+        return CaseInsensitiveDict(self._meta)
 
     @property
     @astrofile_cache

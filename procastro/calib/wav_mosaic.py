@@ -10,7 +10,11 @@ __all__ = ['WavMosaic']
 
 class WavMosaic(CalibBase):
 
-    def __init__(self, offset_dict=None, offset_key='chip', meta=None, *args, **kwargs):
+    def __init__(self,
+                 offset_dict=None,
+                 offset_key='chip',
+                 meta=None,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if offset_dict is None:

@@ -1,6 +1,7 @@
 from pathlib import Path
 from random import random
 
+import astropy
 import numpy as np
 from astropy import time as apt
 
@@ -11,6 +12,8 @@ from procastro.logging import io_logger
 from procastro.statics import dict_from_pattern, identity, PADataReturn
 
 __all__ = ['AstroFile']
+
+from ..other.case_insensitivity import CaseInsensitiveDict
 
 from ..parents.calib import CalibBase
 
@@ -88,7 +91,8 @@ class AstroFile(AstroFileBase):
         self._data_file_options: dict = file_options
         self._format = static_identify.static_identify(filename, options=file_options)
 
-        self._meta = {k: v for k, v in meta.items()} if meta is not None else {}
+        self._meta = CaseInsensitiveDict({k: v for k, v
+                                          in meta.items()}) if meta is not None else CaseInsensitiveDict({})
         if meta_from_name:
             self._meta |= dict_from_pattern(meta_from_name, filename)
 
@@ -109,7 +113,7 @@ class AstroFile(AstroFileBase):
 
         data, meta = static_read.static_read(self._format, self._data_file)
 
-        self._meta |= {k.upper(): v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
+        self._meta |= {k: v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
         self._random = random()
 
         if self.spectral:
@@ -264,16 +268,13 @@ class AstroFile(AstroFileBase):
         ret = []
         for k in args:
             k = k.strip()
-            k_uc = k.upper()
-            if k_uc in hdr:
-                ret.append(cast(hdr[k_uc]))
-            elif k in hdr:
+            if k in hdr:
                 ret.append(cast(hdr[k]))
-            elif k_uc == "filename":
+            elif k == "filename":
                 ret.append(self._data_file)
-            elif k_uc == "basename":
+            elif k == "basename":
                 ret.append(str(Path(self._data_file).name))
-            elif k_uc == "dirname":
+            elif k == "dirname":
                 ret.append(str(Path(self._data_file).parent))
             else:
                 ret.append(None)
@@ -318,6 +319,9 @@ class AstroFile(AstroFileBase):
 
         if key is None:
             key = self._sort_key
+
+        if isinstance(key, int):
+            raise ValueError("AstroFile can only be indexed with strings to meta keys")
 
         return self.values(key, single_in_list=False)
 
@@ -446,14 +450,6 @@ class AstroFile(AstroFileBase):
     @_check_first_astrofile
     def __gt__(self, other):
         return self[None] > other[None]
-
-    @_check_first_astrofile
-    def __eq__(self, other):
-        return self[None] == other[None]
-
-    @_check_first_astrofile
-    def __ne__(self, other):
-        return self[None] != other[None]
 
     # Object Arithmetic is applied on data
     @_numerize_other

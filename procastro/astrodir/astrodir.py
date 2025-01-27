@@ -19,10 +19,18 @@ class AstroDir:
         If passed an AstroDir, then do not create a new instance, just pass
         that one
         """
-        if args and isinstance(args[0], AstroDir) and len(kwargs) == 0:
-            return args[0]
+        if args:
+            same_params = True
+            if isinstance(args[0], AstroDir):
+                if 'spectral' in kwargs and args[0].spectral != kwargs['spectral']:
+                    same_params = False
+            elif args[0] is not None:
+                same_params = False
 
-        return super(AstroDir, cls).__new__(cls)
+            if same_params:
+                return args[0]
+
+        return super().__new__(cls)
 
     def __init__(self,
                  files,
@@ -194,6 +202,11 @@ class AstroDir:
 
         return AstroDir([f for f in self if f.filter(*args, **kwargs)])
 
+    def __contains__(self, other):
+        if not isinstance(other, pa.AstroFile):
+            return False
+        return other in self.astro_files
+
     def values(self, *args, cast=None, by_values=False, single_in_list=False):
         """
         Gets the header values specified in 'args' from each file.
@@ -231,7 +244,11 @@ class AstroDir:
 
         return ret
 
-    def iter_by(self, *keys, combine=None):
+    def iter_by(self,
+                *keys,
+                combine=None
+                ) -> pa.AstroFile:
+
         values = self.values(*keys, single_in_list=True)
         content = values.transpose().tolist() + [list(range(len(self)))]
         table = Table(content, names=list(keys) + ['idx'])

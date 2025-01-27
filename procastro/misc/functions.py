@@ -82,6 +82,7 @@ def initialize_p0_bounds(variables, y):
     p0s = []
     bounds = []
     for yy in y:
+        # aa = initial_guesses[1](yy)
         evaluated_guesses = np.array([pp(yy) if callable(pp) else pp for pp in initial_guesses])
         p0s.append(evaluated_guesses[mask])
         evaluated_bounds = np.array([[bb(pp) if callable(bb) else bb
@@ -201,7 +202,8 @@ Initialize and give initial guessses
 
         c = c or [x[len(x) // 2],
                   lambda v: v-uncertainty, lambda v: v+uncertainty]   # center's default is middle of array
-        h = h or [lambda v: max(v[c[0] - uncertainty: c[0] + uncertainty]),
+        h = h or [lambda v: max(v[np.argmin(np.abs(c[0] - uncertainty - x)):
+                                  np.argmin(np.abs(c[0] + uncertainty - x))]),
                   lambda v: 0.5*v, lambda v: 1.5*v]  # height's default
         w = w or [10, 3, 40]  # width's default
         o = o or [min, 0, lambda v: 2*v]  # baseline default
