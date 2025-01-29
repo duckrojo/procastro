@@ -1,7 +1,9 @@
+import os
+import shutil
 from pathlib import Path
 from random import random
+from typing import Any
 
-import astropy
 import numpy as np
 from astropy import time as apt
 
@@ -95,6 +97,7 @@ class AstroFile(AstroFileBase):
                                           in meta.items()}) if meta is not None else CaseInsensitiveDict({})
         if meta_from_name:
             self._meta |= dict_from_pattern(meta_from_name, filename)
+        self.meta_from_name = meta_from_name
 
         if not do_not_read:
             identity(self.data)  # first read
@@ -131,7 +134,7 @@ class AstroFile(AstroFileBase):
     def get_format(self):
         return self._format
 
-    def write(self, filename=None, backup_extension=".bak"):
+    def write(self, filename=None, data=None, backup_extension=".bak"):
         if self._format != "FITS":
             if static_identify.static_identify(filename) != "FITS":
                 raise ValueError("Must provide a FITS filename for .write()... "
@@ -142,22 +145,23 @@ class AstroFile(AstroFileBase):
             filename = self._data_file
 
         filename = str(filename)
+        self.write_as(filename,
+                      data=data, overwrite=True, backup_extension=backup_extension)
 
-        if Path(filename + backup_extension).exists():
-            io_logger.warning(f"Backup file {filename + backup_extension} already exists, not overwriting it")
-        else:
-            io_logger.warning(f"Backing up in: {filename + backup_extension}")
-            static_write.static_write("FITS", filename + backup_extension, self.data, self.meta,
-                                      overwrite=True)
-
-        static_write.static_write("FITS", filename, self.data, self.meta,
-                                  overwrite=True)
-
-    def write_as(self, filename, overwrite=False):
+    def write_as(self, filename, data=None, overwrite=False, backup_extension=".bak"):
         file_type = static_identify.static_identify(filename)
 
+        if Path(filename).exists():
+            backup = Path(filename + backup_extension)
+            if backup.exists():
+                os.remove(backup)
+            io_logger.warning(f"Backing up exisitng file in: {filename + backup_extension}")
+            shutil.move(filename, backup)
+
         io_logger.warning(f"Saving in {filename} using file type {file_type}")
-        static_write.static_write(file_type, filename, self.data, self.meta,
+        if data is None:
+            data = self.data
+        static_write.static_write(file_type, filename, data, self.meta,
                                   overwrite=overwrite)
 
     def forced_data(self):
@@ -296,14 +300,16 @@ class AstroFile(AstroFileBase):
         -------
 
         """
+        if not isinstance(item, (list, tuple)):
+            item = [item]
 
-        for found in self.values(item, single_in_list=True):
-            if found is not None:
+        for found in item:
+            if found in self.meta.keys():
                 return True
 
         return False
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Any:
         """
         Read single meta value
 

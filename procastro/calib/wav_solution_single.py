@@ -1,5 +1,6 @@
+from pathlib import Path
+
 import numpy as np
-from astropy.table import Table
 from matplotlib import pyplot as plt
 
 import procastro as pa
@@ -11,19 +12,23 @@ from procastro.misc.functions import use_function, GenNorm, MultiGenNorm
 
 class WavSolSingle:
     def __init__(self,
-                 pixwav: Table,
+                 astrofile: pa.AstroFile,
                  function="poly:d4",
-                 external=None,):
+                 external=None,
+
+                 ):
         """
 
         Parameters
         ----------
-        pixwav
+        astrofile
         function
         """
         self.std = None
         self.function = function
-        self.pixwav = pixwav
+        self.astrofile = astrofile
+        self.pixwav = astrofile.data.copy()
+
         self.mask = None
         self.call_fcn = None
 
@@ -31,7 +36,7 @@ class WavSolSingle:
 
         self.xfits = {}
         self.fits = {}
-        self.arcs = pa.AstroDir([])
+        self.arcs: pa.AstroDir = pa.AstroDir([])
         self.fit_lin_width = {}
         self.fit_widths = {}
         self.fit_mask = {}
@@ -212,7 +217,7 @@ Iterates over all the information that matches column of wavpix and meta of arcs
            Key used to separate calibs, otherwise it will merge them. They should be
            both in pixwav columns and in arcs' meta.
            If none, then find all columns that are in both pixwav and arcs.
-           If do not want to separate, use []
+           If you do not want to separate, use []
         """
         self.separate_calib = separate
 
@@ -281,7 +286,9 @@ Iterates over all the information that matches column of wavpix and meta of arcs
             self.fit_widths[option] = np.array(widths)
             self.fit_mask[option] = mask
 
-            io_logger.warning(f"Fitted line widths for option '{",".join([str(x) for x in list(self.external)+list(option)])}'"
+            io_logger.warning(f"Fitted line widths for option "
+                              f"'{",".join([str(x) 
+                                            for x in list(self.external) + list(option)])}'"
                               f" varies between {p[1] + p[0] * original_centers[0]:.1f} - "
                               f"{p[1] + p[0] * original_centers[-1]:.1f}")
 
@@ -355,6 +362,26 @@ Iterates over all the information that matches column of wavpix and meta of arcs
         ax.legend(fontsize=8)
 
         return axs
+
+    def write(self, directory=None):
+        save_filename = self.astrofile.filename
+
+        while isinstance(save_filename, (list, tuple)):
+            save_filename = save_filename[0]
+
+        if directory is None:
+            filename = save_filename
+        else:
+            directory = Path(directory)
+            if directory.exists() and not directory.is_dir():
+                raise FileExistsError(f"Target destination exists and is not a directory: {directory}")
+            if not directory.exists():
+                directory.mkdir(parents=True)
+
+            filename = directory / Path(save_filename).name
+
+        self.astrofile.write_as(filename,
+                                overwrite=True, data=self.pixwav)
 
 
 def _extract_around(central, width, pix, out):

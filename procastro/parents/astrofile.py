@@ -23,6 +23,10 @@ class AstroFileBase:
     def meta(self):
         return CaseInsensitiveDict(self._meta)
 
+    @meta.setter
+    def meta(self, value):
+        self._meta = CaseInsensitiveDict(value)
+
     @property
     @astrofile_cache
     def data(self) -> PADataReturn:

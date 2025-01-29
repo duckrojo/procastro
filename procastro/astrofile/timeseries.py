@@ -8,10 +8,6 @@ from procastro.astrofile.multi_files import AstroFileMulti
 
 class AstroFileTimeSeries(AstroFileMulti):
 
-    @property
-    def filename(self):
-        return "(" + ', '.join([Path(df).name for df in self._data_file]) + ")"
-
     def __repr__(self):
         return (f"<TimeSeries {'Spec' if self.spectral else 'Image'} {len(self._data_file)} files "
                 f"{self.filename}>")
@@ -30,10 +26,10 @@ class AstroFileTimeSeries(AstroFileMulti):
             meta = self.singles[0].meta
 
             # if 1 dimension, then there is just one epoch in this timeseries
-            if ret[ret.colnames[0]].shape == 1:
+            if len(ret[ret.colnames[0]].shape) == 1:
                 for colname in ret.colnames:
                     ret[colname] = ret[colname][None, :]
-            elif ret[ret.colnames[0]].shape > 2:
+            elif len(ret[ret.colnames[0]].shape) > 2:
                 raise TypeError(f"too many dimensions for columns in table {ret}")
 
         # if more than one file is given to timeseries, then each file is assumed to be just one epoch.
@@ -45,7 +41,7 @@ class AstroFileTimeSeries(AstroFileMulti):
 
             for idx, single in enumerate(self.singles):
                 if ((size is not None and size != len(single))
-                        or (colnames is not None and colnames != set(single.colnames))):
+                        or (colnames is not None and colnames != set(single.data.colnames))):
                     raise ValueError("In a timeseries, all files must have the same size and columns")
                 size = len(single)
 
@@ -66,8 +62,14 @@ class AstroFileTimeSeries(AstroFileMulti):
                 # keep meta from first file only
                 if meta is None:
                     meta = single.meta
+        else:
+            raise ValueError(f"Empty files in {self}. this should have not happened")
 
-        self._meta = ret.meta
+        self._meta = meta
         self._random = random()
 
         return ret
+
+    @property
+    def id_letter(self):
+        return "TS"

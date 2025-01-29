@@ -45,7 +45,8 @@ class WavSol(CalibBase):
         self.wavsols: dict[tuple, WavSolSingle] = {}
         for astrofile in pixwav.mosaic_by(*group_by, in_place=False):
             option = tuple(astrofile.values(*group_by, single_in_list=True))
-            self.wavsols[option] = WavSolSingle(astrofile.data, pixwav_function, external=option)
+            self.wavsols[option] = WavSolSingle(astrofile, pixwav_function,
+                                                external=option)
 
         if arcs is None:
             arcs = pa.AstroDir([])
@@ -158,6 +159,7 @@ class WavSol(CalibBase):
 
         Parameters
         ----------
+        title
         ncol
         alternate_functions
         reference
@@ -224,6 +226,10 @@ class WavSol(CalibBase):
             sol.plot_fit(axs=inax, legend_title=f"{{}} for {option}")
 
         axs[ncols//2].set_title(title)
+
+    def save_in(self, directory):
+        for wavsol in self.wavsols.values():
+            wavsol.write(directory=directory)
 
 
 def _print_option(option, grouping):

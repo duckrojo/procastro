@@ -4,7 +4,29 @@ from procastro.logging import io_logger
 from procastro.statics import identity
 from .astrofile import AstroFile
 import procastro as pa
-# from ..astrodir import AstroDir
+
+
+class _FileNames(list):
+    def __init__(self, astrofiles, prefix=""):
+        filenames = []
+        for single in astrofiles:
+            filename = single.filename
+            if isinstance(filename, str):
+                filename = Path(filename)
+            elif not isinstance(filename, (Path, _FileNames)):
+                raise TypeError("filename must be str, Path, or the filename of another astrofile")
+            filenames.append(filename)
+
+        super().__init__(filenames)
+        self.prefix = prefix
+
+    @property
+    def name(self):
+        return str(self)
+
+    def __str__(self):
+        ret = f"{self.prefix}({", ".join([str(v.name) for v in self])})"
+        return ret
 
 
 class AstroFileMulti(AstroFile):
@@ -12,7 +34,7 @@ class AstroFileMulti(AstroFile):
 
     @property
     def filename(self):
-        return "(" + ', '.join([Path(df).name for df in self._data_file]) + ")"
+        return self._data_file
 
     def __repr__(self):
         return "AstroFileMulti. Better description should have been in subclass"
@@ -39,7 +61,7 @@ class AstroFileMulti(AstroFile):
 
         super().__init__(astrofiles[0], spectral=spectral, do_not_read=True, **kwargs)
 
-        self._data_file = tuple([af.filename for af in astrofiles])
+        self._data_file = _FileNames(astrofiles, prefix=self.id_letter)
 
         # first read storing in cache
         identity(self.data)
@@ -59,4 +81,10 @@ class AstroFileMulti(AstroFile):
         return super().add_calib(astrocalibs)
 
     def read(self):
-        NotImplementedError("read() must be implemented by subclass")
+        # in new implementations, do not forget to return data and save ._meta as CaseInsensitiveDict
+        raise NotImplementedError("read() must be implemented by subclass")
+
+    @property
+    def id_letter(self):
+        raise NotImplementedError("This also must be implemented by subclass, ideally just one "
+                                  "letter when printing filenames")

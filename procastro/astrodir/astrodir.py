@@ -53,16 +53,17 @@ class AstroDir:
         self._last_sort_key = None
         self.spectral = spectral
 
-        meta_from_name = None
-        original_filename = files
         if isinstance(files, str):
             if 0 < files.count('{') == files.count('}'):
-                meta_from_name = files
-                files = glob_from_pattern(files)
+                meta_from_name = str(directory/files)
+                glob_files = glob_from_pattern(files)
+            else:
+                glob_files = files
+                meta_from_name = None
 
-            files = glob.glob(str(directory / files))
+            files = glob.glob(str(directory / glob_files))
             if not len(files):
-                io_logger.warning(f"No files found with pattern '{original_filename}'")
+                io_logger.warning(f"No files found with glob pattern '{str(directory/glob_files)}'")
         elif isinstance(files, pa.AstroFile):
             files = [files]
 
@@ -129,7 +130,7 @@ class AstroDir:
 
     @property
     def filename(self):
-        return ', '.join([Path(af.filename).name for af in self])
+        return ', '.join([Path(str(af.filename)).name for af in self])
 
     def __repr__(self):
         return "<AstroFile container: {0:s}>".format(self.filename)
@@ -234,13 +235,13 @@ class AstroDir:
         warnings.filterwarnings("once",
                                 "non-standard convention",
                                 AstropyUserWarning)
-        ret = np.array([f.values(*args, cast=cast, single_in_list=single_in_list)
-                        for f in self])
+        ret = [f.values(*args, cast=cast, single_in_list=single_in_list)
+               for f in self]
 
         warnings.resetwarnings()
 
         if by_values:
-            ret = ret.transpose()
+            ret = list(zip(*ret))
 
         return ret
 
@@ -249,8 +250,8 @@ class AstroDir:
                 combine=None
                 ) -> pa.AstroFile:
 
-        values = self.values(*keys, single_in_list=True)
-        content = values.transpose().tolist() + [list(range(len(self)))]
+        values = self.values(*keys, single_in_list=True, by_values=True)
+        content = values + [list(range(len(self)))]
         table = Table(content, names=list(keys) + ['idx'])
 
         if len(table) == 0:
@@ -266,12 +267,10 @@ class AstroDir:
 
     def _combine_by(self, *keys, combinator=None, in_place=True) -> "AstroDir":
 
-        astro_files = []
-        for astro_file in self.iter_by(*keys, combine=combinator):
-            astro_files.append(astro_file)
-            pass
+        if len(self.astro_files) == 0:
+            raise ValueError("Cannot combine empty AstroDir")
 
-#        astro_files = [astro_file for astro_file in self.iter_by(*keys, combine=combinator)]
+        astro_files = [astro_file for astro_file in self.iter_by(*keys, combine=combinator)]
 
         if in_place:
             self.astro_files = astro_files
