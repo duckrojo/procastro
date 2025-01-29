@@ -70,15 +70,24 @@ class AstroFileMulti(AstroFile):
         if astrocalibs is None:
             return self
 
-        for single in self.singles:
-            for calib in single.get_calib():
-                position = astrocalibs.index(calib)
-                if position is not None:
-                    io_logger.warning(f"AstroCalib instance {astrocalibs[position]} is being used both in"
-                                      f" multifile instance and individual file, thus will be applied twice."
-                                      f" Are you sure?")
+        if not isinstance(astrocalibs, list):
+            astrocalibs = [astrocalibs]
+
+        already_calib = self.get_calib()
+        for calib in astrocalibs:
+            if calib in already_calib:
+                io_logger.warning(f"AstroCalib instance {calib} is being used both in"
+                                  f" multifile instance and individual file, thus will be applied twice."
+                                  f" Are you sure?")
 
         return super().add_calib(astrocalibs)
+
+    def get_calib(self) -> list:
+
+        ret = []
+        for single in self.singles:
+            ret += single.get_calib()
+        return self._calib + [ret]
 
     def read(self):
         # in new implementations, do not forget to return data and save ._meta as CaseInsensitiveDict

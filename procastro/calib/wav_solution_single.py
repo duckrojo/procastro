@@ -39,7 +39,7 @@ class WavSolSingle:
         self.arcs: pa.AstroDir = pa.AstroDir([])
         self.fit_lin_width = {}
         self.fit_widths = {}
-        self.fit_mask = {}
+        self.fit_widths_mask = {}
         self.separate_calib = []
         self.external = external
 
@@ -47,7 +47,7 @@ class WavSolSingle:
         if ax is None:
             ax = plt.subplot()
         for mask, option, arc in self.iter_mask_option_arcs(self.arcs):
-            fit_mask = self.fit_mask[option]
+            fit_mask = self.fit_widths_mask[option]
             x = self.pixwav[mask]['pix']
 
             ax.plot(x[fit_mask],
@@ -284,7 +284,7 @@ Iterates over all the information that matches column of wavpix and meta of arcs
             p = np.polyfit(original_centers[mask], individual_width[mask], 1)
             self.fit_lin_width[option] = p
             self.fit_widths[option] = np.array(widths)
-            self.fit_mask[option] = mask
+            self.fit_widths_mask[option] = mask
 
             io_logger.warning(f"Fitted line widths for option "
                               f"'{",".join([str(x) 

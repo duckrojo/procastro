@@ -181,7 +181,7 @@ class AstroFile(AstroFileBase):
 
         return self
 
-    def get_calib(self):
+    def get_calib(self) -> list:
         return self._calib
 
     def __hash__(self):

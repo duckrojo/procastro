@@ -117,7 +117,7 @@ class WavSol(CalibBase):
 
     def __repr__(self):
         return (f"<{super().__repr__()} Wavelength Solution. {len(self.wavsols)}x sets of "
-                f"{self.group_by}: {list(self.wavsols.keys())}>")
+                f"{tuple(self.group_by)}: {",".join([str(x) for x in self.wavsols.keys()])}>")
 
     def __call__(self,
                  data,

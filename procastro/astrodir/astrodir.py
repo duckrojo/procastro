@@ -245,6 +245,10 @@ class AstroDir:
 
         return ret
 
+    def add_calib(self, astrocalib):
+        for af in self:
+            af.add_calib(astrocalib)
+
     def iter_by(self,
                 *keys,
                 combine=None
