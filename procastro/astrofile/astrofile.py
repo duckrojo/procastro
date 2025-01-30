@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 from astropy import time as apt
+from matplotlib import pyplot as plt, axes
 
 from procastro.parents.astrofile import AstroFileBase
 from . import static_read, static_identify, static_write
@@ -181,14 +182,14 @@ class AstroFile(AstroFileBase):
 
         return self
 
-    def get_calib(self) -> list:
-        return self._calib
+    def get_calib(self) -> tuple:
+        return tuple(self._calib)
 
     def __hash__(self):
         """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random
          provides a method to force reloading of cache."""
 
-        return hash((self._data_file, self._calib, self._random))
+        return hash((self._data_file, self.get_calib(), self._random))
 
     def set_values(self, **kwargs):
         """
@@ -513,6 +514,7 @@ class AstroFile(AstroFileBase):
         self._sort_key = key
 
     def stats(self, *args,
+              column=None,
               verbose_heading=True,
               extra_headers=None,
               ):
@@ -546,12 +548,17 @@ class AstroFile(AstroFileBase):
                           .format(", ".join(extra_headers))
                           or ""))
         ret = []
-        data = self.data
+        if column is None:
+            data = self.data
+        else:
+            data = self.data[column].data
         for stat in args:
             if stat == 'min':
                 ret.append(data.min())
             elif stat == 'max':
                 ret.append(data.max())
+            elif stat == 'delta':
+                ret.append(data.max() - data.min())
             elif stat == 'mean':
                 ret.append(data.mean())
             elif stat == 'mean3sclip':
@@ -654,28 +661,52 @@ class AstroFile(AstroFileBase):
             io_logger.warning("Cannot show image of spectra, use plot instead")
         return pa.imshowz(self.data, *args, **kwargs)
 
-    def plot(self, channel=0, dispersion='pix'):
+    def plot(self, ax=None, channels=0, title="", ncols=2):
         if not self.spectral:
             io_logger.warning("Cannot plot image, use imshowz instead")
             return
 
-        data = self.data
+        if channels is None:
+            channels = self.meta['infochn']
+        if not isinstance(channels, list):
+            channels = [channels]
 
-        if dispersion in data.colnames:
-            x = data[dispersion]
-            x_label = dispersion
-        else:
-            x = np.arange(len(data))
-            x_label = ""
+        if ax is None:
+            f, ax = plt.subplots(ncols=ncols if len(channels) > 1 else 1,
+                                 nrows=int(np.ceil(len(channels)/ncols)))
+        if not isinstance(ax, list):
+            ax = [ax]
+        if len(ax) < len(channels):
+            ax = ax + [ax[-1]]*(len(channels)-len(ax))
 
-        if isinstance(channel, int):
-            channel = data.colnames[channel]
-        elif not isinstance(channel, str):
-            raise ValueError("channel with spectral data can only the name of the column to plot (str),"
-                             " or the position in .colnames (int)")
+        ax: list[axes.Axes]
+        channels: str
 
-        plt.plot(x, data[channel])
-        plt.xlabel(x_label)
+        for axx, channel in zip(ax, channels):
+            data = self.data[str(channel)].transpose()
+            if 'wav' in self.data.colnames:
+                x = self.data['wav']
+                xlabel = "Wavelength (AA)"
+            elif 'pix' in self.data.colnames:
+                x = self.data['pix']
+                xlabel = "Pixel"
+            else:
+                x = np.arange(len(self.data))
+                xlabel = "Raw Pixel"
+
+            if len(data.shape) > 1:
+                medians = np.median(data, axis=1)
+
+                axx.plot(x, data[0], label='first')
+                axx.plot(x, data[-1], label='last')
+                axx.plot(x, data[np.argmin(medians)], label='min median')
+                axx.plot(x, data[np.argmax(medians)], label='max median')
+            else:
+                axx.plot(x, data)
+
+        ax[-1].set_xlabel(xlabel)
+        ax[-1].legend()
+        ax[0].set_title(title)
 
     def __len__(self):
         if not self.spectral:

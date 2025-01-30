@@ -61,6 +61,9 @@ class WavSolSingle:
                     )
         ax.legend(title=legend_title.format())
 
+    def short(self):
+        return f"{len(self.pixwav)}L, {self.std:.2f}S, {self.function}"
+
     def __repr__(self):
         return (f"<WavSolution with {len(self.pixwav)} lines, {len(self.arcs)} arcs, "
                 f"function '{self.function}', std {self.std}>")

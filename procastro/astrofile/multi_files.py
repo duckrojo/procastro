@@ -20,6 +20,9 @@ class _FileNames(list):
         super().__init__(filenames)
         self.prefix = prefix
 
+    def __hash__(self):
+        return hash(tuple(self))
+
     @property
     def name(self):
         return str(self)
@@ -82,12 +85,12 @@ class AstroFileMulti(AstroFile):
 
         return super().add_calib(astrocalibs)
 
-    def get_calib(self) -> list:
+    def get_calib(self) -> tuple:
 
-        ret = []
+        ret = [tuple(self._calib)]
         for single in self.singles:
-            ret += single.get_calib()
-        return self._calib + [ret]
+            ret += tuple(single.get_calib())
+        return tuple(ret)
 
     def read(self):
         # in new implementations, do not forget to return data and save ._meta as CaseInsensitiveDict

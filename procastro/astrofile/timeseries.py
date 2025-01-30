@@ -1,4 +1,3 @@
-from pathlib import Path
 from random import random
 
 import numpy as np
@@ -14,9 +13,11 @@ class AstroFileTimeSeries(AstroFileMulti):
 
     def __init__(self,
                  astrofiles: "str | AstroDir | list[AstroFile]",
-                 spectral: bool = None, **kwargs):
+                 spectral: bool = None,
+                 **kwargs):
 
         super().__init__(astrofiles, spectral, **kwargs)
+        self.multi_epoch_channels = None
 
     def read(self):
 
@@ -24,11 +25,13 @@ class AstroFileTimeSeries(AstroFileMulti):
         if len(self.singles) == 1:
             ret = self.singles[0].data
             meta = self.singles[0].meta
+            meta['infochn'] = [col for col in ret.colnames if col not in ['pix']]
 
-            # if 1 dimension, then there is just one epoch in this timeseries
+            # if 1 dimension, then there is just one epoch in this timeseries and all channels are multi_channels
             if len(ret[ret.colnames[0]].shape) == 1:
                 for colname in ret.colnames:
                     ret[colname] = ret[colname][None, :]
+
             elif len(ret[ret.colnames[0]].shape) > 2:
                 raise TypeError(f"too many dimensions for columns in table {ret}")
 
@@ -62,6 +65,8 @@ class AstroFileTimeSeries(AstroFileMulti):
                 # keep meta from first file only
                 if meta is None:
                     meta = single.meta
+            raise NotImplementedError(f"Multiple files are not yet supported, multi_epoch_channels in particular")
+
         else:
             raise ValueError(f"Empty files in {self}. this should have not happened")
 

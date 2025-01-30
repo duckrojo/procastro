@@ -133,7 +133,7 @@ class AstroDir:
         return ', '.join([Path(str(af.filename)).name for af in self])
 
     def __repr__(self):
-        return "<AstroFile container: {0:s}>".format(self.filename)
+        return f"<AstroFile container ({len(self)}x): {self.filename:s}>"
 
     def __getitem__(self, item):
 

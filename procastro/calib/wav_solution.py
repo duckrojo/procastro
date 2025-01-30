@@ -1,7 +1,13 @@
 import numpy as np
+from astropy.table import Table
+from astropy.table.column import MaskedColumnInfo, MaskedColumn
 from matplotlib import pyplot as plt
+from scipy import interpolate
+from scipy import optimize
 
 from procastro.calib.wav_solution_single import WavSolSingle
+from procastro.misc import functions
+from procastro.misc.functions import use_function
 from procastro.parents.calib import CalibBase
 from procastro.logging import io_logger
 import procastro as pa
@@ -26,10 +32,14 @@ class WavSol(CalibBase):
                  group_by='trace',
                  pixwav_function="poly:d4",
                  beta=2,
+                 oversample=2,
+                 wav_out=None,
+                 align_telluric=None,
                  **kwargs):
         super().__init__(**kwargs)
 
         self.beta = beta
+        self.oversample = oversample
 
         if not isinstance(group_by, list):
             group_by = [group_by]
@@ -60,6 +70,10 @@ class WavSol(CalibBase):
 
         # arc can potentially be with different option key than pixwav
         self.add_arc(arcs, refit=refit, separate=separate)
+        self.target_wav = self.add_target_wav(wav_out)
+
+        self.align_telluric = align_telluric is not None
+        self.col_alignment = align_telluric
 
     def all_pixs(self):
         ret = []
@@ -119,14 +133,85 @@ class WavSol(CalibBase):
         return (f"<{super().__repr__()} Wavelength Solution. {len(self.wavsols)}x sets of "
                 f"{tuple(self.group_by)}: {",".join([str(x) for x in self.wavsols.keys()])}>")
 
+    def add_target_wav(self,
+                       wav: np.ndarray | int | None,
+                       decimals: int = 2,
+                       ):
+        if wav is None:
+            return
+
+        if isinstance(wav, np.ndarray):
+            self.target_wav = wav
+        elif isinstance(wav, int):
+            avg_delta_wav = []
+            min_wav = []
+            max_wav = []
+            for wavsol in self.wavsols.values():
+                pw = wavsol.pixwav
+                avg_delta_wav.append((max(pw['wav']) - min(pw['wav'])) / (max(pw['pix']) - min(pw['pix'])))
+                min_wav.append(min(pw['wav']))
+                max_wav.append(max(pw['wav']))
+
+            dwav = np.round(np.mean(avg_delta_wav), decimals=decimals)
+            minw = np.min(min_wav)
+            maxw = np.max(max_wav)
+
+            between_pix = (maxw - minw) / dwav
+            self.target_wav = np.round(minw, decimals) + (np.arange(wav) - (wav - between_pix) / 2) * dwav
+            io_logger.warning(f"Wavelength scale was set to {wav} pixels between {self.target_wav[0]:.2f}"
+                              f" and {self.target_wav[-1]:.2f}. Delta: {self.target_wav[1]-self.target_wav[0]}")
+        else:
+            raise TypeError("Target wav must be an ndarray (an explicit wav_out) or "
+                            "int (number of elements)")
+
+        return self.target_wav
+
     def __call__(self,
-                 data,
+                 data: Table,
                  meta=None,
                  ):
         data, meta = super().__call__(data, meta=meta)
 
         group_key = tuple([meta[val] for val in self.group_by])
-        data['wav'] = self.wavsols[group_key](data['pix'])
+        wavsol = self.wavsols[group_key]
+        if 'infochn' not in meta:
+            infochn = [chn for chn in data.colnames if chn not in ['pix', 'wav']]
+            io_logger.warning(f"No explicit information channels were given. We will"
+                              f" interpolate all these channels: {infochn} ")
+        else:
+            infochn = meta['infochn']
+        n_epochs = data[infochn[0]].shape[-1]
+
+        if self.target_wav is None:
+            offset = offset_by_telluric(wav_out, data[col]) if self.align_telluric else 0
+            wav_in = wavsol(data['pix'] + offset)
+            data['wav'] = np.linspace(wav_in[0], wav_in[-1], len(wav_in))
+            info = "default equispaced"
+            raise NotImplementedError("Needs to be checked before use")
+        else:
+            wav_out = self.target_wav
+
+            minline = min(wavsol.pixwav['wav'])
+            maxline = max(wavsol.pixwav['wav'])
+            delta_wav = maxline - minline
+            lower = minline - self.oversample * delta_wav / 100 < wav_out
+            higher = wav_out < maxline + self.oversample * delta_wav / 100
+            mask = np.array(lower * higher, dtype=bool)
+            mask = np.zeros(n_epochs, dtype=bool) + mask[:, None]
+
+            # interpolate every column
+            io_logger.warning("Interpolating wavelengths" +
+                              (" after aligning telluric" if self.align_telluric else ""))
+            offset = offset_by_telluric(wav_out, data[self.col_alignment]) if self.align_telluric else 0
+            wav_in = wavsol(data['pix'][None, :] + np.array(offset)[:, None])
+            for col in infochn:
+                io_logger.warning(f" - column {col}")
+                fcn = functions.use_function("otf_spline:s0", wav_in, data[col].transpose())
+                data[col] = MaskedColumn(fcn(wav_out).transpose(), mask=~mask)
+            info = "given interpolatation"
+
+        meta['WavSol'] = f"{self.wavsols[group_key].short()}. {info}"
+        data['wav'] = wav_out
 
         return data, meta
 
@@ -234,3 +319,66 @@ class WavSol(CalibBase):
 
 def _print_option(option, grouping):
     return f"{','.join(grouping)}={','.join([str(v) for v in option])}"
+
+
+def closer_pixs(x,
+                x0,
+                function="spline:s0",
+                ):
+
+    n = len(x)
+    pix = np.arange(n)
+    interp = use_function(function, pix, x)
+    if not isinstance(x0, (list, tuple)):
+        x0 = [x0]
+
+    ret = []
+    for xx0 in x0:
+        root = optimize.root_scalar(lambda pixx: interp(pixx) - xx0,
+                                    x0=0,
+                                    x1=n - 1,
+                                    )
+        ret.append(root.root)
+
+    return ret
+
+
+def offset_by_telluric(owav: np.ndarray,
+                       fluxes,
+                       over_sample: int = 20,
+                       degree=2,
+                       ):
+
+    telluric_band = [7593, 7688]
+    telluric_baseline = [7440, 7840]
+
+    left_right = telluric_baseline
+    skip = telluric_band
+
+    left, right = closer_pixs(owav, left_right)
+    left, right = int(np.floor(left)), int(np.ceil(right))
+
+    window_flux = fluxes[left: right, :]
+    window_wav = owav[left: right]
+    skip_left, skip_right = closer_pixs(window_wav, skip)
+    skip_left, skip_right = int(np.floor(skip_left)), int(np.ceil(skip_right))
+
+    delta = right - left
+    mask = np.zeros(delta) == 0
+    mask[skip_left:skip_right] = False
+
+    wav = np.linspace(owav[left], owav[right], int(delta * over_sample + 1))
+    ret = []
+    norm_spec = []
+
+    for flux in window_flux.transpose():
+        anorm_flux = np.polyval(np.polyfit(window_wav[mask], flux[mask], degree), window_wav) - flux
+        over_flux = interpolate.UnivariateSpline(window_wav, anorm_flux, s=0.0)(wav)
+        norm_spec.append(over_flux)
+
+        max_idx = np.argmax(np.correlate(norm_spec[0], over_flux, mode='full'))
+        max_val = (max_idx - (len(over_flux) - 1)) / over_sample
+
+        ret.append(max_val)
+
+    return ret
