@@ -187,6 +187,7 @@ class WavSol(CalibBase):
             wav_in = wavsol(data['pix'] + offset)
             data['wav'] = np.linspace(wav_in[0], wav_in[-1], len(wav_in))
             info = "default equispaced"
+            out_table = "something"
             raise NotImplementedError("Needs to be checked before use")
         else:
             wav_out = self.target_wav
@@ -204,16 +205,19 @@ class WavSol(CalibBase):
                               (" after aligning telluric" if self.align_telluric else ""))
             offset = offset_by_telluric(wav_out, data[self.col_alignment]) if self.align_telluric else 0
             wav_in = wavsol(data['pix'][None, :] + np.array(offset)[:, None])
+            out_table = Table({'wav': wav_out})
             for col in infochn:
                 io_logger.warning(f" - column {col}")
                 fcn = functions.use_function("otf_spline:s0", wav_in, data[col].transpose())
-                data[col] = MaskedColumn(fcn(wav_out).transpose(), mask=~mask)
+                out_table[col] = MaskedColumn(fcn(wav_out).transpose(), mask=~mask)
             info = "given interpolatation"
 
         meta['WavSol'] = f"{self.wavsols[group_key].short()}. {info}"
-        data['wav'] = wav_out
 
-        return data, meta
+        return out_table, meta
+
+    def short(self):
+        return "WavSol"
 
     def plot_width(self, ncol=2,
                    axs=None):

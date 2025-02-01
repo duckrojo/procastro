@@ -5,7 +5,7 @@ import numpy as np
 from astropy.table import Table
 from matplotlib import pyplot as plt
 
-from procastro.other.case_insensitivity import CaseInsensitiveDict
+from procastro.astrofile.meta import CaseInsensitiveMeta
 
 _format_fcn = {'d': int, 'f': float, 's': str}
 
@@ -37,7 +37,7 @@ def dict_from_pattern(pattern, string):
 
     groups = match.groupdict()
 
-    casted_match = CaseInsensitiveDict({k: transform[k](match[k]) for k, v in groups.items()})
+    casted_match = CaseInsensitiveMeta({k: transform[k](match[k]) for k, v in groups.items()})
 
     return casted_match
 

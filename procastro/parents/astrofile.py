@@ -1,8 +1,10 @@
 
 __all__ = ['AstroFileBase']
 
+from random import random
+
 from procastro.cache.cache import astrofile_cache
-from procastro.other.case_insensitivity import CaseInsensitiveDict
+from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.statics import PADataReturn
 
 
@@ -12,6 +14,8 @@ class AstroFileBase:
             raise TypeError(f"Extra unknown arguments {args} or kwargs {kwargs} passed to AstroFileBase")
         self._calib = []
         self._meta = {}
+        self._last_processed_meta = {}
+        self._random = random()
 
     def get_calib(self):
         return self._calib
@@ -21,11 +25,12 @@ class AstroFileBase:
 
     @property
     def meta(self):
-        return CaseInsensitiveDict(self._meta)
+        return CaseInsensitiveMeta(self._last_processed_meta)
 
     @meta.setter
     def meta(self, value):
-        self._meta = CaseInsensitiveDict(value)
+        self._meta = CaseInsensitiveMeta(value)
+        self._random = random()
 
     @property
     @astrofile_cache
@@ -36,10 +41,11 @@ class AstroFileBase:
         """
 
         data = self.read()
-        meta = self.meta
+        meta = self._meta
 
         for calibration in self._calib:
             data, meta = calibration(data, meta)
 
+        self._last_processed_meta = meta
         return data
 

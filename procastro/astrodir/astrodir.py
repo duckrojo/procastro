@@ -328,3 +328,23 @@ class AstroDir:
         return pa.AstroDir(self.astro_files + astrofiles,
                            spectral=spectral,
                            directory=directory)
+
+    def save_in(self, directory, channel=None):
+        for af in self:
+            try:  # for multi_files
+                save_filename = af.filename.first()
+            except AttributeError:
+                save_filename = af.filename
+
+            directory = Path(directory)
+            if directory.exists() and not directory.is_dir():
+                raise FileExistsError(f"Target destination exists and is not a directory: {directory}")
+            if not directory.exists():
+                directory.mkdir(parents=True)
+
+            filename = directory / Path(save_filename).name
+
+            af.write_as(filename,
+                        overwrite=True,
+                        channel=channel,
+                        )

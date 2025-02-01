@@ -2,6 +2,7 @@ from random import random
 
 import numpy as np
 
+from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.astrofile.multi_files import AstroFileMulti
 
 
@@ -70,10 +71,13 @@ class AstroFileTimeSeries(AstroFileMulti):
         else:
             raise ValueError(f"Empty files in {self}. this should have not happened")
 
-        self._meta = meta
+        self._meta = CaseInsensitiveMeta(meta)
         self._random = random()
 
         return ret
+
+    def short(self):
+        return "TimeSeries"
 
     @property
     def id_letter(self):

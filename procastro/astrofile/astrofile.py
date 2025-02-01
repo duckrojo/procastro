@@ -16,7 +16,7 @@ from procastro.statics import dict_from_pattern, identity, PADataReturn
 
 __all__ = ['AstroFile']
 
-from ..other.case_insensitivity import CaseInsensitiveDict
+from procastro.astrofile.meta import CaseInsensitiveMeta
 
 from ..parents.calib import CalibBase
 
@@ -78,7 +78,6 @@ class AstroFile(AstroFileBase):
             return
 
         super().__init__(**kwargs)
-        self._random = random()
 
         self._corrupt = False
         self._sort_key = None
@@ -94,8 +93,8 @@ class AstroFile(AstroFileBase):
         self._data_file_options: dict = file_options
         self._format = static_identify.static_identify(filename, options=file_options)
 
-        self._meta = CaseInsensitiveDict({k: v for k, v
-                                          in meta.items()}) if meta is not None else CaseInsensitiveDict({})
+        self._meta = CaseInsensitiveMeta({k: v for k, v
+                                          in meta.items()}) if meta is not None else CaseInsensitiveMeta({})
         if meta_from_name:
             self._meta |= dict_from_pattern(meta_from_name, filename)
         self.meta_from_name = meta_from_name
@@ -149,19 +148,24 @@ class AstroFile(AstroFileBase):
         self.write_as(filename,
                       data=data, overwrite=True, backup_extension=backup_extension)
 
-    def write_as(self, filename, data=None, overwrite=False, backup_extension=".bak"):
+    def write_as(self, filename, data=None, overwrite=False,
+                 channel=None,
+                 backup_extension=".bak"):
         file_type = static_identify.static_identify(filename)
 
         if Path(filename).exists():
-            backup = Path(filename + backup_extension)
+            backup = Path(str(filename) + backup_extension)
             if backup.exists():
                 os.remove(backup)
-            io_logger.warning(f"Backing up exisitng file in: {filename + backup_extension}")
+            io_logger.warning(f"Backing up exisitng file in: {str(filename) + backup_extension}")
             shutil.move(filename, backup)
 
         io_logger.warning(f"Saving in {filename} using file type {file_type}")
         if data is None:
-            data = self.data
+            if self.spectral and channel is not None:
+                data = self.data[str(channel)].data
+            else:
+                data = self.data
         static_write.static_write(file_type, filename, data, self.meta,
                                   overwrite=overwrite)
 
@@ -661,7 +665,7 @@ class AstroFile(AstroFileBase):
             io_logger.warning("Cannot show image of spectra, use plot instead")
         return pa.imshowz(self.data, *args, **kwargs)
 
-    def plot(self, ax=None, channels=0, title="", ncols=2):
+    def plot(self, ax=None, channels=0, title="", ncols=2, epochs=None):
         if not self.spectral:
             io_logger.warning("Cannot plot image, use imshowz instead")
             return
@@ -695,18 +699,41 @@ class AstroFile(AstroFileBase):
                 xlabel = "Raw Pixel"
 
             if len(data.shape) > 1:
+                if epochs is None:
+                    epochs = [0, np.argmin, np.argmax, -1]
+
                 medians = np.median(data, axis=1)
 
-                axx.plot(x, data[0], label='first')
-                axx.plot(x, data[-1], label='last')
-                axx.plot(x, data[np.argmin(medians)], label='min median')
-                axx.plot(x, data[np.argmax(medians)], label='max median')
+                for epoch in epochs:
+                    axx.plot(x, data[epoch if isinstance(epoch, int) else epoch(medians)],
+                             label=f'{epoch if isinstance(epoch, int) else str(epoch).split()[1]}')
             else:
                 axx.plot(x, data)
 
         ax[-1].set_xlabel(xlabel)
         ax[-1].legend()
         ax[0].set_title(title)
+
+    def add_history(self, history):
+        self._add_comentary(history, option='history')
+
+    def add_comment(self, comment):
+        self._add_comentary(comment, option='comment')
+
+    def add_blank(self, blank):
+        self._add_comentary(blank, option='')
+
+    def _add_comentary(self, commentary, option=""):
+        if option not in ["", "history", "comment", "HISTORY", "COMMENT"]:
+            raise ValueError("option must be 'history', 'comment' or ''")
+
+        if not isinstance(self._meta[option], list):
+            try:
+                self._meta[option] = list(self._meta[option])
+            except TypeError:
+                self._meta[option] = [self._meta[option]]
+
+        self._meta[option].append(commentary)
 
     def __len__(self):
         if not self.spectral:

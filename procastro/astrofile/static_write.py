@@ -10,7 +10,8 @@ def static_write(file_type, filename, data, meta,
                  ):
     match file_type:
         case "FITS":
-            header = pf.Header(meta)
+            header = meta.to_header()
+
             header['history'] = "Saved by procastro v{} on {}".format(pa.__version__,
                                                                       apt.Time.now())
 

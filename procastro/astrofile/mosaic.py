@@ -6,6 +6,7 @@ __all__ = ['AstroFileMosaic']
 
 from astropy.utils.metadata import enable_merge_strategies, MergeStrategy
 
+from .meta import CaseInsensitiveMeta
 from .multi_files import AstroFileMulti
 
 
@@ -53,11 +54,12 @@ class AstroFileMosaic(AstroFileMulti):
 
             new_table = single.data
             with enable_merge_strategies(_MergeDifferentToList):
-                new_table.meta |= single.meta
+                new_meta = new_table.meta
+                new_table.meta = CaseInsensitiveMeta(new_meta) | CaseInsensitiveMeta(single.meta)
 
                 ret = vstack([ret, new_table])
 
-        self._meta = ret.meta
+        self._meta = CaseInsensitiveMeta(ret.meta)
         self._random = random()
 
         return ret

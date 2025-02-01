@@ -27,6 +27,12 @@ class _FileNames(list):
     def name(self):
         return str(self)
 
+    def first(self):
+        try:
+            return self[0].first()
+        except AttributeError:
+            return self[0]
+
     def __str__(self):
         ret = f"{self.prefix}({", ".join([str(v.name) for v in self])})"
         return ret
@@ -68,6 +74,8 @@ class AstroFileMulti(AstroFile):
 
         # first read storing in cache
         identity(self.data)
+
+        pass
 
     def add_calib(self, astrocalibs):
         if astrocalibs is None:

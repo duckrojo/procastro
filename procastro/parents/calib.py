@@ -1,4 +1,6 @@
 
+import astropy.time as apt
+
 __all__ = ['CalibBase']
 
 from procastro.parents.astrofile import AstroFileBase
@@ -28,6 +30,8 @@ class CalibBase:
 
         if meta is None:
             meta = {}
+
+        meta['history'] = f"processed by '{self.short()}' on {apt.Time.now().isot}"
 
         if isinstance(data, AstroFileBase):
             if self in data.get_calib():
