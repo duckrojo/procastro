@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from procastro.logging import io_logger
-from procastro.statics import identity
+from procastro.statics import identity, PADataReturn
 from .astrofile import AstroFile
 import procastro as pa
 
@@ -25,17 +25,11 @@ class _FileNames(list):
 
     @property
     def name(self):
-        return str(self)
-
-    def first(self):
-        try:
-            return self[0].first()
-        except AttributeError:
-            return self[0]
-
-    def __str__(self):
         ret = f"{self.prefix}({", ".join([str(v.name) for v in self])})"
         return ret
+
+    def __str__(self):
+        return str(self[0])
 
 
 class AstroFileMulti(AstroFile):
@@ -65,17 +59,11 @@ class AstroFileMulti(AstroFile):
             except AttributeError:
                 raise TypeError("If not given AstroFile iterator to AstroFileMosaic, spectral must be specified")
         self.spectral = spectral
-
         self.singles = [AstroFile(af, spectral=spectral, **kwargs) for af in astrofiles]
 
-        super().__init__(astrofiles[0], spectral=spectral, do_not_read=True, **kwargs)
+        super().__init__(astrofiles[0], spectral=spectral, **kwargs)
 
         self._data_file = _FileNames(astrofiles, prefix=self.id_letter)
-
-        # first read storing in cache
-        identity(self.data)
-
-        pass
 
     def add_calib(self, astrocalibs):
         if astrocalibs is None:
@@ -99,8 +87,12 @@ class AstroFileMulti(AstroFile):
                     + [tuple(single.get_calib()) for single in self.singles])
         return ret
 
-    def read(self):
-        # in new implementations, do not forget to return data and save ._meta as CaseInsensitiveDict
+    def read(self) -> PADataReturn:
+        # in subclasses, do not forget to return data, reset._random, and save ._meta as CaseInsensitiveDict
+        #    self._meta = CaseInsensitiveMeta(meta)
+        #    self._random = random()
+        #
+        #    return ret
         raise NotImplementedError("read() must be implemented by subclass")
 
     @property

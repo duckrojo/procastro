@@ -329,12 +329,12 @@ class AstroDir:
                            spectral=spectral,
                            directory=directory)
 
-    def save_in(self, directory, channel=None):
+    def save_in(self, directory, filename_pattern=None, channel=None):
         for af in self:
-            try:  # for multi_files
-                save_filename = af.filename.first()
-            except AttributeError:
-                save_filename = af.filename
+            if filename_pattern is not None:
+                save_filename = filename_pattern
+            else:
+                save_filename = str(af.filename)
 
             directory = Path(directory)
             if directory.exists() and not directory.is_dir():

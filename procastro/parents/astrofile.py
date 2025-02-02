@@ -5,7 +5,7 @@ from random import random
 
 from procastro.cache.cache import astrofile_cache
 from procastro.astrofile.meta import CaseInsensitiveMeta
-from procastro.statics import PADataReturn
+from procastro.statics import PADataReturn, identity
 
 
 class AstroFileBase:
@@ -14,7 +14,7 @@ class AstroFileBase:
             raise TypeError(f"Extra unknown arguments {args} or kwargs {kwargs} passed to AstroFileBase")
         self._calib = []
         self._meta = {}
-        self._last_processed_meta = {}
+        self._last_processed_meta = None
         self._random = random()
 
     def get_calib(self):
@@ -25,6 +25,9 @@ class AstroFileBase:
 
     @property
     def meta(self):
+        """It will always return a copy"""
+        if getattr(self, '_last_processed_meta') is None:
+            identity(self.data)
         return CaseInsensitiveMeta(self._last_processed_meta)
 
     @meta.setter

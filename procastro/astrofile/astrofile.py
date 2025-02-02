@@ -58,7 +58,6 @@ class AstroFile(AstroFileBase):
                  file_options: dict | None = None,
                  meta: dict | None = None,
                  meta_from_name: str = "",
-                 do_not_read: bool = False,
                  astrocalib: CalibBase | None = None,
                  spectral: bool = False,
                  **kwargs):
@@ -98,9 +97,6 @@ class AstroFile(AstroFileBase):
         if meta_from_name:
             self._meta |= dict_from_pattern(meta_from_name, filename)
         self.meta_from_name = meta_from_name
-
-        if not do_not_read:
-            identity(self.data)  # first read
 
         self._initialized = True
 
@@ -151,22 +147,29 @@ class AstroFile(AstroFileBase):
     def write_as(self, filename, data=None, overwrite=False,
                  channel=None,
                  backup_extension=".bak"):
+
+        meta = self.meta
+        meta['channel'] = channel
+
+        filename = str(filename).format(**meta)
         file_type = static_identify.static_identify(filename)
 
+        msg = ""
         if Path(filename).exists():
             backup = Path(str(filename) + backup_extension)
             if backup.exists():
                 os.remove(backup)
-            io_logger.warning(f"Backing up exisitng file in: {str(filename) + backup_extension}")
+            msg = f". Back-up in: {str(filename) + backup_extension}"
             shutil.move(filename, backup)
 
-        io_logger.warning(f"Saving in {filename} using file type {file_type}")
+        io_logger.warning(f"Saving in {filename} using file type {file_type}{msg}")
         if data is None:
             if self.spectral and channel is not None:
                 data = self.data[str(channel)].data
             else:
                 data = self.data
-        static_write.static_write(file_type, filename, data, self.meta,
+
+        static_write.static_write(file_type, filename, data, meta,
                                   overwrite=overwrite)
 
     def forced_data(self):
@@ -702,7 +705,12 @@ class AstroFile(AstroFileBase):
                 if epochs is None:
                     epochs = [0, np.argmin, np.argmax, -1]
 
-                medians = np.median(data, axis=1)
+                # numpy gives a warning here about ignoring masks in masked array.
+                data = data.data
+                if isinstance(data, np.ma.MaskedArray):
+                    medians = [np.median(x[m]) for x, m in zip(data.data, ~data.mask)]
+                else:
+                    medians = np.median(data, axis=1)
 
                 for epoch in epochs:
                     axx.plot(x, data[epoch if isinstance(epoch, int) else epoch(medians)],
