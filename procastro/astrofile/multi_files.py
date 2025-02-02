@@ -95,10 +95,9 @@ class AstroFileMulti(AstroFile):
 
     def get_calib(self) -> tuple:
 
-        ret = [tuple(self._calib)]
-        for single in self.singles:
-            ret += tuple(single.get_calib())
-        return tuple(ret)
+        ret = tuple([tuple(self._calib)]
+                    + [tuple(single.get_calib()) for single in self.singles])
+        return ret
 
     def read(self):
         # in new implementations, do not forget to return data and save ._meta as CaseInsensitiveDict

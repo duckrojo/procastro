@@ -47,16 +47,16 @@ class WavMosaic(CalibBase):
         elif self.offset_key in meta:
             chip = meta[self.offset_key]
             if isinstance(chip, list):
-                if len(chip) > 1:
-                    raise TypeError(f"Multiple {self.offset_key} are found in meta information, a "
-                                    f"'{self.offset_key}' column is required")
-                else:
-                    chip = chip[0]
+                raise TypeError(f"Multiple {self.offset_key} are found in meta information, a "
+                                f"'{self.offset_key}' column is required")
             offset = self.offset_dict[chip]
             table['pix'] += offset
-            meta[self.offset_key] = [chip]
+            meta[self.offset_key] = chip
         else:
             io_logger.warning(f"No {self.offset_key} information found. "
                               f"Using risky 0 offset along dispersion")
 
         return table, meta
+
+    def short(self):
+        return "WavMosaic"

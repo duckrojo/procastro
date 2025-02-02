@@ -2,6 +2,7 @@ import numpy as np
 from astropy.table import Table
 from astropy.table.column import MaskedColumnInfo, MaskedColumn
 from matplotlib import pyplot as plt
+from numpy.ma import MaskedArray
 from scipy import interpolate
 from scipy import optimize
 
@@ -60,6 +61,7 @@ class WavSol(CalibBase):
 
         if arcs is None:
             arcs = pa.AstroDir([])
+            refit = False
         else:
             if isinstance(arcs, pa.AstroFile):
                 arcs = pa.AstroDir([arcs])
@@ -197,8 +199,8 @@ class WavSol(CalibBase):
             delta_wav = maxline - minline
             lower = minline - self.oversample * delta_wav / 100 < wav_out
             higher = wav_out < maxline + self.oversample * delta_wav / 100
-            mask = np.array(lower * higher, dtype=bool)
-            mask = np.zeros(n_epochs, dtype=bool) + mask[:, None]
+            mask_wav = np.array(lower * higher, dtype=bool)
+            mask = np.zeros(n_epochs, dtype=bool) + mask_wav[:, None]
 
             # interpolate every column
             io_logger.warning("Interpolating wavelengths" +
@@ -209,7 +211,8 @@ class WavSol(CalibBase):
             for col in infochn:
                 io_logger.warning(f" - column {col}")
                 fcn = functions.use_function("otf_spline:s0", wav_in, data[col].transpose())
-                out_table[col] = MaskedColumn(fcn(wav_out).transpose(), mask=~mask)
+                out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)).transpose(),
+                                                  mask=~mask)
             info = "given interpolatation"
 
         meta['WavSol'] = f"{self.wavsols[group_key].short()}. {info}"

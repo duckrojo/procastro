@@ -47,9 +47,6 @@ class CaseInsensitiveMeta(dict):
 
         for option, vals in multi_options.items():
             for val in vals:
-                # todo: fix this!!! somehow there is an extra list level when using timeseries
-                if isinstance(val, list):
-                    val = val[0]
                 header[option] = val
 
         return header

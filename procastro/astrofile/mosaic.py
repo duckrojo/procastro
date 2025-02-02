@@ -17,11 +17,6 @@ class _MergeDifferentToList(MergeStrategy):
     @classmethod
     def merge(cls, left, right):
         # print(f"merging {left} & {right}")
-        if type(left) is type(right):
-            if left != right:
-                return [left, right]
-            else:
-                return left
         if isinstance(left, list):
             if isinstance(right, list):
                 return left + right
@@ -32,6 +27,11 @@ class _MergeDifferentToList(MergeStrategy):
                 return left + right
             else:
                 return [left] + right
+        if type(left) is type(right):
+            if left != right:
+                return [left, right]
+            else:
+                return left
 
         return super().merge(left, right)
 

@@ -76,9 +76,6 @@ class AstroFileTimeSeries(AstroFileMulti):
 
         return ret
 
-    def short(self):
-        return "TimeSeries"
-
     @property
     def id_letter(self):
         return "TS"

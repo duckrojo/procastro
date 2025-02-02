@@ -1,7 +1,9 @@
 from typing import Callable
 
 import numpy as np
+from numpy.ma import MaskedArray
 from scipy import interpolate, stats
+from scipy.interpolate import dfitpack
 from scipy.optimize import curve_fit
 from scipy.stats import linregress
 
@@ -443,11 +445,22 @@ class OtfSpline(FcnWavSol):
         x_orig = self.x
         y_orig = self.y
 
+        if isinstance(x, MaskedArray):
+            mask_out = ~x.mask
+            x = x[mask_out]
+        else:
+            mask_out = x*0 == 0
+
         if len(x_orig.shape) == 1:
             x_orig = [x_orig] * y_orig.shape[0]
 
-        ret = np.array([interpolate.UnivariateSpline(xx, yy, s=self.smoothing)(x)
-                        for xx, yy in zip(x_orig, y_orig)])
+        ret = np.zeros([x_orig.shape[0], len(mask_out)]) + np.nan
+        for i, (xx, yy) in enumerate(zip(x_orig, y_orig)):
+            mask = ~np.isnan(yy)
+            if mask.sum() < 5:
+                continue
+            ret[i, mask_out] = interpolate.UnivariateSpline(xx[mask], yy[mask], s=self.smoothing)(x)
+
         return ret
 
 
