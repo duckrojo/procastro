@@ -1,5 +1,6 @@
 import warnings
 import glob
+from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
@@ -9,11 +10,12 @@ from astropy.utils.exceptions import AstropyUserWarning
 __all__ = ['AstroDir']
 
 import procastro as pa
+from procastro.interfaces import IAstroDir, IAstroFile
 from procastro.logging import io_logger
-from procastro.statics import dict_from_pattern, glob_from_pattern
+from procastro.statics import glob_from_pattern
 
 
-class AstroDir:
+class AstroDir(IAstroDir):
     def __new__(cls, *args, **kwargs):
         """
         If passed an AstroDir, then do not create a new instance, just pass
@@ -33,7 +35,7 @@ class AstroDir:
         return super().__new__(cls)
 
     def __init__(self,
-                 files,
+                 files: IAstroFile | str | Path | Iterable,
                  directory: str | Path = None,
                  spectral=False,
                  **kwargs):
@@ -53,6 +55,7 @@ class AstroDir:
         self._last_sort_key = None
         self.spectral = spectral
 
+        meta_from_name = None
         if isinstance(files, str):
             if 0 < files.count('{') == files.count('}'):
                 meta_from_name = str(directory/files)
@@ -139,7 +142,7 @@ class AstroDir:
 
         # if an integer, return that AstroFile
         if isinstance(item, (int, np.integer)):
-            return self.astro_files[item]  # .__getitem__(item)
+            return self.astro_files[item]
 
         # if string, return as values()
         if isinstance(item, str):

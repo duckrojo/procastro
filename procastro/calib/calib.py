@@ -3,11 +3,12 @@ import astropy.time as apt
 
 __all__ = ['CalibBase']
 
-from procastro.parents.astrofile import AstroFileBase
+from procastro.astrofile.astrofile import AstroFileBase
+from procastro.interfaces import IAstroCalib
 from procastro.statics import PADataReturn
 
 
-class CalibBase:
+class CalibBase(IAstroCalib):
     def __init__(self,
                  *args,
                  **kwargs,

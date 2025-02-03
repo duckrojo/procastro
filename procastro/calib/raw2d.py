@@ -1,7 +1,7 @@
 import warnings
 
-from procastro.parents.astrofile import AstroFileBase
-from procastro.parents.calib import CalibBase
+from procastro.astrofile.astrofile import AstroFileBase
+from procastro.calib.calib import CalibBase
 from procastro.logging import io_logger
 from procastro.statics import trim_to_python, common_trim_fcn, extract_common
 

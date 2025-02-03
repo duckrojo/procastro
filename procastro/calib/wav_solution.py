@@ -1,15 +1,16 @@
 import numpy as np
 from astropy.table import Table
-from astropy.table.column import MaskedColumnInfo, MaskedColumn
+from astropy.table.column import MaskedColumn
 from matplotlib import pyplot as plt
 from numpy.ma import MaskedArray
 from scipy import interpolate
 from scipy import optimize
 
 from procastro.calib.wav_solution_single import WavSolSingle
+from procastro.interfaces import IAstroFile, IAstroDir
 from procastro.misc import functions
 from procastro.misc.functions import use_function
-from procastro.parents.calib import CalibBase
+from procastro.calib.calib import CalibBase
 from procastro.logging import io_logger
 import procastro as pa
 
@@ -84,7 +85,7 @@ class WavSol(CalibBase):
         return [x[0] for x in sorted(ret, key=lambda x: x[1])]
 
     def add_arc(self,
-                astrofiles: pa.AstroFile | pa.AstroDir,
+                astrofiles: IAstroFile | IAstroDir,
                 separate='element',
                 refit=True,
                 beta=None,

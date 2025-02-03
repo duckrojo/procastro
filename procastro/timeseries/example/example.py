@@ -1,5 +1,5 @@
 import procastro as pa
-import procastro.astrofile.astrofile
+import procastro.astrofile.spec
 import procastro.timeseries as tm
 
 raw = pa.AstroDir("./data/raw")

@@ -25,7 +25,7 @@ import warnings
 from pathlib import PurePath, Path
 
 import procastro as pa
-import procastro.astrofile.astrofile
+import procastro.astrofile.spec
 from procastro.statics import trim_to_python
 from procastro.logging import io_logger
 from procastro.calib.raw2d import CalibRaw2D

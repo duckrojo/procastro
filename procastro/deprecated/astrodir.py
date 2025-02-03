@@ -20,7 +20,7 @@ __all__ = ['AstroDir']
 
 
 import procastro as pa
-import procastro.astrofile.astrofile
+import procastro.astrofile.spec
 from procastro.statics import python_to_trim, common_trim_fcn, extract_common
 
 from typing import Optional

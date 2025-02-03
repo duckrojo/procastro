@@ -1,7 +1,5 @@
 import re
-
 import numpy as np
-
 
 import procastro as pa
 

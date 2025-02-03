@@ -3,16 +3,17 @@ from pathlib import Path
 import numpy as np
 from matplotlib import pyplot as plt
 
-import procastro as pa
+from procastro.interfaces import IAstroFile, IAstroDir
 from procastro.statics import prepare_mosaic_axes
 from procastro.logging import io_logger
 from procastro.misc import functions
 from procastro.misc.functions import use_function, GenNorm, MultiGenNorm
+import procastro as pa
 
 
 class WavSolSingle:
     def __init__(self,
-                 astrofile: pa.AstroFile,
+                 astrofile: IAstroFile,
                  function="poly:d4",
                  external=None,
 
@@ -36,7 +37,7 @@ class WavSolSingle:
 
         self.xfits = {}
         self.fits = {}
-        self.arcs: pa.AstroDir = pa.AstroDir([])
+        self.arcs: IAstroDir = pa.AstroDir([])
         self.fit_lin_width = {}
         self.fit_widths = {}
         self.fit_widths_mask = {}
@@ -171,8 +172,8 @@ class WavSolSingle:
         leg.set(zorder=15, alpha=0.4)
 
     def iter_mask_option_arcs(self,
-                              arcs: pa.AstroDir | pa.AstroFile,
-                              ) -> tuple[np.ndarray, tuple, pa.AstroFile]:
+                              arcs: IAstroDir | IAstroFile,
+                              ) -> tuple[np.ndarray, tuple, IAstroFile]:
         """
 Iterates over all the information that matches column of wavpix and meta of arcs.
         Parameters
@@ -208,7 +209,7 @@ Iterates over all the information that matches column of wavpix and meta of arcs
             yield mask, option, arc
 
     def add_arc(self,
-                arcs: pa.AstroFile | pa.AstroDir,
+                arcs: IAstroFile | IAstroDir,
                 separate=None,
                 ):
         """

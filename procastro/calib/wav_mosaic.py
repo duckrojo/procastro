@@ -2,7 +2,7 @@ import numpy as np
 from astropy.table import Table
 
 from procastro.astrofile.static_guess import static_guess_spectral_offset
-from procastro.parents.calib import CalibBase
+from procastro.calib.calib import CalibBase
 from procastro.logging import io_logger
 
 __all__ = ['WavMosaic']

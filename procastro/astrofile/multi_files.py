@@ -2,7 +2,7 @@ from pathlib import Path
 
 from procastro.logging import io_logger
 from procastro.statics import identity, PADataReturn
-from .astrofile import AstroFile
+from .spec import AstroFile
 import procastro as pa
 
 
