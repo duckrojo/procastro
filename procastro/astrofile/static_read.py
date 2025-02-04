@@ -5,9 +5,11 @@ from astropy.io import fits as pf
 from astropy.table import Table
 from numpy.ma.core import MaskedArray
 
+from .meta import CaseInsensitiveMeta
 
-def static_read(file_type,
-                filename):
+
+def read(file_type,
+         filename):
 
     match file_type:
         case "FITS":
@@ -22,7 +24,7 @@ def static_read(file_type,
                 unit = hdulist[hdu]
                 data, meta = unit.data, unit.header
 
-            return data, meta
+            return data, CaseInsensitiveMeta(meta)
 
         case "ARRAY":
             return filename
@@ -35,7 +37,7 @@ def static_read(file_type,
     raise TypeError(f"File type {file_type} cannot be read.")
 
 
-def static_ndarray_to_table(data, file_options=None):
+def ndarray_to_table(data, file_options=None):
     if isinstance(data, Table):
         return data
     elif isinstance(data, np.ndarray):
@@ -44,9 +46,6 @@ def static_ndarray_to_table(data, file_options=None):
 
         if n_axes == 1:
             data = data.reshape(1, nx)
-        # else:
-        #     for remove_ax in range((n_axes - 2 > 0) * (n_axes - 2)):
-        #         data = data[0]
 
         n_channels = data.shape[len(data.shape) - 2]
 

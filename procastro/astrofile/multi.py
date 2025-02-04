@@ -2,7 +2,7 @@ from pathlib import Path
 
 from procastro.logging import io_logger
 from procastro.statics import identity, PADataReturn
-from .spec import AstroFile
+from .spec import AstroFileSpec
 import procastro as pa
 
 
@@ -32,15 +32,12 @@ class _FileNames(list):
         return str(self[0])
 
 
-class AstroFileMulti(AstroFile):
+class AstroFileMulti(AstroFileSpec):
     _initialized = False
 
     @property
     def filename(self):
-        return self._data_file
-
-    def __repr__(self):
-        return "AstroFileMulti. Better description should have been in subclass"
+        return self._data_file.name
 
     def __init__(self,
                  astrofiles: "str | AstroDir | list[AstroFile]",
@@ -58,8 +55,8 @@ class AstroFileMulti(AstroFile):
                 spectral = astrofiles[0].spectral
             except AttributeError:
                 raise TypeError("If not given AstroFile iterator to AstroFileMosaic, spectral must be specified")
-        self.spectral = spectral
-        self.singles = [AstroFile(af, spectral=spectral, **kwargs) for af in astrofiles]
+        self._spectral = spectral
+        self.singles = [AstroFileSpec(af, spectral=spectral, **kwargs) for af in astrofiles]
 
         super().__init__(astrofiles[0], spectral=spectral, **kwargs)
 
@@ -99,3 +96,7 @@ class AstroFileMulti(AstroFile):
     def id_letter(self):
         raise NotImplementedError("This also must be implemented by subclass, ideally just one "
                                   "letter when printing filenames")
+
+    @classmethod
+    def get_combinators(cls):
+        return cls._combinators

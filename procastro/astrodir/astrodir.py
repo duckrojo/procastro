@@ -10,6 +10,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 __all__ = ['AstroDir']
 
 import procastro as pa
+from procastro import AstroFile
 from procastro.interfaces import IAstroDir, IAstroFile
 from procastro.logging import io_logger
 from procastro.statics import glob_from_pattern
@@ -37,8 +38,12 @@ class AstroDir(IAstroDir):
     def __init__(self,
                  files: IAstroFile | str | Path | Iterable,
                  directory: str | Path = None,
-                 spectral=False,
-                 **kwargs):
+                 spectral=None,
+                 astrocalib=None,
+                 filter_or: dict | None = None,
+                 filter_and: dict | None = None,
+                 group_by: str | list | None = None,
+                 ):
         """
 
         Parameters
@@ -53,7 +58,6 @@ class AstroDir(IAstroDir):
         directory = Path(directory)
         self.directory: Path = directory
         self._last_sort_key = None
-        self.spectral = spectral
 
         meta_from_name = None
         if isinstance(files, str):
@@ -80,14 +84,38 @@ class AstroDir(IAstroDir):
             if isinstance(file, (str, Path)):
                 astro_file = pa.AstroFile(str(directory / file),
                                           meta_from_name=meta_from_name,
-                                          spectral=self.spectral,
-                                          **kwargs)
+                                          spectral=spectral,
+                                          astrocalib=astrocalib,
+                                          )
             elif isinstance(file, pa.AstroFile):
                 astro_file = file
             else:
                 raise TypeError(f"Unrecognized file specification: {file}")
             astro_files.append(astro_file)
+
         self.astro_files = astro_files
+        if filter_or is not None:
+            self.filter(**filter_or)
+
+        if filter_and is not None:
+            for key, val in filter_and.items():
+                self.filter(**{key: val})
+
+        if group_by is not None:
+            if not isinstance(group_by, list):
+                group_by = [group_by]
+            self._combine_by(*group_by, in_place=True)
+
+    def spectral(self):
+        result = np.array([af.spectral for af in self.astro_files])
+        sum_result = result.sum()
+
+        if sum_result == len(result):
+            return True
+        if sum_result == 0:
+            return False
+
+        return None
 
     def sort_key(self, *args):
         """
@@ -136,7 +164,7 @@ class AstroDir(IAstroDir):
         return ', '.join([Path(str(af.filename)).name for af in self])
 
     def __repr__(self):
-        return f"<AstroFile container ({len(self)}x): {self.filename:s}>"
+        return f"<AstroFile container (x{len(self)}): {self.filename:s}>"
 
     def __getitem__(self, item):
 
@@ -257,7 +285,8 @@ class AstroDir(IAstroDir):
                 combine=None
                 ) -> pa.AstroFile:
 
-        values = self.values(*keys, single_in_list=True, by_values=True)
+        values = self.values(*keys,
+                             single_in_list=True, by_values=True)
         content = values + [list(range(len(self)))]
         table = Table(content, names=list(keys) + ['idx'])
 
@@ -268,16 +297,29 @@ class AstroDir(IAstroDir):
         for group in groups:
             ret = AstroDir(self[group['idx'].data], directory=self.directory)
             if combine is not None:
-                ret = combine(ret)
+                if len(ret) > 1:
+                    ret = combine(ret)
+                else:
+                    ret = ret[0]
 
             yield ret
 
-    def _combine_by(self, *keys, combinator=None, in_place=True) -> "AstroDir":
+    def _combine_by(self, *keys, combinator="auto", in_place=True) -> "AstroDir":
 
         if len(self.astro_files) == 0:
             raise ValueError("Cannot combine empty AstroDir")
 
-        astro_files = [astro_file for astro_file in self.iter_by(*keys, combine=combinator)]
+        if combinator == "auto":
+            combinator = [x[1] for x in AstroFile.get_combinators()]
+
+        if not isinstance(combinator, Iterable):
+            combinator = [combinator]
+
+        astro_dir = self
+        astro_files = []
+        for cmb in combinator:
+            astro_files = [astro_file for astro_file in astro_dir.iter_by(*keys, combine=cmb)]
+            astro_dir = AstroDir(astro_files, directory=self.directory)
 
         if in_place:
             self.astro_files = astro_files

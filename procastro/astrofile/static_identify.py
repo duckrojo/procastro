@@ -4,7 +4,7 @@ import numpy as np
 import procastro as pa
 
 
-def static_identify(filename, options=None):
+def identify(filename, options=None):
 
     # Check if AstroFile
     if isinstance(filename, pa.AstroFile):

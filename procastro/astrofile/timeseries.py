@@ -3,7 +3,7 @@ from random import random
 import numpy as np
 
 from procastro.astrofile.meta import CaseInsensitiveMeta
-from procastro.astrofile.multi_files import AstroFileMulti
+from procastro.astrofile.multi import AstroFileMulti
 
 
 class AstroFileTimeSeries(AstroFileMulti):
@@ -26,7 +26,6 @@ class AstroFileTimeSeries(AstroFileMulti):
         if len(self.singles) == 1:
             ret = self.singles[0].data
             meta = self.singles[0].meta
-            meta['infochn'] = [col for col in ret.colnames if col not in ['pix']]
 
             # if 1 dimension, then there is just one epoch in this timeseries and all channels are multi_channels
             if len(ret[ret.colnames[0]].shape) == 1:
@@ -75,6 +74,10 @@ class AstroFileTimeSeries(AstroFileMulti):
         self._random = random()
 
         return ret
+
+    @classmethod
+    def get_combinators(cls):
+        return [(6, cls)]
 
     @property
     def id_letter(self):

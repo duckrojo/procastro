@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.table import Table
 
-from procastro.astrofile.static_guess import static_guess_spectral_offset
+from procastro.astrofile.static_guess import spectral_offset
 from procastro.calib.calib import CalibBase
 from procastro.logging import io_logger
 
@@ -19,7 +19,7 @@ class WavMosaic(CalibBase):
 
         if offset_dict is None:
             if meta is not None:
-                offset_dict = static_guess_spectral_offset(meta)
+                offset_dict = spectral_offset(meta)
             else:
                 raise ValueError('offset_dict must be provided, or at least meta for guessing offsets')
 

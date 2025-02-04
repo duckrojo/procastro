@@ -1,10 +1,12 @@
 import re
 from pathlib import Path
 
+from astropy import table
+
 from procastro.logging import io_logger
 
 
-def static_guess_spectral_offset(meta) -> dict:
+def spectral_offset(meta) -> dict:
     """The idea is for this function to guess the instrument after reading the meta information."""
     imacs_f2_offset = {4: 0,
                        7: 35 + 2048,
@@ -20,7 +22,7 @@ def static_guess_spectral_offset(meta) -> dict:
     return imacs_f2_offset
 
 
-def static_guess_type_from_file(filename, hints):
+def type_from_file(filename, hints):
     if hints is None:
         hints = {}
 
@@ -42,3 +44,34 @@ def static_guess_type_from_file(filename, hints):
 
     io_logger.warning(f"Assuming image file for '{filename}'")
     return 'img'
+
+
+def is_spectral(data, meta) -> bool:
+    """
+Guesses whether the given data & meta corresponds to a spectral dataset
+
+    Parameters
+    ----------
+    data
+    meta
+
+    Returns
+    -------
+
+    """
+    if 'spectral' in meta:
+        return True
+
+    if isinstance(data, table.Table):
+        return True
+
+    # if the second axis has less than 20 elements, then it can be assumed
+    # it that those are channels.
+    if data.ndim > 1 and data.shape[-2] < 10:
+        return True
+
+    # if only one dimension then it is a spectral axis
+    if data.ndim == 1:
+        return True
+
+    return False

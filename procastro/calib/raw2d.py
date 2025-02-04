@@ -1,6 +1,6 @@
 import warnings
 
-from procastro.astrofile.astrofile import AstroFileBase
+from procastro.astrofile.astrofile import AstroFile
 from procastro.calib.calib import CalibBase
 from procastro.logging import io_logger
 from procastro.statics import trim_to_python, common_trim_fcn, extract_common
@@ -98,7 +98,7 @@ class CalibRaw2D(CalibBase):
             # following avoids a positive flag
             if calib == default:
                 return
-        elif isinstance(calib, AstroFileBase):
+        elif isinstance(calib, AstroFile):
             setattr(self, label, calib)
         else:
             raise ValueError(f"Master {label} supplied was not recognized.")

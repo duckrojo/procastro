@@ -3,7 +3,7 @@ import astropy.time as apt
 
 __all__ = ['CalibBase']
 
-from procastro.astrofile.astrofile import AstroFileBase
+from procastro.astrofile.astrofile import AstroFile
 from procastro.interfaces import IAstroCalib
 from procastro.statics import PADataReturn
 
@@ -34,7 +34,7 @@ class CalibBase(IAstroCalib):
 
         meta['history'] = f"processed by '{self.short()}' on {apt.Time.now().isot}"
 
-        if isinstance(data, AstroFileBase):
+        if isinstance(data, AstroFile):
             if self in data.get_calib():
                 raise RecursionError(f"If passed an AstroFile, then this calibration cannot have been "
                                      f"already passed to that AstroFile")

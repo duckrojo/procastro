@@ -7,7 +7,7 @@ __all__ = ['AstroFileMosaic']
 from astropy.utils.metadata import enable_merge_strategies, MergeStrategy
 
 from .meta import CaseInsensitiveMeta
-from .multi_files import AstroFileMulti
+from .multi import AstroFileMulti
 
 
 class _MergeDifferentToList(MergeStrategy):
@@ -37,10 +37,10 @@ class _MergeDifferentToList(MergeStrategy):
 
 
 class AstroFileMosaic(AstroFileMulti):
-    def __repr__(self):
-        return (f"<Mosaic {'Spec' if self.spectral else 'Image'} {len(self._data_file)} files "
-                f"{self.filename}>")
-
+    # def __repr__(self):
+    #     return (f"<Mosaic {'Spec' if self.spectral else 'Image'} {len(self.filename)} files "
+    #             f"{self.filename}>")
+    #
     def __init__(self,
                  astrofiles: "str | AstroDir | list[AstroFile]",
                  spectral: bool = None, **kwargs):
@@ -63,6 +63,10 @@ class AstroFileMosaic(AstroFileMulti):
         self._random = random()
 
         return ret
+
+    @classmethod
+    def get_combinators(cls):
+        return [(1, cls)]
 
     @property
     def id_letter(self):

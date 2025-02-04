@@ -19,6 +19,11 @@ class IAstroFile(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def add_sortkey(self,
+                    key: str):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def meta(self):
         raise NotImplementedError
 

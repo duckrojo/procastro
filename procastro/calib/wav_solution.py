@@ -324,6 +324,10 @@ class WavSol(CalibBase):
         for wavsol in self.wavsols.values():
             wavsol.write(directory=directory)
 
+    @classmethod
+    def get_combinators(cls):
+        return cls
+
 
 def _print_option(option, grouping):
     return f"{','.join(grouping)}={','.join([str(v) for v in option])}"
@@ -390,3 +394,4 @@ def offset_by_telluric(owav: np.ndarray,
         ret.append(max_val)
 
     return ret
+

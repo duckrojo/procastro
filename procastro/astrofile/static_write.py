@@ -5,9 +5,9 @@ from pandas.io.pytables import Table
 import procastro as pa
 
 
-def static_write(file_type, filename, data, meta,
-                 overwrite=False,
-                 ):
+def write(file_type, filename, data, meta,
+          overwrite=False,
+          ):
     match file_type:
         case "FITS":
             header = meta.to_header()
