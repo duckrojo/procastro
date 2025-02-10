@@ -20,18 +20,19 @@ class CaseInsensitiveMeta(dict):
             if commentary in dict_in.keys():
                 to_change.append(commentary.lower())
 
-        for commentary in set(to_change):
-            out = dict_in.pop(commentary, [])
-            if isinstance(out, str):
-                out = [out]
-            else:
-                try:  # if coming from a Header
-                    out = list(out)
-                except TypeError:
-                    out = [out]
-            dict_in[commentary] = out
+        dict_out = {}
+        for field, value in dict_in.items():
+            if field in self._commentary:
+                if isinstance(value, str):
+                    value = [value]
+                else:
+                    try:  # if coming from a Header
+                        value = list(value)
+                    except TypeError:
+                        value = [value]
+            dict_out[field] = value
 
-        super(CaseInsensitiveMeta, self).__init__(dict_in)
+        super().__init__(dict_out)
 
         self._convert_keys()
 

@@ -255,7 +255,7 @@ Iterates over all the information that matches column of wavpix and meta of arcs
 
             arc_table = arc.data
             if 'pix' not in arc_table.colnames:
-                arc_table['pix'] = np.arange(len(arc))
+                arc_table['pix'] = np.arange(len(arc.data))
 
             for pix in refit_table['pix']:
                 x, y = _extract_around(pix,
@@ -331,8 +331,12 @@ Iterates over all the information that matches column of wavpix and meta of arcs
         for ax, (pix, label) in zip(axs, self.pixwav[['pix', 'label']]):
 
             for i, af in enumerate(self.arcs):
+                if 'pix' not in af.data.colnames:
+                    arc_pix = np.arange(len(af.data['0']))
+                else:
+                    arc_pix = af.data['pix']
                 x, y = _extract_around(pix, width,
-                                       af.data['pix'],
+                                       arc_pix,
                                        af.data['0'])
 
                 ax.plot(y)
@@ -352,7 +356,11 @@ Iterates over all the information that matches column of wavpix and meta of arcs
 
         ax = axs[-1]
         for i, af in enumerate(self.arcs):
-            ax.plot(af.data['pix'],
+            if 'pix' not in af.data.colnames:
+                arc_pix = np.arange(len(af.data['0']))
+            else:
+                arc_pix = af.data['pix']
+            ax.plot(arc_pix,
                     af.data['0'],
                     label=None if i else legend_title.format(f"Arc"))
 
@@ -367,11 +375,17 @@ Iterates over all the information that matches column of wavpix and meta of arcs
 
         return axs
 
-    def write(self, directory=None):
+    def write(self, directory=None, pattern=None):
         save_filename = self.astrofile.filename
 
         while isinstance(save_filename, (list, tuple)):
             save_filename = save_filename[0]
+
+        if not isinstance(save_filename, str):
+            if pattern is None:
+                raise ValueError(f"pattern must be provided since there is no default"
+                                 f" filename for astrofile {self.astrofile}")
+            save_filename = pattern.format(**self.astrofile.meta)
 
         if directory is None:
             filename = save_filename

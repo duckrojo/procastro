@@ -27,12 +27,20 @@ def read(file_type,
             return data, CaseInsensitiveMeta(meta)
 
         case "ARRAY":
-            return filename
+            return filename, CaseInsensitiveMeta({})
+
+        case "TABLE":
+            return filename, CaseInsensitiveMeta(filename.meta)
+
+        case "TXT":
+            data = np.loadtxt(filename, unpack=True)
+
+            return data, CaseInsensitiveMeta({})
 
         case "ECSV":
             table = Table().read(filename)
 
-            return table, table.meta
+            return table, CaseInsensitiveMeta(table.meta)
 
     raise TypeError(f"File type {file_type} cannot be read.")
 

@@ -43,9 +43,14 @@ class AstroFileMosaic(AstroFileMulti):
     #
     def __init__(self,
                  astrofiles: "str | AstroDir | list[AstroFile]",
-                 spectral: bool = None, **kwargs):
+                 spectral: bool = None,
+                 add_column=None,
+                 **kwargs):
 
         super().__init__(astrofiles, spectral, **kwargs)
+        self._add_column = add_column or []
+        if not isinstance(self._add_column, list):
+            self._add_column = [self._add_column]
 
     def read(self):
         ret = Table()
@@ -57,6 +62,8 @@ class AstroFileMosaic(AstroFileMulti):
                 new_meta = new_table.meta
                 new_table.meta = CaseInsensitiveMeta(new_meta) | CaseInsensitiveMeta(single.meta)
 
+                for col in self._add_column:
+                    new_table[col] = new_table.meta[col]
                 ret = vstack([ret, new_table])
 
         self._meta = CaseInsensitiveMeta(ret.meta)

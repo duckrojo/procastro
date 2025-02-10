@@ -54,6 +54,12 @@ class WavSol(CalibBase):
 
         self.function_name = pixwav_function
 
+        if isinstance(group_by, dict):
+            grouping = group_by
+            group_by = []
+            for k, v in grouping.items():
+                group_by.append(k)
+
         self.wavsols: dict[tuple, WavSolSingle] = {}
         for astrofile in pixwav.mosaic_by(*group_by, in_place=False):
             option = tuple(astrofile.values(*group_by, single_in_list=True))
@@ -117,6 +123,7 @@ class WavSol(CalibBase):
 
     def refit(self,
               beta=None,
+              uncertainty=9,
               ):
         if beta is None:
             beta = self.beta
@@ -127,7 +134,7 @@ class WavSol(CalibBase):
                                   f"keeping original fit")
                 continue
 
-            sol.refit_lines(beta=beta)
+            sol.refit_lines(beta=beta, uncertainty=uncertainty)
             sol.fit_function()
 
         return self
@@ -320,9 +327,9 @@ class WavSol(CalibBase):
 
         axs[ncols//2].set_title(title)
 
-    def save_in(self, directory):
+    def save_in(self, directory, pattern=None):
         for wavsol in self.wavsols.values():
-            wavsol.write(directory=directory)
+            wavsol.write(directory=directory, pattern=pattern)
 
     @classmethod
     def get_combinators(cls):
