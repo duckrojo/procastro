@@ -44,6 +44,7 @@ class AstroDir(IAstroDir):
                  filter_and: dict | None = None,
                  group_by: str | list | None = None,
                  file_options: dict | None = None,
+                 meta: dict| None = None,
                  ):
         """
 
@@ -88,6 +89,7 @@ class AstroDir(IAstroDir):
                                           spectral=spectral,
                                           astrocalib=astrocalib,
                                           file_options=file_options,
+                                          meta=meta,
                                           )
             elif isinstance(file, pa.AstroFile):
                 astro_file = file

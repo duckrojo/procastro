@@ -201,6 +201,8 @@ class WavSol(CalibBase):
             raise NotImplementedError("Needs to be checked before use")
         else:
             wav_out = self.target_wav
+            if 'pix' not in data.colnames:
+                data['pix'] = np.arange(len(data))
 
             minline = min(wavsol.pixwav['wav'])
             maxline = max(wavsol.pixwav['wav'])

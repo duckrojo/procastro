@@ -11,6 +11,7 @@ from matplotlib.patches import Polygon
 
 import procastro as pa
 from procastro.astro import aqs as aqs
+from procastro.misc.misc_general import accept_object_name
 
 
 def starry_plot(star_table: list[Table] | Table,
@@ -337,7 +338,7 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
                                     print("ignoring extra info not requested: {key}")
                         if ra[-1] == 'd':
                             ra = "{0:f}".format(float(ra[:-1]) / 15,)
-                        if pa.accept_object_name(name, target):
+                        if accept_object_name(name, target):
                             if verbose:
                                 print(f"Found in coordinate file: {coo_file}")
                             break

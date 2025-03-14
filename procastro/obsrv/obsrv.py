@@ -347,7 +347,7 @@ class Obsrv(ocalc.ObsCalc):
         if time_label < 0:
             time_label += 24
         minutes = int(60 * (time_label % 1) + 0.5)
-        ax.annotate(f'{altitude:.1f}$^\circ$@ {int(time_label)}:{minutes:02d}UT',
+        ax.annotate(f'{altitude:.1f}$^\\circ$@ {int(time_label)}:{minutes:02d}UT',
                     (time, pos),
                     ha='center', va='top', color=color)
 

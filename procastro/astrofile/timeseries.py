@@ -30,7 +30,7 @@ class AstroFileTimeSeries(AstroFileMulti):
             # if 1 dimension, then there is just one epoch in this timeseries and all channels are multi_channels
             if len(ret[ret.colnames[0]].shape) == 1:
                 for colname in ret.colnames:
-                    ret[colname] = ret[colname][None, :]
+                    ret[colname] = ret[colname][:, None]
 
             elif len(ret[ret.colnames[0]].shape) > 2:
                 raise TypeError(f"too many dimensions for columns in table {ret}")
@@ -43,10 +43,10 @@ class AstroFileTimeSeries(AstroFileMulti):
             meta = None
 
             for idx, single in enumerate(self.singles):
-                if ((size is not None and size != len(single))
+                if ((size is not None and size != len(single.data))
                         or (colnames is not None and colnames != set(single.data.colnames))):
                     raise ValueError("In a timeseries, all files must have the same size and columns")
-                size = len(single)
+                size = len(single.data)
 
                 new_table = single.data
                 colnames = set(new_table.colnames)
@@ -56,16 +56,16 @@ class AstroFileTimeSeries(AstroFileMulti):
 
                     # column of each element must have just 1-dimension (along row) at start
                     for column in colnames:
-                        ret[column] = ret[column][None, :]
+                        ret[column] = ret[column][:, None]
 
                 else:
                     for column in colnames:
-                        ret[column] = np.concatenate(ret[column], new_table[column][None, :])
+                        ret[column] = np.concatenate([ret[column], new_table[column][:, None]], axis=1)
 
                 # keep meta from first file only
                 if meta is None:
                     meta = single.meta
-            raise NotImplementedError(f"Multiple files are not yet supported, multi_epoch_channels in particular")
+#            raise NotImplementedError(f"Multiple files are not yet supported, multi_epoch_channels in particular")
 
         else:
             raise ValueError(f"Empty files in {self}. this should have not happened")

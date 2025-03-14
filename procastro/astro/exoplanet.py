@@ -1,4 +1,5 @@
 import procastro as pa
+from procastro.misc.misc_general import user_confdir, accept_object_name
 
 
 def get_transit_ephemeris(target):
@@ -34,7 +35,7 @@ def get_transit_ephemeris(target):
     ValueError
         If a data field does not match the specified format
     """
-    paths = [pa.user_confdir("transits.txt")
+    paths = [user_confdir("transits.txt")
              ]
 
     tr_epoch = None
@@ -52,7 +53,7 @@ def get_transit_ephemeris(target):
                 data = line[:-1].split()
                 planet = data.pop(0)
 
-                if pa.accept_object_name(planet, target, planet_match=True):
+                if accept_object_name(planet, target, planet_match=True):
                     for d in data:
                         if d[0].lower() == 'p':
                             override.append('period')
