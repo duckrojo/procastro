@@ -236,8 +236,8 @@ class ExoPlanet:
             if len(years) != 2:
                 raise NotImplementedError(
                     "Requested timespan ({0:s}) is not valid. Only a string "
-                    "in the format <FROMYEAR-TOYEAR> is accepted (only one "
-                    "dash separating integers)".format(years[0]))
+                    "in the format <FROM/TO> is accepted (only one "
+                    "slash separating dates)".format(years[0]))
             try:
                 t0 = apt.Time('{0:d}-1-1'.format(int(years[0]), ))
             except ValueError:
