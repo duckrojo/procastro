@@ -105,7 +105,7 @@ def moon_distance(target, location=None, time=None):
 
     Parameters
     -------------
-    target: str
+    target: str, SkyCoord
         Target object for Moon distance
     location: apcoo.EarthLocation
         If None uses CTIO observatory
@@ -113,7 +113,9 @@ def moon_distance(target, location=None, time=None):
         If None uses now().
     """
 
-    target = find_target(target)
+    if not isinstance(target, apc.SkyCoord):
+        target = find_target(target)
+
     if location is None:
         location = "ctio"
     if not isinstance(location, apc.EarthLocation):
@@ -124,7 +126,7 @@ def moon_distance(target, location=None, time=None):
     if not isinstance(time, apt.Time):
         time = apt.Time(time)
 
-    return apc.get_moon(time, location=location).separation(target)
+    return apc.get_body("moon", time, location=location).separation(target)
 
 
 def polygon_around_path(coordinates: apc.SkyCoord | Sequence,
@@ -453,10 +455,13 @@ def find_time_for_altitude(location, time,
 
     rough_span = time + np.arange(0, search_span_hour, search_delta_hour) * multiplier * u.hour + rough_offset
 
-    altitude_rough = apc.get_body(body, rough_span,
-                                location=location).transform_to(apc.AltAz(obstime=rough_span,
-                                                                        location=location)
-                                                                ).alt
+    if isinstance(body, apc.SkyCoord):
+        coord = body
+    else:
+        coord = apc.get_body(body, rough_span, location=location)
+    altitude_rough = coord.transform_to(apc.AltAz(obstime=rough_span,
+                                                 location=location)
+                                       ).alt
 
     if isinstance(ref_altitude_deg, str):
         central_idx = getattr(np, f"arg{ref_altitude_deg}")(altitude_rough)
@@ -474,8 +479,11 @@ def find_time_for_altitude(location, time,
 
     fine_span = time + closest_rough + np.arange(-fine_span_min, fine_span_min) * u.min
 
-    sun = apc.get_body(body, fine_span)
-    altitude = sun.transform_to(apc.AltAz(obstime=fine_span, location=location)).alt
+    if isinstance(body, apc.SkyCoord):
+        coord = body
+    else:
+        coord = apc.get_body(body, fine_span, location=location)
+    altitude = coord.transform_to(apc.AltAz(obstime=fine_span, location=location)).alt
 
     if isinstance(ref_altitude_deg, str):
         central_idx = getattr(np, f"arg{ref_altitude_deg}")(altitude)

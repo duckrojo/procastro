@@ -327,30 +327,11 @@ class ObsCalc(object):
                       self._target.dec.to_string(sep=':')))
 
         transit_epoch, transit_period, transit_length = \
-            procastro.astro.exoplanet.get_transit_ephemeris(target)
+            procastro.astro.exoplanet.get_transit_ephemeris_file(target)
         print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
 
         if transit_epoch is None or transit_period is None:
-            print("Attempting to query transit information")
-
-            query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
-                    f"WHERE lower(pl_name) like '%{target}%' "
-            resultset = exo_service.search(query)
-            try:
-                req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
-            except IndexError:
-                raise IndexError(f"Planet {target} not found in exoplanet database")
-            trandur = resultset['pl_trandur'].data[0]
-            if trandur is None:
-                req_cols.append(1)
-                warnings.warn("Using default 1hr length for transit duration", UserWarning)
-            else:
-                req_cols.append(trandur)
-
-            transit_period, transit_epoch, transit_length = req_cols
-
-            print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
-                  .format(transit_epoch, transit_period, transit_length))
+            transit_epoch, transit_period, transit_length = paa.query_transit_ephemeris(target)
 
         if transit_period != 0:
             transit_epoch += phase_offset * transit_period

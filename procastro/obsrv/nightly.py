@@ -222,7 +222,6 @@ class Nightly:
         self._start_night = the_day[start_night_idx]
         self._end_night = the_day[above.index(True, start_night_idx + 1)]
 
-
         self._moon_coord = apc.get_body("moon", self._civil_midday + 12 * u.hour, location=self._observatory)
         times_at_sets = apt.Time([self._start_night, self._end_night])
         self._sidereal_at_sets = times_at_sets.sidereal_time('apparent', self._observatory).hourangle
@@ -489,7 +488,7 @@ class Nightly:
                     s=f"{transit_time[baseline_f_index].iso[11:16]} - P{info['pl_orbper']:.1f}d",
                     fontsize=9)
             ax.text(jd[baseline_f_index], cum_altitude + altitude_separation//2,
-                    s=f"{info['sy_vmag']}, {info['moon_separation']:.0f}$^\circ$",
+                    s=f"{info['sy_vmag']}, {info['moon_separation']:.0f}$^\\circ$",
                     fontsize=9)
             ax.text(jd[baseline_i_index], cum_altitude,
                     s=transit_time[baseline_i_index].iso[11:16],

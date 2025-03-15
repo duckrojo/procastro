@@ -1,5 +1,5 @@
 import pytest
-from ..exoplanet import get_transit_ephemeris
+from ..exoplanet import get_transit_ephemeris_file
 from ..coordinates import find_target
 import os
 
@@ -30,23 +30,23 @@ def test_get_transit_ephemeris():
     # File format testing
     # A: Correct order, all columns
     dir = os.path.dirname(__file__)
-    epoch, period, length = get_transit_ephemeris("TEST CASE A", dir=dir)
+    epoch, period, length = get_transit_ephemeris_file("TEST CASE A", dir=dir)
     assert epoch == 2454679.33486
     assert period == 8.158719
     assert length == 24*0.11536
 
     # B: Correct order, missing columns
-    epoch, period, length = get_transit_ephemeris("TEST CASE B", dir=dir)
+    epoch, period, length = get_transit_ephemeris_file("TEST CASE B", dir=dir)
     assert epoch == 2452826.62852
     assert period is None
     assert length == 184.2/60
 
     # C: Disorganized correct syntax
-    epoch, period, length = get_transit_ephemeris("TEST CASE C", dir=dir)
+    epoch, period, length = get_transit_ephemeris_file("TEST CASE C", dir=dir)
     assert epoch == 2455983.70472
     assert period == 3.3366487
     assert length == 96.912/60
 
     # D: Unknown field
     with pytest.raises(ValueError):
-        get_transit_ephemeris("TEST CASE D", dir=dir)
+        get_transit_ephemeris_file("TEST CASE D", dir=dir)

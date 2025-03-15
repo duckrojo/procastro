@@ -1,7 +1,11 @@
+import warnings
+
 import procastro as pa
+import pyvo as vo
+exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
 
 
-def get_transit_ephemeris(target):
+def get_transit_ephemeris_file(target):
     """
     Recovers epoch, period and length of a target transit if said transit has
     been specified in one of the provided paths
@@ -78,3 +82,28 @@ def get_transit_ephemeris(target):
             pass
 
     return tr_epoch, tr_period, tr_length
+
+
+def query_transit_ephemeris(target):
+    print("Attempting to query transit information")
+
+    query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
+            f"WHERE lower(pl_name) like '%{target}%' "
+    resultset = exo_service.search(query)
+    try:
+        req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
+    except IndexError:
+        raise IndexError(f"Planet {target} not found in exoplanet database")
+    trandur = resultset['pl_trandur'].data[0]
+    if trandur is None:
+        req_cols.append(1)
+        warnings.warn("Using default 1hr length for transit duration", UserWarning)
+    else:
+        req_cols.append(trandur)
+
+    transit_period, transit_epoch, transit_length = req_cols
+
+    print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
+          .format(transit_epoch, transit_period, transit_length))
+
+    return transit_epoch, transit_period, transit_length
