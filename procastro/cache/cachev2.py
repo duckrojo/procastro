@@ -12,22 +12,15 @@ class _AstroCachev2:
     def __init__(self,
                  max_cache=200, lifetime=0,
                  hashable_kw=None, label_on_disk=None,
-                 force: str | None = "force",
-                 ):
+                 force: str | None = "force"):
         """
         New implementation of the cache system, using diskcache
-        Parameters
-        ----------
-        force :
-          Keyword which, if True, will force to recompute the cache.
-        max_cache
-          Maximum number of items to cache.
-        lifetime
-          Time-to-live for cached items, in days.
         """
         self._max_cache: int = max_cache
         self.lifetime = lifetime
         self.force = force
+
+        
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
@@ -38,30 +31,57 @@ class _AstroCachev2:
 
         if self._store_on_disk:
             self.cache_directory = user_confdir(f'cache/{label_on_disk}', use_directory=True)
-            self._cache = dc.Cache(self.cache_directory, size_limit=max_cache)
+            self.__cache = dc.Cache(self.cache_directory, cull_limit=max_cache)
         else:
-            self._cache = dc.Cache(size_limit=max_cache)
+            
+            self.__cache = dc.Cache(cull_limit=max_cache)
 
         if hashable_kw is None:
             hashable_kw = []
         self._hashable_kw = hashable_kw
+
+        print(f"Created cache with size limit {self.__cache.cull_limit}")
+
+    @property
+    def _cache(self):
+        """Devuelve el contenido del caché como un diccionario."""
+        return {key: self.__cache.get(key) for key in list(self.__cache.iterkeys())}
+
+    @_cache.setter
+    def _cache(self, value):
+        """Permite configurar el caché directamente si es necesario."""
+        self.__cache = value
+
+    def _internal_cache(self):
+        """Returns the internal cache object."""
+        return self.__cache
+    
 
     def __bool__(self):
         return self._max_cache > 0
 
     def _delete_cache(self):
         """Deletes the oldest item in the cache."""
-        if len(self._cache) > 0:
-            oldest_key = next(iter(self._cache))
-            del self._cache[oldest_key]
+        while len(self.__cache) > self._max_cache:
+            # Identificar la clave más antigua
+            oldest_key = min(self.__cache.iterkeys(), key=lambda k: self.__cache.get(k)[0])
+            # Eliminar la clave más antigua
+            print(f"Deleting oldest cache entry: {oldest_key} -> {self.__cache.get(oldest_key)}")
+            del self.__cache[oldest_key]
 
     def _store_cache(self, compound_hash, content):
         """Stores an item in the cache with an optional expiration time."""
-        self._cache.set(
+        print(f"Storing in cache {compound_hash} -> {content}")
+        self.__cache.set(
             compound_hash,
-            content,
-            expire=self.lifetime * 86400 if self.lifetime else None  # Convert days to seconds
+            (apt.Time.now().isot, content),  # Almacenar el tiempo y el valor como una tupla
+            expire=self.lifetime * 86400 if self.lifetime!=0 else None  # Convertir días a segundos
         )
+        if len(self.__cache) > self.__cache.cull_limit:
+            print(f"Cache size exceeded limit: {self.__cache.cull_limit}. Deleting oldest item.")
+            self._delete_cache()
+        print(f"Cache size: {len(self.__cache)}")
+        print(f"Stored value for {compound_hash}: {self.__cache.get(compound_hash)}")
 
     def __call__(self, method):
         def wrapper(hashable_first_argument, **kwargs):
@@ -96,9 +116,9 @@ class _AstroCachev2:
             # Save if caching
             if cache:
                 # Cull the cache if it exceeds the max size
-                self._cache.cull()
+                self.__cache.cull()
                 self._store_cache(compound_hash, ret)
-                self._cache.set(compound_hash + ('_time',), apt.Time.now().isot)
+                # self.__cache.set(compound_hash + ('_time',), apt.Time.now().isot)
 
             return ret
 
