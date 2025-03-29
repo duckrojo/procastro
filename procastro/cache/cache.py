@@ -17,7 +17,7 @@ class _AstroCache:
     def __init__(self,
                  max_cache=200, lifetime=0,
                  hashable_kw=None, label_on_disk=None,
-                 force: str | None = None,
+                 force: str | None = "force",
                  ):
         """
 
@@ -28,7 +28,6 @@ class _AstroCache:
         max_cache
           how many days to cache in disk, if more than that has elapsed, it will be reread.
         """
-
         self._max_cache: int = max_cache
         self.lifetime = lifetime
         self.force = force
@@ -100,6 +99,7 @@ class _AstroCache:
         def wrapper(hashable_first_argument, **kwargs):
             """Instance is just the first argument to the function which would need a __hash__:
              in a method it refers to self."""
+
             cache = True
             compound_hash = tuple([hashable_first_argument] +
                                   [kwargs[kw] for kw in self._hashable_kw])
