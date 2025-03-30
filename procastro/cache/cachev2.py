@@ -20,20 +20,20 @@ class _AstroCachev2:
         self.lifetime = lifetime
         self.force = force
 
-        
-
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
-                raise ValueError(f"label_on_disk contains invalid file characters '{label_on_disk}'")
+                raise ValueError(
+                    f"label_on_disk contains invalid file characters '{label_on_disk}'")
             self._store_on_disk = True
         else:
             self._store_on_disk = False
 
         if self._store_on_disk:
-            self.cache_directory = user_confdir(f'cache/{label_on_disk}', use_directory=True)
+            self.cache_directory = user_confdir(
+                f'cache/{label_on_disk}', use_directory=True)
             self.__cache = dc.Cache(self.cache_directory, cull_limit=max_cache)
         else:
-            
+
             self.__cache = dc.Cache(cull_limit=max_cache)
 
         if hashable_kw is None:
@@ -55,7 +55,6 @@ class _AstroCachev2:
     def _internal_cache(self):
         """Returns the internal cache object."""
         return self.__cache
-    
 
     def __bool__(self):
         return self._max_cache > 0
@@ -64,9 +63,11 @@ class _AstroCachev2:
         """Deletes the oldest item in the cache."""
         while len(self.__cache) > self._max_cache:
             # Identificar la clave más antigua
-            oldest_key = min(self.__cache.iterkeys(), key=lambda k: self.__cache.get(k)[0])
+            oldest_key = min(self.__cache.iterkeys(),
+                             key=lambda k: self.__cache.get(k)[0])
             # Eliminar la clave más antigua
-            print(f"Deleting oldest cache entry: {oldest_key} -> {self.__cache.get(oldest_key)}")
+            print(
+                f"Deleting oldest cache entry: {oldest_key} -> {self.__cache.get(oldest_key)}")
             del self.__cache[oldest_key]
 
     def _store_cache(self, compound_hash, content):
@@ -74,14 +75,18 @@ class _AstroCachev2:
         print(f"Storing in cache {compound_hash} -> {content}")
         self.__cache.set(
             compound_hash,
-            (apt.Time.now().isot, content),  # Almacenar el tiempo y el valor como una tupla
-            expire=self.lifetime * 86400 if self.lifetime!=0 else None  # Convertir días a segundos
+            # Almacenar el tiempo y el valor como una tupla
+            (apt.Time.now().isot, content),
+            # Convertir días a segundos
+            expire=self.lifetime * 86400 if self.lifetime != 0 else None
         )
         if len(self.__cache) > self.__cache.cull_limit:
-            print(f"Cache size exceeded limit: {self.__cache.cull_limit}. Deleting oldest item.")
+            print(
+                f"Cache size exceeded limit: {self.__cache.cull_limit}. Deleting oldest item.")
             self._delete_cache()
         print(f"Cache size: {len(self.__cache)}")
-        print(f"Stored value for {compound_hash}: {self.__cache.get(compound_hash)}")
+        print(
+            f"Stored value for {compound_hash}: {self.__cache.get(compound_hash)}")
 
     def __call__(self, method):
         def wrapper(hashable_first_argument, **kwargs):
@@ -103,7 +108,8 @@ class _AstroCachev2:
 
             if cache and (compound_hash in self._cache):
                 if self.lifetime:
-                    cached_time = apt.Time(self._cache.get(compound_hash + ('_time',)), format='isot', scale='utc')
+                    cached_time = apt.Time(self._cache.get(
+                        compound_hash + ('_time',)), format='isot', scale='utc')
                     if apt.Time.now() - cached_time > self.lifetime * u.day:
                         self._delete_cache()
                     else:
@@ -136,5 +142,5 @@ class _AstroCachev2:
 astrofile_cache = _AstroCachev2()
 jpl_cache = _AstroCachev2(max_cache=50)
 usgs_map_cache = _AstroCachev2(max_cache=30, lifetime=30,
-                             hashable_kw=['detail'], label_on_disk='USGSmap',
-                             force="no_cache")
+                               hashable_kw=['detail'], label_on_disk='USGSmap',
+                               force="no_cache")
