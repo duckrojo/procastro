@@ -33,7 +33,6 @@ class _AstroCachev2:
                 f'cache/{label_on_disk}', use_directory=True)
             self.__cache = dc.Cache(self.cache_directory, cull_limit=max_cache)
         else:
-
             self.__cache = dc.Cache(cull_limit=max_cache)
 
         if hashable_kw is None:
@@ -63,18 +62,6 @@ class _AstroCachev2:
         """
 
         self.__cache = value
-
-    def __internal_cache(self) -> object: 
-        """
-        Accessor method for the internal cache object. This method should be only accesed by the class itself.
-        It provides a way to retrieve the internal cache object without exposing it directly.
-        This is useful for encapsulation and maintaining the integrity of the cache.
-        It is not intended to be used outside of the class.
-
-        Returns:
-            object: The internal cache object.
-        """
-        return self.__cache
 
     def __bool__(self):
         return self._max_cache > 0
@@ -165,7 +152,7 @@ class _AstroCachev2:
             raise ValueError(f"max_cache must be positive ({max_cache})")
 
         self._max_cache = max_cache
-        self._cache.cull()  # Reduce cache size if necessary
+        self._delete_cache()
 
 
 astrofile_cache = _AstroCachev2()
