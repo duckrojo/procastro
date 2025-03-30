@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 from procastro.cache.cache import _AstroCache
 from procastro.cache.cachev2 import _AstroCachev2
+from procastro.cache.utils import compare_caches
 
 @pytest.fixture
 def setup_caches():
@@ -24,8 +25,13 @@ def test_cache_results(setup_caches):
     test_data = [1, 2, 3, 4, 5]
     for x in test_data:
         assert old_cached_function(x) == new_cached_function(x)
+    
+    assert compare_caches(old_cache._cache, new_cache._cache), "Caches do not match!"
 
-def test_cache_invalidation(setup_caches,capsys):
+
+
+
+def test_cache_invalidation(setup_caches):
     old_cache, new_cache = setup_caches
 
     execution_count_old = {"count": 0}
@@ -47,6 +53,13 @@ def test_cache_invalidation(setup_caches,capsys):
     assert execution_count_old["count"] == 1
     assert execution_count_new["count"] == 1
 
+
+    old_result_1 = old_cached_function(6, force = False)
+    new_result_1 = new_cached_function(6, force = False)
+
+    assert execution_count_old["count"] == 1
+    assert execution_count_new["count"] == 1
+
     old_result_2 = old_cached_function(6, force=True)
     new_result_2 = new_cached_function(6, force=True)
 
@@ -54,6 +67,8 @@ def test_cache_invalidation(setup_caches,capsys):
     assert execution_count_new["count"] == 2
 
     assert old_result_2 == new_result_2
+
+    assert compare_caches(old_cache._cache, new_cache._cache), "Caches do not match!"
 
 def test_non_hashable_objects(setup_caches):
 
@@ -83,6 +98,8 @@ def test_non_hashable_objects(setup_caches):
 
     assert not is_hashable, "The input should not be hashable"
 
+    assert compare_caches(old_cache._cache, new_cache._cache), "Caches do not match!"
+
 
 def test_max_cache_limit(setup_caches):
     old_cache, new_cache = setup_caches
@@ -102,7 +119,18 @@ def test_max_cache_limit(setup_caches):
     assert len(old_cache._cache) <= 10, "Old cache exceeded max size"
     assert len(new_cache._cache) <= 10, "New cache exceeded max size"
 
+    #verify that the oldest entries are removed
+    old_cache_removed_keys = [(0,),(1,), (2,), (3,), (4,)]
+    new_cache_removed_keys = [(0,),(1,), (2,), (3,), (4,)]
 
+    for key in old_cache_removed_keys:
+        assert key not in old_cache._cache, f"Old cache should not contain {key}"
+    
+    for key in new_cache_removed_keys:
+        assert key not in new_cache._cache, f"New cache should not contain {key}"
+
+
+    assert compare_caches(old_cache._cache, new_cache._cache), "Caches do not match!"
     
     
 

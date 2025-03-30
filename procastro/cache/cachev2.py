@@ -40,53 +40,80 @@ class _AstroCachev2:
             hashable_kw = []
         self._hashable_kw = hashable_kw
 
-        print(f"Created cache with size limit {self.__cache.cull_limit}")
 
     @property
-    def _cache(self):
-        """Devuelve el contenido del caché como un diccionario."""
+    def _cache(self)-> dict:
+        """
+        Retrieves a dictionary representation of the current cache.
+        This method constructs and returns a dictionary where the keys are the 
+        same as those in the internal cache (`self.__cache`), and the values are 
+        fetched from the internal cache.
+        Returns:
+            dict: A dictionary containing key-value pairs from the internal cache.
+        """
+        
         return {key: self.__cache.get(key) for key in list(self.__cache.iterkeys())}
 
     @_cache.setter
     def _cache(self, value):
-        """Permite configurar el caché directamente si es necesario."""
+        """
+        Internal method to set the cache value.
+        Args:
+            value: The value to be stored in the cache.
+        """
+
         self.__cache = value
 
-    def _internal_cache(self):
-        """Returns the internal cache object."""
+    def __internal_cache(self) -> object: 
+        """
+        Accessor method for the internal cache object. This method should be only accesed by the class itself.
+        It provides a way to retrieve the internal cache object without exposing it directly.
+        This is useful for encapsulation and maintaining the integrity of the cache.
+        It is not intended to be used outside of the class.
+
+        Returns:
+            object: The internal cache object.
+        """
         return self.__cache
 
     def __bool__(self):
         return self._max_cache > 0
 
     def _delete_cache(self):
-        """Deletes the oldest item in the cache."""
+        """
+        Deletes the oldest item in the cache if the cache size exceeds the maximum limit.
+        We cant use the cull method provided by diskcache because it is intended when the cache is volume-full and not when it is size-full.
+        This method identifies the oldest key in the cache and removes it, ensuring that the cache size remains within the defined limit.
+        """
         while len(self.__cache) > self._max_cache:
-            # Identificar la clave más antigua
+
             oldest_key = min(self.__cache.iterkeys(),
                              key=lambda k: self.__cache.get(k)[0])
-            # Eliminar la clave más antigua
-            print(
-                f"Deleting oldest cache entry: {oldest_key} -> {self.__cache.get(oldest_key)}")
             del self.__cache[oldest_key]
 
     def _store_cache(self, compound_hash, content):
-        """Stores an item in the cache with an optional expiration time."""
-        print(f"Storing in cache {compound_hash} -> {content}")
+        """
+        Stores a given content in the cache with an associated compound hash key.
+        Args:
+            compound_hash (str): The unique key used to identify the cached content.
+            content (Any): The data to be stored in the cache.
+        Behavior:
+            - The content is stored in the cache along with the current timestamp in ISO format.
+            - The cache entry will expire after `self.lifetime` days if `self.lifetime` is not 0.
+            - If the cache size exceeds the defined cull limit (`self.__cache.cull_limit`), 
+              the oldest item in the cache is deleted to maintain the size limit.
+        Note:
+            - The expiration time is calculated in seconds (`self.lifetime * 86400`).
+            - If `self.lifetime` is 0, the cache entry will not expire.
+        """
+        
         self.__cache.set(
             compound_hash,
-            # Almacenar el tiempo y el valor como una tupla
             (apt.Time.now().isot, content),
-            # Convertir días a segundos
             expire=self.lifetime * 86400 if self.lifetime != 0 else None
         )
         if len(self.__cache) > self.__cache.cull_limit:
-            print(
-                f"Cache size exceeded limit: {self.__cache.cull_limit}. Deleting oldest item.")
             self._delete_cache()
-        print(f"Cache size: {len(self.__cache)}")
-        print(
-            f"Stored value for {compound_hash}: {self.__cache.get(compound_hash)}")
 
     def __call__(self, method):
         def wrapper(hashable_first_argument, **kwargs):
@@ -107,9 +134,14 @@ class _AstroCachev2:
                 cache = False
 
             if cache and (compound_hash in self._cache):
+                
                 if self.lifetime:
-                    cached_time = apt.Time(self._cache.get(
-                        compound_hash + ('_time',)), format='isot', scale='utc')
+                    cached_entry = self._cache[compound_hash]
+                    if cached_entry and isinstance(cached_entry[0], str):
+                        cached_time = apt.Time(cached_entry[0], format='isot', scale='utc')
+                    else:
+                        raise ValueError(f"Invalid cached time format: {cached_entry}")
+                    
                     if apt.Time.now() - cached_time > self.lifetime * u.day:
                         self._delete_cache()
                     else:
@@ -121,10 +153,7 @@ class _AstroCachev2:
 
             # Save if caching
             if cache:
-                # Cull the cache if it exceeds the max size
-                self.__cache.cull()
                 self._store_cache(compound_hash, ret)
-                # self.__cache.set(compound_hash + ('_time',), apt.Time.now().isot)
 
             return ret
 
