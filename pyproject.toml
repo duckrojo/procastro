@@ -38,6 +38,7 @@ diskcache = "^5.6.3"
 [tool.poetry.group.dev.dependencies]
 poetry-dynamic-versioning="^1"
 ipython="^8"
+ipykernel = "^6.29.5"
 
 [tool.poetry.group.test.dependencies]
 pytest="^7.3.1"

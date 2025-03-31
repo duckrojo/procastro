@@ -1,9 +1,11 @@
 
+from time import sleep
 import pytest
 import numpy as np
 from procastro.cache.cache import _AstroCache
 from procastro.cache.cachev2 import _AstroCachev2
 from procastro.cache.utils import compare_caches
+import diskcache as dc
 
 @pytest.fixture
 def setup_caches():
@@ -136,6 +138,84 @@ def test_max_cache_limit(setup_caches):
 
 
 
+def test_cache_memoize():
 
+    cache= dc.Cache(max_cache=10,lifetime=10)
+    
+
+    execution_count = {"count": 0}
+    @cache.memoize(expire= 10)
+    def expensive_function(x):
+        """A function that simulates an expensive computation."""
+        execution_count["count"] += 1
+        sleep(1)
+        return x ** 2
+
+    assert expensive_function(2) == 4
+    assert expensive_function(2) == 4
+    assert execution_count["count"] == 1, "Function should only be executed once for the same input."
+    sleep(11)  # Wait for the cache to expire
+    assert expensive_function(2) == 4, "Function should be executed again after cache expiration."
+    assert execution_count["count"] == 2, "Function should be executed again after cache expiration."
+
+
+def test_memoize_with_disk_usage():
+    cache = dc.Cache(directory="cachedir")
+    cache.clear()  # Clear the cache before starting
+    execution_count = {"count": 0}
+    @cache.memoize(expire= 10)
+    def expensive_function(x):
+        """A function that simulates an expensive computation."""
+        execution_count["count"] += 1
+        sleep(1)
+        return x ** 2
+
+    assert expensive_function(2) == 4
+    assert expensive_function(2) == 4
+    assert execution_count["count"] == 1, "Function should only be executed once for the same input."
+    sleep(11)  # Wait for the cache to expire
+    assert expensive_function(2) == 4, "Function should be executed again after cache expiration."
+    assert execution_count["count"] == 2, "Function should be executed again after cache expiration."
+
+
+    
+def test_memoize_with_disk_and_expiration_time():
+    cache = dc.Cache(directory="cachedir")
+    cache.clear()  # Clear the cache before starting
+
+    expiration={"count": 0}
+    @cache.memoize(expire= 10) #cache which expires in 10 seconds
+    def expensive_function(x):
+        """A function that simulates an expensive computation."""
+        expiration["count"] += 1
+        sleep(1)
+        return expiration["count"]
+    
+    expensive_function(2)  # Call the function to populate the cache
+    sleep(5)  # Wait for 5 seconds
+    assert expensive_function(2) == 1, "Cache should still contain the value."
+    sleep(6)  # Wait for the cache to expire
+    assert expensive_function(2) == 2,  "Cache should have been executed, because it expired "
+    cache.close()  # Close the cache to release resources
+
+
+
+def test_memoize_with_cache_dict():
+    cache = dc.Cache(directory="cachedir")
+    cache.clear()  # Clear the cache before starting
+
+
+    @cache.memoize()
+    def expensive_function(x):
+        """A function that simulates an expensive computation."""
+        sleep(1)
+        return x ** 2
+    
+    ##filling the cache with 10 elements
+    for i in range(10):
+        expensive_function(i)
+    expected_results = [i ** 2 for i in range(10)]
+    for key in cache.iterkeys():
+        assert cache[key] in expected_results, f"Cache should contain {key}"
 
 
