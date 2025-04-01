@@ -84,7 +84,8 @@ class _AstroCachev2:
                                       [kwargs[kw] for kw in self._hashable_kw])
                 hash(compound_hash)  # Ensure the key is hashable
             except TypeError:
-                return method(hashable_first_argument, **kwargs)
+                raise TypeError(
+                    f"Non-hashable argument detected: {hashable_first_argument}")
 
             # Call the memoized method
             return cached_method(hashable_first_argument, **kwargs)
