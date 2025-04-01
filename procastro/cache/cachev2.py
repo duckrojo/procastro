@@ -66,6 +66,8 @@ class _AstroCachev2:
 
     def __call__(self, method):
 
+
+        #METHOD to use when force= False, when the cache is not bypassed.
         @self.__cache.memoize(expire=self.expire*86400 if self.expire else None)
         def cached_method(*args,**kwargs):
             return method(*args,**kwargs)
@@ -87,7 +89,7 @@ class _AstroCachev2:
                 raise TypeError(
                     f"Non-hashable argument detected: {hashable_first_argument}")
 
-            # Call the memoized method
+            # Call the memoized method, if the force parameter is false
             return cached_method(hashable_first_argument, **kwargs)
 
         return wrapper
