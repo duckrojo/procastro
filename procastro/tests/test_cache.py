@@ -219,3 +219,14 @@ def test_memoize_with_cache_dict():
         assert cache[key] in expected_results, f"Cache should contain {key}"
 
 
+def test_cache_memoize_with_files():
+    cache = dc.Cache(directory="cachedir",size_limit=0.5)
+    cache.clear()
+
+
+    @cache.memoize()
+    def read_file(filename):
+        with open(filename, 'r') as file:
+            return file.read()
+        
+    

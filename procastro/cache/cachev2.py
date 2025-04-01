@@ -9,16 +9,39 @@ __all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
 
 class _AstroCachev2:
+    """
+    _AstroCachev2 is a caching utility class designed to manage and store large astronomical data efficiently 
+    with support for in-memory and disk-based caching. It provides mechanisms for cache 
+    eviction, expiration, and retrieval based on hashable keys.
+    Attributes:
+        max_cache_size (int): The maximum volume allocated for the cache in Bytes.
+        expire (int): The expire time of cached items in days. If 0, items do not expire.
+        force (str | None): A keyword to force bypassing the cache when set in method arguments (forces execution).
+        eviction_policy (str | None): The policy used to evict items from the cache.
+
+            "least-recently-stored" is the default. Every cache item records the time it was stored in the cache. This policy adds an index to that field. On access, no update is required. Keys are evicted starting with the oldest stored keys. As DiskCache was intended for large caches (gigabytes) this policy usually works well enough in practice.
+
+            "least-recently-used" is the most commonly used policy. An index is added to the access time field stored in the cache database. On every access, the field is updated. This makes every access into a read and write which slows accesses.
+
+            "least-frequently-used" works well in some cases. An index is added to the access count field stored in the cache database. On every access, the field is incremented. Every access therefore requires writing the database which slows accesses.
+
+            "none" disables cache evictions. Caches will grow without bound. Cache items will still be lazily removed if they expire. The persistent data types, Deque and Index, use the "none" eviction policy. For lazy culling use the cull_limit setting instead.
+        store_on_disk (bool): Indicates whether the cache is stored on disk.
+        cache_directory (str): The directory path for disk-based caching (if enabled).
+        hashable_kw (list): A list of keyword arguments that are hashable and used 
+            to generate compound hash keys.
+    
+    """
     def __init__(self,
-                 max_cache=200, lifetime=0,
+                 max_cache_size=int(1e6), expire=0,
                  hashable_kw=None, label_on_disk=None,
-                 force: str | None = "force"):
-        """
-        New implementation of the cache system, using diskcache
-        """
-        self._max_cache: int = max_cache
-        self.lifetime = lifetime
+                 force: str | None = "force",
+                 eviction_policy: str | None = 'least-recently-used'):
+        
+        self.max_cache_size: int = max_cache_size
+        self.expire = expire
         self.force = force
+        self.eviction_policy = eviction_policy
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
@@ -31,128 +54,43 @@ class _AstroCachev2:
         if self._store_on_disk:
             self.cache_directory = user_confdir(
                 f'cache/{label_on_disk}', use_directory=True)
-            self.__cache = dc.Cache(self.cache_directory, cull_limit=max_cache)
+            self.__cache = dc.Cache(
+                self.cache_directory, size_limit=max_cache_size, eviction_policy=eviction_policy)
         else:
-            self.__cache = dc.Cache(cull_limit=max_cache)
+            self.__cache = dc.Cache(size_limit=max_cache_size, eviction_policy=eviction_policy)
 
         if hashable_kw is None:
             hashable_kw = []
-        self._hashable_kw = hashable_kw
+        self.hashable_kw = hashable_kw
 
-
-    @property
-    def _cache(self)-> dict:
-        """
-        Retrieves a dictionary representation of the current cache.
-        This method constructs and returns a dictionary where the keys are the 
-        same as those in the internal cache (`self.__cache`), and the values are 
-        fetched from the internal cache.
-        Returns:
-            dict: A dictionary containing key-value pairs from the internal cache.
-        """
-        
-        return {key: self.__cache.get(key) for key in list(self.__cache.iterkeys())}
-
-    @_cache.setter
-    def _cache(self, value):
-        """
-        Internal method to set the cache value.
-        Args:
-            value: The value to be stored in the cache.
-        """
-
-        self.__cache = value
-
-    def __bool__(self):
-        return self._max_cache > 0
-
-    def _delete_cache(self):
-        """
-        Deletes the oldest item in the cache if the cache size exceeds the maximum limit.
-        We cant use the cull method provided by diskcache because it is intended when the cache is volume-full and not when it is size-full.
-        This method identifies the oldest key in the cache and removes it, ensuring that the cache size remains within the defined limit.
-        """
-        while len(self.__cache) > self._max_cache:
-
-            oldest_key = min(self.__cache.iterkeys(),
-                             key=lambda k: self.__cache.get(k)[0])
-            del self.__cache[oldest_key]
-
-    def _store_cache(self, compound_hash, content):
-        """
-        Stores a given content in the cache with an associated compound hash key.
-        Args:
-            compound_hash (str): The unique key used to identify the cached content.
-            content (Any): The data to be stored in the cache.
-        Behavior:
-            - The content is stored in the cache along with the current timestamp in ISO format.
-            - The cache entry will expire after `self.lifetime` days if `self.lifetime` is not 0.
-            - If the cache size exceeds the defined cull limit (`self.__cache.cull_limit`), 
-              the oldest item in the cache is deleted to maintain the size limit.
-        Note:
-            - The expiration time is calculated in seconds (`self.lifetime * 86400`).
-            - If `self.lifetime` is 0, the cache entry will not expire.
-        """
-        
-        self.__cache.set(
-            compound_hash,
-            (apt.Time.now().isot, content),
-            expire=self.lifetime * 86400 if self.lifetime != 0 else None
-        )
-        if len(self.__cache) > self.__cache.cull_limit:
-            self._delete_cache()
 
     def __call__(self, method):
+
+        @self.__cache.memoize(expire=self.expire*86400 if self.expire else None)
+        def cached_method(*args,**kwargs):
+            return method(*args,**kwargs)
+        
         def wrapper(hashable_first_argument, **kwargs):
-            """Instance is just the first argument to the function which would need a __hash__:
-             in a method it refers to self."""
-
-            cache = True
-            compound_hash = tuple([hashable_first_argument] +
-                                  [kwargs[kw] for kw in self._hashable_kw])
+            """
+            Wrapper to handle custom logic like bypassing the cache.
+            """
+            # Check if caching is disabled via the `force` keyword
             if kwargs.pop(self.force, False):
-                cache = False
+                return method(hashable_first_argument, **kwargs)
 
+            # Handle non-hashable arguments (disable caching)
             try:
-                if compound_hash in self._cache:
-                    pass
+                compound_hash = tuple([hashable_first_argument] +
+                                      [kwargs[kw] for kw in self._hashable_kw])
+                hash(compound_hash)  # Ensure the key is hashable
             except TypeError:
-                # Disable cache if type is not hashable (e.g., numpy array)
-                cache = False
+                return method(hashable_first_argument, **kwargs)
 
-            if cache and (compound_hash in self._cache):
-                
-                if self.lifetime:
-                    cached_entry = self._cache[compound_hash]
-                    if cached_entry and isinstance(cached_entry[0], str):
-                        cached_time = apt.Time(cached_entry[0], format='isot', scale='utc')
-                    else:
-                        raise ValueError(f"Invalid cached time format: {cached_entry}")
-                    
-                    if apt.Time.now() - cached_time > self.lifetime * u.day:
-                        self._delete_cache()
-                    else:
-                        return self._cache[compound_hash]
-                else:
-                    return self._cache[compound_hash]
-
-            ret = method(hashable_first_argument, **kwargs)
-
-            # Save if caching
-            if cache:
-                self._store_cache(compound_hash, ret)
-
-            return ret
+            # Call the memoized method
+            return cached_method(hashable_first_argument, **kwargs)
 
         return wrapper
 
-    def set_max_cache(self, max_cache: int):
-        """Sets the maximum number of items in the cache."""
-        if max_cache < 0:
-            raise ValueError(f"max_cache must be positive ({max_cache})")
-
-        self._max_cache = max_cache
-        self._delete_cache()
 
 
 astrofile_cache = _AstroCachev2()
