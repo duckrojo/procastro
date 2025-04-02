@@ -14,7 +14,7 @@ class _AstroCachev2:
     with support for in-memory and disk-based caching. It provides mechanisms for cache 
     eviction, expiration, and retrieval based on hashable keys.
     Attributes:
-        max_cache_size (int): The maximum volume allocated for the cache in Bytes.
+        max_cache (int): The maximum volume allocated for the cache in Bytes.
         expire (int): The expire time of cached items in days. If 0, items do not expire.
         force (str | None): A keyword to force bypassing the cache when set in method arguments (forces execution).
         eviction_policy (str | None): The policy used to evict items from the cache.
@@ -33,13 +33,13 @@ class _AstroCachev2:
     
     """
     def __init__(self,
-                 max_cache_size=int(1e6), expire=0,
+                 max_cache=int(1e6), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
                  force: str | None = "force",
                  eviction_policy: str | None = 'least-recently-used'):
         
-        self.max_cache_size: int = max_cache_size
-        self.expire = expire
+        self.max_cache: int = max_cache
+        self.lifetime = lifetime
         self.force = force
         self.eviction_policy = eviction_policy
 
@@ -55,9 +55,9 @@ class _AstroCachev2:
             self.cache_directory = user_confdir(
                 f'cache/{label_on_disk}', use_directory=True)
             self.__cache = dc.Cache(
-                self.cache_directory, size_limit=max_cache_size, eviction_policy=eviction_policy)
+                self.cache_directory, size_limit=self.max_cache, eviction_policy=eviction_policy)
         else:
-            self.__cache = dc.Cache(size_limit=max_cache_size, eviction_policy=eviction_policy)
+            self.__cache = dc.Cache(size_limit=self.max_cache, eviction_policy=eviction_policy)
 
         if hashable_kw is None:
             hashable_kw = []
@@ -65,10 +65,8 @@ class _AstroCachev2:
 
 
     def __call__(self, method):
-
-
         #METHOD to use when force= False, when the cache is not bypassed.
-        @self.__cache.memoize(expire=self.expire*86400 if self.expire else None)
+        @self.__cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
         def cached_method(*args,**kwargs):
             return method(*args,**kwargs)
         
@@ -83,7 +81,7 @@ class _AstroCachev2:
             # Handle non-hashable arguments (disable caching)
             try:
                 compound_hash = tuple([hashable_first_argument] +
-                                      [kwargs[kw] for kw in self._hashable_kw])
+                                      [kwargs[kw] for kw in self.hashable_kw])
                 hash(compound_hash)  # Ensure the key is hashable
             except TypeError:
                 raise TypeError(
