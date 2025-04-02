@@ -36,7 +36,8 @@ class _AstroCachev2:
                  max_cache=int(1e6), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
                  force: str | None = "force",
-                 eviction_policy: str | None = 'least-recently-used'):
+                 eviction_policy: str | None = 'least-recently-used',
+                 verbose = False):
         
         self.max_cache: int = max_cache
         self.lifetime = lifetime
@@ -62,6 +63,14 @@ class _AstroCachev2:
         if hashable_kw is None:
             hashable_kw = []
         self.hashable_kw = hashable_kw
+
+        if verbose:
+            print(f"Using diskcache implementation: {dc.__version__}. Set verbose parameter to false to disable this message.")
+            print(f"Cache initialized with max size: {self.max_cache} bytes")
+            print(f"Cache lifetime: {self.lifetime} days")
+            print(f"Cache eviction policy: {self.eviction_policy}")
+            print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
+            print(f"Hashable keyword arguments: {self.hashable_kw}")
 
 
     def __call__(self, method):
