@@ -55,10 +55,10 @@ class _AstroCachev2:
         if self._store_on_disk:
             self.cache_directory = user_confdir(
                 f'cache/{label_on_disk}', use_directory=True)
-            self.__cache = dc.Cache(
+            self._cache = dc.Cache(
                 self.cache_directory, size_limit=self.max_cache, eviction_policy=eviction_policy)
         else:
-            self.__cache = dc.Cache(size_limit=self.max_cache, eviction_policy=eviction_policy)
+            self._cache = dc.Cache(size_limit=self.max_cache, eviction_policy=eviction_policy)
 
         if hashable_kw is None:
             hashable_kw = []
@@ -75,7 +75,7 @@ class _AstroCachev2:
 
     def __call__(self, method):
         #METHOD to use when force= False, when the cache is not bypassed.
-        @self.__cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
+        @self._cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
         def cached_method(*args,**kwargs):
             return method(*args,**kwargs)
         

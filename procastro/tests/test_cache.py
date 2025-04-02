@@ -10,10 +10,23 @@ def astrocache():
     """Fixture to create an in-memory _AstroCachev2 instance."""
     return _AstroCachev2()
 
+
 @pytest.fixture
 def disk_based_astrocache():
-    """Fixture to create a disk-based _AstroCachev2 instance."""
-    return  _AstroCachev2(label_on_disk="cachedir")
+    """Fixture to create a disk-based _AstroCachev2 instance and clean up after tests."""
+    cache_dir = "cachedir"
+    cache = _AstroCachev2(label_on_disk=cache_dir)
+
+    # Yield the cache instance for use in tests
+    yield cache
+
+    # Cleanup: Remove the cachedir directory after the test
+    cache._cache.close()  # Close the cache to release any locks
+    path = Path(cache_dir)
+    if path.exists() and path.is_dir():
+        for file in path.iterdir():
+            file.unlink()  # Remove all files in the directory
+        path.rmdir()  # Remove the directory itself
 
 def test_basic_caching(astrocache):
     """Test that the cache stores and retrieves results correctly."""
@@ -93,3 +106,4 @@ def test_eviction_policy(astrocache):
     # Verify that some items have been evicted
     # (Exact behavior depends on the eviction policy)
     assert cached_function(0) == 0  # May have been evicted and recomputed
+
