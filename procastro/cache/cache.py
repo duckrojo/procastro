@@ -8,6 +8,7 @@ import queue
 __all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
 
+from procastro.cache.cachev2 import _AstroCachev2
 from procastro.misc.misc_general import user_confdir
 import astropy.time as apt
 import astropy.units as u
@@ -180,7 +181,7 @@ class _AstroCache:
             pass
 
 
-astrofile_cache = _AstroCache()
+astrofile_cache = _AstroCachev2()
 jpl_cache = _AstroCache(max_cache=50)
 usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
                              hashable_kw=['detail'], label_on_disk='USGSmap',
