@@ -55,6 +55,7 @@ class _AstroCachev2:
         if self._store_on_disk:
             self.cache_directory = user_confdir(
                 f'cache/{label_on_disk}', use_directory=True)
+            self.config_file = user_confdir(f'cache/{label_on_disk}/config.pickle')
             self._cache = dc.Cache(
                 self.cache_directory, size_limit=self.max_cache, eviction_policy=eviction_policy)
         else:
