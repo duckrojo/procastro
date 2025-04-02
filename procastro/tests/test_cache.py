@@ -14,7 +14,7 @@ def astrocache():
 @pytest.fixture
 def disk_based_astrocache():
     """Fixture to create a disk-based _AstroCachev2 instance and clean up after tests."""
-    cache_dir = "cachedir"
+    cache_dir = "tempdir"
     cache = _AstroCachev2(label_on_disk=cache_dir)
 
     # Yield the cache instance for use in tests
