@@ -2,7 +2,8 @@ import pytest
 import tempfile
 import time
 from unittest.mock import MagicMock
-from procastro.cache.cachev2 import _AstroCachev2
+from procastro.astrofile.astrofile import AstroFile
+from procastro.cache.cachev2 import _AstroCachev2, astrofile_cachev2
 from pathlib import Path
 
 @pytest.fixture
@@ -15,7 +16,7 @@ def astrocache():
 def disk_based_astrocache():
     """Fixture to create a disk-based _AstroCachev2 instance and clean up after tests."""
     cache_dir = "tempdir"
-    cache = _AstroCachev2()
+    cache = _AstroCachev2(label_on_disk=cache_dir)
 
     # Yield the cache instance for use in tests
     yield cache
@@ -109,4 +110,16 @@ def test_eviction_policy(astrocache):
 
 
 
-def 
+def test_astrofile_with_astrocachev2(astrocache):
+    """Test that the astrofile cache works correctly with _AstroCachev2."""
+    file_dir = "demo_data/ob01_5_spec.fits"
+    file = AstroFile(file_dir)
+    data = file.data
+    astrofile_cachev2._cache.clear()
+    assert data is not None, "Data should be loaded successfully"
+    assert astrofile_cachev2._store_on_disk , "Data should be on disk"
+    assert astrofile_cachev2.cache_directory , "Data should have a valid path"
+
+
+   
+

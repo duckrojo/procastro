@@ -5,7 +5,7 @@ import astropy.time as apt
 import astropy.units as u
 from procastro.misc.misc_general import user_confdir
 
-__all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
+__all__ = ['astrofile_cachev2', 'jpl_cachev2', 'usgs_map_cachev2']
 
 
 class _AstroCachev2:
@@ -104,8 +104,8 @@ class _AstroCachev2:
 
 
 
-astrofile_cache = _AstroCachev2()
-jpl_cache = _AstroCachev2(max_cache=50)
-usgs_map_cache = _AstroCachev2(max_cache=30, lifetime=30,
+astrofile_cachev2 = _AstroCachev2(verbose=True, label_on_disk="test")
+jpl_cachev2 = _AstroCachev2(max_cache=50)
+usgs_map_cachev2 = _AstroCachev2(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force="no_cache")
