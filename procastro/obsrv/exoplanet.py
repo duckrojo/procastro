@@ -40,6 +40,8 @@ class ExoPlanet:
         phase_to = (self.phase_info['max_phases'].data - min_phase) % 1
         max_phase = np.ones(len(phase_to))*((max_phase - min_phase) % 1)
         period = self.transit_info['period']
+        vis_from = self.phase_info['from']
+        vis_to = self.phase_info['to']
 
         moon = self.phase_info['moons'].data
 
@@ -49,6 +51,7 @@ class ExoPlanet:
         end_coverage = np.min([max_phase, phase_to], 0)
 
         coverage = (end_coverage - begin_coverage) / max_phase
+        coverage = coverage*(vis_from < vis_to)
 
         sorted_idx = np.argsort(coverage)
 
