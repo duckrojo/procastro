@@ -2,16 +2,16 @@ import copy
 import os
 import pickle
 import tempfile
+from pathlib import Path
 from typing import Optional
 import queue
 
 __all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
-
-from procastro.cache.cachev2 import _AstroCachev2
-from procastro.misc.misc_general import user_confdir
 import astropy.time as apt
 import astropy.units as u
+
+from procastro import config
 
 
 class _AstroCache:
@@ -40,9 +40,13 @@ class _AstroCache:
         else:
             self._store_on_disk = False
 
+
         if self._store_on_disk:
-            self.cache_directory = user_confdir(f'cache/{label_on_disk}', use_directory=True)
-            self.config_file = user_confdir(f'cache/{label_on_disk}/config.pickle')
+
+            config_dict = config.config_user(label_on_disk)
+            self.cache_directory = config_dict.get('cache_dir')
+            self.config_file = Path(self.cache_directory) / 'config.pickle'
+
             if not os.path.exists(self.config_file):
                 pickle.dump({}, open(self.config_file, 'wb'))
             self._cache = pickle.load(open(self.config_file, 'rb'))

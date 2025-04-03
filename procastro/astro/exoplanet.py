@@ -1,5 +1,5 @@
-import procastro as pa
-from procastro.misc.misc_general import user_confdir, accept_object_name
+from procastro import config
+from procastro.misc.misc_general import accept_object_name
 
 
 def get_transit_ephemeris(target):
@@ -35,7 +35,8 @@ def get_transit_ephemeris(target):
     ValueError
         If a data field does not match the specified format
     """
-    paths = [user_confdir("transits.txt")
+    config_exo = config.config_user("exoplanet")
+    paths = [config_exo['transit_file'],
              ]
 
     tr_epoch = None
