@@ -1,6 +1,5 @@
 # (c) 2023 Patricio Rojo
 
-from pathlib import Path
 from typing import Union
 
 import inspect
@@ -15,6 +14,8 @@ from functools import wraps as _wraps
 import re
 
 __all__ = ['BindingsFunctions']
+
+from procastro import config
 
 try:
     import tomllib as toml
@@ -121,7 +122,6 @@ class BindingsFunctions:
     def __init__(self,
                  axes_data,
                  axes_exam,
-                 config_file='interactive.toml',
                  cb_data=None,
                  cb_exam=None,
                  title: str = '',
@@ -131,11 +131,11 @@ class BindingsFunctions:
 
         self.last_dict = {}
 
-        self._config_file = config_file
+        self._config = config.config_user('interactive')
+
         self._key_options = None
         self._data_2d = None
 
-        self._config = {}
         self._temporal_artist = []
         self._cid = {}
 
@@ -248,37 +248,17 @@ class BindingsFunctions:
     def _load_config(self,
                      reset: bool = False):
 
-        def update_vals(new_config, old_config):
-            for key, item in new_config.items():
-                if isinstance(item, dict):
-                    item = update_vals(item, old_config[key])
-                old_config[key] = item
-            return old_config
-
-        try:
-            self._config = toml.loads(Path(pa.defaults_confdir(self._config_file)).read_text(encoding='utf-8'))
-        except IOError:
-            return False
         if reset:
-            print("Forced reset: loaded factory defaults")
+            self._config = config.config_user('interactive', read_default=True)
         else:
-            file = pa.user_confdir(self._config_file)
-            try:
-                new = toml.loads(Path(file).read_text(encoding='utf-8'))
-                self._config = update_vals(new, self._config)
-                print(f"Loaded configuration from: {file}")
-            except toml.TOMLDecodeError:
-                print(f"Skipping configuration from corrupt local config ({file}). "
-                      f"It is recommended to save new version.")
+            self._config = config.config_user('interactive')
 
         return True
 
     def _save_config(self,
                      ):
-        file = pa.user_confdir(self._config_file)
-        with open(file, 'wb') as fp:
-            tomli_w.dump(self._config, fp)
-        print(f"Saved configuration to: {file}")
+        config.config_save('interactive', self._config)
+        print(f"Saved configuration")
 
     ############################
     # start-end interactive mode

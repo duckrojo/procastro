@@ -19,53 +19,13 @@
 #
 
 __all__ = ['sortmanynsp', 'sortmany', 'accept_object_name',
-           'user_confdir', 'defaults_confdir',
            ]
-
-from pathlib import Path
-from shutil import copy2
 
 import numpy as np
 import operator as op
-import warnings
 import re
 
-procastro_dir = Path("~/.procastrorc/").expanduser()
-procastro_dir.mkdir(exist_ok=True)
 
-
-def defaults_confdir(file: str,
-                     ):
-    """
-Returns full path to file with default configuration.
-
-    Parameters
-    ----------
-    file: str
-       Name of the file for which the default configuration is requested.
-
-    Returns
-    -------
-
-    """
-    return Path(__file__).parent.joinpath("..", "defaults", file)
-
-
-def user_confdir(section: str,
-                 start_with_default: bool = True,
-                 use_directory: bool = False):
-    """returns full path for a _file_ configuration
-
-     """
-    default_file = defaults_confdir(section)
-    full_file = procastro_dir.joinpath(section)
-    if use_directory:
-        full_file.mkdir(exist_ok=True, parents=True)
-
-    # if this is the first time the file is checked, then copy it to the user directory
-    if start_with_default and not full_file.exists() and default_file.exists():
-        copy2(default_file, full_file)
-    return full_file
 
 
 def accept_object_name(name1, name2, planet_match=False, binary_match=False):
