@@ -1,9 +1,10 @@
 import os
+from pathlib import Path
 import diskcache as dc
 from typing import Optional
 import astropy.time as apt
 import astropy.units as u
-from procastro.misc.misc_general import user_confdir
+from procastro import config
 
 __all__ = ['astrofile_cachev2', 'jpl_cachev2', 'usgs_map_cachev2']
 
@@ -30,7 +31,7 @@ class _AstroCachev2:
         cache_directory (str): The directory path for disk-based caching (if enabled).
         hashable_kw (list): A list of keyword arguments that are hashable and used 
             to generate compound hash keys.
-    
+        label_on_disk : Location on disk to store the cache
     """
     def __init__(self,
                  max_cache=int(1e6), lifetime=0,
@@ -53,9 +54,9 @@ class _AstroCachev2:
             self._store_on_disk = False
 
         if self._store_on_disk:
-            self.cache_directory = user_confdir(
-                f'cache/{label_on_disk}', use_directory=True)
-            self.config_file = user_confdir(f'cache/{label_on_disk}/config.pickle')
+            config_dict = config.config_user(label_on_disk)
+            self.cache_directory = config_dict.get('cache_dir')
+            self.config_file = Path(self.cache_directory) / 'config.pickle'
             self._cache = dc.Cache(
                 self.cache_directory, size_limit=self.max_cache, eviction_policy=eviction_policy)
         else:
@@ -104,7 +105,7 @@ class _AstroCachev2:
 
 
 
-astrofile_cachev2 = _AstroCachev2(verbose=True, label_on_disk="test")
+astrofile_cachev2 = _AstroCachev2()
 jpl_cachev2 = _AstroCachev2(max_cache=50)
 usgs_map_cachev2 = _AstroCachev2(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',

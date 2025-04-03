@@ -6,7 +6,7 @@ import platformdirs as pd
 import toml
 from procastro.config.definitions import AppName, AppAuthor
 
-__all__ = ['config_user', 'config_save', 'config_update_file']
+__all__ = ['config_user', 'config_save', 'config_update_file', '_config_get_all', '_get_config_directory']
 
 config_dir = pd.user_config_dir(AppName, AppAuthor)
 cache_dir = pd.user_cache_dir(AppName, AppAuthor)
@@ -124,3 +124,26 @@ def config_update_file(section: str,
     config_save(section, orig_config)
 
     return config
+
+
+
+def _config_get_all():
+    """Loads all configuration files from the user and return a dictionary seccionated using this files"""
+    config_dir = Path(pd.user_config_dir(AppName, AppAuthor))
+    config_data = {}
+
+    if not config_dir.exists():
+        return config_data  
+
+    for file in config_dir.glob("*.toml"):  
+        section_name = file.stem  
+        try:
+            config_data[section_name] = toml.loads(file.read_text(encoding="utf-8"))
+        except Exception as e:
+            print(f"Error leyendo {file}: {e}")
+
+    return config_data
+
+
+def _get_config_directory():
+    return  Path(pd.user_config_dir(AppName, AppAuthor))
