@@ -6,3 +6,7 @@ procastro/__pycache__/
 procastro/astro/__pycache__/
 procastro/core/__pycache__/
 procastro/obsrv/__pycache__/
+**/cache
+demo_data
+**/__pycache__
+scripts
