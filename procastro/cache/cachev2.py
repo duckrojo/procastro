@@ -6,7 +6,7 @@ import astropy.time as apt
 import astropy.units as u
 from procastro import config
 
-__all__ = ['astrofile_cachev2', 'jpl_cachev2', 'usgs_map_cachev2','astrofile_cachev2_on_disk' ]
+__all__ = ['astrofile_cachev2', 'jpl_cachev2', 'usgs_map_cachev2']
 
 
 class _AstroCachev2:
@@ -34,7 +34,7 @@ class _AstroCachev2:
         label_on_disk : Location on disk to store the cache
     """
     def __init__(self,
-                 max_cache=int(1e6), lifetime=0,
+                 max_cache=int(1e9), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
                  force: str | None = "force",
                  eviction_policy: str | None = 'least-recently-used',
@@ -67,6 +67,7 @@ class _AstroCachev2:
         self.hashable_kw = hashable_kw
 
         if verbose:
+            print(f"/n")
             print(f"Using diskcache implementation: {dc.__version__}. Set verbose parameter to false to disable this message.")
             print(f"Cache initialized with max size: {self.max_cache} bytes")
             print(f"Cache lifetime: {self.lifetime} days")
@@ -74,6 +75,21 @@ class _AstroCachev2:
             print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
             print(f"Hashable keyword arguments: {self.hashable_kw}")
 
+    @property
+    def _contents(self):
+        """
+        Returns the contents of the cache.
+        """
+        for key in self._cache.iterkeys():
+            print(f"Key: {key}, Value: {self._cache[key]}")
+
+
+    @property
+    def _keys (self):
+        """
+        Returns the keys of the cache.
+        """
+        return list(self._cache.iterkeys())
 
     def __call__(self, method):
         #METHOD to use when force= False, when the cache is not bypassed.
@@ -105,10 +121,9 @@ class _AstroCachev2:
 
 
 
-astrofile_cachev2 = _AstroCachev2()
-astrofile_cachev2_on_disk = _AstroCachev2(label_on_disk='test')
-jpl_cachev2 = _AstroCachev2(max_cache=50)
+astrofile_cachev2 = _AstroCachev2(verbose=True)
+# astrofile_cachev2_on_disk = _AstroCachev2(label_on_disk='test')
+jpl_cachev2 = _AstroCachev2(max_cache=1e12, lifetime=30,)
 usgs_map_cachev2 = _AstroCachev2(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force="no_cache")
- 
