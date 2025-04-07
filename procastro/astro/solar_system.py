@@ -849,7 +849,7 @@ Returns ortographic projection with the specified center
     tmp_ax.set_global()  # the whole globe limits
     f.canvas.draw()
 
-    image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+    image_flat = np.frombuffer(f.canvas.tostring_argb(), dtype='uint8')  # (H * W * 3,)
 
     orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
     orthographic_image = Image.fromarray(orthographic_image, 'RGB')
