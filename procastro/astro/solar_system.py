@@ -665,6 +665,7 @@ def body_map(body,
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
+
     orthographic_image = get_orthographic(image, *geometry.sub_obs,
                                           show_poles=color_poles)
 
@@ -851,7 +852,7 @@ Returns ortographic projection with the specified center
 
     image_flat = np.frombuffer(f.canvas.tostring_argb(), dtype='uint8')  # (H * W * 3,)
 
-    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
+    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 4)
     orthographic_image = Image.fromarray(orthographic_image, 'RGB')
     plt.close(f)
 
