@@ -645,7 +645,7 @@ def body_map(body,
         ephemeris_line = observer
         time = apt.Time(ephemeris_line['jd'], format='jd')
     elif not time.isscalar:
-        print("Creating video")
+        print("Creating gif...")
         _body_map_video(body, observer, time,
                         locations=locations,
                         detail=detail, reread_usgs=reread_usgs,
