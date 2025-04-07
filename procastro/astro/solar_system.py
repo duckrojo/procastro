@@ -22,6 +22,7 @@ from astropy.table import Table, QTable, MaskedColumn
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 from procastro.cache.cache import jpl_cache, usgs_map_cache
 import procastro as pa
+from procastro.misc.misc_graph import figaxes
 from procastro.cache.cachev2 import jpl_cachev2
 
 TwoValues = tuple[float, float]
@@ -503,7 +504,7 @@ def _body_map_video(body,
     plt.switch_backend('agg')
 
     if ax is None:
-        f, ax = pa.figaxes()
+        f, ax = figaxes()
     else:
         f = ax.figure
 
@@ -564,6 +565,7 @@ def _body_map_video(body,
             raise ValueError("Invalid filename extension")
 
     try:
+        print(f"Saving {filename}...")
         ani.save(filename,
                  dpi=dpi, writer=writer,
                  )
@@ -643,6 +645,7 @@ def body_map(body,
         ephemeris_line = observer
         time = apt.Time(ephemeris_line['jd'], format='jd')
     elif not time.isscalar:
+        print("Creating video")
         _body_map_video(body, observer, time,
                         locations=locations,
                         detail=detail, reread_usgs=reread_usgs,
@@ -682,7 +685,7 @@ def body_map(body,
     rotated_image.putdata([item if r < nx/2 - 1 else color_background_rgb
                            for r, item in zip(rr, rotated_image.convert("RGBA").getdata())])
 
-    f, ax = pa.figaxes(ax)
+    f, ax = figaxes(ax)
     f.patch.set_facecolor(color_background)
     ax.set_facecolor(color_background)
     ax.imshow(rotated_image,
@@ -852,7 +855,7 @@ Returns ortographic projection with the specified center
 
     image_flat = np.frombuffer(f.canvas.tostring_argb(), dtype='uint8')  # (H * W * 3,)
 
-    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 4)
+    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 4)[:, :, 1:]
     orthographic_image = Image.fromarray(orthographic_image, 'RGB')
     plt.close(f)
 
