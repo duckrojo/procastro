@@ -7,6 +7,7 @@ import requests
 import numpy as np
 from numpy import ma
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
@@ -532,10 +533,13 @@ def _body_map_video(body,
             divider = 0.001
         title = f'{body.capitalize()} on {{time}} from {observer} (R$_{body[0].upper()}$: {{field:.1f}}{rad_unit})'
 
+
+
+    pbar = tqdm(total=len(time), desc="Animating") 
     def animate(itime):
         ax.clear()
 
-        logger.info(f" - Computing {time[itime].isot} ({itime + 1:d}/{len(time)})")
+        # logger.info(f" - Computing {time[itime].isot} ({itime + 1:d}/{len(time)})")
         ephemeris = ephemeris_lines[itime]
         y, m, d, h, mn, s = time[itime].ymdhms
 
@@ -547,15 +551,16 @@ def _body_map_video(body,
                            title=title.format(time=time_label,
                                               field=ephemeris[field]/divider,),
                            **kwargs)
+        pbar.update(1)
         return artists
 
     ani = FuncAnimation(f, animate, interval=60, blit=False, repeat=True, frames=len(time))
-
+    
     if filename is None:
         filename = f"{body}_{time[0].isot.replace(":", "")[:17]}.gif"
     elif '.' not in filename:
         filename += '.gif'
-
+    
     match filename[filename.index("."):].lower():
         case ".mpg" | ".mpeg" | ".mp4":
             writer = FFMpegWriter(fps=fps)
@@ -565,15 +570,19 @@ def _body_map_video(body,
             raise ValueError("Invalid filename extension")
 
     try:
-        print(f"Saving {filename}...")
         ani.save(filename,
                  dpi=dpi, writer=writer,
                  )
+    except Exception as e:
+        logger.error(f"Error saving animation: {e}")
+        return 
     except FileNotFoundError:
         raise FileNotFoundError(f"Codex for extension {filename[filename.index("."):]} not available.")
 
-    print(f"saved file {filename}")
+    
     plt.switch_backend(backend)
+    pbar.close()
+    print(f"saved file {filename}")
 
 
 def body_map(body,
