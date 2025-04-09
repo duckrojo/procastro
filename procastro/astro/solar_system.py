@@ -973,6 +973,9 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
 
     # fetch alternative
     response = requests.get(body_files[0][2])
+    if response.status_code != 200:
+        raise ValueError(f"Error fetching USGS map: {response.status_code}")
+    
     return Image.open(BytesIO(response.content))
 
 
