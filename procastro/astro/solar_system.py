@@ -24,7 +24,7 @@ from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axi
 from procastro.cache.cache import jpl_cache, usgs_map_cache
 import procastro as pa
 from procastro.misc.misc_graph import figaxes
-from procastro.cache.cachev2 import jpl_cachev2
+from procastro.cache.cachev2 import jpl_cachev2, usgs_map_cachev2
 
 TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
@@ -677,7 +677,9 @@ def body_map(body,
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
-
+    if image is None:
+        raise ValueError(f"Could not get image for {body}")
+        
     orthographic_image = get_orthographic(image, *geometry.sub_obs,
                                           show_poles=color_poles)
 
@@ -899,7 +901,7 @@ def body_path(body,
                   names=['time', 'jd', 'skycoord', 'ra', 'dec'])
 
 
-@usgs_map_cache
+@usgs_map_cachev2
 def usgs_map_image(body, detail=None, warn_multiple=True):
     """
 
@@ -970,12 +972,19 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
             print("")
 
         body_files = [body_files[0]]
-
+    logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
     # fetch alternative
-    response = requests.get(body_files[0][2])
-    if response.status_code != 200:
-        raise ValueError(f"Error fetching USGS map: {response.status_code}")
-    
+    try:
+        response = requests.get(body_files[0][2])
+        #TODO: Better error handling here if the remote server doesnt respond.
+
+        if response.status_code != 200:
+            logger.error(f"Error fetching USGS map: {response.status_code}")
+            return None
+    except Exception as e:
+        logger.error(f"Exception occurred: {str(e)}")
+        return None
+
     return Image.open(BytesIO(response.content))
 
 
