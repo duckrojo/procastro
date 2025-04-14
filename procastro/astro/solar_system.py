@@ -281,10 +281,8 @@ def parse_jpl_ephemeris(ephemeris):
             if 'GEOCENTRIC' in line:
                 moon_presence = False
         previous = line
-
     spaces = 0
     col_seps = re.split(r'( +)', previous.rstrip())
-
     if col_seps[0] == '':
         col_seps.pop(0)
     date = col_seps.pop(0)
@@ -960,6 +958,7 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
 
     detail_str = f" with detail keywords '{detail}'"
     if len(body_files) == 0:
+        logger.error(f"No map of '{body}' found{detail_str}")
         raise ValueError(f"No map of '{body}' found{detail_str}")
     # select from alternatives
     elif len(body_files) > 1:
@@ -972,7 +971,7 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
             print("")
 
         body_files = [body_files[0]]
-    logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
+    # logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
     # fetch alternative
     try:
         response = requests.get(body_files[0][2])
@@ -992,7 +991,7 @@ def _add_local_time(ax,
                     sub_obs,
                     sub_sun,
                     np_ang,
-                    color,
+                    color, 
                     transform_from_norm,
                     precision=50,
                     ):
