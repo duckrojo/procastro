@@ -32,13 +32,35 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 
 class JPLInterface:
-    
     """
     Class to encapsulate the JPL Horizons interface.
+    
+    This class provides methods to interact with JPL's Horizons system to retrieve
+    ephemeris data for solar system bodies. It handles request formatting, 
+    submission, and parsing of the results.
     """
+    
     @staticmethod
     @jpl_cachev2
     def _request_horizons_online(specifications):
+        """
+        Send request to JPL Horizons system and return the response.
+        
+        Parameters
+        ----------
+        specifications : str
+            Horizons batch-style specifications
+            
+        Returns
+        -------
+        list
+            List of strings representing the lines of the Horizons output
+            
+        Notes
+        -----
+        This method is decorated with jpl_cachev2 to cache results and avoid
+        redundant requests to the JPL server.
+        """
         default_spec = {'MAKE_EPHEM': 'YES',
                         'EPHEM_TYPE': 'OBSERVER',
                         'CENTER': "'500@399'",
@@ -101,14 +123,28 @@ class JPLInterface:
 
     @staticmethod
     def get_jpl_ephemeris(specification):
-        """Read JPL's Horizons ephemeris file returning the adequate datatype in an astropy.Table with named columns
-
+        """
+        Read JPL's Horizons ephemeris file returning the raw ephemeris data.
+        
         Parameters
         ----------
-        specification: str
-        Ephemeris specification. It can be the filename to be read with the ephemeris, or with newline-separated
-            commands for horizon's batch mode. It can also be a newline-separated string with the specifications
-        Filename of the ephemeris file
+        specification : str or dict
+            Ephemeris specification. It can be the filename to be read with the ephemeris, 
+            or with newline-separated commands for horizon's batch mode. 
+            It can also be a newline-separated string with the specifications
+            or a dictionary of key-value pairs.
+            
+        Returns
+        -------
+        list
+            List of strings representing the raw ephemeris data
+            
+        Raises
+        ------
+        FileNotFoundError
+            If a filename is provided and the file does not exist
+        ValueError
+            If the specification format is invalid
         """
         if isinstance(specification, dict):
             specification = f"""!$$SOF\n{"\n".join([f'{k}={v}' for k, v in specification.items()])}"""
@@ -134,6 +170,24 @@ class JPLInterface:
 
     @staticmethod
     def parse_jpl_ephemeris(ephemeris):
+        """
+        Parse the raw JPL ephemeris data into an astropy Table.
+        
+        Parameters
+        ----------
+        ephemeris : list
+            List of strings representing the raw ephemeris data
+            
+        Returns
+        -------
+        astropy.table.Table
+            Table with named columns containing the parsed ephemeris data
+            
+        Raises
+        ------
+        ValueError
+            If the ephemeris data is not properly formatted or missing required markers
+        """
         ephemeris = ephemeris.copy()
 
         float_col = ['Date_________JDUT', 'APmag', 'S_brt',
@@ -330,6 +384,19 @@ class JPLInterface:
 
     @staticmethod
     def read_jpl(specification):
+        """
+        Combined method to get and parse JPL ephemeris data in one step.
+        
+        Parameters
+        ----------
+        specification : str or dict
+            Ephemeris specification. See get_jpl_ephemeris for details.
+            
+        Returns
+        -------
+        astropy.table.Table
+            Table with named columns containing the parsed ephemeris data
+        """
         ephemeris = JPLInterface.get_jpl_ephemeris(specification)
         return JPLInterface.parse_jpl_ephemeris(ephemeris)
 
@@ -338,19 +405,24 @@ class JPLInterface:
                     observer,
                     times: apt.Time,
                     ):
-        """Get values sorted by jd on movement of Solar System Body
-
+        """
+        Get values sorted by Julian date for the movement of a Solar System body.
+        
         Parameters
         ----------
-        body
-        observer
-        times
-
+        body : str or int
+            Name or ID number of the body to query
+        observer : str
+            Name of the observatory or observing location
+        times : astropy.time.Time
+            Time or array of times at which to calculate ephemeris
+            
         Returns
         -------
-        object
+        astropy.table.Table
+            Table containing ephemeris data with an added 'skycoord' column
+            containing SkyCoord objects for easy coordinate handling
         """
-
         time_spec = JPLInterface.jpl_times_from_time(times)
         site = apc.EarthLocation.of_site(observer)
 
@@ -364,6 +436,24 @@ class JPLInterface:
 
     @staticmethod
     def jpl_body_from_str(body):
+        """
+        Convert a body name or ID to the format required by JPL Horizons.
+        
+        Parameters
+        ----------
+        body : str or int
+            Name or ID of the solar system body
+            
+        Returns
+        -------
+        dict
+            Dictionary with the 'COMMAND' key set to the body ID
+            
+        Raises
+        ------
+        ValueError
+            If the body is not recognized
+        """
         bodies = {'mercury': 199,
                 'venus': 299,
                 'moon': 301,
@@ -387,14 +477,22 @@ class JPLInterface:
     @staticmethod
     def jpl_times_from_time(times: str | apt.Time):
         """
-        Return dict with correct time batch call for JPL's horizon
+        Convert astropy Time objects to the format required by JPL Horizons.
+        
         Parameters
         ----------
-        times
-
+        times : str or astropy.time.Time
+            Time or times for which to request ephemeris data
+            
         Returns
         -------
-
+        dict
+            Dictionary with keys and values formatted for JPL Horizons TLIST
+            
+        Raises
+        ------
+        ValueError
+            If more than 10,000 times are provided (Horizons limit)
         """
         if isinstance(times, str):
             times = apt.Time(times, format='isot', scale='utc')
@@ -410,6 +508,19 @@ class JPLInterface:
     
     @staticmethod
     def jpl_observer_from_location(site):
+        """
+        Convert an astropy EarthLocation to the format required by JPL Horizons.
+        
+        Parameters
+        ----------
+        site : astropy.coordinates.EarthLocation
+            Location of the observer
+            
+        Returns
+        -------
+        dict
+            Dictionary with keys and values formatted for JPL Horizons observer location
+        """
         return {'CENTER': "'coord@399'",
                 'COORD_TYPE': "'GEODETIC'",
                 'SITE_COORD': (f"'{site.lon.degree:.2f}, {site.lat.degree:.2f}," +
@@ -418,21 +529,29 @@ class JPLInterface:
 
 class BodyGeometry:
     """
-    keeps geometry or a body at a single time with info as returned from Horizons's JPL
+    Keeps geometry of a body at a single time with info as returned from JPL Horizons.
 
     Attributes
     ----------
-    sub_obs: TwoTuple
+    sub_obs : tuple(float, float)
        Longitude and latitude in body of sub observer point.
-    sub_obs_np: float
-       East of North angle for the North Pole of the object as seen from sub-observer point
-    sub_sun: TwoTuple
+    sub_obs_np : float
+       East of North angle for the North Pole of the object as seen from sub-observer point.
+    sub_sun : tuple(float, float)
        Longitude and latitude in body of sub solar point.
-
-
+    ang_diam : float
+       Angular diameter of the body as seen from the observer.
     """
     def __init__(self,
                  ephemeris):
+        """
+        Initialize the BodyGeometry with ephemeris data.
+        
+        Parameters
+        ----------
+        ephemeris : astropy.table.Row
+            Row from an astropy Table containing ephemeris data from JPL Horizons
+        """
         self._ephemeris = ephemeris
         self.sub_obs = ephemeris['ObsSub_LON'], ephemeris['ObsSub_LAT']
         self.sub_obs_np = ephemeris['NP_ang']
@@ -443,6 +562,12 @@ class BodyGeometry:
         self._rotate_to_subsol = new_x_axis_at(*self.sub_sun)
 
     def print(self):
+        """
+        Print key geometry information about the body.
+        
+        Displays sub-observer and sub-solar points, as well as relative angles
+        and distances.
+        """
         print(f"Sub Observer longitude/latitude: {self._ephemeris['ObsSub_LON']}/{self._ephemeris['ObsSub_LAT']}")
         print(f"Sub Solar longitude/latitude: {self._ephemeris['SunSub_LON']}/{self._ephemeris['SunSub_LAT']}")
         print(f"Sub Solar angle/distances w/r to sub-observer: "
@@ -454,6 +579,41 @@ class BodyGeometry:
                  label: str | None = None,
                  max_title_len: int = 0,
                  ):
+        """
+        Calculate the apparent position of a surface location as seen from the observer.
+        
+        Parameters
+        ----------
+        lon : float
+            Longitude of the location on the body (degrees)
+        lat : float
+            Latitude of the location on the body (degrees)
+        label : str, optional
+            Name of the location for display purposes
+        max_title_len : int, optional
+            Maximum length of the label for formatting
+            
+        Returns
+        -------
+        dict
+            Dictionary containing various geometric parameters for the location:
+            'delta_ra' : float
+                Offset in right ascension from body center (arcsec)
+            'delta_dec' : float
+                Offset in declination from body center (arcsec)
+            'unit_ra' : float
+                Normalized coordinate on RA axis
+            'unit_dec' : float
+                Normalized coordinate on Dec axis
+            'local_time' : float
+                Local solar time at the location (hours)
+            'incoming' : float
+                Solar incidence angle (degrees)
+            'outgoing' : float
+                Emission angle (degrees)
+            'visible' : bool
+                Whether the location is on the visible hemisphere
+        """
         position = unit_vector(lon, lat, degrees=True)
 
         unit_with_obs_x = self._rotate_to_subobs.apply(position)
@@ -486,7 +646,10 @@ class BodyGeometry:
 
 class BodyVisualizer:
     """
-    Class to visualize solar system bodies
+    Class to visualize solar system bodies.
+    
+    This class provides static methods to create images and animations of solar system
+    bodies using orthographic projections and JPL ephemeris data.
     """
 
     @staticmethod
@@ -497,20 +660,26 @@ class BodyVisualizer:
                      show_poles="",
                      ):
         """
-        Returns ortographic projection with the specified center
-            Parameters
-            ----------
-            marks
-            list of (lon, lat) marks to add
-            platecarree_image
-            sub_obs_lon
-            sub_obs_lat
-            show_poles
+        Returns orthographic projection with the specified center.
+        
+        Parameters
+        ----------
+        platecarree_image : PIL.Image
+            Image of the body in plate carree (equirectangular) projection
+        sub_obs_lon : float
+            Longitude of the sub-observer point (degrees)
+        sub_obs_lat : float
+            Latitude of the sub-observer point (degrees)
+        marks : list, optional
+            List of (lon, lat) tuples marking positions to highlight
+        show_poles : str, optional
             Color to mark poles, set to "" to skip
-
-            Returns
-            -------
-
+            
+        Returns
+        -------
+        PIL.Image
+            Image showing orthographic projection of the body as seen from the
+            specified sub-observer point
         """
         projection = ccrs.Orthographic(sub_obs_lon,
                                     sub_obs_lat)
@@ -560,18 +729,26 @@ class BodyVisualizer:
     @usgs_map_cachev2
     def usgs_map_image(body, detail=None, warn_multiple=True):
         """
-
+        Retrieve a map image for a solar system body from USGS.
+        
         Parameters
         ----------
-        body
-        detail
-        warn_multiple
-        no_cache
-        If True then it will reread options from USGS even if cache exists
-
+        body : str
+            Name of the body
+        detail : str, optional
+            Space-separated keywords to filter map alternatives
+        warn_multiple : bool, default=True
+            Whether to show warnings when multiple maps are available
+            
         Returns
         -------
-
+        PIL.Image or None
+            Image of the body map if successful, None otherwise
+            
+        Notes
+        -----
+        This method is decorated with usgs_map_cachev2 to cache results and avoid
+        redundant requests to the USGS server.
         """
         month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -647,8 +824,25 @@ class BodyVisualizer:
     @staticmethod
     def _cross2(a: np.ndarray,
             b: np.ndarray) -> np.ndarray:
-        """Workaround as np.cross does not return according to code inspection"""
-
+        """
+        Compute the cross product of two vectors.
+        
+        Parameters
+        ----------
+        a : numpy.ndarray
+            First vector
+        b : numpy.ndarray
+            Second vector
+            
+        Returns
+        -------
+        numpy.ndarray
+            Cross product of a and b
+            
+        Notes
+        -----
+        This is a workaround as np.cross does not return according to code inspection.
+        """
         return np.cross(a,b)
 
     @staticmethod
@@ -661,7 +855,33 @@ class BodyVisualizer:
                       precision=50,
                       marker_color='yellow',
                       ):
-
+        """
+        Add night side shading and sub-solar point marker to the visualization.
+        
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+            Axes to draw on
+        sub_obs : tuple(float, float)
+            Sub-observer point (longitude, latitude) in degrees
+        sub_sun : tuple(float, float)
+            Sub-solar point (longitude, latitude) in degrees
+        np_ang : float
+            North pole angle in degrees
+        color : str
+            Color for the shadow
+        transform_from_normal : matplotlib.transforms.Transform
+            Transform from normalized coordinates to data coordinates
+        precision : int, default=50
+            Number of points to use for the terminator curve
+        marker_color : str, default='yellow'
+            Color for the sub-solar point marker
+            
+        Returns
+        -------
+        tuple
+            (PathCollection, Line2D) - shadow area and sub-solar point marker
+        """
         rotate_body_to_subobs = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
         rotate_body_to_subsol = new_x_axis_at(*sub_sun)
 
@@ -721,7 +941,6 @@ class BodyVisualizer:
                     transform_from_norm,
                     precision=50,
                     ):
-
         """"Adds every hour of body's local time as labeled iso-longitude lines"""
         lunar_to_observer = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
         local_time_to_body = current_x_axis_to(*sub_sun)
@@ -767,11 +986,56 @@ class BodyVisualizer:
                 color_local_time='black', color_poles="blue",
                 show_angles=False):
         """
-        Method to generate a single frame visualization of a solar system 
-        body in a given time. Will be used by create_video and create_image
+        Generate a single frame visualization of a solar system body at a given time.
+        
+        Parameters
+        ----------
+        body : str
+            Name of the body to visualize
+        ephemeris_line : astropy.table.Row
+            Row from an ephemeris table containing viewing geometry data
+        locations : list or dict, optional
+            Locations on the body to mark, either as list of (lon, lat) tuples
+            or dict with name: (lon, lat) entries
+        title : str, optional
+            Title for the visualization (auto-generated if None)
+        detail : str, optional
+            Space-separated keywords to filter map alternatives
+        reread_usgs : bool, default=False
+            Whether to ignore the cache and fetch fresh map data
+        radius_to_plot : float, optional
+            Radius of the field of view in arcseconds (auto-detected if None)
+        ax : matplotlib.axes.Axes, optional
+            Axes to draw on (created if None)
+        return_axes : bool, default=True
+            If True, return the Axes object; if False, return list of artists
+        verbose : bool, default=False
+            Whether to print detailed information
+        color_location : str, default="red"
+            Color for location markers and labels
+        color_phase : str, default='black'
+            Color for night side shading and local time indicators
+        color_background : str, default='black'
+            Background color for the figure
+        color_title : str, default='white'
+            Color for the title text
+        color_local_time : str, default='black'
+            Color for local time lines and labels
+        color_poles : str, default="blue"
+            Color for pole markers and coordinate lines
+        show_angles : bool, default=False
+            Whether to show incidence and emission angles in location labels
+            
+        Returns
+        -------
+        matplotlib.axes.Axes or list
+            Axes object or list of artists depending on return_axes
+            
+        Raises
+        ------
+        ValueError
+            If the map image for the body cannot be retrieved
         """
-
-
         geometry = BodyGeometry(ephemeris_line)
         if verbose:
             geometry.print()
@@ -916,7 +1180,53 @@ class BodyVisualizer:
                color_local_time='black', color_poles="blue",
                show_angles=False):
         """
-        Method to create an image of a solar system body
+        Create an image of a solar system body.
+        
+        This is a wrapper around create_frame that emphasizes its use for
+        static image creation.
+        
+        Parameters
+        ----------
+        body : str
+            Name of the body to visualize
+        ephemeris_line : astropy.table.Row
+            Row from an ephemeris table containing viewing geometry data
+        locations : list or dict, optional
+            Locations on the body to mark, either as list of (lon, lat) tuples
+            or dict with name: (lon, lat) entries
+        title : str, optional
+            Title for the visualization (auto-generated if None)
+        detail : str, optional
+            Space-separated keywords to filter map alternatives
+        reread_usgs : bool, default=False
+            Whether to ignore the cache and fetch fresh map data
+        radius_to_plot : float, optional
+            Radius of the field of view in arcseconds (auto-detected if None)
+        ax : matplotlib.axes.Axes, optional
+            Axes to draw on (created if None)
+        return_axes : bool, default=True
+            If True, return the Axes object; if False, return list of artists
+        verbose : bool, default=False
+            Whether to print detailed information
+        color_location : str, default="red"
+            Color for location markers and labels
+        color_phase : str, default='black'
+            Color for night side shading and local time indicators
+        color_background : str, default='black'
+            Background color for the figure
+        color_title : str, default='white'
+            Color for the title text
+        color_local_time : str, default='black'
+            Color for local time lines and labels
+        color_poles : str, default="blue"
+            Color for pole markers and coordinate lines
+        show_angles : bool, default=False
+            Whether to show incidence and emission angles in location labels
+            
+        Returns
+        -------
+        matplotlib.axes.Axes or list
+            Axes object or list of artists depending on return_axes
         """
         return BodyVisualizer.create_frame(
             body=body,
@@ -938,7 +1248,6 @@ class BodyVisualizer:
             show_angles=show_angles
             )
 
-
     @staticmethod
     def create_video(body, ephemeris_lines, times, filename=None, fps=10, dpi=75, 
                   locations=None, title=None, detail=None, reread_usgs=False, 
@@ -948,7 +1257,56 @@ class BodyVisualizer:
                   color_local_time='black', color_poles="blue",
                   show_angles=False):
         """
-        Method to create a video of a solar system body using FuncAnimation
+        Create an animated visualization of a solar system body over time.
+        
+        Parameters
+        ----------
+        body : str
+            Name of the body to visualize
+        ephemeris_lines : astropy.table.Table
+            Table containing ephemeris data for each frame
+        times : astropy.time.Time
+            Array of times corresponding to each frame
+        filename : str, optional
+            Output filename (auto-generated if None)
+        fps : int, default=10
+            Frames per second in the output animation
+        dpi : int, default=75
+            Resolution of the output animation
+        locations : list or dict, optional
+            Locations on the body to mark, either as list of (lon, lat) tuples
+            or dict with name: (lon, lat) entries
+        title : str, optional
+            Title template for the visualization (can use {time} and {field} placeholders)
+        detail : str, optional
+            Space-separated keywords to filter map alternatives
+        reread_usgs : bool, default=False
+            Whether to ignore the cache and fetch fresh map data
+        radius_to_plot : float, optional
+            Radius of the field of view in arcseconds (auto-detected if None)
+        ax : matplotlib.axes.Axes, optional
+            Axes to draw on (created if None)
+        verbose : bool, default=False
+            Whether to print detailed information
+        color_location : str, default="red"
+            Color for location markers and labels
+        color_phase : str, default='black'
+            Color for night side shading and local time indicators
+        color_background : str, default='black'
+            Background color for the figure
+        color_title : str, default='white'
+            Color for the title text
+        color_local_time : str, default='black'
+            Color for local time lines and labels
+        color_poles : str, default="blue"
+            Color for pole markers and coordinate lines
+        show_angles : bool, default=False
+            Whether to show incidence and emission angles in location labels
+            
+        Returns
+        -------
+        str or None
+            Path to the saved animation file, or None if there was an error
         """
         # Save the current backend and switch to agg
         backend = plt.get_backend()
@@ -1085,7 +1443,11 @@ def body_map(body:str,
              show_angles=False,
              ):
     """
-    Generate visualization of solar system bodies as either static images or animations
+    Generate visualization of solar system bodies as either static images or animations.
+    
+    This is the main user-facing function that combines the functionality of 
+    BodyVisualizer.create_image and BodyVisualizer.create_video depending on 
+    whether time is a scalar or array.
     
     Parameters
     ----------
@@ -1094,7 +1456,57 @@ def body_map(body:str,
     observer : str or astropy.table.Row
         Either location name or ephemeris row
     time : astropy.time.Time, optional
-        Time(s) to visualize. If scalar, creates an image; if array, creates a video
+        Time(s) to visualize. If scalar, creates an image; if array, creates a video;
+        if None, uses time from ephemeris in observer
+    locations : list or dict, optional
+        Locations on the body to mark, either as list of (lon, lat) tuples
+        or dict with name: (lon, lat) entries
+    title : str, optional
+        Title for the visualization (auto-generated if None)
+    detail : str, optional
+        Space-separated keywords to filter map alternatives
+    reread_usgs : bool, default=False
+        Whether to ignore the cache and fetch fresh map data
+    radius_to_plot : float, optional
+        Radius of the field of view in arcseconds (auto-detected if None)
+    fps : int, default=10
+        Frames per second for video output (ignored for static images)
+    dpi : int, default=75
+        Resolution for video output (ignored for static images)
+    filename : str, optional
+        Output filename for video (auto-generated if None, ignored for static images)
+    ax : matplotlib.axes.Axes, optional
+        Axes to draw on (created if None)
+    return_axes : bool, default=True
+        If True, return the Axes object; if False, return list of artists
+        (only applies to static images)
+    verbose : bool, default=True
+        Whether to print detailed information
+    color_location : str, default="red"
+        Color for location markers and labels
+    color_phase : str, default='black'
+        Color for night side shading and local time indicators
+    color_background : str, default='black'
+        Background color for the figure
+    color_title : str, default='white'
+        Color for the title text
+    color_local_time : str, default='black'
+        Color for local time lines and labels
+    color_poles : str, default="blue"
+        Color for pole markers and coordinate lines
+    show_angles : bool, default=False
+        Whether to show incidence and emission angles in location labels
+        
+    Returns
+    -------
+    matplotlib.axes.Axes, list, or str
+        For static images, returns Axes object or list of artists depending on return_axes.
+        For animations, returns the path to the saved file.
+        
+    Raises
+    ------
+    TypeError
+        If time is None but observer is not an ephemeris row
     """
     # Common parameters for both image and video
     common_params = {
