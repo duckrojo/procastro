@@ -37,11 +37,13 @@ class WavSol(CalibBase):
                  oversample=2,
                  wav_out=None,
                  align_telluric=None,
+                 max_pix_separation=3,
                  **kwargs):
         super().__init__(**kwargs)
 
         self.beta = beta
         self.oversample = oversample
+        self.max_pix_separation = max_pix_separation
 
         if not isinstance(group_by, list):
             group_by = [group_by]
@@ -192,40 +194,43 @@ class WavSol(CalibBase):
             infochn = meta['infochn']
         n_epochs = data[infochn[0]].shape[-1]
 
-        if self.target_wav is None:
-            offset = offset_by_telluric(wav_out, data[col]) if self.align_telluric else 0
-            wav_in = wavsol(data['pix'] + offset)
-            data['wav'] = np.linspace(wav_in[0], wav_in[-1], len(wav_in))
-            info = "default equispaced"
-            out_table = "something"
-            raise NotImplementedError("Needs to be checked before use")
-        else:
-            wav_out = self.target_wav
-            if 'pix' not in data.colnames:
-                data['pix'] = np.arange(len(data))
+        wav_out = self.target_wav
+        if 'pix' not in data.colnames:
+            io_logger.warning(f"Pixel column not found, enumerating pixels from 0")
+            data['pix'] = np.arange(len(data))
 
-            minline = min(wavsol.pixwav['wav'])
-            maxline = max(wavsol.pixwav['wav'])
-            delta_wav = maxline - minline
-            lower = minline - self.oversample * delta_wav / 100 < wav_out
-            higher = wav_out < maxline + self.oversample * delta_wav / 100
-            mask_wav = np.array(lower * higher, dtype=bool)
-            mask = np.zeros(n_epochs, dtype=bool) + mask_wav[:, None]
+        offset = offset_by_telluric(wav_out, data[self.col_alignment]) if self.align_telluric else 0
+        wav_in = wavsol(data['pix'][None, :] + np.array(offset)[:, None])
 
-            # interpolate every column
-            io_logger.warning("Interpolating wavelengths" +
-                              (" after aligning telluric" if self.align_telluric else ""))
-            offset = offset_by_telluric(wav_out, data[self.col_alignment]) if self.align_telluric else 0
-            wav_in = wavsol(data['pix'][None, :] + np.array(offset)[:, None])
-            out_table = Table({'wav': wav_out})
-            for col in infochn:
-                io_logger.warning(f" - column {col}")
-                fcn = functions.use_function("otf_spline:s0", wav_in, data[col].transpose())
-                out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)).transpose(),
-                                                  mask=~mask)
-            info = "given interpolatation"
+        # masking outliers
+        bluest_id_line = min(wavsol.pixwav['wav'])
+        reddest_id_line = max(wavsol.pixwav['wav'])
+        delta_wav = reddest_id_line - bluest_id_line
+        lower_than_id = bluest_id_line - self.oversample * delta_wav / 100 < wav_out
+        higher_than_id = wav_out < reddest_id_line + self.oversample * delta_wav / 100
 
-        meta['WavSol'] = f"{self.wavsols[group_key].short()}. {info}"
+        delta_pixs = data['pix'][1:] - data['pix'][:-1]
+        mask_wav = np.array(lower_than_id * higher_than_id, dtype=bool)
+        mask = np.zeros(n_epochs, dtype=bool) + mask_wav[:, None]
+
+        large_jump_mask = ~np.sum([(wav_out[np.newaxis, :] > wav_in[:, pos][:, np.newaxis]) *
+                                   (wav_out[np.newaxis, :] < wav_in[:, pos+1][:, np.newaxis])
+                                   for pos in np.nonzero(delta_pixs > self.max_pix_separation)[0]],
+                                  dtype=bool, axis=0,
+                                  ).transpose()
+        mask *= large_jump_mask
+
+        # interpolate every column
+        io_logger.warning("Interpolating wavelengths" +
+                          (" after aligning telluric" if self.align_telluric else ""))
+        out_table = Table({'wav': wav_out})
+        for col in infochn:
+            io_logger.warning(f" - column {col}")
+            fcn = functions.use_function("otf_spline:s0", wav_in, data[col].transpose())
+            out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)).transpose(),
+                                              mask=~mask)
+
+        meta['WavSol'] = f"{self.wavsols[group_key].short()}."
 
         return out_table, meta
 
@@ -369,6 +374,7 @@ def offset_by_telluric(owav: np.ndarray,
                        over_sample: int = 20,
                        degree=2,
                        ):
+    """"Return the offsets for each of the arrays in owav such that the arrays are aligned by telluric band"""
 
     telluric_band = [7593, 7688]
     telluric_baseline = [7440, 7840]
