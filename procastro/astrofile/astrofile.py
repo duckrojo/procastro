@@ -304,7 +304,12 @@ class AstroFile(IAstroFile):
         return self
 
     def get_calib(self) -> tuple:
-        return tuple(self._calib)
+        return tuple(f"{i}: {repr(cal)}" for i, cal in enumerate(self._calib))
+
+    def del_calib(self, position: int):
+        """delete calibration at position (as ordered by .get_calib())"""
+
+        self._calib.pop(position)
 
     def __hash__(self):
         """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random
