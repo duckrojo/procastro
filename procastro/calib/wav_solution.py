@@ -39,15 +39,32 @@ class WavSol(CalibBase):
                  align_telluric=None,
                  max_pix_separation=3,
                  **kwargs):
-        super().__init__(**kwargs)
+        """
+        Wavelength solution that can applied to a Spectral AstroFile.
+
+        Parameters
+        ----------
+        pixwav
+        arcs
+        separate
+        refit
+        group_by: str, list[str]
+        indicates which of the meta keywords will be used to match the correct calibration.
+
+        pixwav_function
+        beta
+        oversample
+        wav_out
+        align_telluric
+        max_pix_separation
+        kwargs
+        """
+        super().__init__(group_by=group_by, **kwargs)
+        group_by = self.group_by
 
         self.beta = beta
         self.oversample = oversample
         self.max_pix_separation = max_pix_separation
-
-        if not isinstance(group_by, list):
-            group_by = [group_by]
-        self.group_by = group_by
 
         if isinstance(pixwav, pa.AstroFile):
             pixwav = pa.AstroDir([pixwav])
@@ -56,17 +73,11 @@ class WavSol(CalibBase):
 
         self.function_name = pixwav_function
 
-        if isinstance(group_by, dict):
-            grouping = group_by
-            group_by = []
-            for k, v in grouping.items():
-                group_by.append(k)
-
-        self.wavsols: dict[tuple, WavSolSingle] = {}
+        self._datasets: dict[tuple, WavSolSingle] = {}
         for astrofile in pixwav.mosaic_by(*group_by, in_place=False):
             option = tuple(astrofile.values(*group_by, single_in_list=True))
-            self.wavsols[option] = WavSolSingle(astrofile, pixwav_function,
-                                                external=option)
+            self._datasets[option] = WavSolSingle(astrofile, pixwav_function,
+                                                  external=option)
 
         if arcs is None:
             arcs = pa.AstroDir([])
@@ -88,7 +99,7 @@ class WavSol(CalibBase):
 
     def all_pixs(self):
         ret = []
-        for sol in self.wavsols.values():
+        for sol in self._datasets.values():
             ret.extend([tuple(pair) for pair in sol.pixwav[['label', 'wav']] if tuple(pair) not in ret])
         return [x[0] for x in sorted(ret, key=lambda x: x[1])]
 
@@ -108,8 +119,8 @@ class WavSol(CalibBase):
 
             # Not every arc might have a wavsols, or viceversa
             option = tuple(astrofile.values(*self.group_by, single_in_list=True))
-            if option in self.wavsols:
-                self.wavsols[option].add_arc(astrofile, separate=separate)
+            if option in self._datasets:
+                self._datasets[option].add_arc(astrofile, separate=separate)
             else:
                 io_logger.warning(f"Ignoring Arc '{astrofile}' whose "
                                   f"'{_print_option(astrofile.values(*self.group_by, single_in_list=True),
@@ -129,7 +140,7 @@ class WavSol(CalibBase):
               ):
         if beta is None:
             beta = self.beta
-        for option, sol in self.wavsols.items():
+        for option, sol in self._datasets.items():
             if not len(sol.arcs):
                 io_logger.warning(f"There is no arc information for option "
                                   f"'{_print_option(option, self.group_by)}', "
@@ -142,8 +153,8 @@ class WavSol(CalibBase):
         return self
 
     def __repr__(self):
-        return (f"<{super().__repr__()} Wavelength Solution. {len(self.wavsols)}x sets of "
-                f"{tuple(self.group_by)}: {",".join([str(x) for x in self.wavsols.keys()])}>")
+        return (f"<{super().__repr__()} Wavelength Solution. {len(self._datasets)}x sets of "
+                f"{tuple(self.group_by)}: {",".join([str(x) for x in self._datasets.keys()])}>")
 
     def add_target_wav(self,
                        wav: np.ndarray | int | None,
@@ -158,7 +169,7 @@ class WavSol(CalibBase):
             avg_delta_wav = []
             min_wav = []
             max_wav = []
-            for wavsol in self.wavsols.values():
+            for wavsol in self._datasets.values():
                 pw = wavsol.pixwav
                 avg_delta_wav.append((max(pw['wav']) - min(pw['wav'])) / (max(pw['pix']) - min(pw['pix'])))
                 min_wav.append(min(pw['wav']))
@@ -184,23 +195,30 @@ class WavSol(CalibBase):
                  ):
         data, meta = super().__call__(data, meta=meta)
 
-        group_key = tuple([meta[val] for val in self.group_by])
-        wavsol = self.wavsols[group_key]
+        # get the correct calibration dataset for the astrofile
+        wavsol = self._get_dataset(meta)
+        wav_out = self.target_wav
+
+        # find the channels that have the information (as opposed to the labeling channels)
         if 'infochn' not in meta:
             infochn = [chn for chn in data.colnames if chn not in ['pix', 'wav']]
             io_logger.warning(f"No explicit information channels were given. We will"
                               f" interpolate all these channels: {infochn} ")
         else:
             infochn = meta['infochn']
+
+        # in case this a timeseries, then get the number of epochs
         n_epochs = data[infochn[0]].shape[-1]
 
-        wav_out = self.target_wav
+        # it is mandatory to have a 'pix' channel, thus create it by simple enumeration if it
+        # doesn't exist.
         if 'pix' not in data.colnames:
             io_logger.warning(f"Pixel column not found, enumerating pixels from 0")
             data['pix'] = np.arange(len(data))
 
+        # get the pixel offset when alignment is required
         offset = offset_by_telluric(wav_out, data[self.col_alignment]) if self.align_telluric else 0
-        wav_in = wavsol(data['pix'][None, :] + np.array(offset)[:, None])
+        wav_in = wavsol(data['pix'][:, None] + np.array(offset)[None, :])
 
         # masking outliers
         bluest_id_line = min(wavsol.pixwav['wav'])
@@ -213,11 +231,11 @@ class WavSol(CalibBase):
         mask_wav = np.array(lower_than_id * higher_than_id, dtype=bool)
         mask = np.zeros(n_epochs, dtype=bool) + mask_wav[:, None]
 
-        large_jump_mask = ~np.sum([(wav_out[np.newaxis, :] > wav_in[:, pos][:, np.newaxis]) *
-                                   (wav_out[np.newaxis, :] < wav_in[:, pos+1][:, np.newaxis])
+        large_jump_mask = ~np.sum([(wav_out[:, np.newaxis] > wav_in[pos, :][np.newaxis, :]) *
+                                   (wav_out[:, np.newaxis] < wav_in[pos+1, :][np.newaxis, :])
                                    for pos in np.nonzero(delta_pixs > self.max_pix_separation)[0]],
                                   dtype=bool, axis=0,
-                                  ).transpose()
+                                  )
         mask *= large_jump_mask
 
         # interpolate every column
@@ -226,11 +244,11 @@ class WavSol(CalibBase):
         out_table = Table({'wav': wav_out})
         for col in infochn:
             io_logger.warning(f" - column {col}")
-            fcn = functions.use_function("otf_spline:s0", wav_in, data[col].transpose())
-            out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)).transpose(),
-                                              mask=~mask)
+            fcn = functions.use_function("otf_spline:s0", wav_in, data[col], transpose=True)
+            out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)),
+                                          mask=~mask)
 
-        meta['WavSol'] = f"{self.wavsols[group_key].short()}."
+        meta['WavSol'] = f"{wavsol.short()}."
 
         return out_table, meta
 
@@ -239,11 +257,11 @@ class WavSol(CalibBase):
 
     def plot_width(self, ncol=2,
                    axs=None):
-        n_res = len(self.wavsols)
+        n_res = len(self._datasets)
         if axs is None:
             f, axs = plt.subplots(nrows=int(np.ceil(n_res/ncol)), ncols=ncol,)
 
-        for (option, wavsol), ax in zip(self.wavsols.items(), axs.flatten()):
+        for (option, wavsol), ax in zip(self._datasets.items(), axs.flatten()):
             wavsol.plot_fit_width(ax=ax,
                                   legend_title=f"{','.join(self.group_by)}: {','.join([str(op) for op in option])}",
                                   )
@@ -278,11 +296,11 @@ class WavSol(CalibBase):
         axs
         """
 
-        n_res = len(self.wavsols)
+        n_res = len(self._datasets)
         if axs is None:
             f, axs = plt.subplots(nrows=int(np.ceil(n_res/ncol)), ncols=ncol,)
 
-        for (option, wavsol), ax in zip(self.wavsols.items(), axs.flatten()):
+        for (option, wavsol), ax in zip(self._datasets.items(), axs.flatten()):
 
             wavsol.plot_residuals(reference=reference,
                                   ax=ax,
@@ -302,23 +320,23 @@ class WavSol(CalibBase):
     def fit_function(self, function, pixwav, option=None):
 
         if option is None:
-            option = list(self.wavsols.keys())
+            option = list(self._datasets.keys())
         if not isinstance(option, list):
             option = [option]
 
         for opt in option:
-            if opt in self.wavsols:
+            if opt in self._datasets:
                 io_logger.warning(f"Overwriting an existing function with options {option}"
                                   f"using function {function}.")
 
-            self.wavsols[opt].fit_function(function, pixwav)
+            self._datasets[opt].fit_function(function, pixwav)
 
     def plot_fit(self, ncols=3, title=""):
 
         labels = self.all_pixs()
         axs = prepare_mosaic_axes(len(labels) + 2, ncols)
 
-        for option, sol in self.wavsols.items():
+        for option, sol in self._datasets.items():
             if not (len(sol.arcs) + len(sol.fits)):
                 io_logger.warning(f"No arc nor fits information to plot for "
                                   f"{_print_option(option, self.group_by)}")
@@ -335,7 +353,7 @@ class WavSol(CalibBase):
         axs[ncols//2].set_title(title)
 
     def save_in(self, directory, pattern=None):
-        for wavsol in self.wavsols.values():
+        for wavsol in self._datasets.values():
             wavsol.write(directory=directory, pattern=pattern)
 
     @classmethod
