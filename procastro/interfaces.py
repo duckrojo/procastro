@@ -10,6 +10,10 @@ class IAstroFile(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def add_calib(self, AstroCalib):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def get_calib(self):
         raise NotImplementedError
 
