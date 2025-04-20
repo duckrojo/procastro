@@ -36,9 +36,6 @@ class WavMosaic(CalibBase):
         if not isinstance(table, Table):
             raise TypeError('WavMosaic calibration requires spectral type AstroFile')
 
-        if 'pix' not in table.colnames:
-            table['pix'] = np.arange(len(table))
-
         table['pix'] += self._get_dataset(meta, data=data)
 
         try:

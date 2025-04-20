@@ -44,6 +44,8 @@ class IAstroFile(metaclass=abc.ABCMeta):
                  filename: str | pathlib.Path,
                  overwrite: bool = False,
                  data: np.ndarray | None = None,
+                 channels: int = None,
+                 backup_extension: str = ".bak",
                  ):
         raise NotImplementedError
 

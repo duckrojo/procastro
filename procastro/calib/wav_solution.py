@@ -201,9 +201,10 @@ class WavSol(CalibBase):
 
         # find the channels that have the information (as opposed to the labeling channels)
         if 'infochn' not in meta:
-            infochn = [chn for chn in data.colnames if chn not in ['pix', 'wav']]
-            io_logger.warning(f"No explicit information channels were given. We will"
-                              f" interpolate all these channels: {infochn} ")
+            raise ValueError("'infochn' is a required meta field for spectral data")
+            # infochn = [chn for chn in data.colnames if chn not in ['pix', 'wav']]
+            # io_logger.warning(f"No explicit information channels were given. We will"
+            #                   f" interpolate all these channels: {infochn} ")
         else:
             infochn = meta['infochn']
 
@@ -218,7 +219,7 @@ class WavSol(CalibBase):
 
         # get the pixel offset when alignment is required
         offset = offset_by_telluric(wav_out, data[self.col_alignment]) if self.align_telluric else 0
-        wav_in = wavsol(data['pix'][:, None] + np.array(offset)[None, :])
+        wav_in = wavsol(data['pix'] + np.array(offset)[None, :])
 
         # masking outliers
         bluest_id_line = min(wavsol.pixwav['wav'])
@@ -227,7 +228,8 @@ class WavSol(CalibBase):
         lower_than_id = bluest_id_line - self.oversample * delta_wav / 100 < wav_out
         higher_than_id = wav_out < reddest_id_line + self.oversample * delta_wav / 100
 
-        delta_pixs = data['pix'][1:] - data['pix'][:-1]
+        pix_ref = data['pix'][:, 0]
+        delta_pixs = pix_ref[1:] - pix_ref[:-1]
         mask_wav = np.array(lower_than_id * higher_than_id, dtype=bool)
         mask = np.zeros(n_epochs, dtype=bool) + mask_wav[:, None]
 
@@ -241,12 +243,13 @@ class WavSol(CalibBase):
         # interpolate every column
         io_logger.warning("Interpolating wavelengths" +
                           (" after aligning telluric" if self.align_telluric else ""))
-        out_table = Table({'wav': wav_out})
+        out_table = Table({'wav': wav_out[:, np.newaxis] * np.ones([1, n_epochs])})
         for col in infochn:
             io_logger.warning(f" - column {col}")
             fcn = functions.use_function("otf_spline:s0", wav_in, data[col], transpose=True)
             out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)),
                                           mask=~mask)
+        meta['infochn'] = infochn + ['wav']
 
         meta['WavSol'] = f"{wavsol.short()}."
 

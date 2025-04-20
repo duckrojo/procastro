@@ -64,9 +64,16 @@ def ndarray_to_table(data, file_options=None):
 
         table = Table()
         axis = len(data.shape) - 2
+        newshape = list(data.shape)[::-1]
+        newshape.pop(1)
         for idx, name in enumerate(column_names):
             data_channel = np.take(data, idx, axis=axis).transpose()
             table[name] = MaskedArray(data_channel, mask=np.isnan(data_channel))
+        if 'pix' not in table.colnames:
+            table['pix'] = np.reshape(np.arange(len(table)),
+                                      [-1] + [1]*(len(newshape)-1)
+                                      ) * np.ones(newshape)
+
         return table
     else:
         raise TypeError(f"data type not supported: {type(data)}")
