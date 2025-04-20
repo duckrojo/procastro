@@ -7,7 +7,9 @@ license = "BSD-3-Clause"
 readme = "README.md"
 documentation = "https://procastro.readthedocs.io/en/latest/"
 repository = "https://github.com/duckrojo/procastro"
-
+exclude = [
+    "execs"
+]
 
 [tool.poetry-dynamic-versioning]
 enable = true
