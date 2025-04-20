@@ -10,7 +10,7 @@ class IAstroFile(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_calib(self, AstroCalib):
+    def add_calib(self, calib):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -47,33 +47,4 @@ class IAstroFile(metaclass=abc.ABCMeta):
                  channels: int = None,
                  backup_extension: str = ".bak",
                  ):
-        raise NotImplementedError
-
-
-class IAstroCalib(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def __call__(self, data, meta):
-        raise NotImplementedError
-
-
-class IAstroDir(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def __init__(self,
-                 filename: "IAstroFile|str|pathlib.Path|IAstroDir"):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def __getitem__(self, key):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def __len__(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def __iter__(self):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def __next__(self) -> IAstroFile:
         raise NotImplementedError

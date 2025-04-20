@@ -2,12 +2,12 @@ import numpy as np
 from astropy.table import Table
 
 from procastro.astrofile.static_guess import spectral_offset
-from procastro.calib.calib import CalibBase
+from procastro.calib.calib import AstroCalib
 
 __all__ = ['WavMosaic']
 
 
-class WavMosaic(CalibBase):
+class WavMosaic(AstroCalib):
 
     def __init__(self,
                  offset_dict=None,

@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt, axes
 from procastro.astrofile import static_identify, static_read, static_guess, static_write
 from procastro.cache.cache import astrofile_cache
 from procastro.astrofile.meta import CaseInsensitiveMeta
-from procastro.interfaces import IAstroFile, IAstroCalib
+from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.logging import io_logger
 from procastro.statics import PADataReturn, identity, dict_from_pattern
 

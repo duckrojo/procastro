@@ -2,16 +2,16 @@ from typing import Any
 
 import astropy.time as apt
 
-__all__ = ['CalibBase']
+__all__ = ['AstroCalib']
 
 import numpy as np
 
 from procastro.astrofile.astrofile import AstroFile
-from procastro.interfaces import IAstroCalib
+from procastro.interfaces.astrocalib import IAstroCalib
 from procastro.statics import PADataReturn
 
 
-class CalibBase(IAstroCalib):
+class AstroCalib(IAstroCalib):
     def __init__(self,
                  group_by: str | list[str] | None = None,
                  **kwargs,

@@ -10,7 +10,7 @@ from procastro.calib.wav_solution_single import WavSolSingle
 from procastro.interfaces import IAstroFile, IAstroDir
 from procastro.misc import functions
 from procastro.misc.functions import use_function
-from procastro.calib.calib import CalibBase
+from procastro.calib.calib import AstroCalib
 from procastro.logging import io_logger
 import procastro as pa
 
@@ -25,7 +25,7 @@ from procastro.statics import prepare_mosaic_axes
 #
 ####################################
 
-class WavSol(CalibBase):
+class WavSol(AstroCalib):
     def __init__(self,
                  pixwav: "pa.AstroDir | pa.AstroFile",
                  arcs=None,
