@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from astropy.table import Table
 from astropy.table.column import MaskedColumn
@@ -66,6 +68,8 @@ class WavSol(AstroCalib):
         self.oversample = oversample
         self.max_pix_separation = max_pix_separation
 
+        if isinstance(pixwav, str):
+            pixwav = pa.AstroDir(pixwav)
         if isinstance(pixwav, pa.AstroFile):
             pixwav = pa.AstroDir([pixwav])
         if not pixwav[0].spectral:
@@ -96,12 +100,6 @@ class WavSol(AstroCalib):
 
         self.align_telluric = align_telluric is not None
         self.col_alignment = align_telluric
-
-    def all_pixs(self):
-        ret = []
-        for sol in self._datasets.values():
-            ret.extend([tuple(pair) for pair in sol.pixwav[['label', 'wav']] if tuple(pair) not in ret])
-        return [x[0] for x in sorted(ret, key=lambda x: x[1])]
 
     def add_arc(self,
                 astrofiles: IAstroFile | IAstroDir,
@@ -303,17 +301,20 @@ class WavSol(AstroCalib):
         if axs is None:
             f, axs = plt.subplots(nrows=int(np.ceil(n_res/ncol)), ncols=ncol,)
 
-        for (option, wavsol), ax in zip(self._datasets.items(), axs.flatten()):
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning,
+                                    message=".*maximal number.*")
 
-            wavsol.plot_residuals(reference=reference,
-                                  ax=ax,
-                                  legend_title=f"{','.join(self.group_by)}: {','.join([str(op) for op in option])}"
-                                               r", $\sigma: ${:.1f}",
-                                  plot_kw=plot_kw,
-                                  plot_other=plot_other,
-                                  plot_fcn=plot_fcn,
-                                  alternate_functions=alternate_functions,
-                                  )
+            for (option, wavsol), ax in zip(self._datasets.items(), axs.flatten()):
+                wavsol.plot_residuals(reference=reference,
+                                      ax=ax,
+                                      legend_title=f"{','.join(self.group_by)}: {','.join([str(op) for op in option])}"
+                                                   r", $\sigma: ${:.1f}",
+                                      plot_kw=plot_kw,
+                                      plot_other=plot_other,
+                                      plot_fcn=plot_fcn,
+                                      alternate_functions=alternate_functions,
+                                      )
 
         axs[0][0].set_title(f"Wavelength residuals with respect to {reference} fit")
         axs[0][-1].set_title(title)
@@ -336,7 +337,12 @@ class WavSol(AstroCalib):
 
     def plot_fit(self, ncols=3, title=""):
 
-        labels = self.all_pixs()
+        ret = []
+        for sol in self._datasets.values():
+            ret.extend([tuple(pair)
+                        for pair in sol.pixwav[['label', 'wav']]
+                        if tuple(pair) not in ret])
+        labels = [x[0] for x in sorted(ret, key=lambda x: x[1])]
         axs = prepare_mosaic_axes(len(labels) + 2, ncols)
 
         for option, sol in self._datasets.items():

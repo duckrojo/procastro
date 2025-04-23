@@ -11,7 +11,8 @@ __all__ = ['AstroDir']
 
 import procastro as pa
 from procastro import AstroFile
-from procastro.interfaces import IAstroDir, IAstroFile
+from procastro.exceptions import EmptyAstroDirError
+from procastro.interfaces import IAstroDir, IAstroFile, IAstroCalib
 from procastro.logging import io_logger
 from procastro.statics import glob_from_pattern
 
@@ -39,7 +40,8 @@ class AstroDir(IAstroDir):
                  files: IAstroFile | str | Path | Iterable,
                  directory: str | Path = None,
                  spectral=None,
-                 astrocalib=None,
+                 file_format: str | None = None,
+                 astrocalib: list[IAstroCalib] | IAstroCalib | None = None,
                  filter_or: dict | None = None,
                  filter_and: dict | None = None,
                  group_by: str | list | None = None,
@@ -89,6 +91,7 @@ class AstroDir(IAstroDir):
                                           spectral=spectral,
                                           astrocalib=astrocalib,
                                           file_options=file_options,
+                                          file_format=file_format,
                                           meta=meta,
                                           )
             elif isinstance(file, pa.AstroFile):
@@ -174,7 +177,12 @@ class AstroDir(IAstroDir):
 
         # if an integer, return that AstroFile
         if isinstance(item, (int, np.integer)):
-            return self.astro_files[item]
+            try:
+                return self.astro_files[item]
+            except IndexError as msg:
+                if item == 0:
+                    raise EmptyAstroDirError("Trying to index an empty AstroDir")
+                raise IndexError(msg)
 
         # if string, return as values()
         if isinstance(item, str):
@@ -311,7 +319,7 @@ class AstroDir(IAstroDir):
     def _combine_by(self, *keys, combinator="auto", in_place=True) -> "AstroDir":
 
         if len(self.astro_files) == 0:
-            raise ValueError("Cannot combine empty AstroDir")
+            raise EmptyAstroDirError("Cannot combine empty AstroDir")
 
         if combinator == "auto":
             combinator = [x[1] for x in AstroFile.get_combinators()]

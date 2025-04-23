@@ -55,9 +55,10 @@ class AstroFile(IAstroFile):
     def __init__(self,
                  filename,
                  file_options: dict | None = None,
-                 astrocalib: IAstroCalib | None = None,
+                 astrocalib: IAstroCalib | list[IAstroCalib] | None = None,
                  spectral: bool = None,
                  meta: dict | None = None,
+                 file_format: str | None = None,
                  meta_from_name: str = "",
                  *args, **kwargs):
         if self._initialized:
@@ -74,7 +75,8 @@ class AstroFile(IAstroFile):
         self._data_file = filename
         self._sort_key = None
 
-        self._format = static_identify.identify(filename, options=file_options)
+        self._format = static_identify.identify(filename,
+                                                options=file_options) if file_format is None else file_format
 
         self._calib = []
         self.add_calib(astrocalib)
@@ -179,8 +181,10 @@ class AstroFile(IAstroFile):
             raise NotImplementedError("data should not be given anymore when saving to fits... it is always"
                                       " taken from the object")
 
-        if self.spectral:
+        if self.spectral and file_type == "FITS":
             data = np.squeeze([self.data[chn].data.transpose() for chn in channels])
+        elif file_type == "ECSV":
+            data = self.data
         else:
             data = np.squeeze([self.data[chn].data for chn in channels])
 

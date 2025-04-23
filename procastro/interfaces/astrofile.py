@@ -27,6 +27,7 @@ class IAstroFile(metaclass=abc.ABCMeta):
                     key: str):
         raise NotImplementedError
 
+    @property
     @abc.abstractmethod
     def meta(self):
         raise NotImplementedError

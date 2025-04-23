@@ -8,7 +8,7 @@ import numpy as np
 
 from procastro.astrofile.astrofile import AstroFile
 from procastro.interfaces.astrocalib import IAstroCalib
-from procastro.statics import PADataReturn
+from procastro.statics import PADataReturn, PAMetaReturn
 
 
 class AstroCalib(IAstroCalib):
@@ -70,9 +70,9 @@ class AstroCalib(IAstroCalib):
                 raise KeyError(m)
 
     def __call__(self,
-                 data: "pa.AstroFile | PADataReturn",
-                 meta: dict = None,
-                 ) -> tuple[PADataReturn, dict]:
+                 data: PADataReturn,
+                 meta: PAMetaReturn,
+                 ) -> tuple[PADataReturn, PAMetaReturn]:
 
         if meta is None:
             meta = {}
