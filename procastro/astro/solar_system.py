@@ -20,7 +20,7 @@ from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
-from procastro.core.cache import jpl_cache, usgs_map_cache
+from procastro.cache.cache import jpl_cache, usgs_map_cache
 import procastro as pa
 
 TwoValues = tuple[float, float]
