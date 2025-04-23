@@ -20,9 +20,8 @@ from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
-from procastro.cache.cache import jpl_cache, usgs_map_cache
+from procastro.core.cache import jpl_cache, usgs_map_cache
 import procastro as pa
-from procastro.cache.cache import jpl_cache
 
 TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
@@ -104,6 +103,7 @@ class body_geometry:
                 'outgoing': emission_angle,
                 'visible': unit_with_obs_x[0] > 0,
                 }
+
 
 
 @jpl_cache
@@ -664,7 +664,6 @@ def body_map(body,
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
-
     orthographic_image = get_orthographic(image, *geometry.sub_obs,
                                           show_poles=color_poles)
 
@@ -849,9 +848,9 @@ Returns ortographic projection with the specified center
     tmp_ax.set_global()  # the whole globe limits
     f.canvas.draw()
 
-    image_flat = np.frombuffer(f.canvas.tostring_argb(), dtype='uint8')  # (H * W * 3,)
+    image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
 
-    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 4)
+    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
     orthographic_image = Image.fromarray(orthographic_image, 'RGB')
     plt.close(f)
 
