@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt, axes
 from procastro.astrofile import static_identify, static_read, static_guess, static_write
 from procastro.cache.cache import astrofile_cache
 from procastro.astrofile.meta import CaseInsensitiveMeta
-from procastro.interfaces import IAstroFile, IAstroCalib
+from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.logging import io_logger
 from procastro.statics import PADataReturn, identity, dict_from_pattern
 
@@ -113,6 +113,7 @@ class AstroFile(IAstroFile):
         """This function should always re-read from file updating meta and forcing cache update"""
 
         data, meta = static_read.read(self._format, self._data_file)
+        self._random = random()
 
         if self._spectral is None:
             self._spectral = static_guess.is_spectral(data, meta)
@@ -120,11 +121,10 @@ class AstroFile(IAstroFile):
         if self.spectral:
             table = static_read.ndarray_to_table(data,
                                                  file_options=self._data_file_options)
-            meta['infochn'] = [col for col in table.colnames if col not in ['pix', 'wav']]
+            self._meta['infochn'] = [col for col in table.colnames if col not in ['pix', 'wav']]
             return table
 
         self._meta |= {k: v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
-        self._random = random()
 
         return data
 
@@ -148,12 +148,20 @@ class AstroFile(IAstroFile):
         self.write_as(filename,
                       data=data, overwrite=True, backup_extension=backup_extension)
 
-    def write_as(self, filename, data=None, overwrite=False,
-                 channel=None,
+    def write_as(self, filename,
+                 data=None,
+                 overwrite=False,
+                 channels=None,
                  backup_extension=".bak"):
 
         meta = self.meta
-        meta['channel'] = channel
+
+        if channels is None:
+            channels = meta['infochn']
+        if not isinstance(channels, (list, tuple)):
+            channels = [str(channels)]
+
+        meta['channel'] = ",".join(channels)
 
         filename = str(filename).format(**meta)
         file_type = static_identify.identify(filename)
@@ -167,11 +175,14 @@ class AstroFile(IAstroFile):
             shutil.move(filename, backup)
 
         io_logger.warning(f"Saving in {filename} using file type {file_type}{msg}")
-        if data is None:
-            if self.spectral and channel is not None:
-                data = self.data[str(channel)].data
-            else:
-                data = self.data
+        if data is not None:
+            raise NotImplementedError("data should not be given anymore when saving to fits... it is always"
+                                      " taken from the object")
+
+        if self.spectral:
+            data = np.squeeze([self.data[chn].data.transpose() for chn in channels])
+        else:
+            data = np.squeeze([self.data[chn].data for chn in channels])
 
         static_write.write(file_type, filename, data, meta,
                            overwrite=overwrite)
@@ -200,13 +211,14 @@ class AstroFile(IAstroFile):
         for axx, channel in zip(ax, channels):
             data = self.data[str(channel)].transpose()
             if 'wav' in self.data.colnames:
-                x = self.data['wav']
+                x = self.data['wav'].transpose()
                 xlabel = "Wavelength (AA)"
             elif 'pix' in self.data.colnames:
-                x = self.data['pix']
+                x = self.data['pix'].transpose()
                 xlabel = "Pixel"
             else:
-                x = np.arange(len(self.data))
+                x = np.reshape(np.arange(len(self.data)),
+                               [-1] + [1]*(len(data.shape) - 1) * (data * 0 + 1))
                 xlabel = "Raw Pixel"
 
             if len(data.shape) > 1:
@@ -221,7 +233,8 @@ class AstroFile(IAstroFile):
                     medians = np.median(data, axis=1)
 
                 for epoch in epochs:
-                    axx.plot(x, data[epoch if isinstance(epoch, int) else epoch(medians)],
+                    axx.plot(x[epoch if isinstance(epoch, int) else epoch(medians)],
+                             data[epoch if isinstance(epoch, int) else epoch(medians)],
                              label=f'{epoch if isinstance(epoch, int) else str(epoch).split()[1]}')
             else:
                 axx.plot(x, data)
@@ -305,7 +318,12 @@ class AstroFile(IAstroFile):
         return self
 
     def get_calib(self) -> tuple:
-        return tuple(self._calib)
+        return tuple(f"{i}: {repr(cal)}" for i, cal in enumerate(self._calib))
+
+    def del_calib(self, position: int):
+        """delete calibration at position (as ordered by .get_calib())"""
+
+        self._calib.pop(position)
 
     def __hash__(self):
         """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random

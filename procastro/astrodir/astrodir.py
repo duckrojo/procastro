@@ -395,5 +395,5 @@ class AstroDir(IAstroDir):
 
             af.write_as(filename,
                         overwrite=True,
-                        channel=channel,
+                        channels=channel,
                         )
