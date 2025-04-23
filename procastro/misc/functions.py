@@ -128,11 +128,10 @@ def _force_increasing(x: np.ndarray,
     ValueError
         If the x array is neither in increasing nor decreasing order.
     """
-    if not all(x[:-1] <= x[1:]):
-        x = x[::-1]
-        y = np.flip(y, axis=1)
-        if not all(x[:-1] <= x[1:]):
-            raise ValueError("X must be sorted either increasing or decreasing order")
+    sidx = np.argsort(x)
+    x = x[sidx]
+    y = y[:, sidx]
+
     return x, y
 
 
@@ -176,8 +175,9 @@ class FcnWavSol:
                             f" dimension matching the length of 'x' ({n}).")
         self.transpose = transpose
 
-        self.x = xx
-        self.y = yy
+        sidx = np.argsort(xx)
+        self.x = xx[sidx]
+        self.y = yy[:, sidx]
 
         self._config = None
 
@@ -215,7 +215,7 @@ Initialize and give initial guessses
             If passed as the first element of a tuple, then it is not varied
         """
         super().__init__(x, y)
-        x, y = _force_increasing(self.x, self.y)
+        x, y = (self.x, self.y)
 
         c = c or [x[len(x) // 2],
                   lambda v: v-uncertainty, lambda v: v+uncertainty]   # center's default is middle of array
@@ -289,7 +289,7 @@ Initialize and give initial guessses
             If passed as the first element of a tuple, then it is not varied
         """
         super().__init__(x, y)
-        x, y = _force_increasing(self.x, self.y)
+        x, y = (self.x, self.y)
         if y.shape[0] != 1:
             raise TypeError("MultiGenNorm only enabled for one y-fit at a time")
         y = y[0]
@@ -298,9 +298,13 @@ Initialize and give initial guessses
             raise TypeError("multicenters must be given in list to initialize")
 
         n_var = len(c)
+        n_wav = len(x)
         c_idx = [np.argmin(np.abs(cc - x)) for cc in c]
 
-        h = [y[ci-precision_pixel: ci+precision_pixel].mean() for ci in c_idx]
+        h = [y[(ci-precision_pixel)*(ci>precision_pixel):
+               ci+precision_pixel if ci+precision_pixel < n_wav else n_wav].mean()
+             for ci in c_idx]
+
         if not isinstance(w, (list, tuple, np.ndarray)):
             w = [w] * n_var
         upper_bound = tuple(list(np.array(c)+precision_pixel) + list(np.array(h)*1.25))
@@ -344,7 +348,7 @@ class LinearRegression(FcnWavSol):
     @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
-        ox, oy = _force_increasing(self.x, self.y)
+        ox, oy = (self.x, self.y)
         results = [linregress(ox, yy) for yy in oy]
         ret = [result.slope * x + result.intercept
                for result in results]
@@ -364,7 +368,7 @@ class LinearInterpolation(FcnWavSol):
     @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x: np.ndarray):
-        xo, yo = _force_increasing(self.x, self.y)
+        xo, yo = (self.x, self.y)
         slope0 = (yo[:, 1] - yo[:, 0]) / (xo[1] - xo[0])
         slope1 = (yo[:, -1] - yo[:, -2]) / (xo[-1] - xo[-2])
 
