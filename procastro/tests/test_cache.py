@@ -4,20 +4,20 @@ import time
 from procastro.astro.solar_system import _request_horizons_online
 
 from procastro.astrofile.astrofile import AstroFile
-from procastro.cache.cachev2 import _AstroCachev2, astrofile_cachev2, jpl_cachev2
+from procastro.cache.cache import _AstroCache, astrofile_cache, jpl_cache
 from pathlib import Path
 
 @pytest.fixture
 def astrocache():
     """Fixture to create an in-memory _AstroCachev2 instance."""
-    return _AstroCachev2()
+    return _AstroCache()
 
 
 @pytest.fixture
 def disk_based_astrocache():
     """Fixture to create a disk-based _AstroCachev2 instance and clean up after tests."""
     cache_dir = "tempdir"
-    cache = _AstroCachev2(label_on_disk=cache_dir)
+    cache = _AstroCache(label_on_disk=cache_dir)
 
     # Yield the cache instance for use in tests
     yield cache
@@ -52,7 +52,7 @@ def test_basic_caching(astrocache):
 
 def test_cache_expiration(astrocache):
     """Test that cached items expire after the specified lifetime."""
-    astrocache = _AstroCachev2(lifetime=1 / 86400)  # 1 second lifetime
+    astrocache = _AstroCache(lifetime=1 / 86400)  # 1 second lifetime
 
     @astrocache
     def cached_function(x):
@@ -103,7 +103,7 @@ def test_disk_based_cache(disk_based_astrocache):
 
 def test_eviction_policy(astrocache):
     """Test that the cache evicts items when the size limit is exceeded."""
-    astrocache = _AstroCachev2(1)  # Small cache size in bytes
+    astrocache = _AstroCache(1)  # Small cache size in bytes
     @astrocache
     def cached_function(x):
         return x ** 2
@@ -124,9 +124,9 @@ def test_astrofile_cache():
     path = "demo_data/ob01_5_spec.fits"
     af = AstroFile(path)
     data1 = af.data  # Primera llamada, debería invocar la función real
-    assert astrofile_cachev2._cache.__len__() == 1  # Verificar que el caché tiene el resultado
+    assert astrofile_cache._cache.__len__() == 1  # Verificar que el caché tiene el resultado
     data2 = af.data  # Segunda llamada, debería venir del caché
-    assert astrofile_cachev2._cache.__len__() == 1  # Verificar que el caché sigue teniendo el resultado
+    assert astrofile_cache._cache.__len__() == 1  # Verificar que el caché sigue teniendo el resultado
     # Verificar que los datos son los mismos
     assert data1 is not None
     assert data2 is not None
@@ -143,7 +143,7 @@ def test_jpl_cache_basic():
     result2 = cached_request(spec)
 
     # Verificar que el resultado es el mismo pero se recalcula
-    assert jpl_cachev2._cache.__len__() == 1  # Verificar que el caché tiene el resultado y es solo una vez
+    assert jpl_cache._cache.__len__() == 1  # Verificar que el caché tiene el resultado y es solo una vez
 
 
 
@@ -160,7 +160,7 @@ def test_jpl_cache_force():
     result2 = cached_request(spec, force=True)
     
     assert result1 != result2  # Verificar que el resultado es diferente (ya que se forzó la recalculación)
-    assert jpl_cachev2._cache.__len__() == 1
+    assert jpl_cache._cache.__len__() == 1
 
 
 
