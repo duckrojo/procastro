@@ -13,7 +13,6 @@ from matplotlib import pyplot as plt, axes
 
 from procastro.astrofile import static_identify, static_read, static_guess, static_write
 from procastro.cache.cache import astrofile_cache
-from procastro.cache.cachev2 import astrofile_cachev2
 from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.interfaces import IAstroFile, IAstroCalib
 from procastro.logging import io_logger
@@ -256,7 +255,7 @@ class AstroFile(IAstroFile):
 
     #TODO: CHANGE THIS TO astrofile_cache WHEN GOING INTO PRODUCTION
     @property
-    @astrofile_cachev2
+    @astrofile_cache
     def data(self) -> PADataReturn:
         """
         Returns the data in AstroFile by calling .read() the first time and then applying calibration,
