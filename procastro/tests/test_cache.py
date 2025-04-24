@@ -4,7 +4,7 @@ import time
 from procastro.astro.solar_system import _request_horizons_online
 
 from procastro.astrofile.astrofile import AstroFile
-from procastro.cache.cachev2 import _AstroCachev2, astrofile_cachev2, jpl_cachev2
+from procastro.cache.cache import _AstroCachev2, astrofile_cachev2, jpl_cachev2
 from pathlib import Path
 
 @pytest.fixture

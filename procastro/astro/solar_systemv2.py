@@ -24,14 +24,17 @@ from astropy.table import Table, QTable, MaskedColumn
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 import procastro as pa
 from procastro.misc.misc_graph import figaxes
-from procastro.cache.cachev2 import _AstroCachev2
+from procastro.cache.cache import _AstroCache
 
 TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 
-jpl_cachev2 = _AstroCachev2(max_cache=1e12, lifetime=30,)
-usgs_map_cachev2 = _AstroCachev2(max_cache=30, lifetime=30,
+
+
+#TODO: CHANGE TO ORIGINAL CACHE WHEN DOING PULL REQUEST!!!!
+jpl_cache = _AstroCache(max_cache=1e12, lifetime=30,)
+usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force="no_cache")
 class JPLInterface:
@@ -44,7 +47,7 @@ class JPLInterface:
     """
     
     @staticmethod
-    @jpl_cachev2
+    @jpl_cache
     def _request_horizons_online(specifications):
         """
         Send request to JPL Horizons system and return the response.
@@ -729,7 +732,7 @@ class BodyVisualizer:
 
         return orthographic_image
     @staticmethod
-    @usgs_map_cachev2
+    @usgs_map_cache
     def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,):
         """
         Retrieve a map image for a solar system body from USGS.
