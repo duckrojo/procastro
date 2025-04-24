@@ -12,14 +12,16 @@ import astropy.time as apt
 from matplotlib import pyplot as plt, axes
 
 from procastro.astrofile import static_identify, static_read, static_guess, static_write
-from procastro.cache.cache import astrofile_cache
-from procastro.cache.cache import astrofile_cachev2
+from procastro.cache.cache import _AstroCache
 from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.logging import io_logger
 from procastro.statics import PADataReturn, identity, dict_from_pattern
+import procastro as pa
 
 
+
+astrofile_cache = _AstroCache()
 def _check_first_astrofile(fcn):
     """
 Decorator that raises error if first argument is not AstroFile
@@ -273,7 +275,7 @@ class AstroFile(IAstroFile):
 
     #TODO: CHANGE THIS TO astrofile_cache WHEN GOING INTO PRODUCTION
     @property
-    @astrofile_cachev2
+    @astrofile_cache
     def data(self) -> PADataReturn:
         """
         Returns the data in AstroFile by calling .read() the first time and then applying calibration,

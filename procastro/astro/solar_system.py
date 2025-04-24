@@ -21,6 +21,7 @@ from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 
+import procastro as pa
 from procastro.cache.cache import _AstroCache
 from procastro.misc.misc_graph import figaxes
 
@@ -29,11 +30,11 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 # todo: improve logger as part of the procastro system
 
+
 jpl_cache = _AstroCache(max_cache=1e12, lifetime=30,)
 usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force="no_cache")
-
 
 def _cross2(a: np.ndarray,
             b: np.ndarray) -> np.ndarray:
@@ -854,17 +855,10 @@ Returns ortographic projection with the specified center
     tmp_ax.set_global()  # the whole globe limits
     f.canvas.draw()
 
-
-
-
     image_flat = np.frombuffer(f.canvas.tostring_argb(), dtype='uint8')  # (H * W * 3,)
 
     orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 4)[:, :, 1:]
     orthographic_image = Image.fromarray(orthographic_image, 'RGB')
-    # image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
-
-    # orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
-    # orthographic_image = Image.fromarray(orthographic_image, 'RGB')
     plt.close(f)
 
     plt.switch_backend(backend)

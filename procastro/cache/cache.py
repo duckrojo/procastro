@@ -121,5 +121,5 @@ class _AstroCache:
 
 
 
-astrofile_cachev2 = _AstroCache()
+
 

@@ -32,7 +32,6 @@ logger = logging.getLogger("astro")
 
 
 
-#TODO: CHANGE TO ORIGINAL CACHE WHEN DOING PULL REQUEST!!!!
 jpl_cache = _AstroCache(max_cache=1e12, lifetime=30,)
 usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
@@ -733,7 +732,7 @@ class BodyVisualizer:
         return orthographic_image
     @staticmethod
     @usgs_map_cache
-    def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,):
+    def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,verbose =False):
         """
         Retrieve a map image for a solar system body from USGS.
         
@@ -745,6 +744,8 @@ class BodyVisualizer:
             Space-separated keywords to filter map alternatives
         warn_multiple : bool, default=True
             Whether to show warnings when multiple maps are available
+        verbose : bool, default=False
+            Whether to print verbose output during the fetching process
             
         Returns
         -------
@@ -812,8 +813,10 @@ class BodyVisualizer:
                 print("")
 
             body_files = [body_files[0]]
-        # logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
-        # fetch alternative
+        if verbose:
+            logger.info(f"Fetching map for {body}...")
+            logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
+
         try:
             response = requests.get(body_files[0][2])
             #TODO: Better error handling here if the remote server doesnt respond.
@@ -1053,7 +1056,7 @@ class BodyVisualizer:
             BodyVisualizer.create_frame._warning_shown = False
 
 
-        image = BodyVisualizer.usgs_map_image(body, detail=detail, warn_multiple=not reread_usgs, warning_shown=BodyVisualizer.create_frame._warning_shown)
+        image = BodyVisualizer.usgs_map_image(body, detail=detail, warn_multiple=not reread_usgs, warning_shown=BodyVisualizer.create_frame._warning_shown,verbose =verbose)
         if image is None:
             raise ValueError(f"Could not get image for {body}")
         
