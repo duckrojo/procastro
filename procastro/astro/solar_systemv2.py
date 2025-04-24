@@ -1553,27 +1553,25 @@ def body_map(body:str,
         'show_angles': show_angles,
     }
     
-    # Case 1: time is None - use ephemeris data directly from observer
-    if time is None:
-        if not isinstance(observer, Table.Row):
-            raise TypeError("Time can only be omitted when observer is a JPL ephemeris in a astropy.Table.Row object.")
-        ephemeris_line = observer
-        logger.info(f"Time is None. Using time from ephemeris: {apt.Time(ephemeris_line['jd'], format='jd')}")
-        return BodyVisualizer.create_image(
-            body=body,
-            ephemeris_line=ephemeris_line,
-            return_axes=return_axes,
-            **common_params
-        )
-    
-    # Case 2: time is not an array - create a single image
-    elif time.isscalar:
-        # Get ephemeris data for the specified time
-        site = apc.EarthLocation.of_site(observer)
-        request = HorizonsInterface.jpl_observer_from_location(site) | \
-                 HorizonsInterface.jpl_body_from_str(body) | \
-                 HorizonsInterface.jpl_times_from_time(time)
-        ephemeris_line = HorizonsInterface.read_jpl(request)[0]
+
+
+    # Case 1: time is either none or an scalar
+    if time.isscalar or time is None:
+
+        if time is None:
+            if not isinstance(observer, Table.Row):
+                raise TypeError("Time can only be omitted when observer is a JPL ephemeris in a astropy.Table.Row object.")
+            ephemeris_line = observer
+            logger.info(f"Time is None. Using time from ephemeris: {apt.Time(ephemeris_line['jd'], format='jd')}")
+            time = apt.Time(ephemeris_line['jd'], format='jd')
+
+        else:
+            # Get ephemeris data for the specified time
+            site = apc.EarthLocation.of_site(observer)
+            request = HorizonsInterface.jpl_observer_from_location(site) | \
+                    HorizonsInterface.jpl_body_from_str(body) | \
+                    HorizonsInterface.jpl_times_from_time(time)
+            ephemeris_line = HorizonsInterface.read_jpl(request)[0]
         
         return BodyVisualizer.create_image(
             body=body,
@@ -1582,13 +1580,13 @@ def body_map(body:str,
             **common_params
         )
     
-    # Case 3: time is an array - create a video
+    # Case 2: Time is an array
     else:
-        # Get ephemeris data for all specified times
+        
         site = apc.EarthLocation.of_site(observer)
         request = HorizonsInterface.jpl_observer_from_location(site) | \
-                 HorizonsInterface.jpl_body_from_str(body) | \
-                 HorizonsInterface.jpl_times_from_time(time)
+                HorizonsInterface.jpl_body_from_str(body) | \
+                HorizonsInterface.jpl_times_from_time(time)
         ephemeris_lines = HorizonsInterface.read_jpl(request)
         
         # Additional parameters for video
