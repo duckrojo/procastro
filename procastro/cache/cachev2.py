@@ -121,5 +121,5 @@ class _AstroCachev2:
 
 
 
-astrofile_cachev2 = _AstroCachev2(verbose=True)
+astrofile_cachev2 = _AstroCachev2()
 # astrofile_cachev2_on_disk = _AstroCachev2(label_on_disk='test')

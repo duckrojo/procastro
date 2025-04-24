@@ -7,7 +7,6 @@ import requests
 import numpy as np
 from numpy import ma
 from bs4 import BeautifulSoup
-from tqdm import tqdm
 
 
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
@@ -21,7 +20,7 @@ from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
-import procastro as pa
+
 from procastro.cache.cache import _AstroCache
 from procastro.misc.misc_graph import figaxes
 
@@ -30,12 +29,11 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 # todo: improve logger as part of the procastro system
 
-
-
-jpl_cache = _AstroCache(max_cache=50)
+jpl_cache = _AstroCache(max_cache=1e12, lifetime=30,)
 usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
-                             hashable_kw=['detail'], label_on_disk='USGSmap',
-                             force="no_cache")
+                               hashable_kw=['detail'], label_on_disk='USGSmap',
+                               force="no_cache")
+
 
 def _cross2(a: np.ndarray,
             b: np.ndarray) -> np.ndarray:
@@ -113,7 +111,7 @@ class body_geometry:
                 }
 
 
-#TODO:  Change this when going into production!!!!
+
 @jpl_cache
 def _request_horizons_online(specifications):
     default_spec = {'MAKE_EPHEM': 'YES',
@@ -286,8 +284,10 @@ def parse_jpl_ephemeris(ephemeris):
             if 'GEOCENTRIC' in line:
                 moon_presence = False
         previous = line
+
     spaces = 0
     col_seps = re.split(r'( +)', previous.rstrip())
+
     if col_seps[0] == '':
         col_seps.pop(0)
     date = col_seps.pop(0)
@@ -536,13 +536,10 @@ def _body_map_video(body,
             divider = 0.001
         title = f'{body.capitalize()} on {{time}} from {observer} (R$_{body[0].upper()}$: {{field:.1f}}{rad_unit})'
 
-
-
-    pbar = tqdm(total=len(time), desc="Animating") 
     def animate(itime):
         ax.clear()
 
-        # logger.info(f" - Computing {time[itime].isot} ({itime + 1:d}/{len(time)})")
+        logger.info(f" - Computing {time[itime].isot} ({itime + 1:d}/{len(time)})")
         ephemeris = ephemeris_lines[itime]
         y, m, d, h, mn, s = time[itime].ymdhms
 
@@ -554,16 +551,15 @@ def _body_map_video(body,
                            title=title.format(time=time_label,
                                               field=ephemeris[field]/divider,),
                            **kwargs)
-        pbar.update(1)
         return artists
 
     ani = FuncAnimation(f, animate, interval=60, blit=False, repeat=True, frames=len(time))
-    
+
     if filename is None:
         filename = f"{body}_{time[0].isot.replace(":", "")[:17]}.gif"
     elif '.' not in filename:
         filename += '.gif'
-    
+
     match filename[filename.index("."):].lower():
         case ".mpg" | ".mpeg" | ".mp4":
             writer = FFMpegWriter(fps=fps)
@@ -576,16 +572,11 @@ def _body_map_video(body,
         ani.save(filename,
                  dpi=dpi, writer=writer,
                  )
-    except Exception as e:
-        logger.error(f"Error saving animation: {e}")
-        return 
     except FileNotFoundError:
         raise FileNotFoundError(f"Codex for extension {filename[filename.index("."):]} not available.")
 
-    
-    plt.switch_backend(backend)
-    pbar.close()
     print(f"saved file {filename}")
+    plt.switch_backend(backend)
 
 
 def body_map(body,
@@ -657,7 +648,6 @@ def body_map(body,
         ephemeris_line = observer
         time = apt.Time(ephemeris_line['jd'], format='jd')
     elif not time.isscalar:
-        print("Creating gif...")
         _body_map_video(body, observer, time,
                         locations=locations,
                         detail=detail, reread_usgs=reread_usgs,
@@ -680,9 +670,6 @@ def body_map(body,
 
     image = usgs_map_image(body, detail=detail, no_cache=reread_usgs)
 
-    if image is None:
-        raise ValueError(f"Could not get image for {body}")
-        
     orthographic_image = get_orthographic(image, *geometry.sub_obs,
                                           show_poles=color_poles)
 
@@ -867,10 +854,17 @@ Returns ortographic projection with the specified center
     tmp_ax.set_global()  # the whole globe limits
     f.canvas.draw()
 
+
+
+
     image_flat = np.frombuffer(f.canvas.tostring_argb(), dtype='uint8')  # (H * W * 3,)
 
     orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 4)[:, :, 1:]
     orthographic_image = Image.fromarray(orthographic_image, 'RGB')
+    # image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+
+    # orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
+    # orthographic_image = Image.fromarray(orthographic_image, 'RGB')
     plt.close(f)
 
     plt.switch_backend(backend)
@@ -963,7 +957,6 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
 
     detail_str = f" with detail keywords '{detail}'"
     if len(body_files) == 0:
-        logger.error(f"No map of '{body}' found{detail_str}")
         raise ValueError(f"No map of '{body}' found{detail_str}")
     # select from alternatives
     elif len(body_files) > 1:
@@ -976,19 +969,9 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
             print("")
 
         body_files = [body_files[0]]
-    # logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
+
     # fetch alternative
-    try:
-        response = requests.get(body_files[0][2])
-        #TODO: Better error handling here if the remote server doesnt respond.
-
-        if response.status_code != 200:
-            logger.error(f"Error fetching USGS map: {response.status_code}")
-            return None
-    except Exception as e:
-        logger.error(f"Exception occurred: {str(e)}")
-        return None
-
+    response = requests.get(body_files[0][2])
     return Image.open(BytesIO(response.content))
 
 
@@ -996,7 +979,7 @@ def _add_local_time(ax,
                     sub_obs,
                     sub_sun,
                     np_ang,
-                    color, 
+                    color,
                     transform_from_norm,
                     precision=50,
                     ):
