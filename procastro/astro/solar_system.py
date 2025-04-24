@@ -21,16 +21,21 @@ from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
-from procastro.cache.cache import jpl_cache, usgs_map_cache
 import procastro as pa
+from procastro.cache.cache import _AstroCache
 from procastro.misc.misc_graph import figaxes
-from procastro.cache.cachev2 import jpl_cachev2, usgs_map_cachev2
 
 TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 # todo: improve logger as part of the procastro system
 
+
+
+jpl_cache = _AstroCache(max_cache=50)
+usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
+                             hashable_kw=['detail'], label_on_disk='USGSmap',
+                             force="no_cache")
 
 def _cross2(a: np.ndarray,
             b: np.ndarray) -> np.ndarray:
@@ -109,7 +114,7 @@ class body_geometry:
 
 
 #TODO:  Change this when going into production!!!!
-@jpl_cachev2
+@jpl_cache
 def _request_horizons_online(specifications):
     default_spec = {'MAKE_EPHEM': 'YES',
                     'EPHEM_TYPE': 'OBSERVER',
@@ -899,7 +904,7 @@ def body_path(body,
                   names=['time', 'jd', 'skycoord', 'ra', 'dec'])
 
 
-@usgs_map_cachev2
+@usgs_map_cache
 def usgs_map_image(body, detail=None, warn_multiple=True):
     """
 

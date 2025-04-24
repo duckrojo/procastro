@@ -22,15 +22,18 @@ from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
-from procastro.cache.cache import jpl_cache, usgs_map_cache
 import procastro as pa
 from procastro.misc.misc_graph import figaxes
-from procastro.cache.cachev2 import jpl_cachev2, usgs_map_cachev2
+from procastro.cache.cachev2 import _AstroCachev2
 
 TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 
+jpl_cachev2 = _AstroCachev2(max_cache=1e12, lifetime=30,)
+usgs_map_cachev2 = _AstroCachev2(max_cache=30, lifetime=30,
+                               hashable_kw=['detail'], label_on_disk='USGSmap',
+                               force="no_cache")
 class JPLInterface:
     """
     Class to encapsulate the JPL Horizons interface.

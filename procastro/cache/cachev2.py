@@ -123,7 +123,3 @@ class _AstroCachev2:
 
 astrofile_cachev2 = _AstroCachev2(verbose=True)
 # astrofile_cachev2_on_disk = _AstroCachev2(label_on_disk='test')
-jpl_cachev2 = _AstroCachev2(max_cache=1e12, lifetime=30,)
-usgs_map_cachev2 = _AstroCachev2(max_cache=30, lifetime=30,
-                               hashable_kw=['detail'], label_on_disk='USGSmap',
-                               force="no_cache")
