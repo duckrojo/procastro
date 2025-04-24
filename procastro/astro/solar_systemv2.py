@@ -36,7 +36,7 @@ jpl_cache = _AstroCache(max_cache=1e12, lifetime=30,)
 usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force="no_cache")
-class JPLInterface:
+class HorizonsInterface:
     """
     Class to encapsulate the JPL Horizons interface.
     
@@ -162,14 +162,14 @@ class JPLInterface:
             with open(filename, 'r') as fp:
                 line = fp.readline()
                 if line[:6] == r"!$$SOF":
-                    ephemeris = JPLInterface._request_horizons_online(fp.read())
+                    ephemeris = HorizonsInterface._request_horizons_online(fp.read())
                 else:
                     ephemeris = open(specification, 'r').readlines()
         else:
             if specification[:6] != r"!$$SOF":
                 raise ValueError(f"Multiline Horizons specification invalid:"
                                 f"{specification}")
-            ephemeris = JPLInterface._request_horizons_online(specification)
+            ephemeris = HorizonsInterface._request_horizons_online(specification)
 
         return ephemeris
 
@@ -402,8 +402,8 @@ class JPLInterface:
         astropy.table.Table
             Table with named columns containing the parsed ephemeris data
         """
-        ephemeris = JPLInterface.get_jpl_ephemeris(specification)
-        return JPLInterface.parse_jpl_ephemeris(ephemeris)
+        ephemeris = HorizonsInterface.get_jpl_ephemeris(specification)
+        return HorizonsInterface.parse_jpl_ephemeris(ephemeris)
 
     @staticmethod
     def path_from_jpl(body,
@@ -428,11 +428,11 @@ class JPLInterface:
             Table containing ephemeris data with an added 'skycoord' column
             containing SkyCoord objects for easy coordinate handling
         """
-        time_spec = JPLInterface.jpl_times_from_time(times)
+        time_spec = HorizonsInterface.jpl_times_from_time(times)
         site = apc.EarthLocation.of_site(observer)
 
-        request = JPLInterface.jpl_body_from_str(body) | time_spec | JPLInterface.jpl_observer_from_location(site)
-        ret = JPLInterface.read_jpl(request)
+        request = HorizonsInterface.jpl_body_from_str(body) | time_spec | HorizonsInterface.jpl_observer_from_location(site)
+        ret = HorizonsInterface.read_jpl(request)
 
         ret['skycoord'] = apc.SkyCoord(ret['ra_ICRF'], ret['dec_ICRF'], unit=(u.hourangle, u.degree))
 
@@ -818,14 +818,19 @@ class BodyVisualizer:
             logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
 
         try:
-            response = requests.get(body_files[0][2])
-            #TODO: Better error handling here if the remote server doesnt respond.
-
-            if response.status_code != 200:
-                logger.error(f"Error fetching USGS map: {response.status_code}")
-                return None
+            response = requests.get(body_files[0][2], timeout=(5, 30))  # Connect timeout, Read timeout
+            response.raise_for_status()  # Lanza una excepción específica para códigos de error HTTP
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Connection error: {str(e)}")
+            return None
+        except requests.exceptions.Timeout as e:
+            logger.error(f"Timeout error: {str(e)}")
+            return None
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error: {str(e)}")
+            return None
         except Exception as e:
-            logger.error(f"Exception occurred: {str(e)}")
+            logger.error(f"Unexpected error: {str(e)}")
             return None
 
         return Image.open(BytesIO(response.content))
@@ -1565,10 +1570,10 @@ def body_map(body:str,
     elif time.isscalar:
         # Get ephemeris data for the specified time
         site = apc.EarthLocation.of_site(observer)
-        request = JPLInterface.jpl_observer_from_location(site) | \
-                 JPLInterface.jpl_body_from_str(body) | \
-                 JPLInterface.jpl_times_from_time(time)
-        ephemeris_line = JPLInterface.read_jpl(request)[0]
+        request = HorizonsInterface.jpl_observer_from_location(site) | \
+                 HorizonsInterface.jpl_body_from_str(body) | \
+                 HorizonsInterface.jpl_times_from_time(time)
+        ephemeris_line = HorizonsInterface.read_jpl(request)[0]
         
         return BodyVisualizer.create_image(
             body=body,
@@ -1581,10 +1586,10 @@ def body_map(body:str,
     else:
         # Get ephemeris data for all specified times
         site = apc.EarthLocation.of_site(observer)
-        request = JPLInterface.jpl_observer_from_location(site) | \
-                 JPLInterface.jpl_body_from_str(body) | \
-                 JPLInterface.jpl_times_from_time(time)
-        ephemeris_lines = JPLInterface.read_jpl(request)
+        request = HorizonsInterface.jpl_observer_from_location(site) | \
+                 HorizonsInterface.jpl_body_from_str(body) | \
+                 HorizonsInterface.jpl_times_from_time(time)
+        ephemeris_lines = HorizonsInterface.read_jpl(request)
         
         # Additional parameters for video
         video_params = {
