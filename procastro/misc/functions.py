@@ -128,11 +128,10 @@ def _force_increasing(x: np.ndarray,
     ValueError
         If the x array is neither in increasing nor decreasing order.
     """
-    if not all(x[:-1] <= x[1:]):
-        x = x[::-1]
-        y = np.flip(y, axis=1)
-        if not all(x[:-1] <= x[1:]):
-            raise ValueError("X must be sorted either increasing or decreasing order")
+    sidx = np.argsort(x)
+    x = x[sidx]
+    y = y[:, sidx]
+
     return x, y
 
 
@@ -150,19 +149,35 @@ def _remove_unused_dimension(func):
     return wrapper
 
 
+def _transpose_if_needed(func):
+    """Prepare plotting parameters"""
+
+    def wrapper(self, x):
+
+        ret = func(self, x)
+        if self.transpose:
+            return ret.transpose()
+
+        return ret
+
+    return wrapper
+
+
 class FcnWavSol:
-    def __init__(self, x, y):
+    def __init__(self, x, y, transpose=False):
         xx = np.asarray(x)
         yy = np.asarray(y)
         n = xx.shape[-1]
         if len(yy.shape) == 1:
             yy = yy.reshape(1, n)
         if len(yy.shape) != 2 or yy.shape[-1] != n:
-            raise TypeError(f"'y' array (shape: {yy.shape})can only be 1 or 2D, with the length of the last"
-                            " dimension matching the length of 'x'")
+            raise TypeError(f"'y' array (shape: {yy.shape}) can only be 1 or 2D, with the length of the last"
+                            f" dimension matching the length of 'x' ({n}).")
+        self.transpose = transpose
 
-        self.x = xx
-        self.y = yy
+        sidx = np.argsort(xx)
+        self.x = xx[sidx]
+        self.y = yy[:, sidx]
 
         self._config = None
 
@@ -200,7 +215,7 @@ Initialize and give initial guessses
             If passed as the first element of a tuple, then it is not varied
         """
         super().__init__(x, y)
-        x, y = _force_increasing(self.x, self.y)
+        x, y = (self.x, self.y)
 
         c = c or [x[len(x) // 2],
                   lambda v: v-uncertainty, lambda v: v+uncertainty]   # center's default is middle of array
@@ -247,6 +262,7 @@ Initialize and give initial guessses
         self.popts = popts
         self.x, self.y = x, y
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
 
@@ -273,7 +289,7 @@ Initialize and give initial guessses
             If passed as the first element of a tuple, then it is not varied
         """
         super().__init__(x, y)
-        x, y = _force_increasing(self.x, self.y)
+        x, y = (self.x, self.y)
         if y.shape[0] != 1:
             raise TypeError("MultiGenNorm only enabled for one y-fit at a time")
         y = y[0]
@@ -282,9 +298,13 @@ Initialize and give initial guessses
             raise TypeError("multicenters must be given in list to initialize")
 
         n_var = len(c)
+        n_wav = len(x)
         c_idx = [np.argmin(np.abs(cc - x)) for cc in c]
 
-        h = [y[ci-precision_pixel: ci+precision_pixel].mean() for ci in c_idx]
+        h = [y[(ci-precision_pixel)*(ci>precision_pixel):
+               ci+precision_pixel if ci+precision_pixel < n_wav else n_wav].mean()
+             for ci in c_idx]
+
         if not isinstance(w, (list, tuple, np.ndarray)):
             w = [w] * n_var
         upper_bound = tuple(list(np.array(c)+precision_pixel) + list(np.array(h)*1.25))
@@ -310,6 +330,7 @@ Initialize and give initial guessses
         self.popt = popt
         self.x, self.y = x, y
 
+    @_transpose_if_needed
     def __call__(self, x):
         return self.function_fit(x, *self.popt)
 
@@ -321,12 +342,13 @@ class LinearRegression(FcnWavSol):
     def short(self):
         return "LinReg"
 
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def __init__(self, x, y, **kwargs):
+        super().__init__(x, y, **kwargs)
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
-        ox, oy = _force_increasing(self.x, self.y)
+        ox, oy = (self.x, self.y)
         results = [linregress(ox, yy) for yy in oy]
         ret = [result.slope * x + result.intercept
                for result in results]
@@ -340,12 +362,13 @@ class LinearInterpolation(FcnWavSol):
     def short(self):
         return "LinInt"
 
-    def __init__(self, x: np.ndarray, y: np.ndarray):
-        super().__init__(x, y)
+    def __init__(self, x: np.ndarray, y: np.ndarray, **kwargs):
+        super().__init__(x, y, **kwargs)
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x: np.ndarray):
-        xo, yo = _force_increasing(self.x, self.y)
+        xo, yo = (self.x, self.y)
         slope0 = (yo[:, 1] - yo[:, 0]) / (xo[1] - xo[0])
         slope1 = (yo[:, -1] - yo[:, -2]) / (xo[-1] - xo[-2])
 
@@ -370,6 +393,7 @@ class NoneFcn(FcnWavSol):
     def __init__(self, x, y):
         super().__init__(x, y)
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
         return np.zeros(len(x))
@@ -385,6 +409,7 @@ class Identity(FcnWavSol):
     def __init__(self, x, y):
         super().__init__(x, y)
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
         return x
@@ -397,10 +422,11 @@ class Polynomial(FcnWavSol):
     def short(self):
         return f"Poly{self.degree}d"
 
-    def __init__(self, x, y, d=2):
-        super().__init__(x, y)
+    def __init__(self, x, y, d=2, **kwargs):
+        super().__init__(x, y, **kwargs)
         self.degree = d
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
         d = self.degree
@@ -414,16 +440,19 @@ class Spline(FcnWavSol):
     def short(self):
         return f"spl{self.smoothing:.1f}s"
 
-    def __init__(self, x, y, s=None):
-        super().__init__(x, y)
+    def __init__(self, x, y, s=None, **kwargs):
+        super().__init__(x, y, **kwargs)
         if s is None:
             s = len(x)
         self.smoothing = s
         self.splines = [interpolate.UnivariateSpline(self.x, yy, s=self.smoothing) for yy in self.y]
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
         ret = np.array([sp(x) for sp, yy in zip(self.splines, self.y)])
+        if self.transpose:
+            return ret.transpose
         return ret
 
 
@@ -434,12 +463,13 @@ class OtfSpline(FcnWavSol):
     def short(self):
         return f"spl{self.smoothing:.1f}s"
 
-    def __init__(self, x, y, s=None):
-        super().__init__(x, y)
+    def __init__(self, x, y, s=None, **kwargs):
+        super().__init__(x, y, **kwargs)
         if s is None:
             s = x.shape[-1]
         self.smoothing = s
 
+    @_transpose_if_needed
     @_remove_unused_dimension
     def __call__(self, x):
         x_orig = self.x
@@ -464,9 +494,32 @@ class OtfSpline(FcnWavSol):
         return ret
 
 
-def use_function(name, x, y):
+def use_function(name, x, y, transpose=False):
+    """
+
+    Parameters
+    ----------
+    name
+    x: np.ndarray, list
+    independent variable to interpolate
+
+    y: np.ndarray, list
+    dependent variable. Can have two dimensions, but one of them has to match the length of `x`.
+    according to the value of `transpose`
+
+    transpose: bool
+    If True then the variable to interpolate is on the first dimension, otherwise on the second
+
+    Returns
+    -------
+
+    """
     names = name.split(":")
     fname = names[0]
+
+    if transpose:
+        x = x.transpose()
+        y = y.transpose()
 
     keys = list(available.keys())
     options = [fname == av_name[:len(fname)] for av_name in keys]
@@ -478,7 +531,7 @@ def use_function(name, x, y):
 
     kwargs = {arg[0]: cast(arg[1:]) for arg, cast in zip(names[1:], function[1:])}
 
-    ret = function[0](x, y, **kwargs)
+    ret = function[0](x, y, transpose=transpose, **kwargs)
 
     ret.set_config(name)
 

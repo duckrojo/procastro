@@ -11,6 +11,7 @@ _format_fcn = {'d': int, 'f': float, 's': str}
 
 
 PADataReturn = np.ndarray | Table  # returns an array if there is no spectral information, otherwise table
+PAMetaReturn = CaseInsensitiveMeta
 
 
 def upper(x):
