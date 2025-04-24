@@ -31,7 +31,7 @@ TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 
-class HorizonsInterface:
+class JPLInterface:
     """
     Class to encapsulate the JPL Horizons interface.
     
@@ -157,14 +157,14 @@ class HorizonsInterface:
             with open(filename, 'r') as fp:
                 line = fp.readline()
                 if line[:6] == r"!$$SOF":
-                    ephemeris = HorizonsInterface._request_horizons_online(fp.read())
+                    ephemeris = JPLInterface._request_horizons_online(fp.read())
                 else:
                     ephemeris = open(specification, 'r').readlines()
         else:
             if specification[:6] != r"!$$SOF":
                 raise ValueError(f"Multiline Horizons specification invalid:"
                                 f"{specification}")
-            ephemeris = HorizonsInterface._request_horizons_online(specification)
+            ephemeris = JPLInterface._request_horizons_online(specification)
 
         return ephemeris
 
@@ -397,8 +397,8 @@ class HorizonsInterface:
         astropy.table.Table
             Table with named columns containing the parsed ephemeris data
         """
-        ephemeris = HorizonsInterface.get_jpl_ephemeris(specification)
-        return HorizonsInterface.parse_jpl_ephemeris(ephemeris)
+        ephemeris = JPLInterface.get_jpl_ephemeris(specification)
+        return JPLInterface.parse_jpl_ephemeris(ephemeris)
 
     @staticmethod
     def path_from_jpl(body,
@@ -423,11 +423,11 @@ class HorizonsInterface:
             Table containing ephemeris data with an added 'skycoord' column
             containing SkyCoord objects for easy coordinate handling
         """
-        time_spec = HorizonsInterface.jpl_times_from_time(times)
+        time_spec = JPLInterface.jpl_times_from_time(times)
         site = apc.EarthLocation.of_site(observer)
 
-        request = HorizonsInterface.jpl_body_from_str(body) | time_spec | HorizonsInterface.jpl_observer_from_location(site)
-        ret = HorizonsInterface.read_jpl(request)
+        request = JPLInterface.jpl_body_from_str(body) | time_spec | JPLInterface.jpl_observer_from_location(site)
+        ret = JPLInterface.read_jpl(request)
 
         ret['skycoord'] = apc.SkyCoord(ret['ra_ICRF'], ret['dec_ICRF'], unit=(u.hourangle, u.degree))
 
@@ -727,7 +727,7 @@ class BodyVisualizer:
         return orthographic_image
     @staticmethod
     @usgs_map_cachev2
-    def usgs_map_image(body, detail=None, warn_multiple=True):
+    def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,):
         """
         Retrieve a map image for a solar system body from USGS.
         
@@ -797,7 +797,7 @@ class BodyVisualizer:
             raise ValueError(f"No map of '{body}' found{detail_str}")
         # select from alternatives
         elif len(body_files) > 1:
-            if warn_multiple:
+            if warn_multiple and not warning_shown:
                 suggest = f" (use space-separated keywords in 'detail' to filter).\n" if not detail_str else ""
                 print(f"Several map alternatives for {body} were available{detail_str}\n{suggest}"                  
                     "Selected first of:")
@@ -1025,6 +1025,8 @@ class BodyVisualizer:
             Color for pole markers and coordinate lines
         show_angles : bool, default=False
             Whether to show incidence and emission angles in location labels
+        first_time_warned : bool ,  default = False
+            Whether if the user was warned about multiple usgs data files
             
         Returns
         -------
@@ -1040,9 +1042,19 @@ class BodyVisualizer:
         if verbose:
             geometry.print()
 
-        image = BodyVisualizer.usgs_map_image(body, detail=detail, warn_multiple=not reread_usgs)
+
+        if not hasattr(BodyVisualizer.create_frame, "_warning_shown"):
+            BodyVisualizer.create_frame._warning_shown = False
+
+
+        image = BodyVisualizer.usgs_map_image(body, detail=detail, warn_multiple=not reread_usgs, warning_shown=BodyVisualizer.create_frame._warning_shown)
         if image is None:
             raise ValueError(f"Could not get image for {body}")
+        
+
+        if not BodyVisualizer.create_frame._warning_shown:
+            BodyVisualizer.create_frame._warning_shown = True
+
         
         orthographic_image = BodyVisualizer.get_orthographic(image, *geometry.sub_obs,
                                           show_poles=color_poles)
@@ -1343,7 +1355,6 @@ class BodyVisualizer:
         # Global progress counter
         frame_count = [0]
         pbar = tqdm(total=len(times), desc=f"Animating {len(times)} frames")
-    
         def animate(itime):
             # Clear current axes
             ax.clear()
@@ -1376,8 +1387,10 @@ class BodyVisualizer:
                 color_title=color_title,
                 color_local_time=color_local_time,
                 color_poles=color_poles,
-                show_angles=show_angles
+                show_angles=show_angles,
             )
+
+            
             
             # Update progress bar (but only once per frame)
             if frame_count[0] < len(times):
@@ -1404,8 +1417,8 @@ class BodyVisualizer:
             filename = f"{body}_{time_str}.gif"
         elif '.' not in filename:
             filename += '.gif'
-        
-        print(f"Creating animation with {len(times)} frames...")
+        if verbose:
+            logger.info(f"Creating animation with {len(times)} frames...")
         
         # Select the appropriate writer
         if filename.lower().endswith(('.mpg', '.mpeg', '.mp4')):
@@ -1417,7 +1430,7 @@ class BodyVisualizer:
         try:
             ani.save(filename, dpi=dpi, writer=writer)
             pbar.close()
-            print(f"Saved file {filename}")
+            logger.info(f"Saved file {filename}")
         except Exception as e:
             pbar.close()
             logger.error(f"Error saving animation: {e}")
@@ -1436,7 +1449,7 @@ def body_map(body:str,
              detail:str=None, reread_usgs=False,
              radius_to_plot=None,
              fps=10, dpi=75, filename=None,
-             ax: Axes | None = None, return_axes=True, verbose=True,
+             ax: Axes | None = None, return_axes=True, verbose=False,
              color_location="red", color_phase='black',
              color_background='black', color_title='white',
              color_local_time='black', color_poles="blue",
@@ -1543,10 +1556,10 @@ def body_map(body:str,
     elif time.isscalar:
         # Get ephemeris data for the specified time
         site = apc.EarthLocation.of_site(observer)
-        request = HorizonsInterface.jpl_observer_from_location(site) | \
-                 HorizonsInterface.jpl_body_from_str(body) | \
-                 HorizonsInterface.jpl_times_from_time(time)
-        ephemeris_line = HorizonsInterface.read_jpl(request)[0]
+        request = JPLInterface.jpl_observer_from_location(site) | \
+                 JPLInterface.jpl_body_from_str(body) | \
+                 JPLInterface.jpl_times_from_time(time)
+        ephemeris_line = JPLInterface.read_jpl(request)[0]
         
         return BodyVisualizer.create_image(
             body=body,
@@ -1559,10 +1572,10 @@ def body_map(body:str,
     else:
         # Get ephemeris data for all specified times
         site = apc.EarthLocation.of_site(observer)
-        request = HorizonsInterface.jpl_observer_from_location(site) | \
-                 HorizonsInterface.jpl_body_from_str(body) | \
-                 HorizonsInterface.jpl_times_from_time(time)
-        ephemeris_lines = HorizonsInterface.read_jpl(request)
+        request = JPLInterface.jpl_observer_from_location(site) | \
+                 JPLInterface.jpl_body_from_str(body) | \
+                 JPLInterface.jpl_times_from_time(time)
+        ephemeris_lines = JPLInterface.read_jpl(request)
         
         # Additional parameters for video
         video_params = {
