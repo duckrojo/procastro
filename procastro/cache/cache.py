@@ -11,7 +11,7 @@ __all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
 class _AstroCache:
     """
-    _AstroCachev2 is a caching utility class designed to manage and store large astronomical data efficiently 
+    _AstroCache is a caching utility class designed to manage and store large astronomical data efficiently 
     with support for in-memory and disk-based caching. It provides mechanisms for cache 
     eviction, expiration, and retrieval based on hashable keys.
     Attributes:
