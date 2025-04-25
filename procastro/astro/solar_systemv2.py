@@ -1555,23 +1555,22 @@ def body_map(body:str,
     
 
 
-    # Case 1: time is either none or an scalar
-    if time.isscalar or time is None:
-
-        if time is None:
+    if time is None:
             if not isinstance(observer, Table.Row):
                 raise TypeError("Time can only be omitted when observer is a JPL ephemeris in a astropy.Table.Row object.")
             ephemeris_line = observer
             logger.info(f"Time is None. Using time from ephemeris: {apt.Time(ephemeris_line['jd'], format='jd')}")
             time = apt.Time(ephemeris_line['jd'], format='jd')
+    
+    # Case 1: time is either none or an scalar
+    if time.isscalar:
 
-        else:
-            # Get ephemeris data for the specified time
-            site = apc.EarthLocation.of_site(observer)
-            request = HorizonsInterface.jpl_observer_from_location(site) | \
-                    HorizonsInterface.jpl_body_from_str(body) | \
-                    HorizonsInterface.jpl_times_from_time(time)
-            ephemeris_line = HorizonsInterface.read_jpl(request)[0]
+        # Get ephemeris data for the specified time
+        site = apc.EarthLocation.of_site(observer)
+        request = HorizonsInterface.jpl_observer_from_location(site) | \
+                HorizonsInterface.jpl_body_from_str(body) | \
+                HorizonsInterface.jpl_times_from_time(time)
+        ephemeris_line = HorizonsInterface.read_jpl(request)[0]
         
         return BodyVisualizer.create_image(
             body=body,
