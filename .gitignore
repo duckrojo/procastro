@@ -2,10 +2,6 @@
 /deprecated/
 /docs/_build/
 /procastro.egg-info/
-procastro/__pycache__/
-procastro/astro/__pycache__/
-procastro/core/__pycache__/
-procastro/obsrv/__pycache__/
 scripts
 **/__pycache__/
 
