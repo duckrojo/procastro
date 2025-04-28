@@ -9,9 +9,10 @@ from procastro import config
 __all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
 
-class _AstroCache:
+
+class AstroCache:
     """
-    _AstroCachev2 is a caching utility class designed to manage and store large astronomical data efficiently 
+    AstroCache is a caching utility class designed to manage and store large astronomical data efficiently 
     with support for in-memory and disk-based caching. It provides mechanisms for cache 
     eviction, expiration, and retrieval based on hashable keys.
     Attributes:
@@ -121,9 +122,5 @@ class _AstroCache:
 
 
 
-astrofile_cache = _AstroCache()
-# astrofile_cachev2_on_disk = _AstroCachev2(label_on_disk='test')
-jpl_cache = _AstroCache(max_cache=1e12, lifetime=30,)
-usgs_map_cache = _AstroCache(max_cache=1e12, lifetime=30,
-                           hashable_kw=['detail'], label_on_disk='USGSmap',
-                               force="no_cache")
+
+

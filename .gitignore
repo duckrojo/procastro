@@ -8,3 +8,4 @@ scripts
 **/cachedir
 demo_data
 poetry.lock
+*.gif

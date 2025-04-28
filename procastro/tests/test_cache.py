@@ -1,23 +1,28 @@
 import pytest
 import tempfile
 import time
-from procastro.astro.solar_system import _request_horizons_online
+from procastro.astro.solar_system import HorizonsInterface
 
 from procastro.astrofile.astrofile import AstroFile
-from procastro.cache.cache import _AstroCache, astrofile_cache, jpl_cache
+from procastro.cache.cache import AstroCache
 from pathlib import Path
 
 @pytest.fixture
 def astrocache():
-    """Fixture to create an in-memory _AstroCachev2 instance."""
-    return _AstroCache()
+    """Fixture to create an in-memory AstroCache instance."""
+    return AstroCache()
 
+astrofile_cache = AstroCache()
+jpl_cache = AstroCache(max_cache=1e12, lifetime=30,)
+usgs_map_cache = AstroCache(max_cache=30, lifetime=30,
+                               hashable_kw=['detail'], label_on_disk='USGSmap',
+                               force="no_cache")
 
 @pytest.fixture
 def disk_based_astrocache():
-    """Fixture to create a disk-based _AstroCachev2 instance and clean up after tests."""
+    """Fixture to create a disk-based AstroCache instance and clean up after tests."""
     cache_dir = "tempdir"
-    cache = _AstroCache(label_on_disk=cache_dir)
+    cache = AstroCache(label_on_disk=cache_dir)
 
     # Yield the cache instance for use in tests
     yield cache
@@ -52,7 +57,7 @@ def test_basic_caching(astrocache):
 
 def test_cache_expiration(astrocache):
     """Test that cached items expire after the specified lifetime."""
-    astrocache = _AstroCache(lifetime=1 / 86400)  # 1 second lifetime
+    astrocache = AstroCache(lifetime=1 / 86400)  # 1 second lifetime
 
     @astrocache
     def cached_function(x):
@@ -103,7 +108,7 @@ def test_disk_based_cache(disk_based_astrocache):
 
 def test_eviction_policy(astrocache):
     """Test that the cache evicts items when the size limit is exceeded."""
-    astrocache = _AstroCache(1)  # Small cache size in bytes
+    astrocache = AstroCache(1)  # Small cache size in bytes
     @astrocache
     def cached_function(x):
         return x ** 2
@@ -138,7 +143,7 @@ def test_jpl_cache_basic():
     """Probar que las solicitudes a _request_horizons_online se almacenan en caché."""
     
     spec = "COMMAND=301\nCENTER='500@399'\nMAKE_EPHEM=YES"
-    cached_request = _request_horizons_online
+    cached_request = HorizonsInterface._request_horizons_online()
     result1 = cached_request(spec)
     result2 = cached_request(spec)
 
@@ -155,7 +160,7 @@ def test_jpl_cache_basic():
 def test_jpl_cache_force():
     """Probar que el parámetro force ignora el caché."""
     spec = "COMMAND=301\nCENTER='500@399'\nMAKE_EPHEM=YES"
-    cached_request = _request_horizons_online
+    cached_request = HorizonsInterface._request_horizons_online()
     result1 = cached_request(spec)
     result2 = cached_request(spec, force=True)
     
