@@ -12,7 +12,7 @@ import astropy.time as apt
 from matplotlib import pyplot as plt, axes
 
 from procastro.astrofile import static_identify, static_read, static_guess, static_write
-from procastro.cache.cache import _AstroCache
+from procastro.cache.cache import AstroCache
 from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.logging import io_logger
@@ -21,7 +21,7 @@ import procastro as pa
 
 
 
-astrofile_cache = _AstroCache()
+astrofile_cache = AstroCache()
 def _check_first_astrofile(fcn):
     """
 Decorator that raises error if first argument is not AstroFile
