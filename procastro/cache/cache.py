@@ -6,6 +6,8 @@ import astropy.time as apt
 import astropy.units as u
 from procastro import config
 
+__all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
+
 
 
 class AstroCache:

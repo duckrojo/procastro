@@ -273,7 +273,6 @@ class AstroFile(IAstroFile):
         self._random = random()
 
 
-    #TODO: CHANGE THIS TO astrofile_cache WHEN GOING INTO PRODUCTION
     @property
     @astrofile_cache
     def data(self) -> PADataReturn:
