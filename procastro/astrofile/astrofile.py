@@ -16,9 +16,8 @@ from procastro.cache.cache import AstroCache
 from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.logging import io_logger
+from procastro.misc.misc_graph import imshowz
 from procastro.statics import PADataReturn, identity, dict_from_pattern
-import procastro as pa
-
 
 
 astrofile_cache = AstroCache()
@@ -794,4 +793,4 @@ class AstroFile(IAstroFile):
             For details on what keyword arguments are available
         """
 
-        return pa.imshowz(self.data, *args, **kwargs)
+        return imshowz(self.data, *args, **kwargs)
