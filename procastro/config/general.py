@@ -6,7 +6,7 @@ import platformdirs as pd
 import toml
 from procastro.config.definitions import AppName, AppAuthor
 
-__all__ = ['config_user', 'config_save', 'config_update_file', '_config_get_all', '_get_config_directory']
+__all__ = ['config_user', 'config_save', 'config_update_file']
 
 config_dir = pd.user_config_dir(AppName, AppAuthor)
 cache_dir = pd.user_cache_dir(AppName, AppAuthor)
