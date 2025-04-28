@@ -331,7 +331,6 @@ class AstroDir(IAstroDir):
         astro_files = []
         for cmb in combinator:
             astro_files = [astro_file for astro_file in astro_dir.iter_by(*keys, combine=cmb)]
-            astro_dir = AstroDir(astro_files, directory=self.directory)
 
         if in_place:
             self.astro_files = astro_files

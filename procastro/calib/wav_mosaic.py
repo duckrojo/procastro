@@ -1,28 +1,38 @@
 import numpy as np
 from astropy.table import Table
 
-from procastro.astrofile.static_guess import spectral_offset
 from procastro.calib.calib import AstroCalib
 
 __all__ = ['WavMosaic']
 
+def spectral_offset() -> dict:
+    """The idea is for this function to guess the instrument after reading the meta information."""
+
+    offset = {'imacs': {4: 0,
+                        7: 35 + 2048,
+                        3: 0,
+                        8: 35 + 2048,
+                        2: 0,
+                        6: 35 + 2048,
+                        1: 0,
+                        5: 35 + 2048,
+                        },
+              }
+
+    return {(inst, chip): off
+            for inst, val in offset.items()
+            for chip, off in val.items()
+            }
 
 class WavMosaic(AstroCalib):
 
     def __init__(self,
-                 offset_dict=None,
-                 group_by='chip',
-                 meta=None,
+                 group_by=('instrument', 'chip'),
                  **kwargs):
         super().__init__(group_by=group_by, **kwargs)
 
-        if offset_dict is None:
-            if meta is not None:
-                offset_dict = spectral_offset(meta)
-            else:
-                raise ValueError('offset_dict must be provided, or at least meta for guessing offsets')
 
-        self._datasets = offset_dict
+        self._datasets = spectral_offset()
 
     def __str__(self):
         return f"{super().__str__()}-WavMosaic"

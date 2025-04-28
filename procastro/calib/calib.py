@@ -5,6 +5,7 @@ import astropy.time as apt
 __all__ = ['AstroCalib']
 
 import numpy as np
+from astropy.table import Table
 
 from procastro.astrofile.astrofile import AstroFile
 from procastro.interfaces.astrocalib import IAstroCalib
@@ -58,8 +59,19 @@ class AstroCalib(IAstroCalib):
             # check whether the grouping keyword is in one  of the columns in the table. In that case,
             # each row might want to use a different dataset.
 
-            if data is not None and len(self.group_by) == 1 and self.group_by[0] in data.colnames:
-                return np.array([self._datasets[key] for key in data[self.group_by[0]]])
+            if data is not None and isinstance(data, Table):
+
+                in_cols = [key in data.colnames for key in self.group_by]
+                per_row = any(in_cols)
+
+                if per_row:
+                    n = len(data)
+                    keys_cols = [[d for d in data[k]] if is_in_cols else [meta[k]]*n
+                                 for k, is_in_cols in zip(self.group_by, in_cols)]
+                    keys = [tuple(key) for key in zip(*keys_cols)]
+                    return np.array([self._datasets[key] for key in keys])
+                else:
+                    return self._datasets[tuple([meta[k] for k in self.group_by])]
 
             group_key = tuple([meta[val] for val in self.group_by])
             try:
