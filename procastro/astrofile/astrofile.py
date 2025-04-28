@@ -269,6 +269,7 @@ class AstroFile(IAstroFile):
         self._meta = CaseInsensitiveMeta(value)
         self._random = random()
 
+
     @property
     @astrofile_cache
     def data(self) -> PADataReturn:
@@ -276,15 +277,14 @@ class AstroFile(IAstroFile):
         Returns the data in AstroFile by calling .read() the first time and then applying calibration,
         but caching afterward until caching update
         """
-
         data = self.read()
         meta = self._meta
-
+        
         for calibration in self._calib:
             data, meta = calibration(data, meta)
 
         self._last_processed_meta = meta
-        return data
+        return data 
 
     @property
     def filename(self):
