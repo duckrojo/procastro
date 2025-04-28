@@ -24,7 +24,7 @@ from astropy.table import Table, QTable, MaskedColumn
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 import procastro as pa
 from procastro.misc.misc_graph import figaxes
-from procastro.cache.cache import AstroCache
+from procastro.cache.cache import _AstroCache
 
 TwoValues = tuple[float, float]
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
@@ -32,8 +32,8 @@ logger = logging.getLogger("astro")
 
 
 
-jpl_cache = AstroCache(max_cache=1e12, lifetime=30,)
-usgs_map_cache = AstroCache(max_cache=30, lifetime=30,
+jpl_cache = _AstroCache(max_cache=1e12, lifetime=30,)
+usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force="no_cache")
 
@@ -1635,189 +1635,3 @@ def body_path(body,
                    body_object.ra.degree, body_object.dec.degree],
                   names=['time', 'jd', 'skycoord', 'ra', 'dec'])
 
-<<<<<<< HEAD
-=======
-
-@usgs_map_cache
-def usgs_map_image(body, detail=None, warn_multiple=True):
-    """
-
-    Parameters
-    ----------
-    body
-    detail
-    warn_multiple
-    no_cache
-       If True then it will reread options from USGS even if cache exists
-
-    Returns
-    -------
-
-    """
-    month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-
-    def _parse_date(string):
-        if string is None:
-            return ""
-        match len(string):
-            case 8:
-                return f"{string[:4]}-{month[int(string[4:6])-1]}{string[6:8]}"
-
-        raise ValueError(f"Needs to implement parsing for date: {string}")
-
-    directory = (Path(__file__).parents[0] / 'images')
-    files = list(directory.glob("*.xml"))
-
-    keywords = None
-    if detail is not None:
-        keywords = detail.split()
-
-    # filter alternatives
-    body_files = []
-    for file in files:
-        with open(file, 'r', encoding='utf8') as f:
-            data = BeautifulSoup(f.read(), 'xml')
-            body_in_xml = data.find("target").string
-            if body.lower() == body_in_xml.lower():
-                title = data.idinfo("title")[0].string
-                if keywords is not None and not [k for k in keywords if k in title]:
-                    continue
-
-                info = [title,
-                        file,
-                        data.find("browsen").string,
-                        data.idinfo("begdate")[0].string,
-                        data.idinfo("enddate")[0].string,
-                        ]
-                if 'default' in str(file):
-                    body_files.insert(0, info)
-                else:
-                    body_files.append(info)
-
-    detail_str = f" with detail keywords '{detail}'"
-    if len(body_files) == 0:
-        raise ValueError(f"No map of '{body}' found{detail_str}")
-    # select from alternatives
-    elif len(body_files) > 1:
-        if warn_multiple:
-            suggest = f" (use space-separated keywords in 'detail' to filter).\n" if not detail_str else ""
-            print(f"Several map alternatives for {body} were available{detail_str}\n{suggest}"                  
-                  "Selected first of:")
-            for bf in body_files:
-                print(f"* {bf[0]} [{_parse_date(bf[3])}..{_parse_date(bf[4])}]")
-            print("")
-
-        body_files = [body_files[0]]
-
-    # fetch alternative
-    response = requests.get(body_files[0][2])
-    return Image.open(BytesIO(response.content))
-
-
-def _add_local_time(ax,
-                    sub_obs,
-                    sub_sun,
-                    np_ang,
-                    color,
-                    transform_from_norm,
-                    precision=50,
-                    ):
-
-    """"Adds every hour of body's local time as labeled iso-longitude lines"""
-    lunar_to_observer = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
-    local_time_to_body = current_x_axis_to(*sub_sun)
-
-    artists = []
-    for ltime in range(24):
-        longitude_as_local_time = new_x_axis_at((12-ltime)*15, 0)
-
-        local_time_rotation = lunar_to_observer * local_time_to_body * longitude_as_local_time
-        local_time = local_time_rotation.apply(unit_vector(0, np.linspace(-90, 90, precision),
-                                                           degrees=True)
-                                               )
-        # do not plot arcs that are in the hidden side of the object
-        visible = np.array([(y, z) for x, y, z in local_time if x > 0])
-        n_visible = len(visible)
-        if n_visible > precision//2:  # if more than half the arc is visible then plot it.
-            lines = ax.plot(visible[:, 0], visible[:, 1],
-                            color=color,
-                            alpha=0.7,
-                            ls=':',
-                            transform=transform_from_norm,
-                            zorder=6,
-                            linewidth=0.5,
-                            )
-
-            text = ax.annotate(f"{ltime}$^h$", (visible[n_visible // 2][0],
-                                                visible[n_visible // 2][1]),
-                               color=color,
-                               xycoords=transform_from_norm,
-                               alpha=0.7, ha='center', va='center',
-                               )
-
-            artists.extend([lines, text])
-
-    return tuple(artists)
-
-
-def _add_phase_shadow(ax,
-                      sub_obs,
-                      sub_sun,
-                      np_ang,
-                      color,
-                      transform_from_normal,
-                      precision=50,
-                      marker_color='yellow',
-                      ):
-
-    rotate_body_to_subobs = new_x_axis_at(*sub_obs, z_pole_angle=-np_ang)
-    rotate_body_to_subsol = new_x_axis_at(*sub_sun)
-
-    upper_vector_terminator = _cross2(unit_vector(*sub_obs), unit_vector(*sub_sun))
-    upper_shadow_from_sun = new_x_axis_at(*sub_sun).apply(upper_vector_terminator)
-    upper_angle_from_sun = (np.arctan2(*upper_shadow_from_sun[1:][::-1]) - np.pi / 2) * 180 / np.pi
-
-    starting_terminator = new_x_axis_at(0, 90).apply(unit_vector(np.linspace(0, 360, precision), 0))
-    terminator_at_body = current_x_axis_to(*sub_sun, z_pole_angle=-upper_angle_from_sun).apply(starting_terminator)
-    terminator_sub_obs = np.array([(y, z) for x, y, z in rotate_body_to_subobs.apply(terminator_at_body) if x > 0])
-
-    delta = ((terminator_sub_obs[1:,0] - terminator_sub_obs[:-1,0])**2 +
-             (terminator_sub_obs[1:,1] - terminator_sub_obs[:-1,1])**2)
-    max_delta = np.argmax(delta)
-    if delta[max_delta] > 4/precision:
-        terminator_sub_obs = np.roll(terminator_sub_obs, -(max_delta+1), axis=0)
-
-    angle_first, angle_last = np.arctan2(*np.array(terminator_sub_obs)[[0, -1]].transpose()[::-1])
-
-    if angle_first > angle_last:
-        angle_last += 2*np.pi
-
-    angle_perimeter = np.linspace(angle_last, angle_first, precision)
-    perimeter = np.array([np.array([np.cos(ang), np.sin(ang)])
-                          for ang in angle_perimeter]
-                         + list(terminator_sub_obs))
-
-    clip_path = mpath.Path(vertices=perimeter, closed=True)
-
-    col = mcol.PathCollection([clip_path],
-                              facecolors=color, alpha=0.7,
-                              edgecolors='none',
-                              zorder=7,
-                              transform=transform_from_normal,
-                              )
-    ax.add_collection(col)
-
-    projected_sub_sun = rotate_body_to_subobs.apply(unit_vector(*sub_sun))
-    sub_sun_marker = ax.plot(*projected_sub_sun[1:],
-                             marker='d', color=marker_color,
-                             alpha=1 - 0.5 * (projected_sub_sun[0] < 0),
-                             transform=transform_from_normal)
-    ax.annotate(f"{np.abs(sub_sun[1]):.1f}$^\\circ${'N' if sub_sun[1] > 0 else 'S'}",
-                projected_sub_sun[1:],
-                xycoords=transform_from_normal,
-                color=marker_color,
-                )
-
-    return col, sub_sun_marker
->>>>>>> upstream/inheritance
