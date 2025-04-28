@@ -8,9 +8,4 @@ scripts
 **/cachedir
 demo_data
 poetry.lock
-scripts
-**/__pycache__/
-
-**/cachedir
-demo_data
 *.gif
