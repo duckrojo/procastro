@@ -1,193 +1,126 @@
-import copy
 import os
-import pickle
-import tempfile
 from pathlib import Path
+import diskcache as dc
 from typing import Optional
-import queue
+import astropy.time as apt
+import astropy.units as u
+from procastro import config
 
 __all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
 
-import astropy.time as apt
-import astropy.units as u
-
-from procastro import config
 
 
-class _AstroCache:
+class AstroCache:
+    """
+    AstroCache is a caching utility class designed to manage and store large astronomical data efficiently 
+    with support for in-memory and disk-based caching. It provides mechanisms for cache 
+    eviction, expiration, and retrieval based on hashable keys.
+    Attributes:
+        max_cache (int): The maximum volume allocated for the cache in Bytes.
+        expire (int): The expire time of cached items in days. If 0, items do not expire.
+        force (str | None): A keyword to force bypassing the cache when set in method arguments (forces execution).
+        eviction_policy (str | None): The policy used to evict items from the cache.
+
+            "least-recently-stored" is the default. Every cache item records the time it was stored in the cache. This policy adds an index to that field. On access, no update is required. Keys are evicted starting with the oldest stored keys. As DiskCache was intended for large caches (gigabytes) this policy usually works well enough in practice.
+
+            "least-recently-used" is the most commonly used policy. An index is added to the access time field stored in the cache database. On every access, the field is updated. This makes every access into a read and write which slows accesses.
+
+            "least-frequently-used" works well in some cases. An index is added to the access count field stored in the cache database. On every access, the field is incremented. Every access therefore requires writing the database which slows accesses.
+
+            "none" disables cache evictions. Caches will grow without bound. Cache items will still be lazily removed if they expire. The persistent data types, Deque and Index, use the "none" eviction policy. For lazy culling use the cull_limit setting instead.
+        store_on_disk (bool): Indicates whether the cache is stored on disk.
+        cache_directory (str): The directory path for disk-based caching (if enabled).
+        hashable_kw (list): A list of keyword arguments that are hashable and used 
+            to generate compound hash keys.
+        label_on_disk : Location on disk to store the cache
+    """
     def __init__(self,
-                 max_cache=200, lifetime=0,
+                 max_cache=int(1e9), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
-                 force: str | None = None,
-                 ):
-        """
-
-        Parameters
-        ----------
-        force :
-          Keyword which, if True, will force to recompute the cache.
-        max_cache
-          how many days to cache in disk, if more than that has elapsed, it will be reread.
-        """
-
-        self._max_cache: int = max_cache
+                 force: str | None = "force",
+                 eviction_policy: str | None = 'least-recently-used',
+                 verbose = False):
+        
+        self.max_cache: int = max_cache
         self.lifetime = lifetime
         self.force = force
+        self.eviction_policy = eviction_policy
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
-                raise ValueError(f"label_on_disk contains invalid file characters '{label_on_disk}'")
+                raise ValueError(
+                    f"label_on_disk contains invalid file characters '{label_on_disk}'")
             self._store_on_disk = True
         else:
             self._store_on_disk = False
 
-
         if self._store_on_disk:
-
             config_dict = config.config_user(label_on_disk)
             self.cache_directory = config_dict.get('cache_dir')
             self.config_file = Path(self.cache_directory) / 'config.pickle'
-
-            if not os.path.exists(self.config_file):
-                pickle.dump({}, open(self.config_file, 'wb'))
-            self._cache = pickle.load(open(self.config_file, 'rb'))
+            self._cache = dc.Cache(
+                self.cache_directory, size_limit=self.max_cache, eviction_policy=eviction_policy)
         else:
-            self._cache: dict[any, tuple[apt.Time, any]] = {}
-            self.cache_directory = None
-            self.config_file = None
-
-        sorted_hash = [ch
-                       for ch, tm
-                       in sorted([(h, apt.Time(t))
-                                  for h, (t, c)
-                                  in self._cache.items()],
-                                 key=lambda x: x[1])
-                       ]
-        self._queue: Optional[queue.Queue] = None
-        self.set_max_cache(self._max_cache)
-        if self._queue is not None:
-            for h in sorted_hash:
-                self._queue.put_nowait(h)
+            self._cache = dc.Cache(size_limit=self.max_cache, eviction_policy=eviction_policy)
 
         if hashable_kw is None:
             hashable_kw = []
-        self._hashable_kw = hashable_kw
+        self.hashable_kw = hashable_kw
 
-    def __bool__(self):
-        return self._max_cache > 0
+        if verbose:
+            print(f"/n")
+            print(f"Using diskcache implementation: {dc.__version__}. Set verbose parameter to false to disable this message.")
+            print(f"Cache initialized with max size: {self.max_cache} bytes")
+            print(f"Cache lifetime: {self.lifetime} days")
+            print(f"Cache eviction policy: {self.eviction_policy}")
+            print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
+            print(f"Hashable keyword arguments: {self.hashable_kw}")
 
-    def available(self):
-        return not self._queue.full()
+    @property
+    def _contents(self):
+        """
+        Returns the contents of the cache.
+        """
+        for key in self._cache.iterkeys():
+            print(f"Key: {key}, Value: {self._cache[key]}")
 
-    def _delete_cache(self):
-        compound_hash = self._queue.get_nowait()
-        if self._store_on_disk:
-            os.remove(self._cache[compound_hash][1])
-            self._update_config_file()
-        del self._cache[compound_hash]
 
-        return compound_hash
-
-    def _store_cache(self, compound_hash, content):
-        self._queue.put_nowait(compound_hash)
-        if self._store_on_disk:
-            with tempfile.NamedTemporaryFile(mode="wb", dir=self.cache_directory, delete=False) as fp:
-                pickle.dump(content, fp)
-                self._cache[compound_hash] = (apt.Time.now().isot, fp.name)
-            self._update_config_file()
-        else:
-            self._cache[compound_hash] = (apt.Time.now().isot, copy.copy(content))
-
-    def _update_config_file(self):
-        pickle.dump(self._cache, open(self.config_file, 'wb'))
+    @property
+    def _keys (self):
+        """
+        Returns the keys of the cache.
+        """
+        return list(self._cache.iterkeys())
 
     def __call__(self, method):
+        #METHOD to use when force= False, when the cache is not bypassed.
+        @self._cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
+        def cached_method(*args,**kwargs):
+            return method(*args,**kwargs)
+        
         def wrapper(hashable_first_argument, **kwargs):
-            """Instance is just the first argument to the function which would need a __hash__:
-             in a method it refers to self."""
-            cache = True
-            compound_hash = tuple([hashable_first_argument] +
-                                  [kwargs[kw] for kw in self._hashable_kw])
-
+            """
+            Wrapper to handle custom logic like bypassing the cache.
+            """
+            # Check if caching is disabled via the `force` keyword
             if kwargs.pop(self.force, False):
-                cache = False
+                return method(hashable_first_argument, **kwargs)
 
+            # Handle non-hashable arguments (disable caching)
             try:
-                if compound_hash in self._cache:
-                    pass
+                compound_hash = tuple([hashable_first_argument] +
+                                      [kwargs[kw] for kw in self.hashable_kw])
+                hash(compound_hash)  # Ensure the key is hashable
             except TypeError:
-                # disable cache if type is not hashable (numpy array for instance)
-                cache = False
+                raise TypeError(
+                    f"Non-hashable argument detected: {hashable_first_argument}")
 
-            if cache and (compound_hash in self._cache):
-                # expire cache if too old
-                if (self.lifetime and
-                    apt.Time.now() - apt.Time(self._cache[compound_hash][0],
-                                              format='isot', scale='utc') > self.lifetime * u.day):
-
-                    # empty queue of all objects older than the one requested
-                    old_compound_hash = self._delete_cache()
-                    while old_compound_hash != compound_hash:
-                        old_compound_hash = self._delete_cache()
-
-                # use disk or memory cache
-                elif self._store_on_disk:
-                    return pickle.load(open(self._cache[compound_hash][1], 'rb'))
-
-                else:
-                    return self._cache[compound_hash][1]
-
-            ret = method(hashable_first_argument, **kwargs)
-
-            # save if caching
-            if cache and self._queue is not None:
-
-                # delete oldest cache if limit reached
-                if self._queue.full():
-                    self._delete_cache()
-
-                self._store_cache(compound_hash, ret)
-
-            return ret
+            # Call the memoized method, if the force parameter is false
+            return cached_method(hashable_first_argument, **kwargs)
 
         return wrapper
 
-    def set_max_cache(self, max_cache: int):
-        if max_cache < 0:
-            raise ValueError(f"max_cache must be positive ({max_cache})")
-
-        # if disabling cache, delete all
-        if not max_cache:
-            self._queue = None
-            self._cache = {}
-            return
-
-        delta = self._max_cache - max_cache
-        old_queue = self._queue
-
-        self._queue = queue.Queue(maxsize=max_cache)
-        self._max_cache = max_cache
-
-        # if cache was disabled, then start it empty
-        if old_queue is None:
-            return
-
-        # if reducing cache, get rid of the extra caches
-        if delta > 0:
-            for af in range(delta):
-                self._delete_cache()
-
-        try:
-            # copy old queue into new
-            while True:
-                self._queue.put_nowait(old_queue.get_nowait())
-        except queue.Empty:
-            pass
 
 
-astrofile_cache = _AstroCache()
-jpl_cache = _AstroCache(max_cache=50)
-usgs_map_cache = _AstroCache(max_cache=30, lifetime=30,
-                             hashable_kw=['detail'], label_on_disk='USGSmap',
-                             force="no_cache")
+
 
