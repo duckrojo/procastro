@@ -1,14 +1,14 @@
 import warnings
 
 from procastro.astrofile.astrofile import AstroFile
-from procastro.calib.calib import CalibBase
+from procastro.calib.calib import AstroCalib
 from procastro.logging import io_logger
 from procastro.statics import trim_to_python, common_trim_fcn, extract_common
 
 __all__ = ['CalibRaw2D']
 
 
-class CalibRaw2D(CalibBase):
+class CalibRaw2D(AstroCalib):
     """
     Object to hold calibration frames.
 
@@ -86,7 +86,7 @@ class CalibRaw2D(CalibBase):
         return f"({'B' if self.has_bias else ''}{'F' if self.has_flat else ''})"
 
     def copy(self):
-        """returs a new version of itself with same values"""
+        """returns a new version of itself with same values"""
         return CalibRaw2D(self.bias, self.flat,
                           bias_header=self.bias_header,
                           flat_header=self.flat_header,

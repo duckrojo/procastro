@@ -11,7 +11,24 @@ from .meta import CaseInsensitiveMeta
 def read(file_type,
          filename):
 
-    match file_type:
+    options = file_type.split(".", 2)
+    file_type = options[0]
+    file_format = None
+
+    if len(options) > 1:
+        match file_type:
+            case "ascii":
+                file_format = ".".join(options)
+            case "loadtxt":
+                file_format = eval(options[1])
+            case _:
+                file_format = options[1]
+
+    match file_type.upper():
+        case "LOADTXT":
+            table = Table(np.loadtxt(filename, dtype=file_format))
+            return table, CaseInsensitiveMeta({})
+
         case "FITS":
             elements = Path(filename).name.split(":")
 
@@ -34,12 +51,14 @@ def read(file_type,
 
         case "TXT":
             data = np.loadtxt(filename, unpack=True)
-
             return data, CaseInsensitiveMeta({})
 
         case "ECSV":
-            table = Table().read(filename)
+            table = Table().read(filename, format=file_format)
+            return table, CaseInsensitiveMeta(table.meta)
 
+        case "ASCII":
+            table = Table().read(filename, format=file_format)
             return table, CaseInsensitiveMeta(table.meta)
 
     raise TypeError(f"File type {file_type} cannot be read.")
@@ -64,9 +83,16 @@ def ndarray_to_table(data, file_options=None):
 
         table = Table()
         axis = len(data.shape) - 2
+        newshape = list(data.shape)[::-1]
+        newshape.pop(1)
         for idx, name in enumerate(column_names):
             data_channel = np.take(data, idx, axis=axis).transpose()
             table[name] = MaskedArray(data_channel, mask=np.isnan(data_channel))
+        if 'pix' not in table.colnames:
+            table['pix'] = np.reshape(np.arange(len(table)),
+                                      [-1] + [1]*(len(newshape)-1)
+                                      ) * np.ones(newshape)
+
         return table
     else:
         raise TypeError(f"data type not supported: {type(data)}")

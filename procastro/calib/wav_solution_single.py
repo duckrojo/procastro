@@ -376,15 +376,9 @@ Iterates over all the information that matches column of wavpix and meta of arcs
         return axs
 
     def write(self, directory=None, pattern=None):
-        save_filename = self.astrofile.filename
-
-        while isinstance(save_filename, (list, tuple)):
-            save_filename = save_filename[0]
-
-        if not isinstance(save_filename, str):
-            if pattern is None:
-                raise ValueError(f"pattern must be provided since there is no default"
-                                 f" filename for astrofile {self.astrofile}")
+        if pattern is None:
+            save_filename = self.astrofile.filename
+        else:
             save_filename = pattern.format(**self.astrofile.meta)
 
         if directory is None:
@@ -398,8 +392,7 @@ Iterates over all the information that matches column of wavpix and meta of arcs
 
             filename = directory / Path(save_filename).name
 
-        self.astrofile.write_as(filename,
-                                overwrite=True, data=self.pixwav)
+        pa.AstroFile(self.pixwav).write_as(filename)
 
 
 def _extract_around(central, width, pix, out):
