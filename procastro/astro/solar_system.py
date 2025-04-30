@@ -21,6 +21,7 @@ from PIL import Image
 from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
+from procastro.api_provider.api_service import ApiService
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 import procastro as pa
 from procastro.misc.misc_graph import figaxes
@@ -819,22 +820,15 @@ class BodyVisualizer:
             logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
 
         try:
-            response = requests.get(body_files[0][2], timeout=(5, 30))  # Connect timeout, Read timeout
-            response.raise_for_status()  # Lanza una excepción específica para códigos de error HTTP
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"Connection error: {str(e)}")
-            return None
-        except requests.exceptions.Timeout as e:
-            logger.error(f"Timeout error: {str(e)}")
-            return None
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error: {str(e)}")
-            return None
+            apiService = ApiService()
+            response = apiService.get(body_files[0][2])
+            return Image.open(io.BytesIO(response.content))
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error en la solicitud de mapa USGS para {body}: {e}")
+            # Crear una imagen alternativa/mensaje de error
+            raise 
         except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
-            return None
-
-        return Image.open(BytesIO(response.content))
+            logger.error(f"Error procesando imagen para {body}: {e}")
 
     @staticmethod
     def _cross2(a: np.ndarray,
