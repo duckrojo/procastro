@@ -27,7 +27,7 @@ def spectral_offset() -> dict:
 class WavMosaic(AstroCalib):
 
     def __init__(self,
-                 group_by=('instrument', 'chip'),
+                 group_by=('instrmnt', 'chip'),
                  **kwargs):
         super().__init__(group_by=group_by, **kwargs)
 
