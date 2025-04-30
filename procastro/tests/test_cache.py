@@ -6,17 +6,15 @@ from procastro.astro.solar_system import HorizonsInterface
 from procastro.astrofile.astrofile import AstroFile
 from procastro.cache.cache import AstroCache
 from pathlib import Path
+from procastro.astro.solar_system import jpl_cache, usgs_map_cache
+from procastro.astrofile.astrofile import astrofile_cache
 
 @pytest.fixture
 def astrocache():
     """Fixture to create an in-memory AstroCache instance."""
     return AstroCache()
 
-astrofile_cache = AstroCache()
-jpl_cache = AstroCache(max_cache=1e12, lifetime=30,)
-usgs_map_cache = AstroCache(max_cache=30, lifetime=30,
-                               hashable_kw=['detail'], label_on_disk='USGSmap',
-                               force="no_cache")
+
 
 @pytest.fixture
 def disk_based_astrocache():
@@ -143,7 +141,7 @@ def test_jpl_cache_basic():
     """Probar que las solicitudes a _request_horizons_online se almacenan en caché."""
     
     spec = "COMMAND=301\nCENTER='500@399'\nMAKE_EPHEM=YES"
-    cached_request = HorizonsInterface._request_horizons_online()
+    cached_request = HorizonsInterface._request_horizons_online
     result1 = cached_request(spec)
     result2 = cached_request(spec)
 
@@ -160,7 +158,7 @@ def test_jpl_cache_basic():
 def test_jpl_cache_force():
     """Probar que el parámetro force ignora el caché."""
     spec = "COMMAND=301\nCENTER='500@399'\nMAKE_EPHEM=YES"
-    cached_request = HorizonsInterface._request_horizons_online()
+    cached_request = HorizonsInterface._request_horizons_online
     result1 = cached_request(spec)
     result2 = cached_request(spec, force=True)
     
