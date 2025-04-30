@@ -32,7 +32,7 @@ logger = logging.getLogger("astro")
 
 
 jpl_cache = AstroCache(max_cache=1e12, lifetime=30,)
-usgs_map_cache = AstroCache(max_cache=30, lifetime=30,
+usgs_map_cache = AstroCache(max_cache=1e12, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force="no_cache")
 
