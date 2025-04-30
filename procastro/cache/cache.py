@@ -6,9 +6,6 @@ import astropy.time as apt
 import astropy.units as u
 from procastro import config
 
-__all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
-
-
 
 class AstroCache:
     """
@@ -76,17 +73,15 @@ class AstroCache:
             print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
             print(f"Hashable keyword arguments: {self.hashable_kw}")
 
-    @property
-    def _contents(self):
+    def contents(self):
         """
         Returns the contents of the cache.
         """
         for key in self._cache.iterkeys():
             print(f"Key: {key}, Value: {self._cache[key]}")
 
-
     @property
-    def _keys (self):
+    def keys(self):
         """
         Returns the keys of the cache.
         """
@@ -94,9 +89,9 @@ class AstroCache:
 
     def __call__(self, method):
         #METHOD to use when force= False, when the cache is not bypassed.
-        @self._cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
-        def cached_method(*args,**kwargs):
-            return method(*args,**kwargs)
+        @self._cache.memoize(expire = self.lifetime*86400 if self.lifetime else None)
+        def cached_method(*args, **kwargs):
+            return method(*args, **kwargs)
         
         def wrapper(hashable_first_argument, **kwargs):
             """
@@ -112,15 +107,9 @@ class AstroCache:
                                       [kwargs[kw] for kw in self.hashable_kw])
                 hash(compound_hash)  # Ensure the key is hashable
             except TypeError:
-                raise TypeError(
-                    f"Non-hashable argument detected: {hashable_first_argument}")
+                return method(hashable_first_argument, **kwargs)
 
-            # Call the memoized method, if the force parameter is false
+            # Call the memoized method if the force parameter is false
             return cached_method(hashable_first_argument, **kwargs)
 
         return wrapper
-
-
-
-
-
