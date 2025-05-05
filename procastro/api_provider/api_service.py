@@ -1,182 +1,219 @@
+"""
+API that encapsulates all possible services used in PROCASTRO.
+The idea behind this API is to take advantage of the class hierarchy to create a single API that can be used to access all services.
+For example, we have a DataProvider abstract class, which is above all the Transport methods (HTTP, SQL, localfiles)
+Then, we have a DataProvider implementation for each transport method (HTTP, SQL, LOCALFILES)
+Finally, we hace a Provider for every service (SIMBAD, USGS, HORIZONS, ETC).
+This way, adding a provider is very easy, and can be done in a single file.
+"""
 
 
 
+from abc import ABC, abstractmethod
+from functools import wraps
 import logging
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Generic, Optional, TypeVar
 
 import requests
 
-
+# first, we configure the logging system
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-import pyvo as vo
-from pyvo.dal import DALServiceError, DALQueryError, DALFormatError
+# type for results
+T = TypeVar("T")  # this means that the result can be any type
 
 
-class ApiError(Exception):
-    """Base exception for API errors"""
-    pass
-
-
-class ApiService:
+class ApiResult(Generic[T]):
     """
-    A class to handle API request and response processing.
-    It can be used to request data from Horizons and queries from databases in raw sql.
-    """
-
-
-
-    def __init__(self):
-        """Initialize the API service with default configuration."""
-        # Default base URLs for common services
-        # TODO: Check simbad (astroquery)
-        self.base_urls = {
-            'horizons': 'https://ssd.jpl.nasa.gov/api/horizons.api',
-            'usgs_maps': 'https://astrogeology.usgs.gov/maps/',
-            'tap': 'https://exoplanetarchive.ipac.caltech.edu/TAP'
-        }
-        
-        # Request configuration
-        self.timeout = (5, 30)  # (connect_timeout, read_timeout)
-        self.max_retries = 3
-        self.retry_delay = 2  # seconds
-        
-        # Headers
-        self.default_headers = {
-            'User-Agent': 'procastro/1.0 (Astronomical Python Package)',
-        }
-
-
-    def get(self, url: str, params: Optional[Dict] = None, 
-            service: Optional[str] = None, **kwargs) -> requests.Response:
-        """
-        Send a GET request to the specified URL.
-        
-        Parameters
-        ----------
-        url : str
-            URL to send request to. If service is provided, this can be a relative path.
-        params : Dict, optional
-            Query parameters for the request
-        service : str, optional
-            Service name to use base URL from self.base_urls
-        **kwargs : dict
-            Additional parameters to pass to requests.get
-            
-        Returns
-        -------
-        requests.Response
-            Response object
-            
-        Raises
-        ------
-        ConnectionError
-            If connection fails after retries
-        TimeoutError
-            If request times out after retries
-        RequestError
-            For other request errors
-        """
-        full_url = self._build_url(url, service)
-        
-        # Merge default headers with any provided headers
-        headers = self.default_headers.copy()
-        if 'headers' in kwargs:
-            headers.update(kwargs.pop('headers'))
-        
-        # Set default timeout if not provided
-        if 'timeout' not in kwargs:
-            kwargs['timeout'] = self.timeout
-            
-        logger.debug(f"GET request to {full_url}")
-        
-        for attempt in range(self.max_retries):
-            try:
-                response = requests.get(full_url, params=params, headers=headers, **kwargs)
-                response.raise_for_status()
-                return response
-            except requests.exceptions.ConnectionError as e:
-                if attempt == self.max_retries - 1:
-                    logger.error(f"Connection error after {self.max_retries} attempts: {str(e)}")
-                    raise ConnectionError(f"Failed to connect to {full_url}: {str(e)}")
-                logger.warning(f"Connection error (attempt {attempt+1}): {str(e)}")
-                time.sleep(self.retry_delay * (attempt + 1))
-            except requests.exceptions.Timeout as e:
-                if attempt == self.max_retries - 1:
-                    logger.error(f"Timeout error after {self.max_retries} attempts: {str(e)}")
-                    raise TimeoutError(f"Request to {full_url} timed out: {str(e)}")
-                logger.warning(f"Timeout error (attempt {attempt+1}): {str(e)}")
-                time.sleep(self.retry_delay * (attempt + 1))
-            except requests.exceptions.HTTPError as e:
-                logger.error(f"HTTP error: {str(e)}")
-                raise
-            except Exception as e:
-                logger.error(f"Unexpected error during GET request: {str(e)}")
-                raise
-
-    def _handle_error(self, error: Exception, error_type: str, url: str, 
-                     fallback: Optional[Callable] = None, 
-                     return_none: bool = False) -> Optional[Any]:
-        """
-        Handle errors from API requests.
-        
-        Parameters
-        ----------
-        error : Exception
-            The exception that occurred
-        error_type : str
-            Type of error (for logging)
-        url : str
-            URL that was requested
-        fallback : Callable, optional
-            Function to call with the error
-        return_none : bool
-            Whether to return None instead of raising an exception
-        #TODO : Investigar sobre el fallback inverso (buscar en disco y luego hacer el get)
-        Returns
-        -------
-        Optional[Any]
-            Result of fallback function if provided, None if return_none is True
-            
-        Raises
-        ------
-        ApiError
-            If no fallback is provided and return_none is False
-        """
-        error_msg = f"{error_type} when requesting {url}: {str(error)}"
-        logger.error(error_msg)
-        
-        if fallback:
-            logger.info(f"Using fallback for {url}")
-            return fallback(error)
-            
-        if return_none:
-            return None
-            
-        raise ApiError(error_msg) from error
-
-    # TODO: Hacer desaparecer el TAP  e intentar usar astroquery
-    def tap_service(self, query=str) :
-        """
-        query the exoplanet archive using the TAP service.
-        Parameters
-        ----------
-        query : str
-            SQL query to execute on
-        
-        """
-        url = self.base_urls['tap']
-        service = vo.dal.TAPService(url)
-        if not query.strip():
-            raise ValueError("Query cannot be empty.")
-        try:
-            response = service.search(query)
-            return response
-        except (DALServiceError, DALQueryError, DALFormatError) as e:
-            logger.error(f"TAP service error: {e}")
-            raise ApiError(f"TAP service error: {e}") from e
-
-
-
+    Generic container class, it will hold data of type T and T will be determined when the class is instantiated.
     
+    Example usage:
+    ```python
+        result = api.GET(service=API.SIMBAD, object="M31")
+        if result.success:
+            # Use the data with full type hinting support
+            star_data = result.data
+        else:
+            print(f"Error: {result.error}")
+    ```
+    """
+
+    def __init__(self,
+                data: T = None,
+                success: bool = False,
+                error: str = None,
+                source: str = None,
+                is_fallback: bool = False
+            ):  
+        self.data = data # the actual data returned
+        self.success = success # whether the request was successful or not
+        self.error = error # error message if the request failed
+        self.source = source # which provider returned this data
+        self.is_fallback = is_fallback #whether this came from a fallback source 
+    
+class DataProviderInterface(ABC):
+    """
+    Abstract class that defines the interface that all data providers must implement.
+    """
+
+    @abstractmethod
+    def get_data(self, **kwargs) -> ApiResult:
+        """
+        Method that will be used to get data from the provider.
+        It will return an ApiResult object.
+        """
+        pass
+
+
+    @abstractmethod
+    def support_params(self) -> list:
+        """
+        Method that will return a list of parameters that the provider supports.
+        """
+        pass
+    # NOTE: These two method are not specified, because they need to be implemented in the concrete classes.
+
+    def with_fallback(self, fallback_func: Optional[Callable] = None,
+                    return_empty_on_fail: bool = False) -> Callable:
+        """
+        Method that will set a fallback function for the provider.
+        This function will be called if the original method fails.
+        Args:
+            fallback_func: function to call if the original method fails.
+            return_empty_on_fail: whether to return an empty result if the original method fails. If it's set to True,
+                the method wont raise and exception, but it will return an empty result, otherwise, it will raise an exception.
+            On every case, the fallback function will always be called if provided. 
+        """
+        def decorator(func):
+            @wraps(func)
+            def wrapper(self, **kwargs):
+                try:
+                    # Try original method
+                    return func(self, **kwargs)
+                except Exception as e:
+                    logger.error(f"{self.__class__.__name__} error: {e}")
+                    
+                    # Try fallback if provided
+                    if fallback_func:
+                        try:
+                            fallback_data = fallback_func(e, **kwargs)
+                            return ApiResult(
+                                data=fallback_data, 
+                                success=True,
+                                source=f"{self.__class__.__name__}_fallback",
+                                is_fallback=True
+                            )
+                        except Exception as fallback_error:
+                            logger.error(f"Fallback error: {fallback_error}")
+                    
+                    # Return empty result if configured
+                    if return_empty_on_fail:
+                        return ApiResult(
+                            data=None, 
+                            success=False,
+                            error=e,
+                            source=self.__class__.__name__
+                        )
+                    
+                    # Re-raise if no fallback handling succeeded
+                    raise
+            return wrapper
+        return decorator
+
+
+class HttpProvider(DataProviderInterface):
+    """
+    Provider that will help to instantiate HTTP Providers (like USGS)
+    """
+
+
+    # NOTE: Here, we can set the set of parameters that this type of providers support.
+    def support_params(self) -> list:
+        """
+        Method that will return a list of parameters that the provider supports.
+        """
+        return ["url", "headers", "params", "data", "timeout"]
+    
+    # NOTE: Decorators on parent classes are "overrided" as long as we dont call the super() method, otherwise, this decorator will be called on runtime.
+    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
+    def get_data(self,  **kwargs)-> ApiResult:
+        """
+        Method that handles HTTP GET requests
+        """
+        url = kwargs.get("url")
+        method = kwargs.get("method", "GET")
+        headers = kwargs.get("headers", {})
+        params = kwargs.get("params", {})
+        timeout = kwargs.get("timeout", 30)
+        max_retries = kwargs.get("max_retries", 3)
+        retry_delay = kwargs.get("retry_delay", 1)
+
+        logger.info(f"HTTP request: {method} {url}")
+        # NOTE: Here we use the request library to make the request.
+        if not url:
+            return ApiResult(
+                data=None,
+                success=False,
+                error="URL is required",
+                source=self.__class__.__name__
+            )
+
+
+        # When we do the request, there are 3 cases.
+        # 1. The request is successful (2xx) and we get a response.
+        # 2. The request is not successful (4xx, 5xx) and we get an error. In this case, we will NOT raise an exception.
+        # 3. The server is not reachable (timeout, connection error, etc). In this case, we will raise an exception.
+        for attempt in range(max_retries):
+            try:
+                # Make the request
+                response = requests.request(method, url, headers=headers, params=params, timeout=timeout)
+                response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
+                logger.info(f"HTTP response: {response.status_code} ")
+                # Handle different respose types:
+                if response.headers.get("Content-Type") == "application/json":
+                    data = response.json()
+                elif "application/octet-stream" in response.headers.get("Content-Type", ""):
+                    data = {"content": response.content, "binary": True}
+                else:
+                    data = response.text
+                
+                return ApiResult(
+                    data=data,
+                    success=True,
+                    source=self.__class__.__name__)
+            except requests.HTTPError as e:
+                status_code = e.response.status_code
+                logger.error(f"HTTP error: {status_code} - for {url} - Error: {e}")
+
+                if status_code == 404:
+                    return ApiResult(
+                        data=None,
+                        success=False,
+                        error=f"Resource not found: {url}",
+                        source=self.__class__.__name__
+                    )
+                elif 500 <= status_code < 600:
+                    return ApiResult(
+                        data=None,
+                        success=False,
+                        error=f"Server error: {url}",
+                        source=self.__class__.__name__
+                    )
+            except (requests.Timeout, requests.ConnectionError) as e: 
+                if attempt < max_retries - 1:
+                    logger.error(f"Request error: {url} - Error: {e}, retrying...")
+                    time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                    continue
+                raise
+            except requests.RequestException as e:
+                logger.error(f"Request error: {url} - Error: {e}")
+                raise
+            except requests.TooManyRedirects as e:
+                logger.error(f"Too many redirects: {url} - Error: {e}")
+                raise
+            except requests.ConnectionError as e:
+                logger.error(f"Connection error: {url} - Error: {e}")
+                raise
+        
