@@ -19,7 +19,7 @@ enable = true
 
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.12"
 asdf-astropy = "^0.4.0"
 astropy="^6"
 astroquery="^0.4.6"
