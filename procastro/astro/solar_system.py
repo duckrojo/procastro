@@ -821,7 +821,7 @@ class BodyVisualizer:
 
         try:
             apiService = ApiService()
-            response = apiService.get(body_files[0][2])
+            response = apiService.get(url=body_files[0][2])
             return Image.open(io.BytesIO(response.content))
         except requests.exceptions.RequestException as e:
             logger.error(f"Error en la solicitud de mapa USGS para {body}: {e}")

@@ -10,6 +10,7 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+import pyvo as vo
 
 
 class ApiError(Exception):
@@ -31,7 +32,7 @@ class ApiService:
         self.base_urls = {
             'horizons': 'https://ssd.jpl.nasa.gov/api/horizons.api',
             'usgs_maps': 'https://astrogeology.usgs.gov/maps/',
-            # Add other service base URLs as needed
+            'tap': 'https://exoplanetarchive.ipac.caltech.edu/TAP'
         }
         
         # Request configuration
@@ -153,6 +154,22 @@ class ApiService:
             
         raise ApiError(error_msg) from error
 
+
+    def tap_service(self,url= "https://exoplanetarchive.ipac.caltech.edu/TAP", query=str):
+        """
+        query the exoplanet archive using the TAP service.
+        Parameters
+        ----------
+        url : str
+            URL of the TAP service. Default is the Exoplanet Archive TAP service.
+        query : str
+            SQL query to execute on
+        
+        """
+        service = vo.dal.TAPService(url)
+
+        if 
+        return service.search(query)
 
 
 
