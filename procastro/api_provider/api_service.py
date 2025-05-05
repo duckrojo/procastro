@@ -155,17 +155,16 @@ class ApiService:
         raise ApiError(error_msg) from error
 
 
-    def tap_service(self,url= "https://exoplanetarchive.ipac.caltech.edu/TAP", query=str) :
+    def tap_service(self, query=str) :
         """
         query the exoplanet archive using the TAP service.
         Parameters
         ----------
-        url : str
-            URL of the TAP service. Default is the Exoplanet Archive TAP service.
         query : str
             SQL query to execute on
         
         """
+        url = self.base_urls['tap']
         service = vo.dal.TAPService(url)
         if not query.strip():
             raise ValueError("Query cannot be empty.")
