@@ -22,6 +22,7 @@ import warnings
 import astropy.coordinates as apc
 import astropy.time as apt
 import astropy.units as u
+from procastro.api_provider.api_service import ApiService
 import procastro.astro as paa
 import numpy as np
 import os
@@ -335,7 +336,9 @@ class ObsCalc(object):
 
             query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
                     f"WHERE lower(pl_name) like '%{target}%' "
-            resultset = exo_service.search(query)
+            
+            apiService = ApiService()
+            resultset = apiService.tap_service(query)
             try:
                 req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
             except IndexError:
