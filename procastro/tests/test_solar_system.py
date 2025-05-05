@@ -10,17 +10,18 @@ from procastro.astro.solar_system import BodyGeometry
 def mock_ephemeris():
     """Crear datos de efemérides simulados para pruebas."""
     data = {
-        'ObsSub_LON': 120.0,
-        'ObsSub_LAT': 30.0,
+        'ObsSub_LON': 120.0, #TODO: El ángulo de emision debe de ser 90º
+        'ObsSub_LAT': 30.0, # TODO. Verificar el lado opuesto
         'NP_ang': 15.0,
-        'SunSub_LON': 90.0,
-        'SunSub_LAT': 10.0,
+        'SunSub_LON': 90.0, #TODO: Debo recibir la hora local del medio dia  (probnar)
+        'SunSub_LAT': 10.0, 
         'SN_ang': 45.0,
         'SN_dist': 35.5,
         'NP_dist': 25.0,  # Añadir este campo faltante
         'Ang_diam': 30.0,  # 30 arcsec
         'jd': 2459000.5
     }
+    #TODO : Verificar el lado opuesto (cambiar el signo de la latitud y sumarle 180 a la longitud)
     return Table([data])[0]  # Devuelve una fila de Tabla
 
 class TestBodyGeometry:

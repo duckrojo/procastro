@@ -30,6 +30,7 @@ class ApiService:
     def __init__(self):
         """Initialize the API service with default configuration."""
         # Default base URLs for common services
+        # TODO: Check simbad (astroquery)
         self.base_urls = {
             'horizons': 'https://ssd.jpl.nasa.gov/api/horizons.api',
             'usgs_maps': 'https://astrogeology.usgs.gov/maps/',
@@ -132,7 +133,7 @@ class ApiService:
             Function to call with the error
         return_none : bool
             Whether to return None instead of raising an exception
-            
+        #TODO : Investigar sobre el fallback inverso (buscar en disco y luego hacer el get)
         Returns
         -------
         Optional[Any]
@@ -155,7 +156,7 @@ class ApiService:
             
         raise ApiError(error_msg) from error
 
-
+    # TODO: Hacer desaparecer el TAP  e intentar usar astroquery
     def tap_service(self, query=str) :
         """
         query the exoplanet archive using the TAP service.
