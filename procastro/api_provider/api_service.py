@@ -11,6 +11,7 @@ import requests
 logger = logging.getLogger(__name__)
 
 import pyvo as vo
+from pyvo.dal import DALServiceError, DALQueryError, DALFormatError
 
 
 class ApiError(Exception):
@@ -168,7 +169,12 @@ class ApiService:
         service = vo.dal.TAPService(url)
         if not query.strip():
             raise ValueError("Query cannot be empty.")
-        return service.search(query)
+        try:
+            response = service.search(query)
+            return response
+        except (DALServiceError, DALQueryError, DALFormatError) as e:
+            logger.error(f"TAP service error: {e}")
+            raise ApiError(f"TAP service error: {e}") from e
 
 
 
