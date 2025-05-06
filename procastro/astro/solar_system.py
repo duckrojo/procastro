@@ -8,8 +8,6 @@ import numpy as np
 from numpy import ma
 from bs4 import BeautifulSoup
 from tqdm import tqdm
-import imageio
-
 
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.axes import Axes

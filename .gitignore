@@ -2,7 +2,6 @@
 /deprecated/
 /docs/_build/
 /procastro.egg-info/
-scripts
 **/__pycache__/
 
 **/cachedir

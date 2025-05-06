@@ -336,8 +336,10 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
                                     extra[extra_info.index(key)] = eval(val)
                                 except ValueError:
                                     print("ignoring extra info not requested: {key}")
-                        if ra[-1] == 'd':
-                            ra = "{0:f}".format(float(ra[:-1]) / 15,)
+
+                        # RA can be given in hours or degree if prepending a d
+                        ra = float(ra[:-1]) / 15 if ra[-1] == 'd' else float(ra)
+                        dec = float(dec)
                         if accept_object_name(name, target):
                             if verbose:
                                 print(f"Found in coordinate file: {coo_file}")
@@ -371,7 +373,7 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
             if query is None:
                 raise ValueError(
                     f"Target '{target}' not found on Simbad")
-            ra, dec = query['RA'][0], query['DEC'][0]
+            ra, dec = query['ra'][0], query['dec'][0]
             if len(extra_info) > 0:
                 for info in extra_info:
                     if info in votable:
@@ -380,7 +382,7 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
                     info = info.replace(")", "")
                     extra.append(query[info.upper()][0])
 
-        ra_dec = apc.SkyCoord('{0:s} {1:s}'.format(ra, dec),
+        ra_dec = apc.SkyCoord('{0:f} {1:f}'.format(ra, dec),
                               unit=(u.hour, u.degree),
                               equinox=equinox)
         if verbose:
