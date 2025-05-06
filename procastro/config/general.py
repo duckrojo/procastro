@@ -17,30 +17,26 @@ def config_user(section: str,
                 ):
     """
     Returns in a TOML-style dictionary with variables taken from the configuration file. The first time
-    a section is run it will take values from the default/ directory... afterwards it will copy the
+    a section is run it will take values from the default/ directory... afterward it will copy the
     config dir to the user directory.
 
     Parameters
     ----------
+    section: str
+    Name of the section config to load
+
     read_default: bool
     whether to return the default configuration file or the user's
 
     default: str
     if given, then uses this file as default value instead, it will be located in the user directory
-
-    return_file: bool
-    whether to return the name of the configfile
-
-    section: str
-    Name of the section config to load
-
     """
     user_dir = Path(config_dir)
     user_dir.mkdir(parents=True, exist_ok=True)
     user_file = user_dir.joinpath(f"{section}.toml")
 
+    # if the user file does not exist, then read from default add cache's directory and save
     if not user_file.exists() or read_default:
-        # if the user file does not exists, then read from default add cache's directory and save
         if default is None:
             default = Path(__file__).parent.joinpath("..", "defaults", f"{section}.toml")
         else:

@@ -21,7 +21,6 @@ from astropy.table import Table, QTable, MaskedColumn
 
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 import procastro as pa
-from procastro.misc.misc_graph import figaxes
 from procastro.cache.cache import AstroCache
 
 TwoValues = tuple[float, float]
@@ -1084,7 +1083,7 @@ class BodyVisualizer:
         rotated_image.putdata([item if r < nx/2 - 1 else color_background_rgb
                             for r, item in zip(rr, rotated_image.convert("RGBA").getdata())])
 
-        f, ax = figaxes(ax)
+        f, ax = pa.figaxes(ax)
         f.patch.set_facecolor(color_background)
         ax.set_facecolor(color_background)
         # ax.imshow(rotated_image,
@@ -1339,7 +1338,7 @@ class BodyVisualizer:
     
         # Set up the figure
         if ax is None:
-            f, ax = figaxes()
+            f, ax = pa.figaxes()
         else:
             f = ax.figure
     

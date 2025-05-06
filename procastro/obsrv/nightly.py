@@ -38,6 +38,7 @@ import time
 from typing import Union, Optional, Tuple
 
 import procastro.astro.coordinates
+from procastro.config import config_user
 
 TwoTuple = Tuple[float, float]
 
@@ -47,7 +48,7 @@ __all__ = ['query_full_exoplanet_db', 'Nightly']
 def query_full_exoplanet_db(force_reload: bool = False,
                             reload_days: float = 7
                             ):
-    file = pa.user_confdir("exodb.pickle")
+    file = Path(config_user('obsrv')['cache_dir']) / "exodb.pickle"
     if not force_reload and os.path.isfile(file):
         days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
         if days_since < reload_days:
@@ -133,8 +134,8 @@ class Nightly:
 
         # create Dataframe and update missing magnitude
         planets = query_full_exoplanet_db(force_reload=force_reload, reload_days=reload_days)
-        no_filter_data = planets['sy_vmag'] == 0
-        planets.loc[:, 'sy_vmag'].where(~no_filter_data, other=planets['sy_gmag'][no_filter_data], inplace=True)
+        vmag = planets['sy_vmag']
+        planets['sy_vmag'] = vmag.mask(vmag==0, other=planets['sy_gmag'])
         self._planets_all = planets
 
         self.observatory(observatory)
@@ -222,7 +223,6 @@ class Nightly:
         self._start_night = the_day[start_night_idx]
         self._end_night = the_day[above.index(True, start_night_idx + 1)]
 
-
         self._moon_coord = apc.get_body("moon", self._civil_midday + 12 * u.hour, location=self._observatory)
         times_at_sets = apt.Time([self._start_night, self._end_night])
         self._sidereal_at_sets = times_at_sets.sidereal_time('apparent', self._observatory).hourangle
@@ -232,17 +232,19 @@ class Nightly:
         closest_transit_n = (((self._civil_midday.jd + 0.5 - planets['pl_tranmid']) /
                               planets['pl_orbper']) + 0.5).astype('int')
         self._planets['closest_transit'] = planets['pl_tranmid'] + closest_transit_n * planets['pl_orbper']
-        self._planets['pl_trandur'].mask(planets['pl_trandur'] == 0.0, self._constraints['default_duration'],
-                                         inplace=True)
+        self._planets['pl_trandur'] = planets['pl_trandur'].mask(planets['pl_trandur'] == 0.0,
+                                                                 other=self._constraints['default_duration'])
         self._planets['transit_i'] = planets['closest_transit'] - (planets['pl_trandur'] / 48)
         self._planets['transit_f'] = planets['closest_transit'] + (planets['pl_trandur'] / 48)
-        self._planets['pl_trandur'].fillna(self._constraints['default_duration'], inplace=True)
-        self._planets['sy_pmra'].fillna(0, inplace=True)
-        self._planets['sy_pmdec'].fillna(0, inplace=True)
 
-        pm_right_ascension = planets['sy_pmra'].array * u.mas / u.yr
-        pm_declination = planets['sy_pmdec'].array * u.mas / u.yr
-        coords = apc.SkyCoord(planets['ra'].array * u.degree, planets['dec'].array * u.degree,
+        self._planets.fillna({'pl_trandur': self._constraints['default_duration'],
+                              'sy_pmra': 0, 'sy_pmdec':0},
+                             inplace=True)
+
+        pm_right_ascension = u.Quantity(planets['sy_pmra'], unit=u.mas / u.yr)
+        pm_declination = u.Quantity(planets['sy_pmdec'], unit=u.mas / u.yr)
+        coords = apc.SkyCoord(u.Quantity(planets['ra'], unit=u.deg),
+                              u.Quantity(planets['dec'], unit=u.deg),
                               frame='icrs', pm_ra_cosdec=pm_right_ascension, pm_dec=pm_declination,
                               equinox=equinox_db)
         self._planets['star_coords'] = coords
@@ -255,7 +257,7 @@ class Nightly:
     # COMPUTATIONS
 
     def _rank_events(self):
-        self._planets['rank'] = 10
+        self._planets.loc[:, 'rank'] = 10
 
     def _hour_angle_for_altitude(self, skycoord, altitude):
         if not isinstance(altitude, u.Quantity):
@@ -489,7 +491,7 @@ class Nightly:
                     s=f"{transit_time[baseline_f_index].iso[11:16]} - P{info['pl_orbper']:.1f}d",
                     fontsize=9)
             ax.text(jd[baseline_f_index], cum_altitude + altitude_separation//2,
-                    s=f"{info['sy_vmag']}, {info['moon_separation']:.0f}$^\circ$",
+                    s=f"{info['sy_vmag']}, {info['moon_separation']:.0f}$^\\circ$",
                     fontsize=9)
             ax.text(jd[baseline_i_index], cum_altitude,
                     s=transit_time[baseline_i_index].iso[11:16],
