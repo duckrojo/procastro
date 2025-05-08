@@ -107,7 +107,7 @@ class DataProviderInterface(ABC):
                                 is_fallback=True
                             )
                         except Exception as fallback_error:
-                            logger.error(f"Fallback error: {fallback_error}")
+                            raise Exception(f"Fallback function failed: {fallback_error}") from e
                     
                     # Return empty result if configured
                     if return_empty_on_fail:
@@ -126,7 +126,7 @@ class DataProviderInterface(ABC):
 
 class HttpProvider(DataProviderInterface):
     """
-    Provider that will help to instantiate HTTP Providers (like USGS)
+    Provider that will help to instantiate HTTP Providers 
     """
 
 
@@ -212,13 +212,13 @@ class HttpProvider(DataProviderInterface):
                     logger.error(f"Request error: {url} - Error: {e}, retrying...")
                     time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
                     continue
-                raise
+                raise Exception(f"Request failed after {max_retries} retries: Timeout")
             except requests.RequestException as e:
                 logger.error(f"Request error: {url} - Error: {e}")
-                raise
+                raise Exception(f"Request failed: {e}") 
             except requests.TooManyRedirects as e:
                 logger.error(f"Too many redirects: {url} - Error: {e}")
-                raise
+                raise Exception(f"Too many redirects: {e}")
 
 class AstroqueryProvider(DataProviderInterface):
     """
