@@ -21,6 +21,7 @@ from PIL import Image
 from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
+
 from procastro.api_provider.api_service import ApiService
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 import procastro as pa
@@ -817,19 +818,16 @@ class BodyVisualizer:
             body_files = [body_files[0]]
         if verbose:
             logger.info(f"Fetching map for {body}...")
-            logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
+        apiService = ApiService(verbose=verbose)
+        response = apiService.request_http(url= body_files[0][2],
+                                        timeout=10,
+                                        )
+        if response.success: 
 
-        try:
-            apiService = ApiService()
-            response = apiService.get(url=body_files[0][2])
-            return Image.open(io.BytesIO(response.content))
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error en la solicitud de mapa USGS para {body}: {e}")
-            # Crear una imagen alternativa/mensaje de error
-            raise 
-        except Exception as e:
-            logger.error(f"Error procesando imagen para {body}: {e}")
+            return Image.open(BytesIO(response.data))
+        else:
 
+            return None
     @staticmethod
     def _cross2(a: np.ndarray,
             b: np.ndarray) -> np.ndarray:

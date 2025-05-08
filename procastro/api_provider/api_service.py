@@ -74,8 +74,9 @@ class DataProviderInterface(ABC):
         """
         pass
     # NOTE: These two method are not specified, because they need to be implemented in the concrete classes.
-
-    def with_fallback(self, fallback_func: Optional[Callable] = None,
+    
+    @staticmethod
+    def with_fallback(fallback_func: Optional[Callable] = None,
                     return_empty_on_fail: bool = False) -> Callable:
         """
         Method that will set a fallback function for the provider.
@@ -134,7 +135,7 @@ class HttpProvider(DataProviderInterface):
         """
         Method that will return a list of parameters that the provider supports.
         """
-        return ["url", "headers", "params", "data", "timeout"]
+        return ["url", "headers", "params", "data", "timeout", "verbose"]
     
     # NOTE: Decorators on parent classes are "overrided" as long as we dont call the super() method, otherwise, this decorator will be called on runtime.
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
@@ -149,8 +150,8 @@ class HttpProvider(DataProviderInterface):
         timeout = kwargs.get("timeout", 30)
         max_retries = kwargs.get("max_retries", 3)
         retry_delay = kwargs.get("retry_delay", 1)
-
-        logger.info(f"HTTP request: {method} {url}")
+        verbose = kwargs.get("verbose", False)
+        if verbose: logger.info(f"HTTP request: {method} {url}")
         # NOTE: Here we use the request library to make the request.
         if not url:
             return ApiResult(
@@ -170,15 +171,20 @@ class HttpProvider(DataProviderInterface):
                 # Make the request
                 response = requests.request(method, url, headers=headers, params=params, timeout=timeout)
                 response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
-                logger.info(f"HTTP response: {response.status_code} ")
+                
+                if verbose : logger.info(f"HTTP response: {response.status_code} ")
                 # Handle different respose types:
-                if response.headers.get("Content-Type") == "application/json":
+                content_type = response.headers.get("Content-Type", "")
+                if "application/json" in content_type:
                     data = response.json()
-                elif "application/octet-stream" in response.headers.get("Content-Type", ""):
-                    data = {"content": response.content, "binary": True}
+                elif any(binary_type in content_type for binary_type in [
+                    "image/", "application/octet-stream", "application/pdf", 
+                    "application/zip", "binary/"
+                ]):
+                    # Return raw binary content for images and other binary types
+                    data = response.content
                 else:
                     data = response.text
-                
                 return ApiResult(
                     data=data,
                     success=True,
@@ -187,11 +193,11 @@ class HttpProvider(DataProviderInterface):
                 status_code = e.response.status_code
                 logger.error(f"HTTP error: {status_code} - for {url} - Error: {e}")
 
-                if status_code == 404:
+                if 400 <= status_code < 500:
                     return ApiResult(
                         data=None,
                         success=False,
-                        error=f"Resource not found: {url}",
+                        error=f"Client error: {url}",
                         source=self.__class__.__name__
                     )
                 elif 500 <= status_code < 600:
@@ -213,7 +219,56 @@ class HttpProvider(DataProviderInterface):
             except requests.TooManyRedirects as e:
                 logger.error(f"Too many redirects: {url} - Error: {e}")
                 raise
-            except requests.ConnectionError as e:
-                logger.error(f"Connection error: {url} - Error: {e}")
-                raise
-        
+
+class AstroqueryProvider(DataProviderInterface):
+    """
+    Provider which handles astronomical queries using ASTROQUERY (like TAP and SIMBAD)
+
+    """
+    def support_params(self):
+        """
+        Common parameters for all astronomial queries using astroquery
+        """
+        return ["format"] 
+    
+
+    def _format_result(self, table, output_format="dict"):
+        if output_format == "dict":
+            return [dict(zip(table.colnames, row)) for row in table]
+        elif output_format == "pandas":
+            return table.to_pandas()
+        else:
+            return table
+
+class LocalFilesProvider(DataProviderInterface):
+    #TODO: Implement this class
+    pass
+class TapProvider(AstroqueryProvider):
+    #TODO: Implement this class
+    pass
+
+class SimbadProvider(AstroqueryProvider):
+    #TODO: Implement this class
+    pass
+
+
+class ApiService:
+    """
+    Main class used as interface to the API
+    """
+
+    def __init__(self, verbose= False):
+        # self.simbad_provider = SimbadProvider()
+        # self.tap_provider = TapProvider()
+        # self.local_files_provider = LocalFilesProvider()
+        self.http_provider = HttpProvider()
+        self.verbose = verbose
+
+
+    def request_http(self, **kwargs ) -> ApiResult:
+        """
+        Method that will handle HTTP requests using the HTTP provider.
+        """
+        kwargs["verbose"] = self.verbose
+        return self.http_provider.get_data(**kwargs)
+
