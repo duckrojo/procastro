@@ -14,7 +14,7 @@ from functools import wraps
 import logging
 import time
 from typing import Callable, Generic, Optional, TypeVar
-
+import astroquery.Simbad as aqs
 import requests
 
 # first, we configure the logging system
@@ -229,9 +229,7 @@ class AstroqueryProvider(DataProviderInterface):
         """
         Common parameters for all astronomial queries using astroquery
         """
-        return ["format"] 
-    
-
+        return ["format", "query"]
     def _format_result(self, table, output_format="dict"):
         if output_format == "dict":
             return [dict(zip(table.colnames, row)) for row in table]
@@ -248,8 +246,58 @@ class TapProvider(AstroqueryProvider):
     pass
 
 class SimbadProvider(AstroqueryProvider):
-    #TODO: Implement this class
-    pass
+    """
+    Provider which handles queries to SIMBAD using ASTROQUERY
+    """
+
+    def __init__(self):
+        self.simbad = aqs.Simbad()
+
+    def support_params(self):
+        """
+        Common parameters for all astronomical queries using astroquery
+        """
+        return super().support_params()
+
+    def get_data(self, **kwargs) -> ApiResult:
+        """
+        Method that handles queries to SIMBAD using ASTROQUERY
+        """
+        query = kwargs.get("query")
+        format = kwargs.get("format", "dict")
+        if not query:
+            return ApiResult(
+                data=None,
+                success=False,
+                error="Query is required",
+                source=self.__class__.__name__
+            )
+        if not isinstance(query, str):
+            return ApiResult(
+                data=None,
+                success=False,
+                error="Query must be a string",
+                source=self.__class__.__name__
+            )
+        response = self.simbad.query_object(query)
+        if response is None:
+            return ApiResult(
+                data=None,
+                success=False,
+                error="No results found",
+                source=self.__class__.__name__
+            )
+        else:
+            # Format the result
+            data = self._format_result(response, output_format=format)
+            return ApiResult(
+                data=data,
+                success=True,
+                source=self.__class__.__name__
+            )
+        
+
+        
 
 
 class ApiService:
