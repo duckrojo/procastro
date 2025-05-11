@@ -14,7 +14,7 @@ from functools import wraps
 import logging
 import time
 from typing import Callable, Generic, Optional, TypeVar
-import astroquery.Simbad as aqs
+import astroquery.simbad as aqs
 import requests
 
 # first, we configure the logging system
@@ -225,18 +225,13 @@ class AstroqueryProvider(DataProviderInterface):
     Provider which handles astronomical queries using ASTROQUERY (like TAP and SIMBAD)
 
     """
+    @abstractmethod
     def support_params(self):
         """
-        Common parameters for all astronomial queries using astroquery
+        Common parameters for all astronomial queries using astroquery.
+        We will be implementing this method on its child classes.
         """
-        return ["format", "query"]
-    def _format_result(self, table, output_format="dict"):
-        if output_format == "dict":
-            return [dict(zip(table.colnames, row)) for row in table]
-        elif output_format == "pandas":
-            return table.to_pandas()
-        else:
-            return table
+        pass
 
 class LocalFilesProvider(DataProviderInterface):
     #TODO: Implement this class
@@ -257,29 +252,40 @@ class SimbadProvider(AstroqueryProvider):
         """
         Common parameters for all astronomical queries using astroquery
         """
-        return super().support_params()
+        return ["object_name", "verbose", "wildcard", "criteria", "get_query_payload"]
 
+    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
     def get_data(self, **kwargs) -> ApiResult:
         """
         Method that handles queries to SIMBAD using ASTROQUERY
         """
-        query = kwargs.get("query")
-        format = kwargs.get("format", "dict")
-        if not query:
+        format = kwargs.pop("format", "dict")
+        object_name = kwargs.get("object_name")
+        verbose = kwargs.pop("verbose", False) ## verbose cannot be pased to aqs since it is deprecated
+        if not object_name:
             return ApiResult(
                 data=None,
                 success=False,
-                error="Query is required",
+                error="Object name is required",
                 source=self.__class__.__name__
             )
-        if not isinstance(query, str):
+        if not isinstance(object_name, str):
             return ApiResult(
                 data=None,
                 success=False,
-                error="Query must be a string",
+                error="Object name must be a string",
                 source=self.__class__.__name__
             )
-        response = self.simbad.query_object(query)
+
+
+        # then we extract the parameters that are not supported by the provider
+        # and we pass them to the query
+        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
+        
+        if verbose:
+            logger.info(f"Querying SIMBAD: {object_name} with format {format} and params {kwargs}")
+        # pass the extra arguments if needed
+        response = self.simbad.query_object(**kwargs)
         if response is None:
             return ApiResult(
                 data=None,
@@ -287,11 +293,12 @@ class SimbadProvider(AstroqueryProvider):
                 error="No results found",
                 source=self.__class__.__name__
             )
+            
         else:
             # Format the result
-            data = self._format_result(response, output_format=format)
+
             return ApiResult(
-                data=data,
+                data=response,
                 success=True,
                 source=self.__class__.__name__
             )
@@ -306,7 +313,7 @@ class ApiService:
     """
 
     def __init__(self, verbose= False):
-        # self.simbad_provider = SimbadProvider()
+        self.simbad_provider = SimbadProvider()
         # self.tap_provider = TapProvider()
         # self.local_files_provider = LocalFilesProvider()
         self.http_provider = HttpProvider()
@@ -320,3 +327,10 @@ class ApiService:
         kwargs["verbose"] = self.verbose
         return self.http_provider.get_data(**kwargs)
 
+
+    def request_simbad(self, **kwargs) -> ApiResult:
+        """
+        Method that will handle queries to SIMBAD using the Simbad provider.
+        """
+        kwargs["verbose"] = self.verbose
+        return self.simbad_provider.get_data(**kwargs)

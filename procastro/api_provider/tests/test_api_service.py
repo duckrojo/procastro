@@ -171,3 +171,48 @@ def test_http_request_exception():
         assert result.success is False
         assert result.data is None
         assert "Request failed: Simulated request exception" in str(result.error)
+
+
+#### TESTS SIMBAD PROVIDER ####
+def test_simbad_provider():
+    apiService = ApiService(verbose= True)
+    response  = apiService.request_simbad(object_name= "m1")
+    assert response.success is True
+    assert response.data is not None
+    assert response.error is None
+    assert response.source == "SimbadProvider"
+    assert response.is_fallback is False
+
+
+
+def test_simbad_provider_with_extra_args():
+    ## test with more args
+    apiService = ApiService(verbose= True)
+    response = apiService.request_simbad(object_name= "m1", dumb_arg = "foo", another_arg= "bar")
+    assert response.success is True
+    assert response.data is not None
+    assert response.error is None
+    assert response.source == "SimbadProvider"
+    assert response.is_fallback is False
+
+
+def test_simbad_provider_with_valid_args():
+    ## test with valid args
+    apiService = ApiService(verbose= True)
+    response = apiService.request_simbad(object_name= "M [1-9]", wildcard=True)
+    assert response.success is True
+    assert response.data is not None
+    assert response.error is None
+    assert response.source == "SimbadProvider"
+    assert response.is_fallback is False
+
+
+def test_simbad_with_bad_args():
+    ## test with bad args
+    apiService = ApiService(verbose= True)
+    response = apiService.request_simbad(object_name= 1)
+    assert response.success is False
+    assert response.data is None
+    assert response.error== "Object name must be a string"
+    assert response.source == "SimbadProvider"
+    assert response.is_fallback is False
