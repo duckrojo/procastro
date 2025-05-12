@@ -226,22 +226,22 @@ class HttpProvider(DataProviderInterface):
 
 class AstroqueryProvider(DataProviderInterface):
     """
-    Provider which handles astronomical queries using ASTROQUERY (like TAP and SIMBAD)
+    Provider which handles astronomical queries using ASTROQUERY (like TAP, SIMBAD or others)
 
     """
     @abstractmethod
     def support_params(self):
         """
-        Common parameters for all astronomial queries using astroquery.
+        Common parameters for all astronomical queries using astroquery.
         We will be implementing this method on its child classes.
         """
         pass
 
 class LocalFilesProvider(DataProviderInterface):
-    #TODO: Implement this class
+    #TODO: Implement this class 
     pass
 class TapProvider(AstroqueryProvider):
-    #TODO: Implement this class
+    #TODO: Implement this class ?? (Having the exoplanet provider is enough??)
     pass
 
 class SimbadProvider(AstroqueryProvider):
@@ -317,7 +317,7 @@ class ExoplanetProvider(AstroqueryProvider):
         self.exoplanet_archive = NasaExoplanetArchive()
 
     def support_params(self):
-        return super().support_params()
+        return ["object_name", "verbose", "table", "get_query_payload", "regularize"]
     
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
     def request(self, **kwargs) -> ApiResult:
@@ -338,7 +338,7 @@ class ExoplanetProvider(AstroqueryProvider):
             )
         
         # Perform the query
-        response = self.exoplanet_archive.query_object(object_name, **kwargs)
+        response = self.exoplanet_archive.query_object(**kwargs)
         
         if response is None:
             return ApiResult(
@@ -349,11 +349,13 @@ class ExoplanetProvider(AstroqueryProvider):
             )
             
         else:
+            #TODO: Transform the response (Exoplanet returns data in a table format, check this!!)
             return ApiResult(
                 data=response,
                 success=True,
                 source=self.__class__.__name__
             )
+        
 class ApiService:
     """
     Main class used as interface to the API
@@ -409,9 +411,12 @@ class ApiService:
         Args:
             object_name: Name of the object to query. Mandatory
             verbose: Whether to print the query. Optional
-            wildcard: Whether to use wildcard search. Optional
-            criteria: Criteria to use for the query. Optional
+            table: Table to use for the query. Optional
             get_query_payload: Whether to get the query payload. Optional
+            regularize : If True, the aliastable will be used to regularize the target name. Optional   
+            **criteria: Any other filtering criteria to apply. Values provided using the where keyword will be ignored.
+
+
         Returns:
             ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
         """

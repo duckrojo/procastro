@@ -225,3 +225,15 @@ def test_simbad_with_bad_args():
     assert response.error== "Object name must be a string"
     assert response.source == "SimbadProvider"
     assert response.is_fallback is False
+
+
+
+#### TEST EXOPLANET PROVIDER ####
+def test_exoplanet_provider():
+    apiService = ApiService(verbose= True)
+    response = apiService.request_exoplanet(object_name= "k2-18 b")
+    assert response.success is True
+    assert response.data is not None
+    assert response.error is None
+    assert response.source == "ExoplanetProvider"
+    assert response.is_fallback is False
