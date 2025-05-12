@@ -128,7 +128,7 @@ class DataProviderInterface(ABC):
 
 class HttpProvider(DataProviderInterface):
     """
-    Provider that will help to instantiate HTTP Providers 
+    Provider that will help to instantiate HTTP Providers . USGS y HORIZONS.
     """
 
 
@@ -161,6 +161,7 @@ class HttpProvider(DataProviderInterface):
                 error="URL is required",
                 source=self.__class__.__name__
             )
+        
 
         kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
         if "method" not in kwargs:
@@ -249,8 +250,12 @@ class SimbadProvider(AstroqueryProvider):
     Provider which handles queries to SIMBAD using ASTROQUERY
     """
 
-    def __init__(self):
+    def __init__(self,votable_fields):
         self.simbad = aqs.Simbad()
+        # CHECK VOTABLE FIELDS ON INIT 
+        #self.simbad.add_votable_fields(votable_fields)
+
+
 
     def support_params(self):
         """
@@ -305,11 +310,11 @@ class SimbadProvider(AstroqueryProvider):
                 success=True,
                 source=self.__class__.__name__
             )
-        
+        # TODO IMPLEMENT ADD VOTABLE FIELDS
 
-        
+    
 
-class ExoplanetProvider(AstroqueryProvider):
+class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
     """
     Provider which handles queries to the Nasa Exoplanet Archive using Astroquery
     """
@@ -361,8 +366,8 @@ class ApiService:
     Main class used as interface to the API
     """
 
-    def __init__(self, verbose= False):
-        self.simbad_provider = SimbadProvider()
+    def __init__(self, verbose= False, votable_fields=None):
+        self.simbad_provider = SimbadProvider(votable_fields=votable_fields)
         # self.tap_provider = TapProvider()
         # self.local_files_provider = LocalFilesProvider()
         self.http_provider = HttpProvider()
