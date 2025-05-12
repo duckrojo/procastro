@@ -16,6 +16,8 @@ import time
 from typing import Callable, Generic, Optional, TypeVar
 import astroquery.simbad as aqs
 import requests
+from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
+
 
 # first, we configure the logging system
 logging.basicConfig(level=logging.INFO)
@@ -280,7 +282,7 @@ class SimbadProvider(AstroqueryProvider):
             )
 
 
-        # then we extract the parameters that are not supported by the provider
+        # then we extract the parameters that are supported by the provider
         # and we pass them to the query
         kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
         
@@ -297,7 +299,6 @@ class SimbadProvider(AstroqueryProvider):
             )
             
         else:
-            # Format the result
 
             return ApiResult(
                 data=response,
@@ -308,7 +309,51 @@ class SimbadProvider(AstroqueryProvider):
 
         
 
+class ExoplanetProvider(AstroqueryProvider):
+    """
+    Provider which handles queries to the Nasa Exoplanet Archive using Astroquery
+    """
+    def __init__(self):
+        self.exoplanet_archive = NasaExoplanetArchive()
 
+    def support_params(self):
+        return super().support_params()
+    
+    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
+    def request(self, **kwargs) -> ApiResult:
+        """
+        Method that handles queries to the Nasa Exoplanet Archive using ASTROQUERY
+        """
+        # Extract the parameters that are supported by the provider
+        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
+        
+        # Check if the object name is provided
+        object_name = kwargs.get("object_name")
+        if not object_name:
+            return ApiResult(
+                data=None,
+                success=False,
+                error="Object name is required",
+                source=self.__class__.__name__
+            )
+        
+        # Perform the query
+        response = self.exoplanet_archive.query_object(object_name, **kwargs)
+        
+        if response is None:
+            return ApiResult(
+                data=None,
+                success=False,
+                error="No results found",
+                source=self.__class__.__name__
+            )
+            
+        else:
+            return ApiResult(
+                data=response,
+                success=True,
+                source=self.__class__.__name__
+            )
 class ApiService:
     """
     Main class used as interface to the API
@@ -319,6 +364,7 @@ class ApiService:
         # self.tap_provider = TapProvider()
         # self.local_files_provider = LocalFilesProvider()
         self.http_provider = HttpProvider()
+        self.exoplanet_provider = ExoplanetProvider()
         self.verbose = verbose
 
 
@@ -356,3 +402,18 @@ class ApiService:
         """
         kwargs["verbose"] = self.verbose
         return self.simbad_provider.request(**kwargs)
+
+    def request_exoplanet(self, **kwargs) -> ApiResult:
+        """
+        Method that will handle queries to the Nasa Exoplanet Archive using Astroquery
+        Args:
+            object_name: Name of the object to query. Mandatory
+            verbose: Whether to print the query. Optional
+            wildcard: Whether to use wildcard search. Optional
+            criteria: Criteria to use for the query. Optional
+            get_query_payload: Whether to get the query payload. Optional
+        Returns:
+            ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
+        """
+        kwargs["verbose"] = self.verbose
+        return self.exoplanet_provider.request(**kwargs)
