@@ -32,11 +32,11 @@ def test_fallback():
 
 
         @DataProviderInterface.with_fallback(fallback_func=lambda *args, **kwargs: "fallback executed")
-        def get_data(self):
+        def request(self):
             raise Exception("error")
 
     provider = MockedProvider()
-    result = provider.get_data()
+    result = provider.request()
     assert result.success is True
     assert result.data == "fallback executed"
     assert result.is_fallback is True
@@ -51,13 +51,13 @@ def test_empty_on_fail_with_no_fallback_provided():
 
 
         @DataProviderInterface.with_fallback(fallback_func=None, return_empty_on_fail=True)
-        def get_data(self):
+        def request(self):
             raise Exception("error")
         
 
 
     provider = MockedProvider()
-    result = provider.get_data()
+    result = provider.request()
     assert result.success is False
     assert result.data is None
     assert result.error is not "error"
@@ -77,12 +77,12 @@ def test_fallback_with_fallback_error():
 
 
         @DataProviderInterface.with_fallback(fallback_func=failing_fallback)
-        def get_data(self):
+        def request(self):
             raise Exception("error")
     provider = MockedProvider()    
     with pytest.raises(Exception) as excinfo:
         
-        provider.get_data()
+        provider.request()
 
 
     assert str(excinfo.value) == "Fallback function failed: error"
@@ -93,13 +93,13 @@ def test_fallback_with_fallback_error():
 def test_http_provider_supported_params():
 
     provider = HttpProvider()
-    assert provider.support_params() == ["url", "headers", "params", "data", "timeout", "verbose"]
+    assert provider.support_params() == ["url", "headers", "params", "data", "timeout", "verbose", "method"]
 
-def test_http_provider_get_data():
+def test_http_provider_request():
 
     #### test with a not valid URL ####
     provider= HttpProvider()
-    result = provider.get_data()
+    result = provider.request()
     assert result.success is False
     assert result.data is None
     assert result.error == "URL is required"
@@ -107,7 +107,7 @@ def test_http_provider_get_data():
 
 
     #### test with a non valid parameter (provider must ignore it)####
-    result1 = provider.get_data(url="https://example.com", invalid_param= "foo")
+    result1 = provider.request(url="https://example.com", invalid_param= "foo")
     assert result1.success is True
     assert result1.data is not None
     assert result1.error is None
@@ -128,7 +128,7 @@ def test_http_provider_get_data():
     }
     for status_code in status_codes:
         url = f"{base_url}{status_code}"
-        result = provider.get_data(url=url)
+        result = provider.request(url=url)
         assert result.success == expected_results[status_code]
         if status_code == 200:
             assert result.data is not None
@@ -142,12 +142,21 @@ def test_http_provider_get_data():
             assert result.is_fallback is False
 
 
-
+def test_http_post_request():
+    apiService = ApiService(verbose = True)
+    url = "https://httpbin.org/post"
+    data = {"key": "value"}
+    result = apiService.request_http(url=url, data=data, method="POST")
+    assert result.success is True
+    assert result.data is not None
+    assert result.error is None
+    assert result.source == HttpProvider.__name__
+    assert result.is_fallback is False
 
 def tests_http_timeout():
     provider = HttpProvider()
     max_retries = 1  # Number of retries
-    result = provider.get_data(
+    result = provider.request(
         url="https://httpbin.org/delay/10",  # Esta URL tarda 10 segundos en responder
         timeout=0.1,  # Timeout muy corto (0.1 segundos)
         max_retries=max_retries  # Solo un intento
@@ -165,7 +174,7 @@ def test_http_request_exception():
         mock_request.side_effect = requests.RequestException("Simulated request exception")
         
         provider = HttpProvider()
-        result = provider.get_data(url="https://example.com", max_retries=1)
+        result = provider.request(url="https://example.com", max_retries=1)
         
         # Con return_empty_on_fail=True, debemos obtener un ApiResult con error
         assert result.success is False

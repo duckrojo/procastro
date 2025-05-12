@@ -119,13 +119,17 @@ class HorizonsInterface:
                 fp.write("!$$SOF\n")
                 fp.write("\n".join(full_specs))
                 fp.close()
+
+                # TODO: change this to the new api service model
                 return requests.post(url_api_file,
                                     data={'format': 'text'},
                                     files={'input': open(fp.name)}
                                     ).text.splitlines()
 
         else:
-            return eval(requests.get(url, allow_redirects=True).content)['result'].splitlines()
+            apiService= ApiService(verbose=True) # TODO: MAYBE API SERVICE INSTANTIATION NEEDS TO BE OUTSIDE THIS SCOPE!!!
+            result = apiService.request_http(url, allow_redirects=True)
+            return eval(result.content)['result'].splitlines()
 
     
 
@@ -821,6 +825,7 @@ class BodyVisualizer:
         apiService = ApiService(verbose=verbose)
         response = apiService.request_http(url= body_files[0][2],
                                         timeout=10,
+                                        method = "GET"
                                         )
         if response.success: 
 

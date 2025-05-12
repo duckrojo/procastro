@@ -59,9 +59,9 @@ class DataProviderInterface(ABC):
     """
 
     @abstractmethod
-    def get_data(self, **kwargs) -> ApiResult:
+    def request(self, **kwargs) -> ApiResult:
         """
-        Method that will be used to get data from the provider.
+        Method that will be used to request data from the provider.
         It will return an ApiResult object.
         """
         pass
@@ -135,22 +135,21 @@ class HttpProvider(DataProviderInterface):
         """
         Method that will return a list of parameters that the provider supports.
         """
-        return ["url", "headers", "params", "data", "timeout", "verbose"]
+        return ["url", "headers", "params", "data", "timeout", "verbose","method"]
     
     # NOTE: Decorators on parent classes are "overrided" as long as we dont call the super() method, otherwise, this decorator will be called on runtime.
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def get_data(self,  **kwargs)-> ApiResult:
+    def request(self,  **kwargs)-> ApiResult:
         """
-        Method that handles HTTP GET requests
+        Method that handles HTTP requests
         """
         url = kwargs.get("url")
         method = kwargs.get("method", "GET")
-        headers = kwargs.get("headers", {})
-        params = kwargs.get("params", {})
-        timeout = kwargs.get("timeout", 30)
         max_retries = kwargs.get("max_retries", 3)
         retry_delay = kwargs.get("retry_delay", 1)
-        verbose = kwargs.get("verbose", False)
+        verbose = kwargs.pop("verbose", False)# we pop verbose argument since it's not used by the request
+    
+        
         if verbose: logger.info(f"HTTP request: {method} {url}")
         # NOTE: Here we use the request library to make the request.
         if not url:
@@ -161,7 +160,10 @@ class HttpProvider(DataProviderInterface):
                 source=self.__class__.__name__
             )
 
-
+        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
+        if "method" not in kwargs:
+            logger.warning("Method not specified, defaulting to GET")
+            kwargs["method"] = "GET"
         # When we do the request, there are 3 cases.
         # 1. The request is successful (2xx) and we get a response.
         # 2. The request is not successful (4xx, 5xx) and we get an error. In this case, we will NOT raise an exception.
@@ -169,7 +171,7 @@ class HttpProvider(DataProviderInterface):
         for attempt in range(max_retries):
             try:
                 # Make the request
-                response = requests.request(method, url, headers=headers, params=params, timeout=timeout)
+                response = requests.request(**kwargs)
                 response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
                 
                 if verbose : logger.info(f"HTTP response: {response.status_code} ")
@@ -255,7 +257,7 @@ class SimbadProvider(AstroqueryProvider):
         return ["object_name", "verbose", "wildcard", "criteria", "get_query_payload"]
 
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def get_data(self, **kwargs) -> ApiResult:
+    def request(self, **kwargs) -> ApiResult:
         """
         Method that handles queries to SIMBAD using ASTROQUERY
         """
@@ -323,14 +325,34 @@ class ApiService:
     def request_http(self, **kwargs ) -> ApiResult:
         """
         Method that will handle HTTP requests using the HTTP provider.
+        Args:
+            url: URL to request. Mandatory
+            method: HTTP method to use. Defaults to GET if not provided.
+            headers: Headers to use for the request. Optional
+            params: Parameters to use for the request. Optional
+            data: Data to send with the request. Optional
+            timeout: Timeout for the request. Optional
+            verbose: Whether to print the query. Optional
+            max_retries: Maximum number of retries for the request. Optional
+        Returns:
+            ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
+
         """
         kwargs["verbose"] = self.verbose
-        return self.http_provider.get_data(**kwargs)
+        return self.http_provider.request(**kwargs)
 
 
     def request_simbad(self, **kwargs) -> ApiResult:
         """
-        Method that will handle queries to SIMBAD using the Simbad provider.
+        Method that will handle queries to SIMBAD using the SIMBAD provider.
+        Args:
+            object_name: Name of the object to query. Mandatory
+            verbose: Whether to print the query. Optional
+            wildcard: Whether to use wildcard search. Optional
+            criteria: Criteria to use for the query. Optional
+            get_query_payload: Whether to get the query payload. Optional
+        Returns:
+            ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
         """
         kwargs["verbose"] = self.verbose
-        return self.simbad_provider.get_data(**kwargs)
+        return self.simbad_provider.request(**kwargs)
