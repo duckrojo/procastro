@@ -52,7 +52,7 @@ def query_full_exoplanet_db(force_reload: bool = False,
         days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
         if days_since < reload_days:
             return pd.read_pickle(file)
-
+    # TODO: Replace with EXOPLANET PROVIDER
     exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
     try:
         resultset = exo_service.search(

@@ -44,6 +44,7 @@ def two_slopes(values, grades, ref_values):
 
 
 def query_full_exoplanet_db():
+    #TODO: Replace with EXOPLANET PROVIDER.
     exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
     resultset = exo_service.search(
         f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "

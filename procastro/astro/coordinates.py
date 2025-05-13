@@ -357,6 +357,8 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
                 raise ValueError(
                     "Sorry, AstroQuery not available for coordinate querying")
 
+
+            # TODO: Replace SIMBAD HERE
             custom_simbad = aqs.Simbad()
             if len(extra_info) > 0:
                 for info in extra_info:
