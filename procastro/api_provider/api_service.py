@@ -374,13 +374,15 @@ class ApiService:
         simbad_votable_fields: List of votable fields to add to the SIMBAD provider. Optional
     """
 
-    def __init__(self, verbose= False, simbad_votable_fields=None, http_params= None):
-        self.simbad_provider = SimbadProvider(simbad_votable_fields=simbad_votable_fields)
+    def __init__(self, verbose= False, simbad_votable_fields=None):
+        self.simbad_provider = SimbadProvider()
         # self.tap_provider = TapProvider()
         # self.local_files_provider = LocalFilesProvider()
         self.http_provider = HttpProvider()
         self.exoplanet_provider = ExoplanetProvider()
         self.verbose = verbose
+        if simbad_votable_fields:
+            self.add_simbad_votable_fields(*simbad_votable_fields)
 
 
     def get_provider(self, service):
@@ -453,3 +455,11 @@ class ApiService:
         """
         kwargs["verbose"] = self.verbose
         return self.exoplanet_provider.request(**kwargs)
+    
+    def add_simbad_votable_fields(self, *fields):
+        """
+        Method that will add votable fields to the SIMBAD provider.
+        Args:
+            fields: List of votable fields to add to the SIMBAD provider.
+        """
+        self.simbad_provider.simbad.add_votable_fields(*fields)
