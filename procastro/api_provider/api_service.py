@@ -137,7 +137,7 @@ class HttpProvider(DataProviderInterface):
         """
         Method that will return a list of parameters that the provider supports.
         """
-        return ["url", "headers", "params", "data", "timeout", "verbose","method"]
+        return ["url", "headers", "params", "data", "timeout", "verbose","method","json","cookies", "files", "auth","allow_redirects","proxies","verify","stream","cert"]
     
     # NOTE: Decorators on parent classes are "overrided" as long as we dont call the super() method, otherwise, this decorator will be called on runtime.
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
@@ -149,7 +149,7 @@ class HttpProvider(DataProviderInterface):
         method = kwargs.get("method", "GET")
         max_retries = kwargs.get("max_retries", 3)
         retry_delay = kwargs.get("retry_delay", 1)
-        verbose = kwargs.pop("verbose", False)# we pop verbose argument since it's not used by the request
+        verbose = kwargs.pop("verbose", False)# we pop verbose argument since it's not used by the request class.|
     
         
         if verbose: logger.info(f"HTTP request: {method} {url}")
@@ -241,19 +241,23 @@ class AstroqueryProvider(DataProviderInterface):
 class LocalFilesProvider(DataProviderInterface):
     #TODO: Implement this class 
     pass
-class TapProvider(AstroqueryProvider):
-    #TODO: Implement this class ?? (Having the exoplanet provider is enough??)
-    pass
 
 class SimbadProvider(AstroqueryProvider):
     """
     Provider which handles queries to SIMBAD using ASTROQUERY
     """
 
-    def __init__(self,votable_fields):
+    def __init__(self, verbose=False, simbad_votable_fields=None):
         self.simbad = aqs.Simbad()
-        # CHECK VOTABLE FIELDS ON INIT 
-        #self.simbad.add_votable_fields(votable_fields)
+        # CHECK VOTABLE FIELDS ON INIT
+
+
+        if simbad_votable_fields:
+            try:
+                self.simbad.add_votable_fields(*simbad_votable_fields)
+            except Exception as e:
+                logger.error(f"Error adding votable fields: {e}")
+                raise
 
 
 
@@ -364,16 +368,38 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
 class ApiService:
     """
     Main class used as interface to the API
+    It will handle all the requests to the different providers.
+    Args: 
+        verbose: Whether to print the query. Optional
+        simbad_votable_fields: List of votable fields to add to the SIMBAD provider. Optional
     """
 
-    def __init__(self, verbose= False, votable_fields=None):
-        self.simbad_provider = SimbadProvider(votable_fields=votable_fields)
+    def __init__(self, verbose= False, simbad_votable_fields=None, http_params= None):
+        self.simbad_provider = SimbadProvider(simbad_votable_fields=simbad_votable_fields)
         # self.tap_provider = TapProvider()
         # self.local_files_provider = LocalFilesProvider()
         self.http_provider = HttpProvider()
         self.exoplanet_provider = ExoplanetProvider()
         self.verbose = verbose
 
+
+    def get_provider(self, service):
+        """
+        Method that will return the provider for the given service.
+        Args:
+            service: Service to get the provider for. It can be "simbad", "http", "exoplanet", etc. 
+        Returns:
+            DataProviderInterface: Provider for the given service.
+        """
+        service = service.lower()
+        if service == "simbad":
+            return self.simbad_provider
+        elif service == "http":
+            return self.http_provider
+        elif service == "exoplanet":
+            return self.exoplanet_provider
+        # Add more providers as needed
+        return None
 
     def request_http(self, **kwargs ) -> ApiResult:
         """
