@@ -373,7 +373,8 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
             if query is None:
                 raise ValueError(
                     f"Target '{target}' not found on Simbad")
-            ra, dec = query['ra'][0], query['dec'][0]
+            ra = (query['ra'][0] * query['ra'].unit).to(u.hourangle).value
+            dec = (query['dec'][0] * query['dec'].unit).to(u.deg).value
             if len(extra_info) > 0:
                 for info in extra_info:
                     if info in votable:
