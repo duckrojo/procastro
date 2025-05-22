@@ -314,7 +314,7 @@ class SimbadProvider(AstroqueryProvider):
                 success=True,
                 source=self.__class__.__name__
             )
-        # TODO IMPLEMENT ADD VOTABLE FIELDS
+        
 
     
 
@@ -326,7 +326,7 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
         self.exoplanet_archive = NasaExoplanetArchive()
 
     def support_params(self):
-        return ["object_name", "verbose", "table", "get_query_payload", "regularize"]
+        return ["object_name", "verbose", "table", "get_query_payload", "regularize", "select", "where", "order"]
     
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
     def request(self, **kwargs) -> ApiResult:
@@ -358,12 +358,48 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
             )
             
         else:
-            #TODO: Transform the response (Exoplanet returns data in a table format, check this!!)
             return ApiResult(
                 data=response,
                 success=True,
                 source=self.__class__.__name__
             )
+    
+    def query(self, **kwargs):
+        """
+        Method that handles queries to the Nasa Exoplanet Archive using ASTROQUERY
+        
+        Args:
+            table: Table name to query (e.g., "ps" for Planetary Systems or "pscomppars")
+            select: Comma-separated list of columns to return
+            where: SQL WHERE clause to filter results
+            order: Column(s) to order results by
+        """
+        table = kwargs.get("table", "ps")  # Default to planetary systems
+        select = kwargs.get("select")
+        where = kwargs.get("where")
+        order = kwargs.get("order")
+        
+        # Execute query
+        response = self.exoplanet_archive.query_criteria(
+            table=table,
+            select=select,
+            where=where,
+            order=order
+        )
+        
+        if response is None or len(response) == 0:
+            return ApiResult(
+                data=None,
+                success=False,
+                error="No matching exoplanets found",
+                source=self.__class__.__name__
+            )
+        
+        return ApiResult(
+            data=response,
+            success=True,
+            source=self.__class__.__name__
+        )
         
 class ApiService:
     """
@@ -463,3 +499,19 @@ class ApiService:
             fields: List of votable fields to add to the SIMBAD provider.
         """
         self.simbad_provider.simbad.add_votable_fields(*fields)
+
+
+
+    def query_exoplanet(self, **kwargs):
+        """
+        Method that will handle queries to the Nasa Exoplanet Archive using Astroquery
+        Args:
+            table: Table name to query (e.g., "ps" for Planetary Systems or "pscomppars")
+            select: Comma-separated list of columns to return
+            where: SQL WHERE clause to filter results
+            order: Column(s) to order results by
+        Returns:
+            ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
+        """
+        kwargs["verbose"] = self.verbose
+        return self.exoplanet_provider.query(**kwargs)

@@ -30,6 +30,7 @@ import pyvo as vo
 import pyvo.dal.exceptions
 
 import procastro as pa
+from procastro.api_provider.api_service import ApiResult, ApiService
 import procastro.astro as paa
 import matplotlib as mpl
 import numpy as np
@@ -52,22 +53,30 @@ def query_full_exoplanet_db(force_reload: bool = False,
         days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
         if days_since < reload_days:
             return pd.read_pickle(file)
-    # TODO: Replace with EXOPLANET PROVIDER
-    exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
-    try:
-        resultset = exo_service.search(
-            f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
-            f"FROM exo_tap.pscomppars "
-            f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 ")
-    except pyvo.dal.exceptions.DALFormatError:
+            
+    # TODO: Implement fallback logic here.
+    # exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
+    # resultset = exo_service.search(
+    #     f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
+    #     f"FROM exo_tap.pscomppars "
+    #     f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 ")
+
+    apiService = ApiService()
+    resultset: ApiResult = apiService.query_exoplanets(
+        table = "pscomppars",
+        select = "pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag",
+        where = "pl_tranmid!=0.0 and pl_orbper!=0.0",
+    )
+
+    if resultset.success == False:
         if os.path.isfile(file):
             days_since = (time.time() - os.path.getmtime(file)) / 3600 / 24
             print(f"Cannot connect to the Exoplanet Archive Database, "
                   f"using cached version instead ({days_since:.1f} days old)")
             return pd.read_pickle(file)
         else:
-            raise ConnectionError("Cannot connect to the Exoplanet Archive dabatase")
-    planets_df = resultset.to_table().to_pandas()
+            raise ConnectionError("Cannot connect to the Exoplanet Archive database")
+    planets_df = resultset.to_table().data.to_pandas()
     planets_df.to_pickle(file)
 
     return planets_df

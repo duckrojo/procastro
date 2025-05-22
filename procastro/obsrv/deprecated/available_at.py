@@ -15,6 +15,8 @@ from itertools import chain
 import time
 import warnings
 from pandas.plotting import table
+from procastro.api_provider.api_service import ApiResult, ApiService
+
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -45,12 +47,19 @@ def two_slopes(values, grades, ref_values):
 
 def query_full_exoplanet_db():
     #TODO: Replace with EXOPLANET PROVIDER.
-    exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
-    resultset = exo_service.search(
-        f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
-        f"FROM exo_tap.pscomppars "
-        f"WHERE pl_tranmid!=0.0 and sy_pmra is not null and sy_pmdec is not null and pl_orbper!=0.0 ")
-    planets_df = resultset.to_table().to_pandas()
+    # exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
+    # resultset = exo_service.search(
+    #     f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
+    #     f"FROM exo_tap.pscomppars "
+    #     f"WHERE pl_tranmid!=0.0 and sy_pmra is not null and sy_pmdec is not null and pl_orbper!=0.0 ")
+
+    apiService = ApiService()
+    resultset: ApiResult = apiService.query_exoplanet(
+        table = "pscomppars",
+        select = "pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag ",
+        where =  "pl_tranmid!=0.0 and sy_pmra is not null and sy_pmdec is not null and pl_orbper!=0.0",
+    )
+    planets_df = resultset.data.to_table().to_pandas()
     return planets_df
 
 

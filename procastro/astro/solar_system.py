@@ -121,13 +121,23 @@ class HorizonsInterface:
                 fp.close()
 
                 # TODO: change this to the new api service model
-                return requests.post(url_api_file,
-                                    data={'format': 'text'},
-                                    files={'input': open(fp.name)}
-                                    ).text.splitlines()
+
+
+                apiService = ApiService()
+                response = apiService.request_http(url_api_file, method="POST", data={'format': 'text'}, files={'input': open(fp.name)})
+                return response.data.splitlines()
+
+
+                
+                # return requests.post(url_api_file,
+                #                     data={'format': 'text'},
+                #                     files={'input': open(fp.name)}
+                #                     ).text.splitlines()
+            
+                
 
         else:
-            apiService= ApiService(verbose=True) # TODO: MAYBE API SERVICE INSTANTIATION NEEDS TO BE OUTSIDE THIS SCOPE!!!
+            apiService= ApiService(verbose=True) 
             result = apiService.request_http(url, allow_redirects=True)
             return eval(result.content)['result'].splitlines()
 
