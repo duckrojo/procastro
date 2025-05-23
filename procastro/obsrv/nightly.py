@@ -76,7 +76,9 @@ def query_full_exoplanet_db(force_reload: bool = False,
             return pd.read_pickle(file)
         else:
             raise ConnectionError("Cannot connect to the Exoplanet Archive database")
-    planets_df = resultset.to_table().data.to_pandas()
+    # planets_df = resultset.to_table().data.to_pandas()
+    # the new apiservice returns a table that can be parsed easily to pandas dataframes
+    planets_df = resultset.data.to_pandas()
     planets_df.to_pickle(file)
 
     return planets_df

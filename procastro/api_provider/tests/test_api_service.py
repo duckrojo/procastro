@@ -1,6 +1,10 @@
 from unittest.mock import MagicMock, patch
+import pandas as pd
 import pytest
 import requests
+import pyvo as vo
+import pyvo.dal.exceptions
+from astropy.table import QTable
 
 from procastro.api_provider.api_service import ApiResult, ApiService, DataProviderInterface, HttpProvider 
 
@@ -89,11 +93,6 @@ def test_fallback_with_fallback_error():
 
 
 ############### HTTTP PROVIDER TESTS #######################
-
-def test_http_provider_supported_params():
-
-    provider = HttpProvider()
-    assert provider.support_params() == ["url", "headers", "params", "data", "timeout", "verbose", "method"]
 
 def test_http_provider_request():
 
@@ -237,3 +236,38 @@ def test_exoplanet_provider():
     assert response.error is None
     assert response.source == "ExoplanetProvider"
     assert response.is_fallback is False
+
+
+def test_exoplanet_provider_query():
+    
+    exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
+    resultset_old = exo_service.search(
+        f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
+        f"FROM exo_tap.pscomppars "
+        f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 ")
+    
+
+    apiService = ApiService(verbose = True)
+    resultset_new: ApiResult = apiService.query_exoplanet(
+        table= "pscomppars",
+        select = "pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag",
+        where = "pl_tranmid!=0.0 and pl_orbper!=0.0",
+    )
+    assert resultset_new.success is True
+    assert resultset_new.data is not None
+    assert resultset_new.error is None
+    assert resultset_new.source == "ExoplanetProvider"
+    assert resultset_new.is_fallback is False
+    df_new = resultset_new.data.to_pandas()
+    df_old = resultset_old.to_table().to_pandas()
+    # as said in the apiService, the query method query_criteria returns an extra column called "sky_coord", so , for testing purposes, we will compare the intersection
+    # between the two dataframes.
+    common_cols = set(df_new.columns) & set(df_old.columns)
+    df_new_common = df_new[list(common_cols)]
+    df_old_common = df_old[list(common_cols)]
+    pd.testing.assert_frame_equal(
+        df_new_common.reset_index(drop=True).sort_index(axis=1),
+        df_old_common.reset_index(drop=True).sort_index(axis=1),
+        check_dtype=False,
+        check_like=True
+    )

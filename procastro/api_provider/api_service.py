@@ -363,7 +363,7 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
                 success=True,
                 source=self.__class__.__name__
             )
-    
+    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
     def query(self, **kwargs):
         """
         Method that handles queries to the Nasa Exoplanet Archive using ASTROQUERY
@@ -373,19 +373,31 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
             select: Comma-separated list of columns to return
             where: SQL WHERE clause to filter results
             order: Column(s) to order results by
+        
         """
-        table = kwargs.get("table", "ps")  # Default to planetary systems
+
+
+        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
+
+
+        table = kwargs.get("table")  # Default to planetary systems
         select = kwargs.get("select")
         where = kwargs.get("where")
         order = kwargs.get("order")
+        query_params = {}
+        if table is not None:
+            query_params["table"] = table
+        if select is not None:
+            query_params["select"] = select
+        if where is not None:
+            query_params["where"] = where
+        if order is not None:
+            query_params["order"] = order
+
+        
         
         # Execute query
-        response = self.exoplanet_archive.query_criteria(
-            table=table,
-            select=select,
-            where=where,
-            order=order
-        )
+        response = self.exoplanet_archive.query_criteria(**query_params)
         
         if response is None or len(response) == 0:
             return ApiResult(
@@ -512,6 +524,9 @@ class ApiService:
             order: Column(s) to order results by
         Returns:
             ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
+
+        Note:
+            Astroquery automatically creates an extra column called sky_coord using ra and dec columns. 
         """
         kwargs["verbose"] = self.verbose
         return self.exoplanet_provider.query(**kwargs)
