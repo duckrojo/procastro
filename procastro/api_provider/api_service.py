@@ -103,7 +103,7 @@ class DataProviderInterface(ABC):
                     # Try fallback if provided
                     if fallback_func:
                         try:
-                            fallback_data = fallback_func(e, **kwargs)
+                            fallback_data = fallback_func(self,e, **kwargs)
                             return ApiResult(
                                 data=fallback_data, 
                                 success=True,
@@ -245,12 +245,27 @@ class LocalFilesProvider(DataProviderInterface):
     """
     Class to use when loading local files
     """
+
+    def __init__(self, api_service=None):
+        self.api_service = api_service
+    
+    def set_api_service(self, api_service):
+        """Set the API service reference after initialization"""
+        self.api_service = api_service
     def support_params(self):
         return ["file_path", "force_reload", "reload_days"]
     
-    def exoplanet_fallback(error, **kwargs):
-        apiService = ApiService()
-        result: ApiResult = apiService.query_exoplanet(
+    def exoplanet_fallback(self, error, **kwargs):
+
+        if not hasattr(self, 'api_service') or self.api_service is None:
+            # Si no tenemos la referencia, creamos una nueva instancia
+            # (esto es menos eficiente pero funciona como fallback)
+            from procastro.api_provider.api_service import ApiService
+            api_service = ApiService()
+        else:
+            api_service = self.api_service
+
+        result: ApiResult = api_service.query_exoplanet(
             table="pscomppars",
             select="pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag",
             where="pl_tranmid!=0.0 and pl_orbper!=0.0"
@@ -465,6 +480,7 @@ class ApiService:
     def __init__(self, verbose= False, simbad_votable_fields=None):
         self.simbad_provider = SimbadProvider()
         self.local_files_provider = LocalFilesProvider()
+        self.local_files_provider.set_api_service(self)
         self.http_provider = HttpProvider()
         self.exoplanet_provider = ExoplanetProvider()
         self.verbose = verbose
