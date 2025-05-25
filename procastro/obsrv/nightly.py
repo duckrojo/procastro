@@ -45,43 +45,27 @@ TwoTuple = Tuple[float, float]
 __all__ = ['query_full_exoplanet_db', 'Nightly']
 
 
-def query_full_exoplanet_db(force_reload: bool = False,
-                            reload_days: float = 7
-                            ):
+def query_full_exoplanet_db(force_reload: bool = False, reload_days: float = 7):
+    """
+    Queries whether the local file of the NEA for the exoplanet db.
+    """
     file = pa.user_confdir("exodb.pickle")
-    if not force_reload and os.path.isfile(file):
-        days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
-        if days_since < reload_days:
-            return pd.read_pickle(file)
-            
-    # TODO: Implement fallback logic here.
-    # exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
-    # resultset = exo_service.search(
-    #     f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
-    #     f"FROM exo_tap.pscomppars "
-    #     f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 ")
-
-    apiService = ApiService()
-    resultset: ApiResult = apiService.query_exoplanets(
-        table = "pscomppars",
-        select = "pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag",
-        where = "pl_tranmid!=0.0 and pl_orbper!=0.0",
+    
+    api_service = ApiService(verbose=True)
+    
+    result = api_service.query_exoplanet_db(
+        file_path=file,
+        force_reload=force_reload,
+        reload_days=reload_days
     )
-
-    if resultset.success == False:
-        if os.path.isfile(file):
-            days_since = (time.time() - os.path.getmtime(file)) / 3600 / 24
-            print(f"Cannot connect to the Exoplanet Archive Database, "
-                  f"using cached version instead ({days_since:.1f} days old)")
-            return pd.read_pickle(file)
-        else:
-            raise ConnectionError("Cannot connect to the Exoplanet Archive database")
-    # planets_df = resultset.to_table().data.to_pandas()
-    # the new apiservice returns a table that can be parsed easily to pandas dataframes
-    planets_df = resultset.data.to_pandas()
-    planets_df.to_pickle(file)
-
-    return planets_df
+    
+    if result.is_fallback:
+        planets_df = result.data.to_pandas()
+        planets_df.to_pickle(file)
+        print(f"Exoplanet database updated and saved to cache")
+        return planets_df
+    
+    return result.data
 
 
 def _choose(dataframe: pd.DataFrame,

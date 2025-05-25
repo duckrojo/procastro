@@ -12,9 +12,11 @@ This way, adding a provider is very easy, and can be done in a single file.
 from abc import ABC, abstractmethod
 from functools import wraps
 import logging
+import os
 import time
 from typing import Callable, Generic, Optional, TypeVar
 import astroquery.simbad as aqs
+import pandas as pd
 import requests
 from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
 
@@ -238,9 +240,49 @@ class AstroqueryProvider(DataProviderInterface):
         """
         pass
 
+
 class LocalFilesProvider(DataProviderInterface):
-    #TODO: Implement this class 
-    pass
+    """
+    Class to use when loading local files
+    """
+    def support_params(self):
+        return ["file_path", "force_reload", "reload_days"]
+    
+    def exoplanet_fallback(error, **kwargs):
+        apiService = ApiService()
+        result: ApiResult = apiService.query_exoplanet(
+            table="pscomppars",
+            select="pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag",
+            where="pl_tranmid!=0.0 and pl_orbper!=0.0"
+        )
+        if not result.success:
+            raise Exception("API call failed and fallback also failed")
+
+        return result
+
+    @DataProviderInterface.with_fallback(fallback_func=exoplanet_fallback)
+    def load_exoplanet_db(self, **kwargs) -> ApiResult:
+        """
+        Loads a file in pickle format.
+        """
+        file_path = kwargs.get("file_path")
+        force_reload = kwargs.get("force_reload", False)
+        reload_days = kwargs.get("reload_days", 7)
+        if not os.path.is_file(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}, executing fallback")
+        if force_reload:
+            raise Exception(f"Force reload is enabled, executing fallback function")
+        if os.path.getmtime(file_path) < time.time() - (reload_days * 24 * 60 * 60):
+            raise Exception(f"File is older than {reload_days} days, executing fallback function")
+
+        data = pd.read_pickle(file_path)
+        return ApiResult(
+            data=data,
+            success=True,
+            source=self.__class__.__name__
+        )
+    
+
 
 class SimbadProvider(AstroqueryProvider):
     """
@@ -258,8 +300,6 @@ class SimbadProvider(AstroqueryProvider):
             except Exception as e:
                 logger.error(f"Error adding votable fields: {e}")
                 raise
-
-
 
     def support_params(self):
         """
@@ -425,7 +465,7 @@ class ApiService:
     def __init__(self, verbose= False, simbad_votable_fields=None):
         self.simbad_provider = SimbadProvider()
         # self.tap_provider = TapProvider()
-        # self.local_files_provider = LocalFilesProvider()
+        self.local_files_provider = LocalFilesProvider()
         self.http_provider = HttpProvider()
         self.exoplanet_provider = ExoplanetProvider()
         self.verbose = verbose
@@ -530,3 +570,16 @@ class ApiService:
         """
         kwargs["verbose"] = self.verbose
         return self.exoplanet_provider.query(**kwargs)
+    
+
+    def query_exoplanet_db(self, **kwargs):
+        """
+        Method that will seek a file called exodb.pickle. If the file does not exist, it will execute a fallback calling the Nasa Exoplanet Archive API
+        Args:
+            file_path: Path to the file to load. Mandatory
+            force_reload: Whether to force reload the file using the fallback function (API call to NEA). Optional
+            reload_days: Max age of the file to consider it old and execute the fallback function.
+        Returns: 
+            ApiResult object
+        """
+        return self.local_files_provider.load_exoplanet_db(**kwargs)
