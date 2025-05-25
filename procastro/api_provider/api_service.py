@@ -464,7 +464,6 @@ class ApiService:
 
     def __init__(self, verbose= False, simbad_votable_fields=None):
         self.simbad_provider = SimbadProvider()
-        # self.tap_provider = TapProvider()
         self.local_files_provider = LocalFilesProvider()
         self.http_provider = HttpProvider()
         self.exoplanet_provider = ExoplanetProvider()
@@ -488,6 +487,8 @@ class ApiService:
             return self.http_provider
         elif service == "exoplanet":
             return self.exoplanet_provider
+        elif service == "localfiles":
+            return self.local_files_provider
         # Add more providers as needed
         return None
 
