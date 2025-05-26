@@ -130,7 +130,7 @@ class DataProviderInterface(ABC):
 
 class HttpProvider(DataProviderInterface):
     """
-    Provider that will help to instantiate HTTP Providers . USGS y HORIZONS.
+    Provider that will help to instantiate HTTP Providers . USGS and HORIZONS.
     """
 
 
@@ -404,7 +404,9 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
                 error="Object name is required",
                 source=self.__class__.__name__
             )
-        
+        verbose = kwargs.pop("verbose", False) # we pop verbose argument since it's not used by the request class.
+        if verbose:
+            logger.info(f"Querying Exoplanet Archive for object: {object_name} with params {kwargs}")
         # Perform the query
         response = self.exoplanet_archive.query_object(**kwargs)
         
@@ -425,7 +427,7 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
     def query(self, **kwargs):
         """
-        Method that handles queries to the Nasa Exoplanet Archive using ASTROQUERY
+        Method that handles queries in SQL format to the Nasa Exoplanet Archive using ASTROQUERY. Replacement for the TAP service.
         
         Args:
             table: Table name to query (e.g., "ps" for Planetary Systems or "pscomppars")
@@ -439,10 +441,11 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
         kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
 
 
-        table = kwargs.get("table")  # Default to planetary systems
+        table = kwargs.get("table")  
         select = kwargs.get("select")
         where = kwargs.get("where")
         order = kwargs.get("order")
+        verbose = kwargs.pop("verbose", False) # we pop verbose argument since it's not used by the request class.
         query_params = {}
         if table is not None:
             query_params["table"] = table
@@ -453,8 +456,22 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
         if order is not None:
             query_params["order"] = order
 
-        
-        
+        if not table:
+            return ApiResult(
+                data = None,
+                success = False,
+                error = "Table name is required",
+                source = self.__class__.__name__
+            )
+        if not select:
+            return ApiResult(
+                data = None,
+                success = False,
+                error = "Select clause is required",
+                source = self.__class__.__name__
+            )
+        if verbose: 
+            logger.info(f"Querying Exoplanet Archive: {query_params}")
         # Execute query
         response = self.exoplanet_archive.query_criteria(**query_params)
         
@@ -577,7 +594,7 @@ class ApiService:
 
     def query_exoplanet(self, **kwargs):
         """
-        Method that will handle queries to the Nasa Exoplanet Archive using Astroquery
+        Method that will handle queries directly to the Nasa Exoplanet Archive using Astroquery
         Args:
             table: Table name to query (e.g., "ps" for Planetary Systems or "pscomppars")
             select: Comma-separated list of columns to return
@@ -595,7 +612,7 @@ class ApiService:
 
     def query_exoplanet_db(self, **kwargs):
         """
-        Method that will seek a file called exodb.pickle. If the file does not exist, it will execute a fallback calling the Nasa Exoplanet Archive API
+        Method that will query the local file of the NEA for the exoplanet db. If the file does not exist, it will execute a fallback calling the Nasa Exoplanet Archive API (using the query_exoplanet method).
         Args:
             file_path: Path to the file to load. Mandatory
             force_reload: Whether to force reload the file using the fallback function (API call to NEA). Optional
@@ -603,4 +620,5 @@ class ApiService:
         Returns: 
             ApiResult object
         """
+        kwargs["verbose"] = self.verbose
         return self.local_files_provider.load_exoplanet_db(**kwargs)
