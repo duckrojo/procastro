@@ -496,9 +496,18 @@ class ApiService:
     Args: 
         verbose: Whether to print the query. Optional
         simbad_votable_fields: List of votable fields to add to the SIMBAD provider. Optional
+    Usage:
+        api_service = ApiService(verbose=True, simbad_votable_fields=["ra", "dec", "otype"])
+        response = api_service.request_simbad(object_name="M31", wildcard=True)
+        if response.success:
+            print(f"Data for M31: {response.data}")
+        else:
+            print(f"Error querying SIMBAD: {response.error}")
+        
     """
 
     def __init__(self, verbose= False, simbad_votable_fields=None):
+        
         self.simbad_provider = SimbadProvider()
         self.local_files_provider = LocalFilesProvider()
         self.local_files_provider.set_api_service(self)
