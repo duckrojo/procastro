@@ -5,7 +5,7 @@ import requests
 import pyvo as vo
 import pyvo.dal.exceptions
 from astropy.table import QTable
-
+import procastro as pa
 from procastro.api_provider.api_service import ApiResult, ApiService, DataProviderInterface, HttpProvider 
 
 @pytest.fixture
@@ -271,3 +271,13 @@ def test_exoplanet_provider_query():
         check_dtype=False,
         check_like=True
     )
+
+
+def test_exoplanet_db_with_fallback():
+    apiService = ApiService(verbose = True)
+    file = pa.user_confdir("exodb.pickle")
+    response = apiService.query_exoplanet_db(file_path= file)
+    assert response.success is True
+    assert response.data is not None
+    assert response.is_fallback is False
+    assert response.source == "LocalFilesProvider"

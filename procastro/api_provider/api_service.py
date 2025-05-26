@@ -274,6 +274,10 @@ class LocalFilesProvider(DataProviderInterface):
             raise Exception("API call failed and fallback also failed")
 
         return result
+    
+
+    def request(self):
+        pass
 
     @DataProviderInterface.with_fallback(fallback_func=exoplanet_fallback)
     def load_exoplanet_db(self, **kwargs) -> ApiResult:
