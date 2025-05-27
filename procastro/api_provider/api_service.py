@@ -19,7 +19,10 @@ import astroquery.simbad as aqs
 import pandas as pd
 import requests
 from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
-
+from procastro.api_provider.api_exceptions import (
+    ApiServiceError, HttpProviderError, SimbadProviderError, 
+    ExoplanetProviderError, LocalFilesProviderError, DataValidationError
+)
 
 # first, we configure the logging system
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 # type for results
 T = TypeVar("T")  # this means that the result can be any type
+
+
+
 
 
 class ApiResult(Generic[T]):
@@ -111,7 +117,11 @@ class DataProviderInterface(ABC):
                                 is_fallback=True
                             )
                         except Exception as fallback_error:
-                            raise Exception(f"Fallback function failed: {fallback_error}") from e
+                            raise ApiServiceError(
+                                message=f"Fallback function failed: {fallback_error}",
+                                details={"original_error": str(e)},
+                                provider=self.__class__.__name__
+                            )
                     
                     # Return empty result if configured
                     if return_empty_on_fail:
@@ -157,13 +167,11 @@ class HttpProvider(DataProviderInterface):
         if verbose: logger.info(f"HTTP request: {method} {url}")
         # NOTE: Here we use the request library to make the request.
         if not url:
-            return ApiResult(
-                data=None,
-                success=False,
-                error="URL is required",
-                source=self.__class__.__name__
+            raise ApiServiceError(
+                message="URL is required",
+                details={"url": url},
+                provider=self.__class__.__name__
             )
-        
 
         kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
         if "method" not in kwargs:
@@ -219,13 +227,22 @@ class HttpProvider(DataProviderInterface):
                     logger.error(f"Request error: {url} - Error: {e}, retrying...")
                     time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
                     continue
-                raise Exception(f"Request failed after {max_retries} retries: Timeout")
+                raise HttpProviderError(
+                    message=f"Request failed after {max_retries} attempts: {url}",
+                    url=url,
+                )
             except requests.RequestException as e:
                 logger.error(f"Request error: {url} - Error: {e}")
-                raise Exception(f"Request failed: {e}") 
+                raise HttpProviderError(
+                    message=f"Request failed: {url}",
+                    url=url
+                )
             except requests.TooManyRedirects as e:
                 logger.error(f"Too many redirects: {url} - Error: {e}")
-                raise Exception(f"Too many redirects: {e}")
+                raise HttpProviderError(
+                    message=f"Too many redirects: {url}",
+                    url=url
+                )
 
 class AstroqueryProvider(DataProviderInterface):
     """
@@ -271,7 +288,11 @@ class LocalFilesProvider(DataProviderInterface):
             where="pl_tranmid!=0.0 and pl_orbper!=0.0"
         )
         if not result.success:
-            raise Exception("API call failed and fallback also failed")
+            raise ExoplanetProviderError(
+                message="Fallback query to Exoplanet Archive failed",
+                details={"error": result.error},
+                provider=self.__class__.__name__
+            )
 
         return result
     
@@ -288,11 +309,20 @@ class LocalFilesProvider(DataProviderInterface):
         force_reload = kwargs.get("force_reload", False)
         reload_days = kwargs.get("reload_days", 7)
         if not os.path.is_file(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}, executing fallback")
+            raise LocalFilesProviderError(
+                message=f"File not found: {file_path}",
+                file_path=file_path,
+            )
         if force_reload:
-            raise Exception(f"Force reload is enabled, executing fallback function")
+            raise LocalFilesProviderError(
+                message=f"Force reload is set to True, executing fallback function",
+                file_path=file_path,
+            )
         if os.path.getmtime(file_path) < time.time() - (reload_days * 24 * 60 * 60):
-            raise Exception(f"File is older than {reload_days} days, executing fallback function")
+            raise LocalFilesProviderError(
+                message=f"File is older than {reload_days} days, executing fallback function",
+                file_path=file_path,
+            )
 
         data = pd.read_pickle(file_path)
         return ApiResult(
@@ -318,7 +348,10 @@ class SimbadProvider(AstroqueryProvider):
                 self.simbad.add_votable_fields(*simbad_votable_fields)
             except Exception as e:
                 logger.error(f"Error adding votable fields: {e}")
-                raise
+                raise SimbadProviderError(
+                    message=f"Error adding votable fields: {e}",
+                    provider=self.__class__.__name__
+                )
 
     def support_params(self):
         """
@@ -335,18 +368,13 @@ class SimbadProvider(AstroqueryProvider):
         object_name = kwargs.get("object_name")
         verbose = kwargs.pop("verbose", False) ## verbose cannot be pased to aqs since it is deprecated
         if not object_name:
-            return ApiResult(
-                data=None,
-                success=False,
-                error="Object name is required",
-                source=self.__class__.__name__
+            raise SimbadProviderError(
+                message="Object name is required",
+                
             )
         if not isinstance(object_name, str):
-            return ApiResult(
-                data=None,
-                success=False,
-                error="Object name must be a string",
-                source=self.__class__.__name__
+            raise SimbadProviderError(
+                message="Object name must be a string",
             )
 
 
@@ -357,7 +385,13 @@ class SimbadProvider(AstroqueryProvider):
         if verbose:
             logger.info(f"Querying SIMBAD: {object_name} with format {format} and params {kwargs}")
         # pass the extra arguments if needed
-        response = self.simbad.query_object(**kwargs)
+        try:
+            response = self.simbad.query_object(**kwargs)
+        except Exception as e:
+            logger.error(f"Error querying SIMBAD: {e}")
+            raise SimbadProviderError(
+                message=f"Error querying SIMBAD: {e}",
+            )
         if response is None:
             return ApiResult(
                 data=None,
@@ -398,17 +432,20 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
         # Check if the object name is provided
         object_name = kwargs.get("object_name")
         if not object_name:
-            return ApiResult(
-                data=None,
-                success=False,
-                error="Object name is required",
-                source=self.__class__.__name__
+            raise ExoplanetProviderError(
+                message="Object name is required",
             )
         verbose = kwargs.pop("verbose", False) # we pop verbose argument since it's not used by the request class.
         if verbose:
             logger.info(f"Querying Exoplanet Archive for object: {object_name} with params {kwargs}")
         # Perform the query
-        response = self.exoplanet_archive.query_object(**kwargs)
+        try:
+            response = self.exoplanet_archive.query_object(**kwargs)
+        except Exception as e:
+            logger.error(f"Error querying Exoplanet Archive: {e}")
+            raise ExoplanetProviderError(
+                message=f"Error querying Exoplanet Archive: {e}",
+            )
         
         if response is None:
             return ApiResult(
@@ -457,23 +494,23 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
             query_params["order"] = order
 
         if not table:
-            return ApiResult(
-                data = None,
-                success = False,
-                error = "Table name is required",
-                source = self.__class__.__name__
+            raise ExoplanetProviderError(
+                message="Table name is required",
             )
         if not select:
-            return ApiResult(
-                data = None,
-                success = False,
-                error = "Select clause is required",
-                source = self.__class__.__name__
+            raise ExoplanetProviderError(
+                message="Select clause is required",
             )
         if verbose: 
             logger.info(f"Querying Exoplanet Archive: {query_params}")
         # Execute query
-        response = self.exoplanet_archive.query_criteria(**query_params)
+        try:
+            response = self.exoplanet_archive.query_criteria(**query_params)
+        except Exception as e:
+            logger.error(f"Error querying Exoplanet Archive: {e}")
+            raise ExoplanetProviderError(
+                message=f"Error querying Exoplanet Archive: {e}",
+            )
         
         if response is None or len(response) == 0:
             return ApiResult(
@@ -619,7 +656,7 @@ class ApiService:
         return self.exoplanet_provider.query(**kwargs)
     
 
-    def query_exoplanet_db(self, **kwargs):
+    def query_exoplanet_full_db(self, **kwargs):
         """
         Method that will query the local file of the NEA for the exoplanet db. If the file does not exist, it will execute a fallback calling the Nasa Exoplanet Archive API (using the query_exoplanet method).
         Args:

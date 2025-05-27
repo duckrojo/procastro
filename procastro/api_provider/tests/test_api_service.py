@@ -275,7 +275,7 @@ def test_exoplanet_provider_query():
 
 def test_exoplanet_db_with_fallback():
     apiService = ApiService(verbose = True)
-    file = pa.user_confdir("exodb.pickle")
+    file = pa.user_confdir("exodb.pickle") #TODO: CHECK config_user
     response = apiService.query_exoplanet_db(file_path= file)
     assert response.success is True
     assert response.data is not None

@@ -326,7 +326,7 @@ class ObsCalc(object):
         print("Star at RA/DEC: {0:s}/{1:s}"
               .format(self._target.ra.to_string(sep=':'),
                       self._target.dec.to_string(sep=':')))
-
+        # TODO: CHECK THIS FUNCTION (LOCAL SEEKER) (fallback without overwriting)
         transit_epoch, transit_period, transit_length = \
             procastro.astro.exoplanet.get_transit_ephemeris(target)
         print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
@@ -336,7 +336,7 @@ class ObsCalc(object):
 
             query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
                     f"WHERE lower(pl_name) like '%{target}%' "
-            
+            #TODO : Replace this !!!
             apiService = ApiService()
             resultset = apiService.tap_service(query)
             try:
