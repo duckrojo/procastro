@@ -1554,11 +1554,13 @@ def body_map(body:str,
 
 
     if time is None:
-            if not isinstance(observer, Table.Row):
-                raise TypeError("Time can only be omitted when observer is a JPL ephemeris in a astropy.Table.Row object.")
+        if isinstance(observer, Table.Row):
             ephemeris_line = observer
             logger.info(f"Time is None. Using time from ephemeris: {apt.Time(ephemeris_line['jd'], format='jd')}")
             time = apt.Time(ephemeris_line['jd'], format='jd')
+        else:
+            logger.info("Time is None. Using now")
+            time = apt.Time.now()
     
     # Case 1: time is either none or an scalar
     if time.isscalar:

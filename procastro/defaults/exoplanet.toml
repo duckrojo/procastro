@@ -1,2 +1,3 @@
 
 transit_file = "%CONFIG_DIR%/transits.txt"
+cache_dir = '%CACHE_DIR'

@@ -27,4 +27,4 @@ from .astrofile import *
 from .astrodir import *
 from .graphics.core import *
 
-__version__ = "0.0.0"
+__version__ = "0.2.0"

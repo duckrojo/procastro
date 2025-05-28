@@ -1,7 +1,24 @@
-[tool.poetry]
+[project]
 name = "procastro"
-version = "0.0.0"
-description = "Framework to process astronomical data files"
+version = "0.2.0"
+description = "Framework to easily process astronomical data files"
+requires-python = ">=3.13"
+dependencies = [
+    "astropy>=7.1.0",
+    "astroquery>=0.4.10",
+    "bs4>=0.0.2",
+    "cartopy>=0.24.1",
+    "diskcache>=5.6.3",
+    "lxml>=5.4.0",
+    "matplotlib>=3.10.3",
+    "pandas>=2.2.3",
+    "platformdirs>=4.3.8",
+    "pyvo>=1.6.2", # delete this once TAP.exoplanet is no longer needed
+    "scipy>=1.15.3",
+    "tomli-w>=1.2.0",
+    "tqdm>=4.67.1", # TODO: make this optional
+]
+
 authors = ["Patricio Rojo <pato@das.uchile.cl>"]
 license = "BSD-3-Clause"
 readme = "README.md"
@@ -11,55 +28,17 @@ exclude = [
     "execs"
 ]
 
-[tool.poetry-dynamic-versioning]
-enable = true
+[dependency-groups]
+dev = [
+    "ipython>=9.2.0",
+]
+docs = [
+    "numpydoc>=1.8.0",
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+    "sphinxcontrib-napoleon>=0.7",
+]
+test = [
+    "pytest>=8.3.5",
+]
 
-
-[tool.poetry-dynamic-versioning.substitution]
-
-
-[tool.poetry.dependencies]
-python = "^3.9"
-asdf-astropy = "^0.4.0"
-astropy="^6"
-astroquery="^0.4.6"
-ExifRead="^3.0.0"
-matplotlib="^3.5.3"
-numpy="^1.23.2"
-pandas="^2"
-pyvo="^1.3"
-scipy="^1.9.1"
-tomli="^2.0.1"
-tomli_w="^1.0.0"
-cartopy = "^0.23.0"
-lxml = "^5.2.1"
-platformdirs = "^4.3.7"
-toml = "^0.10.2"
-diskcache = "^5.6.3"
-tqdm = "^4.67.1"
-
-[tool.poetry.group.dev.dependencies]
-poetry-dynamic-versioning="^1"
-ipython="^8"
-ipykernel = "^6.29.5"
-
-[tool.poetry.group.test.dependencies]
-pytest="^7.3.1"
-
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-Sphinx = { version = "4.2.0", optional = true }
-sphinx-rtd-theme = { version = "1.0.0", optional = true }
-sphinxcontrib-napoleon = { version = "0.7", optional = true }
-
-
-[tool.poetry.extras]
-docs = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-napoleon", "numpydoc"]
-
-
-[build-system]
-requires = ["poetry-core", "poetry-dynamic-versioning"]
-build-backend = "poetry_dynamic_versioning.backend"
