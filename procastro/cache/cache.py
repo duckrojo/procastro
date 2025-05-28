@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 import diskcache as dc
@@ -37,7 +38,7 @@ class AstroCache:
     def __init__(self,
                  max_cache=int(1e9), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
-                 force: str | None = "force",
+                 force: bool=  False,
                  eviction_policy: str | None = 'least-recently-used',
                  verbose = False):
         
@@ -75,6 +76,7 @@ class AstroCache:
             print(f"Cache eviction policy: {self.eviction_policy}")
             print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
             print(f"Hashable keyword arguments: {self.hashable_kw}")
+            print(f"Force bypass cache keyword: {self.force}")
 
     @property
     def _contents(self):
@@ -103,7 +105,8 @@ class AstroCache:
             Wrapper to handle custom logic like bypassing the cache.
             """
             # Check if caching is disabled via the `force` keyword
-            if kwargs.pop(self.force, False):
+            force = self.force 
+            if force:
                 return method(hashable_first_argument, **kwargs)
 
             # Handle non-hashable arguments (disable caching)

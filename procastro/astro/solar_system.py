@@ -34,7 +34,8 @@ logger = logging.getLogger("astro")
 jpl_cache = AstroCache(max_cache=1e12, lifetime=30,)
 usgs_map_cache = AstroCache(max_cache=1e12, lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
-                               force="no_cache")
+                               force= True,
+                               verbose=True)
 
 
 class HorizonsInterface:
@@ -758,6 +759,7 @@ class BodyVisualizer:
         This method is decorated with usgs_map_cachev2 to cache results and avoid
         redundant requests to the USGS server.
         """
+        print(f"No cache for USGS map of {body} with detail '{detail}', fetching from USGS...")
         month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
