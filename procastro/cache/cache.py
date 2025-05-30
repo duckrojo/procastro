@@ -7,9 +7,6 @@ import astropy.time as apt
 import astropy.units as u
 from procastro import config
 
-__all__ = ['astrofile_cache', 'jpl_cache', 'usgs_map_cache']
-
-
 
 class AstroCache:
     """
@@ -55,7 +52,7 @@ class AstroCache:
         else:
             self._store_on_disk = False
 
-        if self._store_on_disk:
+        if self._store_on_disk and label_on_disk is not None:
             config_dict = config.config_user(label_on_disk)
             self.cache_directory = config_dict.get('cache_dir')
             self.config_file = Path(self.cache_directory) / 'config.pickle'
@@ -74,7 +71,7 @@ class AstroCache:
             print(f"Cache initialized with max size: {self.max_cache} bytes")
             print(f"Cache lifetime: {self.lifetime} days")
             print(f"Cache eviction policy: {self.eviction_policy}")
-            print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
+            print(f"Cache directory: {self.cache_directory if label_on_disk else 'In-memory'}")
             print(f"Hashable keyword arguments: {self.hashable_kw}")
             print(f"Force bypass cache keyword: {self.force}")
 
