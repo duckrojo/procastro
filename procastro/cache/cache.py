@@ -107,8 +107,7 @@ class AstroCache:
             # Check if caching is disabled via the `force` parameter or if the functions was called with the force parameter set to True
             # In that case, the function force argument gains precedence over the cache self.force attribute.
             verbose_func = kwargs.get('verbose', None)
-            if verbose_func:
-                verbose = True
+            verbose = verbose_func 
             
             force_function_arg = kwargs.get('force', None)
             force_cache = self.force 

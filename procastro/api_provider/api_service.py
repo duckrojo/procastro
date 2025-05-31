@@ -272,65 +272,13 @@ class LocalFilesProvider(DataProviderInterface):
     def support_params(self):
         return ["file_path", "force_reload", "reload_days"]
     
-    def exoplanet_fallback(self, error, **kwargs):
 
-        if not hasattr(self, 'api_service') or self.api_service is None:
-            # Si no tenemos la referencia, creamos una nueva instancia
-            # (esto es menos eficiente pero funciona como fallback)
-            from procastro.api_provider.api_service import ApiService
-            api_service = ApiService()
-        else:
-            api_service = self.api_service
-
-        result: ApiResult = api_service.query_exoplanet(
-            table="pscomppars",
-            select="pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag",
-            where="pl_tranmid!=0.0 and pl_orbper!=0.0"
-        )
-        if not result.success:
-            raise ExoplanetProviderError(
-                message="Fallback query to Exoplanet Archive failed",
-                details={"error": result.error},
-                provider=self.__class__.__name__
-            )
-
-        return result
     
 
     def request(self):
         pass
 
-    @DataProviderInterface.with_fallback(fallback_func=exoplanet_fallback)
-    def load_exoplanet_db(self, **kwargs) -> ApiResult:
-        """
-        Loads a file in pickle format.
-        """
-        file_path = kwargs.get("file_path")
-        force_reload = kwargs.get("force_reload", False)
-        reload_days = kwargs.get("reload_days", 7)
-        if not os.path.is_file(file_path):
-            raise LocalFilesProviderError(
-                message=f"File not found: {file_path}",
-                file_path=file_path,
-            )
-        if force_reload:
-            raise LocalFilesProviderError(
-                message=f"Force reload is set to True, executing fallback function",
-                file_path=file_path,
-            )
-        if os.path.getmtime(file_path) < time.time() - (reload_days * 24 * 60 * 60):
-            raise LocalFilesProviderError(
-                message=f"File is older than {reload_days} days, executing fallback function",
-                file_path=file_path,
-            )
 
-        data = pd.read_pickle(file_path)
-        return ApiResult(
-            data=data,
-            success=True,
-            source=self.__class__.__name__
-        )
-    
 
 
 class SimbadProvider(AstroqueryProvider):
@@ -656,15 +604,3 @@ class ApiService:
         return self.exoplanet_provider.query(**kwargs)
     
 
-    def query_exoplanet_full_db(self, **kwargs):
-        """
-        Method that will query the local file of the NEA for the exoplanet db. If the file does not exist, it will execute a fallback calling the Nasa Exoplanet Archive API (using the query_exoplanet method).
-        Args:
-            file_path: Path to the file to load. Mandatory
-            force_reload: Whether to force reload the file using the fallback function (API call to NEA). Optional
-            reload_days: Max age of the file to consider it old and execute the fallback function.
-        Returns: 
-            ApiResult object
-        """
-        kwargs["verbose"] = self.verbose
-        return self.local_files_provider.load_exoplanet_db(**kwargs)

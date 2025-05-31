@@ -44,28 +44,40 @@ TwoTuple = Tuple[float, float]
 
 __all__ = ['query_full_exoplanet_db', 'Nightly']
 
+exoplanet_cache= paa.AstroCache(max_cache=int(1e12), 
+                                lifetime=7,
+                                verbose= False, 
+                                force = False, 
+                                label_on_disk='exoplanet_db')
 
-def query_full_exoplanet_db(force_reload: bool = False, reload_days: float = 7):
+
+@exoplanet_cache
+def query_full_exoplanet_db(query_id: str, force:bool= False):
     """
-    Queries whether the local file of the NEA for the exoplanet db.
+    Queries the full exoplanet database for specific parameters.
+    This function uses the ApiService to query the "pscomppars" table for exoplanets
+    with non-zero transit midpoints and orbital periods. It retrieves a selection of
+    columns including planet name, coordinates, orbital period, transit midpoint, discovery
+    facility, transit duration, proper motions, and magnitudes.
+    Args:
+        query_id (str): An identifier for the query (Needed for the cache hashing).
+        force (bool, optional): If True, forces the query to run regardless of cache or previous results. Default is False.
+    Returns:
+        pandas.DataFrame: A DataFrame containing the queried exoplanet data.
+    Raises:
+        Exception: If the query to the exoplanet database fails, an exception is raised with the error message.
     """
-    file = pa.user_confdir("exodb.pickle")
-    
+
     api_service = ApiService(verbose=True)
-    
-    result = api_service.query_exoplanet_db(
-        file_path=file,
-        force_reload=force_reload,
-        reload_days=reload_days
+    result: ApiResult = api_service.query_exoplanet(
+            table="pscomppars",
+            select="pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag",
+            where="pl_tranmid!=0.0 and pl_orbper!=0.0"
     )
-    # TODO: CHANGE THIS TO CACHE LOGIC
-    if result.is_fallback:
-        planets_df = result.data.to_pandas()
-        planets_df.to_pickle(file)
-        print(f"Exoplanet database updated and saved to cache")
-        return planets_df
-    
-    return result.data
+    if result.success:
+        return result.data.to_pandas()
+    else:
+        raise Exception(f"Error querying the exoplanet database: {result.error_message}")
 
 
 def _choose(dataframe: pd.DataFrame,
@@ -127,7 +139,8 @@ class Nightly:
         self._planets_after_pre_filter = None
 
         # create Dataframe and update missing magnitude
-        planets = query_full_exoplanet_db(force_reload=force_reload, reload_days=reload_days)
+        # TODO: Check the type of the return parameters!!!
+        planets = query_full_exoplanet_db(force=force_reload)
         no_filter_data = planets['sy_vmag'] == 0
         planets.loc[:, 'sy_vmag'].where(~no_filter_data, other=planets['sy_gmag'][no_filter_data], inplace=True)
         self._planets_all = planets
