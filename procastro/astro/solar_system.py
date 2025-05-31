@@ -33,8 +33,8 @@ logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 logger = logging.getLogger("astro")
 
 
-jpl_cache = AstroCache(max_cache=1e12, lifetime=30,)
-usgs_map_cache = AstroCache(max_cache=1e12, lifetime=30,
+jpl_cache = AstroCache(max_cache=int(1e12), lifetime=30,)
+usgs_map_cache = AstroCache(max_cache=int(1e12), lifetime=30,
                                hashable_kw=['detail'], label_on_disk='USGSmap',
                                force= False,
                                verbose=True)
@@ -125,8 +125,11 @@ class HorizonsInterface:
 
 
                 apiService = ApiService()
-                response = apiService.request_http(url_api_file, method="POST", data={'format': 'text'}, files={'input': open(fp.name)})
-                return response.data.splitlines()
+                response = apiService.request_http(url = url_api_file, method="POST", data={'format': 'text'}, files={'input': open(fp.name)})
+                if not response.success:
+                    raise ValueError(f"JPL Horizons request failed: {response.error_message}")
+                data = response.data 
+                return data.splitlines()
 
 
                 
@@ -139,8 +142,11 @@ class HorizonsInterface:
 
         else:
             apiService= ApiService(verbose=True) 
-            result = apiService.request_http(url, allow_redirects=True)
-            return eval(result.content)['result'].splitlines()
+            result = apiService.request_http(url = url, allow_redirects=True)
+            if not result.success:
+                raise ValueError(f"JPL Horizons request failed: {result.error_message}")
+            data = result.data
+            return data['result'].splitlines()
 
     
 
