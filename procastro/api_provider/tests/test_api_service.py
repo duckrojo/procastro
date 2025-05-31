@@ -14,6 +14,8 @@ def apiService():
     return ApiService()
 
 
+
+#TODO: TEST WITH NEW ASTROQUERY PROVIDER
 ################ API RESULT TESTS #######################
 def test_api_result_initialization():
     result = ApiResult(
