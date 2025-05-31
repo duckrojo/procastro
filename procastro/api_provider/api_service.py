@@ -246,51 +246,12 @@ class HttpProvider(DataProviderInterface):
 
 class AstroqueryProvider(DataProviderInterface):
     """
-    Provider which handles astronomical queries using ASTROQUERY (like TAP, SIMBAD or others)
+    Provider which handles astronomical queries using ASTROQUERY (like Nasa Exoplanet Archive, SIMBAD or others)
 
     """
-    @abstractmethod
-    def support_params(self):
-        """
-        Common parameters for all astronomical queries using astroquery.
-        We will be implementing this method on its child classes.
-        """
-        pass
-
-
-class LocalFilesProvider(DataProviderInterface):
-    """
-    Class to use when loading local files
-    """
-
-    def __init__(self, api_service=None):
-        self.api_service = api_service
-    
-    def set_api_service(self, api_service):
-        """Set the API service reference after initialization"""
-        self.api_service = api_service
-    def support_params(self):
-        return ["file_path", "force_reload", "reload_days"]
-    
-
-    
-
-    def request(self):
-        pass
-
-
-
-
-class SimbadProvider(AstroqueryProvider):
-    """
-    Provider which handles queries to SIMBAD using ASTROQUERY
-    """
-
-    def __init__(self, verbose=False, simbad_votable_fields=None):
+    def __init__(self, simbad_votable_fields = None):
         self.simbad = aqs.Simbad()
-        # CHECK VOTABLE FIELDS ON INIT
-
-
+        self.exoplanet_archive = NasaExoplanetArchive()
         if simbad_votable_fields:
             try:
                 self.simbad.add_votable_fields(*simbad_votable_fields)
@@ -301,116 +262,74 @@ class SimbadProvider(AstroqueryProvider):
                     provider=self.__class__.__name__
                 )
 
-    def support_params(self):
+
+    @abstractmethod
+    def support_params(self, provider):
         """
-        Common parameters for all astronomical queries using astroquery
+        Common parameters for all astronomical queries using astroquery.
+        We will be implementing this method on its child classes.
         """
-        return ["object_name", "verbose", "wildcard", "criteria", "get_query_payload"]
+        if provider == "simbad":
+            return ["object_name", "verbose", "wildcard", "criteria", "get_query_payload"]
+        elif provider == "exoplanet":
+            return ["object_name", "verbose", "table", "get_query_payload", "regularize", "select", "where", "order"]
 
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def request(self, **kwargs) -> ApiResult:
+    def request(self, provider, **kwargs) -> ApiResult:
         """
-        Method that handles queries to SIMBAD using ASTROQUERY
+        Method that handles queries to Nasa Exoplanet Archive or SIMBAD depending on the {provider} argument.
+        Args:
+            provider: Provider to use for the query. It can be "simbad" or "exoplanet".
+            **kwargs: Additional parameters to pass to the query.
+
+        Returns:
+            ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
         """
-        format = kwargs.pop("format", "dict")
-        object_name = kwargs.get("object_name")
-        verbose = kwargs.pop("verbose", False) ## verbose cannot be pased to aqs since it is deprecated
-        if not object_name:
-            raise SimbadProviderError(
-                message="Object name is required",
-                
+
+        if provider not in ["simbad", "exoplanet"]:
+            raise ApiServiceError(
+                message=f"Provider {provider} is not supported",
+                provider=self.__class__.__name__
             )
-        if not isinstance(object_name, str):
-            raise SimbadProviderError(
-                message="Object name must be a string",
-            )
-
-
-        # then we extract the parameters that are supported by the provider
-        # and we pass them to the query
-        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
-        
-        if verbose:
-            logger.info(f"Querying SIMBAD: {object_name} with format {format} and params {kwargs}")
-        # pass the extra arguments if needed
-        try:
-            response = self.simbad.query_object(**kwargs)
-        except Exception as e:
-            logger.error(f"Error querying SIMBAD: {e}")
-            raise SimbadProviderError(
-                message=f"Error querying SIMBAD: {e}",
-            )
-        if response is None:
-            return ApiResult(
-                data=None,
-                success=False,
-                error="No results found",
-                source=self.__class__.__name__
-            )
-            
-        else:
-
-            return ApiResult(
-                data=response,
-                success=True,
-                source=self.__class__.__name__
-            )
-        
-
-    
-
-class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
-    """
-    Provider which handles queries to the Nasa Exoplanet Archive using Astroquery
-    """
-    def __init__(self):
-        self.exoplanet_archive = NasaExoplanetArchive()
-
-    def support_params(self):
-        return ["object_name", "verbose", "table", "get_query_payload", "regularize", "select", "where", "order"]
-    
-    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def request(self, **kwargs) -> ApiResult:
-        """
-        Method that handles queries to the Nasa Exoplanet Archive using ASTROQUERY
-        """
+        verbose = kwargs.pop("verbose", False)  # we pop verbose argument since it's not used by the request class.
         # Extract the parameters that are supported by the provider
-        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
+        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params(provider)}
         
-        # Check if the object name is provided
-        object_name = kwargs.get("object_name")
-        if not object_name:
-            raise ExoplanetProviderError(
-                message="Object name is required",
-            )
-        verbose = kwargs.pop("verbose", False) # we pop verbose argument since it's not used by the request class.
+
         if verbose:
-            logger.info(f"Querying Exoplanet Archive for object: {object_name} with params {kwargs}")
-        # Perform the query
-        try:
-            response = self.exoplanet_archive.query_object(**kwargs)
-        except Exception as e:
-            logger.error(f"Error querying Exoplanet Archive: {e}")
-            raise ExoplanetProviderError(
-                message=f"Error querying Exoplanet Archive: {e}",
-            )
-        
-        if response is None:
-            return ApiResult(
-                data=None,
-                success=False,
-                error="No results found",
-                source=self.__class__.__name__
-            )
-            
-        else:
-            return ApiResult(
-                data=response,
-                success=True,
-                source=self.__class__.__name__
-            )
+            logger.info(f"Querying {provider.upper()} with params: {kwargs}")
+
+        if provider == "simbad":
+            try:
+                response = self.simbad.request(**kwargs)
+                if response:
+                    return ApiResult(
+                        data=response,
+                        success=True,
+                        source=self.__class__.__name__ + ".Simbad"
+                    )
+            except Exception as e:
+                logger.error(f"Error querying SIMBAD: {e}")
+                raise SimbadProviderError(
+                    message=f"Error querying SIMBAD: {e}",
+                )
+        elif provider == "exoplanet":
+            try:
+                response = self.exoplanet_archive.request(**kwargs)
+                if response:
+                    return ApiResult(
+                        data=response,
+                        success=True,
+                        source=self.__class__.__name__ + ".ExoplanetArchive"
+                    )
+            except Exception as e:
+                logger.error(f"Error querying Exoplanet Archive: {e}")
+                raise ExoplanetProviderError(
+                    message=f"Error querying Exoplanet Archive: {e}",
+                )
+
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def query(self, **kwargs):
+    def query_nasa_exoplanet_archive(self, **kwargs):
         """
         Method that handles queries in SQL format to the Nasa Exoplanet Archive using ASTROQUERY. Replacement for the TAP service.
         
@@ -422,8 +341,7 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
         
         """
 
-
-        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
+        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params(provider="exoplanet")}
 
 
         table = kwargs.get("table")  
@@ -473,6 +391,28 @@ class ExoplanetProvider(AstroqueryProvider): # USE THIS INSTEAD OF TAP
             success=True,
             source=self.__class__.__name__
         )
+
+
+class LocalFilesProvider(DataProviderInterface):
+    """
+    Class to use when loading local files
+    """
+
+    def __init__(self, api_service=None):
+        self.api_service = api_service
+    
+    def set_api_service(self, api_service):
+        """Set the API service reference after initialization"""
+        self.api_service = api_service
+    def support_params(self):
+        
+        return ["file_path", "force_reload", "reload_days"]
+    def request(self):
+        pass
+
+
+
+    
         
 class ApiService:
     """
@@ -493,11 +433,10 @@ class ApiService:
 
     def __init__(self, verbose= False, simbad_votable_fields=None):
         
-        self.simbad_provider = SimbadProvider()
         self.local_files_provider = LocalFilesProvider()
         self.local_files_provider.set_api_service(self)
         self.http_provider = HttpProvider()
-        self.exoplanet_provider = ExoplanetProvider()
+        self.astroquery_provider = AstroqueryProvider(simbad_votable_fields=simbad_votable_fields)
         self.verbose = verbose
         if simbad_votable_fields:
             self.add_simbad_votable_fields(*simbad_votable_fields)
@@ -516,10 +455,8 @@ class ApiService:
             return self.simbad_provider
         elif service == "http":
             return self.http_provider
-        elif service == "exoplanet":
-            return self.exoplanet_provider
-        elif service == "localfiles":
-            return self.local_files_provider
+        elif service == "astroquery":
+            return self.astroquery_provider
         # Add more providers as needed
         return None
 
@@ -556,7 +493,7 @@ class ApiService:
             ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
         """
         kwargs["verbose"] = self.verbose
-        return self.simbad_provider.request(**kwargs)
+        return self.astroquery_provider.request(provider="simbad", **kwargs)
 
     def request_exoplanet(self, **kwargs) -> ApiResult:
         """
@@ -574,8 +511,8 @@ class ApiService:
             ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
         """
         kwargs["verbose"] = self.verbose
-        return self.exoplanet_provider.request(**kwargs)
-    
+        return self.astroquery_provider.request(provider="exoplanet", **kwargs)
+
     def add_simbad_votable_fields(self, *fields):
         """
         Method that will add votable fields to the SIMBAD provider.
@@ -601,6 +538,6 @@ class ApiService:
             Astroquery automatically creates an extra column called sky_coord using ra and dec columns. 
         """
         kwargs["verbose"] = self.verbose
-        return self.exoplanet_provider.query(**kwargs)
+        return self.astroquery_provider.query_nasa_exoplanet_archive(**kwargs)
     
 
