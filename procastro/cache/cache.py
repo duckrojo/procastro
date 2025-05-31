@@ -6,7 +6,7 @@ from typing import Optional
 import astropy.time as apt
 import astropy.units as u
 from procastro import config
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class AstroCache:
     """
@@ -43,6 +43,9 @@ class AstroCache:
         self.lifetime = lifetime
         self.force = force
         self.eviction_policy = eviction_policy
+        
+
+        
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
@@ -101,9 +104,18 @@ class AstroCache:
             """
             Wrapper to handle custom logic like bypassing the cache.
             """
-            # Check if caching is disabled via the `force` keyword
-            force = self.force 
+            # Check if caching is disabled via the `force` parameter or if the functions was called with the force parameter set to True
+            # In that case, the function force argument gains precedence over the cache self.force attribute.
+            verbose_func = kwargs.get('verbose', None)
+            if verbose_func:
+                verbose = True
+            
+            force_function_arg = kwargs.get('force', None)
+            force_cache = self.force 
+            force = force_function_arg if force_function_arg is not None else force_cache
             if force:
+                if verbose:
+                    logging.info(f"Cache bypassed for method {method.__name__} with arguments: {hashable_first_argument}, {kwargs}")
                 return method(hashable_first_argument, **kwargs)
 
             # Handle non-hashable arguments (disable caching)

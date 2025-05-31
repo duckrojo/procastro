@@ -756,7 +756,7 @@ class BodyVisualizer:
         return orthographic_image
     @staticmethod
     @usgs_map_cache
-    def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,verbose =False):
+    def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,verbose =False, force = False):
         """
         Retrieve a map image for a solar system body from USGS.
         
@@ -770,6 +770,8 @@ class BodyVisualizer:
             Whether to show warnings when multiple maps are available
         verbose : bool, default=False
             Whether to print verbose output during the fetching process
+        force : bool, default=False
+            If it is True, it will force fetching the map from USGS even if a cached version exists or the cache is configured to not force computation.
             
         Returns
         -------
@@ -778,10 +780,11 @@ class BodyVisualizer:
             
         Notes
         -----
-        This method is decorated with usgs_map_cachev2 to cache results and avoid
+        This method is decorated with usgs_map_cache to cache results and avoid
         redundant requests to the USGS server.
         """
-        print(f"No cache for USGS map of {body} with detail '{detail}', fetching from USGS...")
+        if verbose:
+            logger.info(f"Fetching USGS map for {body} with detail '{detail}'")
         month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -1077,7 +1080,12 @@ class BodyVisualizer:
             BodyVisualizer.create_frame._warning_shown = False
 
 
-        image = BodyVisualizer.usgs_map_image(body, detail=detail, warn_multiple=not reread_usgs, warning_shown=BodyVisualizer.create_frame._warning_shown,verbose =verbose)
+        image = BodyVisualizer.usgs_map_image(body, 
+                                            detail=detail, 
+                                            warn_multiple=not reread_usgs, 
+                                            warning_shown=BodyVisualizer.create_frame._warning_shown,
+                                            verbose =verbose, 
+                                            force= reread_usgs)
         if image is None:
             raise ValueError(f"Could not get image for {body}")
         
@@ -1491,6 +1499,8 @@ def body_map(body:str,
     This is the main user-facing function that combines the functionality of 
     BodyVisualizer.create_image and BodyVisualizer.create_video depending on 
     whether time is a scalar or array.
+
+    NOTE: The Verbose Parameter is expected to cause tqdm (progress bar) bugs and repeated rendering of the loading bar. 
     
     Parameters
     ----------
@@ -1509,7 +1519,7 @@ def body_map(body:str,
     detail : str, optional
         Space-separated keywords to filter map alternatives
     reread_usgs : bool, default=False
-        Whether to ignore the cache and fetch fresh map data
+        Whether to ignore the cache and fetch fresh map data. This will override the directive of the cache creation if it is set to false its force attribute.
     radius_to_plot : float, optional
         Radius of the field of view in arcseconds (auto-detected if None)
     fps : int, default=10
