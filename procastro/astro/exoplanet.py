@@ -1,5 +1,5 @@
 from procastro import config
-from procastro.misc.misc_general import accept_object_name
+from procastro.misc.general import accept_object_name
 
 
 def get_transit_ephemeris(target):

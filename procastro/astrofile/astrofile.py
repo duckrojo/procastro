@@ -16,7 +16,7 @@ from procastro.cache.cache import AstroCache
 from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.logging import io_logger
-from procastro.misc.misc_graph import imshowz
+from procastro.misc.graph import imshowz
 from procastro.statics import PADataReturn, identity, dict_from_pattern
 
 
@@ -128,7 +128,7 @@ class AstroFile(IAstroFile):
             self._meta['infochn'] = [col for col in table.colnames if col not in ['pix', 'wav']]
             return table
 
-        self._meta |= {k: v for k, v in meta.items()}   # only actualizes read fields. Does not touch otherwise
+        self._meta |= {k: v for k, v in meta.items()}   # Only actualizes read fields. Does not touch otherwise
 
         return data
 
@@ -239,9 +239,11 @@ class AstroFile(IAstroFile):
                     medians = np.median(data, axis=1)
 
                 for epoch in epochs:
-                    axx.plot(x[epoch if isinstance(epoch, int) else epoch(medians)],
-                             data[epoch if isinstance(epoch, int) else epoch(medians)],
-                             label=f'{epoch if isinstance(epoch, int) else str(epoch).split()[1]}')
+                    if isinstance(epoch, int):
+                        axx.plot(x[epoch], data[epoch], label=f'{epoch}')
+                    else:
+                        axx.plot(x[epoch(medians)], data[epoch(medians)],
+                                 label=f'{str(epoch).split()[1]}')
             else:
                 axx.plot(x, data)
 
@@ -331,8 +333,8 @@ class AstroFile(IAstroFile):
         self._calib.pop(position)
 
     def __hash__(self):
-        """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random
-         provides a method to force reloading of cache."""
+        """This is important for cache. If calib changes, then the AstroFile hash should change as well.
+         `self._random` provides a method to force reloading of cache."""
 
         return hash((self._data_file, self.get_calib(), self._random))
 
@@ -587,7 +589,7 @@ class AstroFile(IAstroFile):
                 ret.append((True in [r == header_val
                                      for r in request]) == exists)
 
-        # Returns whether the filter existed (or not if _not function)
+        # Returns whether the filter existed (or not, if _not function)
         return True in ret
 
     # Object Comparison is done according to the sort_key if defined

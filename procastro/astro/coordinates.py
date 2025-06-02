@@ -11,7 +11,7 @@ from matplotlib.patches import Polygon
 
 import procastro as pa
 from procastro.astro import aqs as aqs
-from procastro.misc.misc_general import accept_object_name
+from procastro.misc.general import accept_object_name
 
 
 def starry_plot(star_table: list[Table] | Table,
