@@ -35,6 +35,8 @@ def get_transit_ephemeris(target):
     ValueError
         If a data field does not match the specified format
     """
+
+    # TODO: ASK FOR A BETTER WAY TO GET THE PATHS AND HANDLE THE DATA (MAYBE IN PANDAS/POLARS STYLE)
     config_exo = config.config_user("exoplanet")
     paths = [config_exo['transit_file'],
              ]

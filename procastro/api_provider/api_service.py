@@ -38,16 +38,25 @@ T = TypeVar("T")  # this means that the result can be any type
 class ApiResult(Generic[T]):
     """
     Generic container class, it will hold data of type T and T will be determined when the class is instantiated.
+    Contains the result of a query to an API, including:
+    - data: The actual data returned by the API.
+    - success: Whether the request was successful or not.
+    - error: Error message if the request failed.
+    - source: Which provider returned this data.
+    - is_fallback: Whether this data came from a fallback source (e.g., if the primary source failed).
+    This class is used to provide a consistent interface for handling API responses, allowing for type hinting and better error handling.
     
     Example usage:
     ```python
-        result = api.GET(service=API.SIMBAD, object="M31")
+        apiService = ApiService(verbose=True, simbad_votable_fields=["ra", "dec", "otype"])
+        result = apiService.request_simbad(object_name="M31", wildcard=True)
         if result.success:
             # Use the data with full type hinting support
             star_data = result.data
         else:
             print(f"Error: {result.error}")
     ```
+
     """
 
     def __init__(self,
@@ -275,7 +284,7 @@ class AstroqueryProvider(DataProviderInterface):
             return ["object_name", "verbose", "table", "get_query_payload", "regularize", "select", "where", "order"]
 
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def request(self, provider, **kwargs) -> ApiResult:
+    def request(self, provider:str, **kwargs) -> ApiResult:
         """
         Method that handles queries to Nasa Exoplanet Archive or SIMBAD depending on the {provider} argument.
         Args:
@@ -285,7 +294,7 @@ class AstroqueryProvider(DataProviderInterface):
         Returns:
             ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
         """
-
+        provider: str = provider.lower()
         if provider not in ["simbad", "exoplanet"]:
             raise ApiServiceError(
                 message=f"Provider {provider} is not supported",
@@ -395,18 +404,15 @@ class AstroqueryProvider(DataProviderInterface):
 
 class LocalFilesProvider(DataProviderInterface):
     """
-    Class to use when loading local files
+    Class to use when loading local files 
     """
 
     def __init__(self, api_service=None):
         self.api_service = api_service
-    
-    def set_api_service(self, api_service):
-        """Set the API service reference after initialization"""
-        self.api_service = api_service
+
     def support_params(self):
-        
         return ["file_path", "force_reload", "reload_days"]
+    
     def request(self):
         pass
 
@@ -534,6 +540,21 @@ class ApiService:
         Returns:
             ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
 
+            
+        Example usage:
+        ```python
+        target = "Kepler-22b"
+        api_service = ApiService(verbose=True)
+        response: ApiResult = api_service.query_exoplanet(
+                table = 'pscomppars',
+                selection='pl_name, pl_tranmid, pl_orbper, pl_trandur',
+                where = f"lower(pl_name) like '%{target}%'",
+            )
+        if response.success:
+            print(f"Exoplanets found: {response.data}")
+        else:
+            print(f"Error querying Exoplanet Archive: {response.error}")
+        ```
         Note:
             Astroquery automatically creates an extra column called sky_coord using ra and dec columns. 
         """

@@ -22,7 +22,7 @@ import warnings
 import astropy.coordinates as apc
 import astropy.time as apt
 import astropy.units as u
-from procastro.api_provider.api_service import ApiService
+from procastro.api_provider.api_service import ApiResult, ApiService
 import procastro.astro as paa
 import numpy as np
 import os
@@ -334,11 +334,17 @@ class ObsCalc(object):
         if transit_epoch is None or transit_period is None:
             print("Attempting to query transit information")
 
-            query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
-                    f"WHERE lower(pl_name) like '%{target}%' "
-            #TODO : Replace this !!!
+            # query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
+            #         f"WHERE lower(pl_name) like '%{target}%' "
             apiService = ApiService()
-            resultset = apiService.tap_service(query)
+            response: ApiResult = apiService.query_exoplanet(
+                table = 'pscomppars',
+                selection='pl_name, pl_tranmid, pl_orbper, pl_trandur',
+                where = f"lower(pl_name) like '%{target}%'",
+            )
+            if response.success is False:
+                raise ValueError(f"Error querying exoplanet database: {resultset.error_message}")
+            resultset = response.data
             try:
                 req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
             except IndexError:
