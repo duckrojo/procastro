@@ -28,6 +28,8 @@ import astropy.units as u
 import matplotlib.axes
 import pyvo as vo
 import pyvo.dal.exceptions
+from astropy.coordinates import GCRS
+from matplotlib import figure
 
 import procastro as pa
 import procastro.astro as paa
@@ -45,6 +47,7 @@ TwoTuple = Tuple[float, float]
 __all__ = ['query_full_exoplanet_db', 'Nightly']
 
 
+# noinspection SqlNoDataSourceInspection
 def query_full_exoplanet_db(force_reload: bool = False,
                             reload_days: float = 7
                             ):
@@ -55,11 +58,14 @@ def query_full_exoplanet_db(force_reload: bool = False,
             return pd.read_pickle(file)
 
     exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
+    # the tranmiderr1 constraint is to avoid planets with and uncertainty larger than one day,
+    # which are likely to be from direct imaging
     try:
         resultset = exo_service.search(
-            f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
+            f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,pl_tranmiderr1,disc_facility,"
+            f"pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
             f"FROM exo_tap.pscomppars "
-            f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 ")
+            f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 and pl_tranmiderr1<1")
     except pyvo.dal.exceptions.DALFormatError:
         if os.path.isfile(file):
             days_since = (time.time() - os.path.getmtime(file)) / 3600 / 24
@@ -118,6 +124,9 @@ class Nightly:
                  force_reload=False,
                  reload_days=7,
                  ):
+        self._sunset = None
+        self._sunrise = None
+        self.figure = None
         self._sidereal_at_sets = None
         self._moon_coord = None
         self._constraints = {}
@@ -159,7 +168,7 @@ class Nightly:
                     observatory):
         self._observatory_name = observatory
         self._observatory = apc.EarthLocation.of_site(observatory)
-        self._planets = self._planets_all
+        self._planets = self._planets_all.copy()
         self._stage = 0
 
     def constraints(self,
@@ -208,7 +217,9 @@ class Nightly:
                              "default_duration": default_duration,
                              }
 
-    def set_date(self, date, n_points=1400, equinox_db='J2000'):
+    def set_date(self, date,
+                 n_points=1440,  # 30sec precision
+                 equinox_db='J2000'):
         if date is None:
             return
 
@@ -217,27 +228,31 @@ class Nightly:
         the_day = self._civil_midday + np.linspace(0, 24, n_points) * u.hour
         sun_alt = np.array(apc.get_body("sun", the_day).transform_to(apc.AltAz(obstime=the_day, location=self._observatory)
                                                              ).alt.degree)
-        above = list(sun_alt > self._constraints['night_angle'])
 
+        above = list(sun_alt > self._constraints['night_angle'])
         start_night_idx = above.index(False)
         self._start_night = the_day[start_night_idx]
         self._end_night = the_day[above.index(True, start_night_idx + 1)]
 
+        sunset_idx = np.where(sun_alt < 0)[0][0]
+        self._sunrise = the_day[np.where(sun_alt[sunset_idx + 2:] > 0)[0][0] + sunset_idx + 2]
+        self._sunset = the_day[sunset_idx]
+
         self._moon_coord = apc.get_body("moon", self._civil_midday + 12 * u.hour, location=self._observatory)
-        times_at_sets = apt.Time([self._start_night, self._end_night])
-        self._sidereal_at_sets = times_at_sets.sidereal_time('apparent', self._observatory).hourangle
+        times_at_lims = apt.Time([self._start_night, self._end_night])
+        self._sidereal_at_sets = times_at_lims.sidereal_time('apparent', self._observatory).hourangle
 
         # update database values
         planets = self._planets
         closest_transit_n = (((self._civil_midday.jd + 0.5 - planets['pl_tranmid']) /
                               planets['pl_orbper']) + 0.5).astype('int')
-        self._planets['closest_transit'] = planets['pl_tranmid'] + closest_transit_n * planets['pl_orbper']
-        self._planets['pl_trandur'] = planets['pl_trandur'].mask(planets['pl_trandur'] == 0.0,
+        planets['closest_transit'] = planets['pl_tranmid'] + closest_transit_n * planets['pl_orbper']
+        planets['pl_trandur'] = planets['pl_trandur'].mask(planets['pl_trandur'] == 0.0,
                                                                  other=self._constraints['default_duration'])
-        self._planets['transit_i'] = planets['closest_transit'] - (planets['pl_trandur'] / 48)
-        self._planets['transit_f'] = planets['closest_transit'] + (planets['pl_trandur'] / 48)
+        planets['transit_i'] = planets['closest_transit'] - (planets['pl_trandur'] / 48)
+        planets['transit_f'] = planets['closest_transit'] + (planets['pl_trandur'] / 48)
 
-        self._planets.fillna({'pl_trandur': self._constraints['default_duration'],
+        planets.fillna({'pl_trandur': self._constraints['default_duration'],
                               'sy_pmra': 0, 'sy_pmdec':0},
                              inplace=True)
 
@@ -247,8 +262,14 @@ class Nightly:
                               u.Quantity(planets['dec'], unit=u.deg),
                               frame='icrs', pm_ra_cosdec=pm_right_ascension, pm_dec=pm_declination,
                               equinox=equinox_db)
-        self._planets['star_coords'] = coords
-        self._planets['moon_separation'] = np.array(self._moon_coord.separation(coords))
+        planets['star_coords'] = coords
+        coords = coords.transform_to(GCRS(obstime=self._moon_coord.obstime,
+                                          obsgeoloc=self._moon_coord.obsgeoloc,
+                                          obsgeovel=self._moon_coord.obsgeovel,
+                                          )
+                                     )
+        planets['moon_separation'] = np.array(self._moon_coord.separation(coords))
+        self._planets = planets.copy()
 
         self._stage = 0
 
@@ -257,7 +278,9 @@ class Nightly:
     # COMPUTATIONS
 
     def _rank_events(self):
-        self._planets.loc[:, 'rank'] = 10
+        planets = self._planets.copy()
+        planets.loc[:, 'rank'] = 10
+        self._planets = planets.copy()
 
     def _hour_angle_for_altitude(self, skycoord, altitude):
         if not isinstance(altitude, u.Quantity):
@@ -270,7 +293,7 @@ class Nightly:
 
         skycoords = apc.SkyCoord(list(planets['star_coords']))
         hour_angle_sets = self._hour_angle_for_altitude(skycoords, self._constraints['altitude_min'])
-        # following is for not filtering circumpolar stars
+        # the following is for not filtering circumpolar stars
         hour_angle_sets[np.isnan(hour_angle_sets)] = 13 * u.hourangle
 
         delta_ra = skycoords.ra.hourangle - self._sidereal_at_sets[0]
@@ -293,7 +316,6 @@ class Nightly:
 
     def apply_filters_needed(self):
         if self._stage == 0:
-            self._planets = self._planets_all.copy()
             self._filter_pre_ephemeris()
             self._ephemeris()
             self._planets_after_pre_filter = self._planets.copy()
@@ -304,10 +326,11 @@ class Nightly:
             self._filter_post_ephemeris()
 
         self._rank_events()
+
         self._stage = 2
 
     def _filter_post_ephemeris(self):
-        """"Filters to be applied that depend on stellar ephemeris for epoch"""
+        """Filters to be applied that depend on stellar ephemeris for epoch"""
         self._transit_percent_altitude_filter()
         self._baseline_filter()
         self._moon_separation_filter()
@@ -320,31 +343,32 @@ class Nightly:
         self._max_altitude_filter()
         self._altitude_at_night_filter()
 
-    def _altitude_at_night_filter(self):
+    def _altitude_at_night_filter(self) -> None:
+
         """Filters out those that never reach the minimum altitude during the night"""
         planets = self._planets
         night_length = (self._end_night - self._start_night).to(u.hour).value
-        times_at_sets = apt.Time([self._start_night, self._end_night])
+        times_at_lims = apt.Time([self._start_night, self._end_night])
         planet_hour_angle = planets['ra'] - self._sidereal_at_sets[0]
         planet_hour_angle[planet_hour_angle < 0] += 24
 
         # Any star whose max altitude is reached during the night is a possible observation, otherwise they need
         # to be checked whether the min altitude is reached at sunset or sunrise. If so, upgrade them into possible.
         # Any other (reaching max altitude during daytime) is out
-        stars_with_posibilites = planet_hour_angle > night_length
-        to_be_checked = ~stars_with_posibilites
-        frame_with_uncertain = apc.AltAz(obstime=times_at_sets, location=self._observatory)
+        stars_with_possibility = np.array(planet_hour_angle > night_length)
+        to_be_checked = ~stars_with_possibility
+        frame_with_uncertain = apc.AltAz(obstime=times_at_lims, location=self._observatory)
         star_coords = list(planets[to_be_checked]['star_coords'])
-        sunset_altitude_of_uncertain = apc.SkyCoord(star_coords,
-                                                    ).transform_to(frame_with_uncertain[0]).alt.degree
-        sunrise_altitude_of_uncertain = apc.SkyCoord(star_coords,
-                                                     ).transform_to(frame_with_uncertain[1]).alt.degree
-        possible = ((sunset_altitude_of_uncertain > self._constraints['altitude_min']) +
-                    (sunrise_altitude_of_uncertain > self._constraints['altitude_min']))
+        night_start_altitude_of_uncertain = apc.SkyCoord(star_coords,
+                                                         ).transform_to(frame_with_uncertain[0]).alt.degree
+        night_end_altitude_of_uncertain = apc.SkyCoord(star_coords,
+                                                       ).transform_to(frame_with_uncertain[1]).alt.degree
+        possible = ((night_start_altitude_of_uncertain > self._constraints['altitude_min']) +
+                    (night_end_altitude_of_uncertain > self._constraints['altitude_min']))
 
-        stars_with_posibilites[to_be_checked] = possible
+        stars_with_possibility[to_be_checked] = possible
 
-        self._planets = planets[stars_with_posibilites].copy()
+        self._planets = planets[stars_with_possibility].copy()
 
     def _max_altitude_filter(self):
         """Filters out stars that never reach the minimum altitude"""
@@ -352,7 +376,7 @@ class Nightly:
         self._planets = self._planets[90 - np.abs(latitude - self._planets['dec']) > self._constraints['altitude_min']]
 
     def _baseline_filter(self):
-        """Filter for enough baseline either in one or both sides"""
+        """Filter for enough baseline time, either in one or both sides"""
         planets = self._planets
         planets['delta_i_baseline'] = planets['transit_i'] - planets['start_observation']
         planets['delta_f_baseline'] = planets['end_observation'] - planets['transit_f']
@@ -414,7 +438,7 @@ class Nightly:
              precision: int = 150,
              extend: bool = True,
              altitude_separation: float = 60,
-             ax: Union[matplotlib.axes.Axes, matplotlib.figure.Figure, int] = None,
+             ax: Union[matplotlib.axes.Axes, figure.Figure, int] = None,
              mark_ra: Optional[TwoTuple] = None,
              colorbar: bool = False,    # todo: enable this once rank is working
              ):
@@ -443,13 +467,16 @@ class Nightly:
         -------
         object
         """
+        self._planets = self._planets_all.copy()
         self.set_date(date)
         if not self._date:
             raise ValueError("No date specified for calculation")
+
         self.apply_filters_needed()
         filtered_planets = self._planets.sort_values('transit_i', axis=0)
 
         f, ax = pa.figaxes(ax, figsize=(10, 15))
+        self.figure = f
         cum_altitude = 0  # cumulative offset
         cmap = mpl.cm.get_cmap(name='OrRd')
         grade_norm = mpl.colors.Normalize(vmin=0, vmax=10)
@@ -483,7 +510,7 @@ class Nightly:
                                 cum_altitude, color='blue', alpha=0.8)
 
             if info['transit_observable_ratio'] < 0.99999:
-                middle_index = (transit_i_index+transit_f_index)//2
+                middle_index = (transit_i_index + transit_f_index)//2
                 ax.text(jd[middle_index], cum_altitude,
                         f"{100 * info['transit_observable_ratio']:.0f}%",
                         fontsize=9, color='goldenrod', ha="center")
@@ -509,14 +536,26 @@ class Nightly:
                        )
         ax.set_xlabel(f'Planetary transits at "{self._observatory_name}" for the night after {self._date}', fontsize=13)
         delta_night = self._end_night.jd - self._start_night.jd
-        ticks = [self._start_night.jd - 0.15 * delta_night, self._start_night.jd, self._end_night.jd,
-                 self._end_night.jd + 0.2 * delta_night]
+        ticks = [self._sunset.jd,
+                 self._start_night.jd, self._end_night.jd,
+                 self._sunrise.jd,
+                 ]
+        plot_xlims = [self._start_night.jd - 0.15 * delta_night,
+                      self._end_night.jd + 0.2 * delta_night]
         ax.set_xticks(ticks)
-        ax.set_xticklabels(["", str(self._start_night.value), str(self._end_night.value), ""])
+        na = self._constraints['night_angle']
+        twilight = 'Civ' if na == -6 else 'Naut' if na == -12 else 'Ast' if na == -18 else str(na)+r"$^{\circ}$"
+        ax.set_xticklabels(["",
+                            str(self._start_night.value)[8:-7].replace(" ", f"({twilight})"),
+                            str(self._end_night.value)[8:-7].replace(" ", f"({twilight})"),
+                            ""])
+        ax.axvline(ticks[1], color='grey', linestyle='--', alpha=0.5, zorder=-1)
+        ax.axvline(ticks[2], color='grey', linestyle='--', alpha=0.5, zorder=-1)
+        ax.axvspan(0, ticks[0], color='mistyrose', linestyle='--', alpha=0.5, zorder=-1)
+        ax.axvspan(ticks[3], plot_xlims[1], color='mistyrose', linestyle='--', alpha=0.5, zorder=-1)
         ax.set_yticks(altitude_separation*np.arange(len(self._planets)))
         ax.set_yticklabels(filtered_planets['pl_name'])
-        ax.set_xlim([self._start_night.jd - 0.15 * delta_night,
-                     self._end_night.jd + 0.2 * delta_night])
+        ax.set_xlim(plot_xlims)
         plt.setp(ax.yaxis.get_majorticklabels(), rotation=5, va="bottom")
         ax.grid(visible=True, axis="y")
         ax2 = ax.twiny()
@@ -529,10 +568,18 @@ class Nightly:
         if mark_ra is not None:
             ax2.axvspan(mark_ra[0], mark_ra[1], alpha=0.2, color='gray')
 
+        return self
+
     def __getitem__(self, item):
         if item not in self._planets['pl_name']:
             raise ValueError(f"Name '{item} not found in remaining dataset")
         return self._planets.loc[self._planets['pl_name'] == item]
+
+    def show(self):
+        self.figure.show()
+
+    def savefig(self, filename):
+        self.figure.savefig(filename)
 
 
 if __name__ == '__main__':
