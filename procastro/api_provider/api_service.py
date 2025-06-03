@@ -305,36 +305,23 @@ class AstroqueryProvider(DataProviderInterface):
             logger.info(f"Querying {provider.upper()} with params: {kwargs}")
 
 
-        # TODO: SELF.DB FACTORIZARLO
-        db = self.simbad if provider == "simbad" else self.exoplanet_archive
-        if provider == "simbad":
-            try:
-                response = self.simbad.request(**kwargs)
-                if response:
-                    return ApiResult(
-                        data=response,
-                        success=True,
-                        source=self.__class__.__name__ + ".Simbad"
-                    )
-            except Exception as e:
-                logger.error(f"Error querying SIMBAD: {e}")
-                raise SimbadProviderError(
-                    message=f"Error querying SIMBAD: {e}",
+
+        provider = self.simbad if provider == "simbad" else self.exoplanet_archive
+
+        try:
+            response = provider.request(**kwargs)
+            if response:
+                return ApiResult(
+                    data=response,
+                    success=True,
+                    source=self.__class__.__name__ + provider.__class__.__name__,
                 )
-        elif provider == "exoplanet":
-            try:
-                response = self.exoplanet_archive.request(**kwargs)
-                if response:
-                    return ApiResult(
-                        data=response,
-                        success=True,
-                        source=self.__class__.__name__ + ".ExoplanetArchive"
-                    )
-            except Exception as e:
-                logger.error(f"Error querying Exoplanet Archive: {e}")
-                raise ExoplanetProviderError(
-                    message=f"Error querying Exoplanet Archive: {e}",
-                )
+        except Exception as e:
+            exception_class = SimbadProviderError if provider == self.simbad else ExoplanetProviderError
+            logger.error(f"Error querying SIMBAD: {e}")
+            raise exception_class(
+                message=f"Error querying SIMBAD: {e}",
+            )
 
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
     def query_nasa_exoplanet_archive(self, **kwargs):
