@@ -6,12 +6,11 @@ from astropy import coordinates as apc, time as apt, units as u
 from astropy.coordinates import solar_system_ephemeris
 from astropy.table import Table
 from astroquery.simbad import Simbad
-from fontTools.feaLib import location
+
 from matplotlib import pyplot as plt, ticker
 import cartopy.crs as ccrs
 from matplotlib.patches import Polygon
 
-import procastro as pa
 from procastro.astro import aqs as aqs
 from procastro.misc.general import accept_object_name
 
@@ -492,23 +491,24 @@ def find_time_for_altitude(location, time,
     idx_after = np.nonzero(time_delta > 0*u.day)[0][0]
     use_past = "prev" in find or (("around" in find or "closer" in find)
                                   and time_delta[idx_after] > abs(time_delta[idx_after-1]))
-    ret_time = times_at_altitude[idx_after - use_past]
+    return_time = times_at_altitude[idx_after - use_past]
 
-    body_at_static_elevation = apc.get_body(body, ret_time, location)
+    body_at_static_elevation = apc.get_body(body, return_time, location)
 
     if (ref_body.ra - body_at_static_elevation.ra).to(u.hourangle).value > precision_sec / 3600:
-        warnings.warn(f"Iterating to improve precision for body {body} to reach altitude {ref_altitude_deg}")
+        warnings.warn(f"Iterating to improve precision for body {body} to reach altitude"
+                      f"b {ref_altitude_deg} from {return_time}")
         # use body position at time closer to requested altitude
-        return find_time_for_altitude(location, ret_time, ref_altitude_deg, find="closer", body=body)
+        return find_time_for_altitude(location, return_time, ref_altitude_deg, find="closer", body=body)
 
-    return ret_time
+    return return_time
 
 
 if __name__ == "__main__":
     body = "sun"
     loc = apc.EarthLocation.of_site('lco')
-    time = apt.Time.now() - 0.5*u.day
-    elev = 10
+    time = apt.Time.now() + 0.5*u.day
+    elev = 15
 
     sun = apc.get_body(body, time, loc)
 
