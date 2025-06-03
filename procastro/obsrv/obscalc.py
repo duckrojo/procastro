@@ -340,9 +340,9 @@ class ObsCalc(object):
             apiService = ApiService()
             # TODO: See if we can execute this query without the need of selecting pl_name
             response: ApiResult = apiService.query_exoplanet(
-                table = 'pscomppars',
-                select='pl_name, pl_tranmid, pl_orbper, pl_trandur',
-                where = f"lower(pl_name) like '%{target}%'",
+                table = "pscomppars",
+                select="pl_name,pl_tranmid,pl_orbper,pl_trandur",
+                where = f"pl_name like '%{target}%'",
             )
             if response.success is False:
                 raise ValueError(f"Error querying exoplanet database: {resultset.error_message}")
