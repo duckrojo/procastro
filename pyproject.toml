@@ -9,6 +9,7 @@ dependencies = [
     "bs4>=0.0.2",
     "cartopy>=0.24.1",
     "diskcache>=5.6.3",
+    "jplephem>=2.22",
     "lxml>=5.4.0",
     "matplotlib>=3.10.3",
     "pandas>=2.2.3",

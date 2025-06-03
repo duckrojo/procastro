@@ -3,8 +3,10 @@ from typing import Sequence
 
 import numpy as np
 from astropy import coordinates as apc, time as apt, units as u
+from astropy.coordinates import solar_system_ephemeris
 from astropy.table import Table
 from astroquery.simbad import Simbad
+from fontTools.feaLib import location
 from matplotlib import pyplot as plt, ticker
 import cartopy.crs as ccrs
 from matplotlib.patches import Polygon
@@ -13,6 +15,7 @@ import procastro as pa
 from procastro.astro import aqs as aqs
 from procastro.misc.general import accept_object_name
 
+solar_system_ephemeris.set('jpl')
 
 def starry_plot(star_table: list[Table] | Table,
                 projection="Robinson",
@@ -399,19 +402,26 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
     return ra_dec
 
 
-def hour_angle_for_altitude(dec, site_lat, altitude):
+def hour_angle_for_altitude(dec: np.ndarray | float,
+                            site_lat: np.ndarray | float,
+                            altitude: np.ndarray | float
+                            ) -> np.ndarray | float:
     """
-    Returns hour angle at which the object reaches the requested altitude
+    Returns hour angle at which an object with the given coordinate reaches the requested altitude. The
+    quantities can be either scalar or array, if the latter they must have all the same size
 
     Parameters
     ----------
-    dec
-    site_lat
-    altitude
+    dec:
+       Declination of target(s) in radian
+    site_lat:
+       Latititude of observation in radian
+    altitude:
+       Requested altitude in radian
 
-    Returns
+    Return
     -------
-      Hour angle quantity,or 13 if the declination never reaches the altitude
+      Hour angle quantity, or 13 for each target that does not reach the altitude.
     """
     cos_ha = (np.sin(altitude) - np.sin(dec) * np.sin(site_lat)
               ) / np.cos(dec) / np.cos(site_lat)
@@ -424,11 +434,13 @@ def hour_angle_for_altitude(dec, site_lat, altitude):
 
 def find_time_for_altitude(location, time,
                            ref_altitude_deg: str | float,
-                           search_delta_hour: float = 2,
-                           search_span_hour: float = 16,
-                           fine_span_min: float = 20,
+                           # search_delta_hour: float = 2,
+                           # search_span_hour: float = 16,
+                           precision_sec: float = 30,
+                           # fine_span_min: float = 20,
                            find: str = "next",
                            body: str = "sun",
+                           mean_apparent="apparent", # whether to include nutation
                            ):
     """returns times at altitude with many parameters. The search span is centered around `time` and, by default,
      it searches half a day before and half a day after.
@@ -443,66 +455,74 @@ def find_time_for_altitude(location, time,
     fine_span_min
     body
     find: str
-       find can be: 'next', 'previous'/'prev', or 'around'
+       find can be: 'next', 'previous'/'prev', or 'around/closer'
     time: apt.Time
        starting time for the search. It must be within 4 hours of the middle of day to work with default parameters.
     """
-    find_actions = {"next": 1,
-                    "previous": -1,
-                    "prev": -1,
-                    "around": 1}
-    multiplier = find_actions[find]
 
-    rough_offset = - (find == 'around') * search_span_hour * u.hour / 2
+    ref_time = apt.Time(time)
+    ref_lst = ref_time.sidereal_time(mean_apparent, location).to(u.hourangle).value
+    ref_body = apc.get_body(body, ref_time, location)
 
-    rough_span = time + np.arange(0, search_span_hour, search_delta_hour) * multiplier * u.hour + rough_offset
+    sidereal_to_solar = (u.sday / u.day).to(u.dimensionless_unscaled)
 
-    altitude_rough = apc.get_body(body, rough_span,
-                                location=location).transform_to(apc.AltAz(obstime=rough_span,
-                                                                        location=location)
-                                                                ).alt
+    ha_to_transit = u.Quantity([-((ref_lst - ref_body.ra.to(u.hourangle).value) % 24)] * 2 +
+                               [(ref_body.ra.to(u.hourangle).value - ref_lst) % 24] * 2)
 
-    if isinstance(ref_altitude_deg, str):
-        central_idx = getattr(np, f"arg{ref_altitude_deg}")(altitude_rough)
-        ref_altitude = 0
-        vertex = True
+    delta_time_to_transit = np.array(ha_to_transit) * sidereal_to_solar
+    transit_time_if_no_motion = ref_time + delta_time_to_transit * u.hour
+    if ref_altitude_deg == "max":
+        hour_angle_single = 0 * u.hourangle
+
+    # return check_precision(transit_time_if_no_motion[use_past])
+    elif ref_altitude_deg == "min":
+        hour_angle_single = 12 * u.hourangle
     else:
-        ref_altitude = ref_altitude_deg * u.degree
-        above = altitude_rough > ref_altitude
-        central_idx = list(above).index(not above[0])
-        vertex = False
+        hour_angle_single = hour_angle_for_altitude(ref_body.dec.to(u.radian).value,
+                                             location.lat.to(u.radian).value,
+                                             ref_altitude_deg*np.pi/180)
+        if hour_angle_single.value == 13:
+            raise ValueError(f"Body {body} does not reach the altitude '{ref_altitude_deg}' from '{location}'"
+                             f" near {time}")
 
-    # following is number hours from time that has the requested elevation, roughly
-    closest_idx = pa.parabolic_x(altitude_rough - ref_altitude, central_idx=central_idx, vertex=vertex)
-    closest_rough = closest_idx * search_delta_hour * multiplier * u.hour + rough_offset
+    hour_angle = u.Quantity([-hour_angle_single, hour_angle_single]*2 )
+    times_at_altitude = transit_time_if_no_motion + hour_angle.to(u.hourangle).value * sidereal_to_solar * u.hour
 
-    fine_span = time + closest_rough + np.arange(-fine_span_min, fine_span_min) * u.min
+    time_delta = times_at_altitude - ref_time
+    idx_after = np.nonzero(time_delta > 0*u.day)[0][0]
+    use_past = "prev" in find or (("around" in find or "closer" in find)
+                                  and time_delta[idx_after] > abs(time_delta[idx_after-1]))
+    ret_time = times_at_altitude[idx_after - use_past]
 
-    sun = apc.get_body(body, fine_span)
-    altitude = sun.transform_to(apc.AltAz(obstime=fine_span, location=location)).alt
+    body_at_static_elevation = apc.get_body(body, ret_time, location)
 
-    if isinstance(ref_altitude_deg, str):
-        central_idx = getattr(np, f"arg{ref_altitude_deg}")(altitude)
-        vertex = True
-    else:
-        central_idx = np.argmin(np.abs(altitude - ref_altitude))
-        vertex = False
+    if (ref_body.ra - body_at_static_elevation.ra).to(u.hourangle).value > precision_sec / 3600:
+        warnings.warn(f"Iterating to improve precision for body {body} to reach altitude {ref_altitude_deg}")
+        # use body position at time closer to requested altitude
+        return find_time_for_altitude(location, ret_time, ref_altitude_deg, find="closer", body=body)
 
-    # following is number hours from time that has the requested elevation, roughly
-    closest_idx = pa.parabolic_x(altitude - ref_altitude,
-                                 central_idx=central_idx,
-                                 vertex=vertex)
+    return ret_time
 
-    if not (0 < closest_idx < len(altitude) - 1):
-        if isinstance(ref_altitude_deg, str):
-            label = f'{ref_altitude_deg} altitude'
-        else:
-            label = f'altitude {ref_altitude_deg} deg'
-        newline = '\n'
 
-        warnings.warn(f"It's possible that {label} was not found correctly "
-                      f"{'after' if find else 'before'} {time} for body {body}.{newline}"
-                      f"minimum index ({closest_idx}) on border: {altitude}{newline}"
-                      f"But not quite what was expected from rough approx: {altitude_rough}")
+if __name__ == "__main__":
+    body = "sun"
+    loc = apc.EarthLocation.of_site('lco')
+    time = apt.Time.now() - 0.5*u.day
+    elev = 10
 
-    return time + (closest_idx - fine_span_min) * u.min + closest_rough
+    sun = apc.get_body(body, time, loc)
+
+    print(f"from time {time} looking for elevation {elev}")
+
+    tt = find_time_for_altitude(loc, time, elev, body=body, find="next")
+    print(f"found elev {apc.get_body('sun', tt, loc).transform_to(apc.AltAz(obstime=tt, location=loc)).alt}"
+          f" at time {tt}")
+
+    tt = find_time_for_altitude(loc, time, elev, body=body, find="prev")
+    print(f"found elev {apc.get_body('sun', tt, loc).transform_to(apc.AltAz(obstime=tt, location=loc)).alt}"
+          f" at time {tt}")
+
+    tt = find_time_for_altitude(loc, time, elev, body=body, find="closer")
+    print(f"found elev {apc.get_body('sun', tt, loc).transform_to(apc.AltAz(obstime=tt, location=loc)).alt}"
+          f" at time {tt}")
+
