@@ -24,10 +24,7 @@ from procastro.api_provider.api_exceptions import (
     ExoplanetProviderError, LocalFilesProviderError, DataValidationError
 )
 
-# first, we configure the logging system
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 # type for results
 T = TypeVar("T")  # this means that the result can be any type
 
@@ -272,7 +269,6 @@ class AstroqueryProvider(DataProviderInterface):
                 )
 
 
-    @abstractmethod
     def support_params(self, provider):
         """
         Common parameters for all astronomical queries using astroquery.
@@ -308,6 +304,9 @@ class AstroqueryProvider(DataProviderInterface):
         if verbose:
             logger.info(f"Querying {provider.upper()} with params: {kwargs}")
 
+
+        # TODO: SELF.DB FACTORIZARLO
+        db = self.simbad if provider == "simbad" else self.exoplanet_archive
         if provider == "simbad":
             try:
                 response = self.simbad.request(**kwargs)
@@ -358,6 +357,8 @@ class AstroqueryProvider(DataProviderInterface):
         where = kwargs.get("where")
         order = kwargs.get("order")
         verbose = kwargs.pop("verbose", False) # we pop verbose argument since it's not used by the request class.
+
+        
         query_params = {}
         if table is not None:
             query_params["table"] = table
@@ -440,7 +441,6 @@ class ApiService:
     def __init__(self, verbose= False, simbad_votable_fields=None):
         
         self.local_files_provider = LocalFilesProvider()
-        self.local_files_provider.set_api_service(self)
         self.http_provider = HttpProvider()
         self.astroquery_provider = AstroqueryProvider(simbad_votable_fields=simbad_votable_fields)
         self.verbose = verbose

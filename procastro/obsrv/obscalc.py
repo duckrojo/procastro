@@ -327,6 +327,7 @@ class ObsCalc(object):
               .format(self._target.ra.to_string(sep=':'),
                       self._target.dec.to_string(sep=':')))
         # TODO: CHECK THIS FUNCTION (LOCAL SEEKER) (fallback without overwriting)
+        # TODO: A CSV
         transit_epoch, transit_period, transit_length = \
             procastro.astro.exoplanet.get_transit_ephemeris(target)
         print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
@@ -337,14 +338,15 @@ class ObsCalc(object):
             # query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
             #         f"WHERE lower(pl_name) like '%{target}%' "
             apiService = ApiService()
+            # TODO: See if we can execute this query without the need of selecting pl_name
             response: ApiResult = apiService.query_exoplanet(
                 table = 'pscomppars',
-                selection='pl_name, pl_tranmid, pl_orbper, pl_trandur',
+                select='pl_name, pl_tranmid, pl_orbper, pl_trandur',
                 where = f"lower(pl_name) like '%{target}%'",
             )
             if response.success is False:
                 raise ValueError(f"Error querying exoplanet database: {resultset.error_message}")
-            resultset = response.data
+            resultset = response.data.to_pandas() # TODO: TO PANDAS 
             try:
                 req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
             except IndexError:

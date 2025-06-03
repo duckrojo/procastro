@@ -6,7 +6,9 @@ from typing import Optional
 import astropy.time as apt
 import astropy.units as u
 from procastro import config
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+logger = logging.getLogger(__name__)
 
 class AstroCache:
     """

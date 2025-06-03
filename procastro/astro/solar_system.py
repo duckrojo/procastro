@@ -29,8 +29,8 @@ from procastro.misc.misc_graph import figaxes
 from procastro.cache.cache import AstroCache
 
 TwoValues = tuple[float, float]
-logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
-logger = logging.getLogger("astro")
+
+logger = logging.getLogger(__name__)
 
 
 jpl_cache = AstroCache(max_cache=int(1e12), lifetime=30,)
