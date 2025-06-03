@@ -20,25 +20,25 @@
 
 import os.path
 from pathlib import Path
-
-import astropy.coordinates as apc
-import matplotlib.pyplot as plt
-import astropy.time as apt
-import astropy.units as u
-import matplotlib.axes
 import pyvo as vo
 import pyvo.dal.exceptions
-from astropy.coordinates import GCRS
-from matplotlib import figure
-
-import procastro as pa
-import procastro.astro as paa
-import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import time
 from typing import Union, Optional, Tuple
 
+import astropy.coordinates as apc
+import astropy.time as apt
+import astropy.units as u
+from astropy.coordinates import GCRS
+
+import matplotlib.pyplot as plt
+import matplotlib.axes
+from matplotlib import figure
+import matplotlib as mpl
+
+import procastro as pa
+import procastro.astro as paa
 import procastro.astro.coordinates
 from procastro.config import config_user
 
@@ -549,10 +549,12 @@ class Nightly:
                             str(self._start_night.value)[8:-7].replace(" ", f"({twilight})"),
                             str(self._end_night.value)[8:-7].replace(" ", f"({twilight})"),
                             ""])
+
         ax.axvline(ticks[1], color='grey', linestyle='--', alpha=0.5, zorder=-1)
         ax.axvline(ticks[2], color='grey', linestyle='--', alpha=0.5, zorder=-1)
-        ax.axvspan(0, ticks[0], color='mistyrose', linestyle='--', alpha=0.5, zorder=-1)
-        ax.axvspan(ticks[3], plot_xlims[1], color='mistyrose', linestyle='--', alpha=0.5, zorder=-1)
+        ax.axvspan(0, ticks[0], color='mistyrose', alpha=0.5, zorder=-1)
+        ax.axvspan(ticks[3], plot_xlims[1], color='mistyrose', alpha=0.5, zorder=-1)
+
         ax.set_yticks(altitude_separation*np.arange(len(self._planets)))
         ax.set_yticklabels(filtered_planets['pl_name'])
         ax.set_xlim(plot_xlims)
