@@ -1,0 +1,219 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>Jet Propulsion Laboratory,USGS Astrogeology Science Center</origin>
+            <originator/>
+            <pubdate>2015-01-01</pubdate>
+            <title>Titan Cassini SAR - HiSAR Global Mosaic 351m</title>
+            <edition>Through T104</edition>
+            <geoform>Geologic Map,Raster Data,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/titan_cassini_sar_hisar_global_mosaic_351m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This global map of Titan is a preliminary product showing coverage from Synthetic Aperture Radar (SAR) and High Altitude Synthetic Aperture Radar (HiSAR) images at a pixel resolution of 351 meters per pixel (m). This mosaic merges Cassini swaths through flyby T104 into a single mosaic. 
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The Cassini-Huygens mission was a joint endeavor between the Italian Space Agency, the European Space Agency (ESA; ESA, 2000-2019) and National Aeronautics and Space Administration (NASA; NASA, 2019). The Cassini-Huygens mission launched from Cape Canaveral Air Force Base in Florida on October 15, 1997 and ended on September 15, 2017 when Cassini began its Final Entry into Saturnâs Atmosphere. The primary mission ran from July 2004 â June 2008, the first mission extension, Equinox, was from July 2008- October 2010 and was followed by a final extended mission, Solstice, from October 2010 â September 2017.
+
+The Cassini Titan Radio Detection and Ranging (RADAR) Mapper plays a significant role in investigating the surface of Titan. This multi-mode radar instrument operates in the 13.8 GHz Ku-band (or 2.2 cm wavelength) and is designed to probe the optically inaccessible surface of Titan. The four different modes of the instrument (Synthetic Aperture Radar (SAR) imaging, Altimetry, Scatterometry and Radiometry) allow surface imaging as well as topographic mapping at spacecraft altitudes between 100,000 km and about 1,000 km, with resolutions for the modes ranging from 100s of km to a few hundred meters (Elachi et al., 2005). The observations, particularly when performed in the active modes of SAR, altimetry and scatterometry, are largely unaffected by atmospheric contributions. SAR data collected in high altitude orbit (HiSAR) extend the area of coverage and are useful for mapping moderate sized features such as mountains and lakes. 
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Elachi, C., Wall, S., Allison, M., Anderson, Y., Boehmer, R., Callahan, P., Encrenaz, P., et al. (2005). Cassini Radar views the surface of Titan. &lt;em&gt;Science, 308&lt;/em&gt;(5724), 970-974. &lt;a href='https://doi.org/10.1126/science.1109919' target='_blank'&gt;https://doi.org/10.1126/science.1109919 &lt;/a&gt;
+
+European Space Agency (ESA) (2000-2019). Cassini Equinox Mission. &lt;a href='https://sci.esa.int/web/cassini-huygens/-/43181-cassini-tour-equinox-mission' target='_blank'&gt;https://sci.esa.int/web/cassini-huygens/-/43181-cassini-tour-equinox-mission&lt;/a&gt;
+
+National Aeronautics and Space Agency (NASA) (2019). Missions:  Cassini. &lt;a href='https://solarsystem.nasa.gov/missions/cassini/overview' target='_blank'&gt;https://solarsystem.nasa.gov/missions/cassini/overview&lt;/a&gt;
+
+Stephan, K., Jaumann, R., Karkoschka, E., Kirk, R., Barnes, J. W., Tomasko, M. G., Turtle, E. P., et al. (2009). Mapping products of Titan's surface. In Brown, R. H., Lebreton, J. P., &amp; Waite, J. H. (Eds.), &lt;em&gt;Titan From Cassini-Huygens&lt;/em&gt; (Ch. 19, pp. 489â510). New York, NY: Springer. &lt;a href='https://doi.org/10.1007/978-1-4020-9215-2' target='_blank'&gt;https://doi.org/10.1007/978-1-4020-9215-2&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[The Cassini Solstice Mission is a joint United States and European endeavor. The Jet Propulsion Laboratory,  a division of the California Institute of Technology in Pasadena,  manages the mission for NASA's Science Mission Directorate,  Washington,  D.C. The Cassini orbiter was designed,  developed and assembled at JPL. The imaging team consists of scientists from the US,  England,  France,  and Germany. The imaging operations center and team lead (Dr. C. Porco) are based at the Space Science Institute in Boulder,  Colo.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://dx.doi.org/10.1007%2F978-1-4020-9215-2_19, http://ciclops.org/, http://saturn.jpl.nasa.gov/, http://ciclops.org/view.php?id=7921, https://pds-imaging.jpl.nasa.gov/documentation/RADARUsersGuide2ndEdV2.pdf]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>2007-07-01</begdate>
+               <enddate>2013-10-01</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>In Work</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Flyby missions,Image Processing,Remote Sensing</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>None</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/4842018c-7a57-4df4-b5c0-32b4310726db/resource/88b7737a-0463-4e78-8719-ee20ecfb4ad4/download/titan_hisar_mosaicthru_t104_jan2015_clon180_128ppd_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Best Effort</attraccr>
+         <logic>About 2 km RMS from rotational uncertainty,  and another 2 km per km of elevation.</logic>
+         <complete>This is a preliminary product.</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Best Effort</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>PDS Cassini Radar Volumes</title>
+                  <online>{http://pds-imaging.jpl.nasa.gov/volumes/radar.html,https://pds-imaging.jpl.nasa.gov/portal/cassini_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[JPL calibrated the original images and USGS stretched (in ISIS) using an 8bit logarithmic stretch and then combined the images into a mosaic using ArcMap. HiSAR images were placed underneath SAR images during the mosaic process.]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>23040</rowcount>
+         <colcount>46080</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>351.11</absres>
+                  <ordres>351.11</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn>none</horizdn>
+            <semiaxis>2575000</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum>none</altdatum>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>1013 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/titan_cassini_sar_hisar_global_mosaic_351m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

@@ -1,0 +1,213 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>USGS Astrogeology Science Center</origin>
+            <originator/>
+            <pubdate/>
+            <title>Callisto Galileo/Voyager Global Mosaic 1km</title>
+            <edition>1</edition>
+            <geoform>Global Mosaic,Image,Raster Data,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/callisto_galileo_voyager_global_mosaic_1km</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[This global map of Callisto utilizes the best image quality and moderate resolution coverage supplied by Galileo SSI (Solid State Imaging instrument) and Voyager 1 and 2. This mosaic was prepared using the ISIS 2 image processing and cartographic system and later converted to an ISIS 3 cube. The image data was selected on the basis of overall image quality, reasonable input resolution, and availability of moderate viewing and sun angles for topography. The average input resolution was 1.0 kilometers/pixel. The resolution ranged from 60 km/pixel for gap fill up to 400 meters/pixel.]]&gt;</abstract>
+         <purpose>[![CDATA[To build a global mosaic using the best available image data]]&gt;</purpose>
+         <supplinf>[![CDATA[http://geopubs.wr.usgs.gov/i-map/i2770/]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current/>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Geomorphology,Remote Sensing,Satellites</themekey>
+         </theme>
+      </keywords>
+      <accscope>Astropedia</accscope>
+      <accconst>public domain</accconst>
+      <useconst>None</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/a80abd68-7ed9-440e-829a-76376779164f/resource/ac628525-cb1c-4742-928b-5a0a60f372cd/download/callisto_voyager_galileossi_global_mosaic_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic>The geometric control network was computed at the RAND Corporation using RANDâs most recent solution as of April 1999 (Davies and Katayama,  1981). This process involved selecting control points on the individual images,  making pixel measurements of their locations,  using reseau locations to correct for geometric distortions,  and converting the measurements to millimeters in the focal plane. These data are combined with the camera focal lengths and navigation solutions as input to photogrammetric triangulation software that solves for the best-fit sphere,  the coordinates of the control points,  the three orientation angles of the camera at each exposure (right ascension,  declination,  and twist),  and an angle (W0) which defines the orientation of Callisto in space. W0âin this solution 259.51Â°âis the angle along the equator to the east,  between the 0Â° meridian and the equatorâs intersection with the celestial equator at the standard epoch J2000.0. This solution places the crater Saga at its defined longitude of 326Â° west (Seidelmann and others,  2002).
+
+* Davies,  M.E.,  and Katayama,  F.Y.,  1981,  Coordinates of features on the Galilean satellites: Journal of Geophysical Research,  v. 86,  no. A10,  p. 8635â8657.
+
+* Seidelmann,  P.K.,  Abalakin,  V.K.,  Bursa,  M.,  Davies,  M.E.,  de Bergh,  C.,  Lieske,  J.H.,  Oberst,  J.,  Simon,  J.L.,  Standish,  E.M.,  Stooke,  P.,  and Thomas,  P.C.,  2002,  Report of the IAU/IAG Working Group on Cartographic and Rotational Elements of the Planets and Satellitesâ2000: Celestial Mechanics and Dynamical Astronomy,  v. 82,  p. 83â110.</logic>
+         <complete>The average input resolution was 1.0 kilometers/pixel. The resolution ranged from 60 km/pixel for gap fill up to 400 meters/pixel.</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title/>
+                  <online/>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[This global map base uses the best image quality and moderate resolution coverage supplied by Galileo SSI and Voyager 1 and 2 (Batson,  1987; Becker and others,  1998; Becker and others,  1999; Becker and others,  2001). The digital map was produced using Integrated Software for Imagers and Spectrometers (ISIS) (Eliason,  1997; Gaddis and others,  1997). The individual images were radiometrically calibrated and photometrically normalized using a Lunar-Lambert function with empirically derived values (McEwen,  1991; Kirk and others,  2000). A linear correction based on the statistics of all overlapping areas was then applied to minimize image brightness variations. The image data were selected on the basis of overall image quality,  reasonable original input resolution (from 20 km/pixel for gap fill to as much as 150 m/pixel),  and availability of moderate emission/incidence angles for topography. Although consistency was achieved where possible,  different filters were included for global image coverage as necessary: clear for Voyager 1 and 2; clear and green (559 nm) for Galileo SSI. Individual images were projected to a Sinusoidal Equal-Area projection at an image resolution of 1.0 kilometer/pixel. The final constructed Sinusoidal projection mosaic was then reprojected to the Mercator and Polar Stereographic projections included on this sheet. The final mosaic was enhanced using commercial software.
+
+* Batson,  R.M.,  1987,  Digital cartography of the planetsâNew methods,  its status,  and its future: Photogrammetric Engineering and Remote Sensing,  v. 53,  no. 9,  p. 1211â1218.
+
+* Gaddis,  L.R.,  Anderson,  J.,  Becker,  K.J.,  Becker,  T.L.,  Cook,  D.,  Edwards,  K.,  Eliason,  E.M.,  Hare,  T.,  Kieffer,  H.H.,  Lee,  E.M.,  Mathews,  J.,  Soderblom,  L.A.,  Sucharski,  T.,  Torson,  J.,  McEwen,  A.S.,  Robinson,  M.S.,  1997,  An overview of the Integrated Software for Imaging Spectrometers (ISIS),  in Lunar and Planetary Science Conference XXVIII: Houston,  Lunar and Planetary Institute,  p. 387.
+
+* McEwen,  A.S.,  1991,  Photometric functions for photoclinometry and other applications: Icarus,  v. 92,  p. 298â311.
+
+* Kirk,  R.L.,  Thompson,  K.T.,  Becker,  T.L.,  and Lee,  E.M.,  2000,  Photometric modeling for plane-tary cartography,  in Lunar and Planetary Science Conference XXXI: Houston,  Lunar and Planetary Institute,  abs. no. 2025 [CD-ROM].]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>7569</rowcount>
+         <colcount>15138</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>1000.0051966711</absres>
+                  <ordres>1000.0051966711</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>2409300.0488</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>110 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/callisto_galileo_voyager_global_mosaic_1km</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

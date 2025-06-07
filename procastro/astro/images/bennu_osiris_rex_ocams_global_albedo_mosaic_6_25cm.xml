@@ -1,0 +1,233 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>Golish,D. R.,Shultz,N. K.,Becker,T. L.,Becker,K. J.,Edmundson,K. L.,DellaGiustina,D. N.,et al.</origin>
+            <originator/>
+            <pubdate>2021-06-26</pubdate>
+            <title>Bennu OSIRIS-REx OCAMS Global ALBEDO Mosaic 6.25cm</title>
+            <edition/>
+            <geoform>Global Mosaic</geoform>
+            <serinfo>
+               <sername/>
+               <issue>6</issue>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/bennu_osiris_rex_ocams_global_albedo_mosaic_6_25cm</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[In 2019, NASA's OSIRIS-REx (Origins, Spectral Interpretation, Resource Identification, and Security and Regolith Explorer) mission globally surveyed asteroid (101955) Bennu with a collection of instruments, including the OSIRIS-REx Camera Suite (OCAMS) PolyCam imager. Using PolyCam panchromatic images acquired at low phase angles (~8°), we constructed a near-global albedo map of Bennu with a ground sample distance of 6.25 cm/pixel (Golish et al. 2021a). The images were photometrically normalized using the published ROLO phase function and Lommel-Seeliger disk function for Bennu (Golish et al., 2021b) and orthorectified using the v20 global shape model (Barnouin, et al. (2020); Daly et al. (2020), produced by the OSIRIS-Rex Laser Altimeter (OLA; Daly et al. (2017)), with a ground sample distance of 88 cm. Mapping and global control methods were adapted from Bennett et al. (2021) and Edmundson et al. (2020).
+
+
+&lt;b&gt;Highlights:&lt;/b&gt;
+&lt;ul&gt;
+&lt;li&gt;We produced a near-global albedo map of asteroid Bennu at a ground sample distance of 6.25 cm, covering ±55° latitude.&lt;/li&gt;
+&lt;li&gt;Images were rectified to a 3D digital terrain model with a mean facet size of 88 cm.&lt;/li&gt;
+&lt;li&gt;Images were photometrically normalized to 0° phase angle using a ROLO phase function.&lt;/li&gt;
+&lt;/ul&gt;
+
+This download is an 8bit version of the original mosaic. The mapping used to convert to 8bit was a linear stretch from 0.002 - 0.007 to 1 - 254, maintaining 0 as NoDATA. The original 32bit version is also available for download from:
+
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://planetarymaps.usgs.gov/mosaic/Bennu/Bennu_global_ShapeV20_GndControl_ROLOphase_ALBEDO_v6_32bit.zip&quot;&gt;  Bennu_global_ShapeV20_GndControl_ROLOphase_ALBEDO_v6&lt;/a&gt; - Albedo mosaic in 32bit floating point.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Barnouin, O. S., Daly, M. G., Palmer, E. E., Johnson, C. L., Gaskell, R. W., Al Asad, M., et al., (2020). Digital terrain mapping by the OSIRIS-REx mission. Planetary and Space Science, 180(October 2018), 104764. &lt;a href=&quot;https://doi.org/10.1016/j.pss.2019.104764&quot;&gt;https://doi.org/10.1016/j.pss.2019.104764&lt;/a&gt;
+
+Bennett, C. A., DellaGiustina, D. N., Becker, K. J., Becker, T. L., Edmundson, K. L., Golish, D. R., et al., (2021). A high-resolution global basemap of (101955) Bennu. Icarus, 357(October 2019), 113690. &lt;a href=&quot;https://doi.org/10.1016/j.icarus.2020.113690&quot;&gt;https://doi.org/10.1016/j.icarus.2020.113690&lt;/a&gt;
+
+Daly, M. G., Barnouin, O. S., Dickinson, C., Seabrook, J., Johnson, C. L., Cunningham, G., et al., (2017). The OSIRIS-REx Laser Altimeter (OLA) Investigation and Instrument. Space Science Reviews, 212(1-2), 899-924. &lt;a href=&quot;https://doi.org/10.1007/s11214-017-0375-3&quot;&gt;https://doi.org/10.1007/s11214-017-0375-3&lt;/a&gt;
+
+Daly, M. G., Barnouin, O. S., Seabrook, J. A., Roberts, J., Dickinson, C., Walsh, K. J., et al., (2020). Hemispherical differences in the shape and topography of asteroid (101955) Bennu. Science Advances, 6(41), eabd3649. &lt;a href=&quot;https://doi.org/10.1126/sciadv.abd3649&quot;&gt;https://doi.org/10.1126/sciadv.abd3649&lt;/a&gt;
+
+Edmundson, K. L., Becker, K. J., Becker, T. L., Bennett, C. A., Dellagiustina, D. N., Golish, D. R., et al., (2020). PHOTOGRAMMETRIC PROCESSING of OSIRIS-REX IMAGES of ASTEROID (101955) BENNU. ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, 5(3), 587-594. &lt;a href=&quot;https://doi.org/10.5194/isprs-Annals-V-3-2020-587-2020&quot;&gt;https://doi.org/10.5194/isprs-Annals-V-3-2020-587-2020&lt;/a&gt;
+
+Golish, D. R., DellaGiustina, D. N., Li, J.-Y., Clark, B. E., Zou, X.-D., Smith, P. H., et al., (2021). Disk-resolved photometric modeling and properties of asteroid (101955) Bennu. Icarus, 357, 113724. &lt;a href=&quot;https://doi.org/10.1016/j.icarus.2020.113724&quot;&gt;https://doi.org/10.1016/j.icarus.2020.113724&lt;/a&gt;
+
+Golish, D. R., Shultz, N. K., Becker, T. L., Becker, K. J., Edmundson, K. L., DellaGiustina, D. N., et al., (2021). A high-resolution normal albedo map of asteroid (101955) Bennu. Icarus, 355, 114133. &lt;a href=&quot;https://doi.org/10.1016/j.icarus.2020.114133&quot;&gt;https://doi.org/10.1016/j.icarus.2020.114133&lt;/a&gt;
+
+Lauretta, D. S., Enos, H., Polit, A. T., Roper, H. L., &amp; Wolner, C. W. V. (2021). OSIRIS-REx at Bennu: Overcoming challenges to collect a sample of the early Solar System. In A. Longobardo (Ed.), Sample Return Missions (pp. 163-194). Amsterdam, Netherlands: Elsevier.]]&gt;</abstract>
+         <purpose>[![CDATA[construction a near-global albedo map of Bennu with a ground sample distance of 6.25 cm/pixel (Golish et al. 2021a)]]&gt;</purpose>
+         <supplinf>[![CDATA[https://doi.org/10.1016/j.icarus.2020.114133, https://sbn.psi.edu/pds/resource/orex/ocams.html, https://www.asteroidmission.org/]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>2019-03-07</begdate>
+               <enddate>2019-03-07</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Asteroids,Cartography,Image Processing,Photogrammetry,Remote Sensing,Sampling and analysis</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>please cite authors</accconst>
+      <useconst>public domain</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/1d44b040-bb15-475e-b186-2bebc41b3b83/resource/c3352dab-223d-41b9-a762-170531d11b55/download/bennu_global_shapev20_gndcontrol_rolophase_albedo_8bit_1024.jpg</browsen>
+      </browse>
+      <native>GDAL,ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Best Effort</attraccr>
+         <logic/>
+         <complete>See: Golish,  D. R.,  Shultz,  N. K.,  Becker,  T. L.,  Becker,  K. J.,  Edmundson,  K. L.,  DellaGiustina,  D. N.,  et al. (2021). A high-resolution normal albedo map of asteroid (101955) Bennu. Icarus,  355,  114133. https://doi.org/10.1016/j.icarus.2020.114133</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Accurate to Control Net</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>OSIRIS-REx PDS archive</title>
+                  <online>https://sbn.psi.edu/pds/resource/orex/</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[The mapping used to convert to 8bit was a linear stretch from 0.002 - 0.007 to 1 - 254,  maintaining 0 as NoDATA. See: Golish,  D. R.,  Shultz,  N. K.,  Becker,  T. L.,  Becker,  K. J.,  Edmundson,  K. L.,  DellaGiustina,  D. N.,  et al. (2021). A high-resolution normal albedo map of asteroid (101955) Bennu. Icarus,  355,  114133. https://doi.org/10.1016/j.icarus.2020.114133]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>12568</rowcount>
+         <colcount>25134</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>0.0625</absres>
+                  <ordres>0.0625</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn>OLA v20</horizdn>
+            <semiaxis>250</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum>OLA v20</altdatum>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>300 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/bennu_osiris_rex_ocams_global_albedo_mosaic_6_25cm</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

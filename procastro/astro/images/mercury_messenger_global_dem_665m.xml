@@ -1,0 +1,223 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>Kris Becker,NASA,Arizona State University,Johns Hopkins Applied Physics Laboratory,Carnegie Institution for Science</origin>
+            <originator/>
+            <pubdate>2016-10-21</pubdate>
+            <title>Mercury MESSENGER Global DEM 665m</title>
+            <edition>V02</edition>
+            <geoform>Digital Elevation Model,Raster Data,Topographic Map</geoform>
+            <serinfo>
+               <sername/>
+               <issue>Oct. 2016</issue>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+Using the Integrated Software for Imagers and Spectrometers (ISIS3) and observations from Mercury Dual Imaging System (MDIS) narrow-angle camera (NAC) and multispectral wide-angle camera (WAC), we derived a global digital elevation model (DEM) of Mercury. We created the global DEM of Mercury from a least-squares bundle adjustment (jigsaw in ISIS3; Becker et al., 2016) of common features, measured as tie point coordinates in overlapping NAC and WAC-G filter images. The resolution of this DEM is 665 meters per pixel (m).
+
+The MDIS image inventory contains over 176,000 NAC and WAC-G observations with a very large variety of disparate geometric and illumination characteristics, and we encountered limitations to existing conventional control techniques in ISIS3 that required development of new software and techniques. Our main objectives were to 1) significantly improve image tie point matching accuracy while increasing control point density, and 2) greatly reduce the resources, both human and computer, required to control large image data sets. The new approach utilizes unsupervised image-to-image feature-based matching and control techniques that are well suited for scaling and distribution across compute cluster environments (Becker et al., 2016).
+
+This is version 2 of the product derived using a 1-sigma filter applied to the point cloud when processing each output pixel. The original version (1) did not have this filter applied.
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The MErcury Surface, Space Environment, Geochemistry, and Ranging (MESSENGER) spacecraft launched on August 3rd, 2004, it entered orbit around Mercury on March 11, 2011 and ended its mission on April 30th, 2015 when it deliberately plunged into the surface or Mercury. MESSENGER was the first spacecraft to orbit Mercury and had the primary goal of studying the geology, magnetic field, and chemical composition of the planet. 
+
+The science payload onboard MESSENGER included: Mercury Dual Imaging System (MDIS), Gamma-Ray Spectrometer (GRS), Neutron Spectrometer (NS), X-ray Spectrometer (XRS), Mercury Laser Altimeter (MLA), Mercury Atmospheric and Surface Composition (MACS), Energetic Particle and Plasma Spectrometer (EPPS), and Radio Science experiment (RS).  The MDIS instrument suite consists of wide-angle (WAC) and narrow-angle imagers (NAC) situated on a pivot platform that enables the instruments to be pointed in specified directions. 
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Becker, K. J., Robinson, M. S., Becker, T. L., Weller, L. A., Edmundson, K. L., Neumann, G. A., Perry, M. E., et al. (2016). &lt;em&gt;First global digital elevation model of Mercury.&lt;/em&gt; Paper presented at the 47th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.hou.usra.edu/meetings/lpsc2016/pdf/2959.pdf' target='_blank'&gt;https://www.hou.usra.edu/meetings/lpsc2016/pdf/2959.pdf&lt;/a&gt;
+
+Hawkins, S. E., Boldt, J. D., Darlington, E. H., Espiritu, R., Gold, R. E., Gotwols, B., Grey, M. P., et al. (2007). The Mercury Dual Imaging System on the MESSENGER Spacecraft. &lt;em&gt;Space Science Reviews, 131&lt;/em&gt;(1â4), 247â338. &lt;a href='https://doi.org/10.1007/s11214-007-9266-3' target='_blank'&gt;https://doi.org/10.1007/s11214-007-9266-3&lt;/a&gt;
+
+Solomon, S. C., McNutt, R. L., Jr., Gold, R. E., AcuÃ±a, M. H., Baker, D. N., Boynton, W. V., Chapman, C. R., et al. (2001). The MESSENGER mission to Mercury: Scientific objectives and implementation. &lt;em&gt;Planetary and Space Science, 49&lt;/em&gt;(14-15), 1445-1465. &lt;a href='https://doi.org/10.1016/S0032-0633(01)00085-X' target='_blank'&gt;https://doi.org/10.1016/S0032-0633(01)00085-X&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[To create a global digital elevation model (DEM) for analysis use and to support image orthorectification.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://www.hou.usra.edu/meetings/lpsc2016/pdf/2959.pdf, http://messenger.jhuapl.edu/the_mission/mosaics.html, http://messenger.jhuapl.edu/news_room/news-050616.html  , http://www.usgs.gov/news/first-global-topographic-map-mercury-released]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>2011-03-29</begdate>
+               <enddate>2015-04-30</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Control Network,Image Processing,Remote Sensing,Topography</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>None</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/75db9745-e9c5-4a6d-8dea-39f704a163cc/resource/2816dcdb-6c7c-427e-b7bb-5401e2885b0b/download/mercury_messenger_dem_global_665m_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Best Effort</attraccr>
+         <logic>The initial step in creation of a control network is the identification of overlapping areas between images from ephemeris data (e.g.,  spacecraft position and pointing attitude from mission Navigation and Ancillary Information Facility SPICE data). SPICE data can contain uncertainties that limit accurate identification of overlap between images and precise measurement of image tie points. Control point networks contain tie points that are sample/line coordinates with geometric locations (derived from SPICE) that are automatically measured across the overlapping image areas. Tie point locations are typically randomly placed on  images,  often in areas of low contrast and shadows.</logic>
+         <complete>Global coverage</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>MESSENGER Online Data Volumes</title>
+                  <online>{https://pds-imaging.jpl.nasa.gov/volumes/mess.html,https://pds-imaging.jpl.nasa.gov/portal/messenger_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[This is version 2 of the product derived using a 1-sigma filter applied to the point cloud when processing each output pixel. The original version (1) did not have this filter applied.
+
+From 176, 352 images,  we selected a subset limited by pixel scale (75 to 800 m/pixel; NAC (64, 086) and WAC-G (37, 091) images),  and successfully controlled 100, 432 images (63, 536 NAC,  36, 896 WAC-G) to sub-pixel accuracy (0.86 average pixel residual from the bundle adjustment). We used the efficient FASTX feature detector that is well suited for identification of landforms. A SIFT descriptor extractor and BruteForce matcher was used to create the control measures from overlapping image pairs. The final global control network contained 12, 596, 336 control points and 94, 745, 475 tie point measurements. This is the largest control network ever processed in ISIS3. A preliminary comparison of the global control point cloud with the Mercury Laser Altimeter/Radio Science DEM appears elsewhere. We interpolated a global DEM at 64 pixels/degree (665 m/pixel) directly from the control network point cloud (an irregularly spaced dataset) stored in a kd-tree structure by selecting the nearest 11 points closest to the center output DEM pixel geometric coordinate. From those 11 points,  a 1.0-standard-deviation filter centered about the median radius was applied to eliminate outliers. The median radius from the remaining points was selected as the output DEM radius value. A series of averaging filters smoothed the final DEM relative to a datum radius of 2439.4 km.]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>11520</rowcount>
+         <colcount>23040</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>665.24315270546</absres>
+                  <ordres>665.24315270546</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>2439400</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits>Meters</altunits>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>506 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/mercury_messenger_global_dem_665m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

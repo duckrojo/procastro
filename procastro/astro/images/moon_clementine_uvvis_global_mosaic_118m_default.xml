@@ -1,0 +1,225 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>Planetary Data System</origin>
+            <originator/>
+            <pubdate>2009-04-09</pubdate>
+            <title>Moon Clementine UVVIS Global Mosaic 118m</title>
+            <edition>2</edition>
+            <geoform>Global Mosaic,Image,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/moon_clementine_uvvis_global_mosaic_118m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+The Clementine Ultraviolet/Visible (UVVIS) Version 2 mosaic is a grayscale data set representing the albedo (brightness of the lunar surface) as measured at the 750 nanometer (nm) wavelength by the UVVIS camera (Lee, et al., 2009).  Resolution of this mosaic is 118 meters per pixel (m). 
+
+In late 2008, a revised 750nm mosaic (v. 2.0) was created at USGS to refine the locations of component images by using the latest geodetic control and projecting onto a topographic model of the lunar surface (Archinal et al., 2006).  The base map was radiometrically and geometrically controlled, photometrically modeled global image mosaic compiled using more than 43,000 images from the 750nm filter observations.
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+On January 25, 1994, the Deep Space Program Science Experiment (DSPSE), better known as Clementine, was launched from Vandenburg Air Force Base aboard a Titan IIG rocket, as a joint project between the and was jointly sponsored by the Ballistic Missile Defense Organization (BMDO) of the Dept of Defense and NASA. The objective of the mission was to test sensors and spacecraft components under extended exposure to the space environment and to make scientific observations of the Moon and a near-Earth asteroid (1620 Geographos).
+
+After two Earth fly-bys, lunar insertion was achieved on February 19th. Lunar mapping took place over approximately two months in two systematic mapping passes over the Moon. After the spectacular success of the Lunar mapping phase of the mission, Clementine suffered an on-board malfunction on May 7, 1994 that resulted in the activation of its altitude thrusters. This exhausted all the fuel for altitude control and left the spacecraft spinning at 80 revolutions per minute. The result of the malfunction prevented Clementine from performing the planned close fly-by of the near-Earth asteroid Geographos scheduled for August 1994.
+
+The main instrumentation on Clementine consisted of four cameras, one with a laser-ranging system. The cameras included an ultraviolet-visual (UVVIS) camera, a long-wavelength infrared (LWIR) camera, the laser-ranger (LIDAR) high-resolution (HIRES) camera, and a near-infrared (NIR) camera. The spacecraft also had two star tracker cameras (A-STAR, B- STAR), used mainly for attitude determination, but they also served as wide-field cameras for various scientific and operational purposes (PDS IMG, 2017).
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Archinal, B. A., Rosiek, M. R., Kirk, R. L., &amp; Redding, B. (2006). The Unified Lunar Control Network 2005, Open-File Report 2006-1367, Reston, VA, U.S. Geological Survey. &lt;a href='http://pubs.usgs.gov/of/2006/1367' target='_blank'&gt;http://pubs.usgs.gov/of/2006/1367 &lt;/a&gt; 
+
+Eliason, E., et al. (1997). Clementine Basemap Mosaic, PDS Volumes USA_NASA_PDS_CL_3001 through 3015, produced by the U.S. Geological Survey and distributed on CD media by the Planetary Data System. &lt;a href='http://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=CLEM1-L-H-5-DIM-MOSAIC-V1.0' target='_blank'&gt;http://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=CLEM1-L-H-5-DIM-MOSAIC-V1.0&lt;/a&gt;
+
+Lee, E. M., Gaddis, L. R., Weller, L., Richie, J. O., Becker, T., Shinaman, J., Rosiek, M. R., &amp; Archinal, B. A. (2009). &lt;em&gt;A New Clementine Basemap of the Moon.&lt;/em&gt; Paper presented at the 40th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='http://www.lpi.usra.edu/meetings/lpsc2009/pdf/2445.pdf' target='_blank'&gt;http://www.lpi.usra.edu/meetings/lpsc2009/pdf/2445.pdf &lt;/a&gt; 
+
+McEwen, A. S., &amp; Robinson, M. S. (1997). Mapping of the Moon by Clementine. &lt;em&gt;Advances in Space Research, 19&lt;/em&gt;(10), 1523-1533. &lt;a href='https://doi.org/10.1016/S0273-1177(97)00365-7' target='_blank'&gt;https://doi.org/10.1016/S0273-1177(97)00365-7&lt;/a&gt;
+
+Planetary Data Systems (PDS) Cartography and Imaging Sciences Node (IMG) (2017). Clementine Mission. &lt;a href='https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html' target='_blank'&gt;https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[Because of recent improvements in the geodetic control network of the Moon and the availability of a detailed 3D shape model on which to project the images,  we created this new controlled Clementine basemap. This product supercedes the original base map created in 1998,  and also the warped product generated to reflect the shift from the original control point positions to the new positions in the 2005 control network.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=CLEM1-L-H-5-DIM-MOSAIC-V1.0, http://www.lpi.usra.edu/meetings/lpsc2009/pdf/2445.pdf, https://pdsimage.wr.usgs.gov/archive/clem1-l-u-5-dim-uvvis-v1.0/cl_4001/document/volinfo.htm]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>1994-02-01</begdate>
+               <enddate>1994-05-31</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>None planned</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Geomorphology,Image Processing,Satellites</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>None</accconst>
+      <useconst>Public domain</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/359afbec-7f0d-4020-9453-3fb57f8ea651/resource/91f58a2f-64bb-4c81-9978-babfd65b1c41/download/lunar_clementine_uvvis_750nm_global_mosaic_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Accurate to Control Net</attraccr>
+         <logic>The few gaps in the global mosaic were filled with images taken at 900nm or 950nm wavelengths.</logic>
+         <complete>The new Clementine mosaic corrects many of the problems identified in the earlier basemap mosaic. Procedures and processing scripts are now in place that will allow us to easily regenerate the mosaic when a new global geodetic control solution is available.</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Accurate to Control Net</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>CLEMENTINE HIRES MOSAIC</title>
+                  <online>{https://pds-imaging.jpl.nasa.gov/volumes/clementine.html,https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[Approximately 43, 000 Clementine frames were radiometrically calibrated,  photometrically corrected,  geodetically controlled,  and projected onto a spherical shape model of the Moon [4] to create a global mosaic at a uniform 100 m/pixel resolution. The USGS Integrated Software for Imagers and Spectrometers (ISIS) software was used to process the Clementine data for the basemap mosaic. The ingestion,  radiometric calibration,  and merging of low and high exposure image pairs were performed using the program âuv-viscalâ in the earlier ISIS 2 software. The analysis of the control network,  repair or removal of bad control points in the network,  updating of the camera pointing information to correct obvious offsets between images,  and creation of the tone-matched mosaic was performed using the newest ISIS 3 software. The images were then photometrically corrected (using the Lunar Lambert photometric model and the âMoon Albedoâ normalization model) and trimmed in ISIS 3.]]&gt;</procdesc>
+            <procdate>2008-12-01</procdate>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>46080</rowcount>
+         <colcount>92160</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>118.451</absres>
+                  <ordres>118.451</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>1737400</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>4 GB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/moon_clementine_uvvis_global_mosaic_118m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

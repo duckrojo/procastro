@@ -1,5 +1,6 @@
 from procastro.astro import body_map
 
-body_map("moon", "lco")
+ax = body_map("moon", "lco")
+ax.figure.show()
 
 

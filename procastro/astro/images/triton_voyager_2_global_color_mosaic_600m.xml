@@ -1,0 +1,227 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>NASA,Jet Propulsion Laboratory,Dr. Paul Schenk</origin>
+            <originator/>
+            <pubdate>2014-08-21</pubdate>
+            <title>Triton Voyager 2 Global Color Mosaic 600m</title>
+            <edition>2014-08-21</edition>
+            <geoform>Global Mosaic,Raster Data,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/triton_voyager_2_global_color_mosaic_600m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+Voyager 2 data was used to construct the best-ever global color map of Triton. This map has a resolution of 1,970 feet (600 meters per pixel [m]).  Color was synthesized by combining high-resolution images taken through orange, violet, and ultraviolet filters; these images were displayed as red, green, and blue images and combined to create this color version (Smith et al., 1989).
+
+Two levels of digital image processing are commonly used for planetary mapping. Level 1 is intended to restore the pictures to the quality that would have been produced by a âperfectâ camera, this is done by removing âartifactsâ from lens distortions and electronic recording and transmitting systems. Level 2 processing is done to correct image geometry to match appropriate map projections. Final map/ mosaic complications are done with level 2, geometrically corrected, images (Batson, 1984). Both level 1 and level 2 processing are done to preserve the original contrast captured by the camera which may include very dark and or very light areas. Due to the combination of very low light levels and low albedo of Neptunian rings and satellites, the image sequences required longer exposures times which in turn required specialized sequence design to compensate for image smear caused by spacecraft motion. 
+
+Originally released in the PDS Photojpurnal as file PIA18668 (NASA JPL, 2014).
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+Triton was discovered in 1846 by Lassel, immediately following the discovery of Neptune. Many of Triton's fundamental properties were unknown prior to Voyagerâs encounter due to its proximity to Neptune and low relative brightness which made it difficult to observe Triton from Earth. Improvements such as enlarging tracking antennas of the Deep Space Network (DSN) had to be made to the Voyager system prior to itâs encounter with the Neptunian system to enable data transmission to Earth-based receivers from deep space.  Voyager 2 launched on August 20, 1977 onboard a Titan III E-Centaur rocket, it reached the Neptunian system on August 25, 1989. 
+
+Triton is by far the largest satellite of Neptune, with a radius of 1,350 (839 mi); about 22% smaller than Earth's moon. It is one of only three objects in the Solar System known to have a nitrogen-dominated atmosphere (the others are Earth and Saturn's giant moon, Titan). Triton has the coldest surface known anywhere in the Solar System (38 K, about -391 degrees Fahrenheit). It is so cold that most of Triton's nitrogen is condensed as frost, making it the only satellite in the Solar System known to have a surface made mainly of nitrogen ice (Stone &amp; Miner, 1989). The pinkish deposits constitute a vast south polar cap believed to contain methane ice, which would have reacted under sunlight to form pink or red compounds. The dark streaks overlying these pink ices are believed to be an icy and perhaps carbonaceous dust deposited from huge geyser-like plumes, some of which were found to be active during the Voyager 2 flyby. The bluish-green band visible in this image extends all the way around Triton near the equator; it may consist of relatively fresh nitrogen frost deposits. The greenish areas include what is called the cantaloupe terrain, whose origin is unknown, and a set of &quot;cryovolcanic&quot; landscapes apparently produced by icy-cold liquids (now frozen) erupted from Triton's interior.
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Abelson, P. H. (1989). Voyager 2 at Neptune and Triton. &lt;em&gt;Science, 246&lt;/em&gt;(4936), 1369. &lt;a href='https://doi.org/10.1126/science.246.4936.1369' target='_blank'&gt;https://doi.org/10.1126/science.246.4936.1369&lt;/a&gt;
+
+Batson, R. (1984). &lt;em&gt;Voyager 1 and 2 Atlas of Six Saturnian Satellites&lt;/em&gt; (NASA-SP-474). Washington, DC: National Aeronautics and Space Administration (NASA). &lt;a href='https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf' target='_blank'&gt;https://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19840027171.pdf&lt;/a&gt;
+
+Greely, R., &amp; Batson, R. (2007). &lt;em&gt;Planetary Mapping.&lt;/em&gt; (ISBN 0-521-30774-0). New York, NY: Cambridge University Press.
+
+National Aeronautics and Space Agency (NASA) Jet Propulsion Laboratory (JPL) (2014). Photojournal: PIA18668: Map of Triton. &lt;a href='https://photojournal.jpl.nasa.gov/catalog/PIA18668' target='_blank'&gt;https://photojournal.jpl.nasa.gov/catalog/PIA18668&lt;/a&gt;
+
+Smith, B. A., Soderblom, L. A., Banfield, D., Barnet, C., Basilevsky, A. T., Beebe, R. F., Bollinger, K., et al. (1989). Voyager 2 at Neptune: Imaging science results. &lt;em&gt;Science, 246&lt;/em&gt;(4936), 1422-1449. &lt;a href='https://doi.org/10.1126/science.246.4936.1422' target='_blank'&gt;https://doi.org/10.1126/science.246.4936.1422&lt;/a&gt;
+
+Stone, E. C., &amp; Miner, E. D. (1989). The Voyager 2 encounter with the Neptunian System. &lt;em&gt;Science, 246&lt;/em&gt;(4936), 1417-1421. &lt;a href='https://doi.org/10.1126/science.246.4936.1417' target='_blank'&gt;https://doi.org/10.1126/science.246.4936.1417&lt;/a&gt;]]&gt;</abstract>
+         <purpose/>
+         <supplinf>[![CDATA[http://photojournal.jpl.nasa.gov/catalog/PIA18668, https://pds-rings.seti.org/neptune/, https://www.lpi.usra.edu/resources/outerp/trit.html, https://www.isprs.org/proceedings/XXXVII/congress/4_pdf/172.pdf, https://www.sciencedirect.com/topics/earth-and-planetary-sciences/triton]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Publication date</current>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Image Processing,Remote Sensing,Satellites</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>public domain</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/445b4c39-e87a-4e4d-88a8-e48d8e755c5c/resource/de0ba9f1-303e-4e5f-a99a-3201fba9a764/download/triton_voyager2_clrmosaic_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic/>
+         <complete>Large gap at the north pole</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>Voyager EDRs</title>
+                  <online>{http://pds-imaging.jpl.nasa.gov/volumes/voyager.html,https://pds-imaging.jpl.nasa.gov/portal/voyager_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[Grid lines were filled by neighboring pixels. We will try to find the original version without grid lines.]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>7069</rowcount>
+         <colcount>14138</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>600</absres>
+                  <ordres>600</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>1350000</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>287 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/triton_voyager_2_global_color_mosaic_600m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>
