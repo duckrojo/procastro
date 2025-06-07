@@ -1,9 +1,6 @@
 import os
 from pathlib import Path
 import diskcache as dc
-from typing import Optional
-import astropy.time as apt
-import astropy.units as u
 from procastro import config
 
 
@@ -15,7 +12,7 @@ class AstroCache:
     Attributes:
         max_cache (int): The maximum volume allocated for the cache in Bytes.
         expire (int): The expire time of cached items in days. If 0, items do not expire.
-        force (str | None): A keyword to force bypassing the cache when set in method arguments (forces execution).
+        force_kwd (str): A keyword to force bypassing the cache when set in method arguments (forces execution).
         eviction_policy (str | None): The policy used to evict items from the cache.
 
             "least-recently-stored" is the default. Every cache item records the time it was stored in the cache. This policy adds an index to that field. On access, no update is required. Keys are evicted starting with the oldest stored keys. As DiskCache was intended for large caches (gigabytes) this policy usually works well enough in practice.
@@ -32,15 +29,15 @@ class AstroCache:
         label_on_disk : Location on disk to store the cache
     """
     def __init__(self,
-                 max_cache=int(1e9), lifetime=0,
+                 max_cache=int(1e9), lifetime=None,
                  hashable_kw=None, label_on_disk=None,
-                 force: str | None = "force",
+                 force_kwd: str = "force",
                  eviction_policy: str | None = 'least-recently-used',
                  verbose = False):
         
         self.max_cache: int = max_cache
-        self.lifetime = lifetime
-        self.force = force
+        self.lifetime = lifetime if lifetime is None else 86400*lifetime  # units of day
+        self.force_kwd = force_kwd
         self.eviction_policy = eviction_policy
 
         if label_on_disk is not None:
@@ -87,29 +84,32 @@ class AstroCache:
         """
         return list(self._cache.iterkeys())
 
+    def clear(self):
+        return self._cache.clear()
+
     def __call__(self, method):
-        #METHOD to use when force= False, when the cache is not bypassed.
-        @self._cache.memoize(expire = self.lifetime*86400 if self.lifetime else None)
-        def cached_method(*args, **kwargs):
-            return method(*args, **kwargs)
-        
-        def wrapper(hashable_first_argument, **kwargs):
+
+        def wrapper(hashable_first_argument, *args, **kwargs):
             """
             Wrapper to handle custom logic like bypassing the cache.
             """
-            # Check if caching is disabled via the `force` keyword
-            if kwargs.pop(self.force, False):
-                return method(hashable_first_argument, **kwargs)
+            # Check if re-read of cache is forced via the `force` keyword
+            expire = 1 if kwargs.pop(self.force_kwd, False) else self.lifetime
+
+            # METHOD to use when the cache is not bypassed.
+            @self._cache.memoize(expire=expire)
+            def cached_method(*args2, **kwargs2):
+                return method(*args2, **kwargs2)
 
             # Handle non-hashable arguments (disable caching)
+            compound_hash = tuple([hashable_first_argument] +
+                                  [kwargs[kw] for kw in self.hashable_kw])
             try:
-                compound_hash = tuple([hashable_first_argument] +
-                                      [kwargs[kw] for kw in self.hashable_kw])
                 hash(compound_hash)  # Ensure the key is hashable
             except TypeError:
-                return method(hashable_first_argument, **kwargs)
+                return method(hashable_first_argument, *args, **kwargs)
 
             # Call the memoized method if the force parameter is false
-            return cached_method(hashable_first_argument, **kwargs)
+            return cached_method(hashable_first_argument, *args, **kwargs)
 
         return wrapper
