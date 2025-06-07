@@ -1,0 +1,204 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>USGS Astrogeology Science Center</origin>
+            <originator/>
+            <pubdate/>
+            <title>Iapetus Voyager Airbrush Global Mosaic 783m</title>
+            <edition/>
+            <geoform>Airbrush,Global Mosaic,Raster Data,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/iapetus_voyager_airbrush_global_mosaic_783m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[This image mosaic is one of several products created as the first step of cartography planning in support of the Cassini-Huygens Mission to Saturn &amp; Titan. The data included in these mosaics were collected by both Voyager I and Voyager II missions. The Cassini spacecraft is targeting these moons and others during the mission.
+
+Reference:
+U.S. GEOLOGICAL SURVEY 1992. Preliminary Pictorial map of Iapetus. U.S. Geol. Surv. Misc. Invest. Ser. Map I-2159, scale 1:10,000,000.]]&gt;</abstract>
+         <purpose>[![CDATA[Pictorial map and controlled photomosaic of Iapetus used for the Cassini mission.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://pubs.er.usgs.gov/publication/i2159]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current/>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress/>
+         <update/>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Geomorphology,Remote Sensing</themekey>
+         </theme>
+      </keywords>
+      <accscope/>
+      <accconst>Public domain</accconst>
+      <useconst>None</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/65d92f60-6239-46ca-b3e1-14a757c64f62/resource/4c9c3bbe-f43e-4a33-83bc-eb529098d7cd/download/full.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic/>
+         <complete/>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title/>
+                  <online>http://astrogeology.usgs.gov/site/planetaryIndex?mapNumber=18</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc/>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>2880</rowcount>
+         <colcount>5760</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>783.21650183245</absres>
+                  <ordres>783.21650183245</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>718000</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>16658111</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/iapetus_voyager_airbrush_global_mosaic_783m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

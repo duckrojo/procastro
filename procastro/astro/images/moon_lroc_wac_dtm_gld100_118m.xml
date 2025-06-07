@@ -1,0 +1,225 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>F. Scholten,J. Oberst,K.-D. Matz,T. Roatsch,M. WÃ¤hlisch,E. J. Speyerer,M. S. Robinson</origin>
+            <originator/>
+            <pubdate>2013-08-01</pubdate>
+            <title>Moon LROC WAC DTM GLD100 118m</title>
+            <edition>V1.1,  August 2013</edition>
+            <geoform>Digital Elevation Model,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue>GLD100</issue>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/moon_lroc_wac_dtm_gld100_118m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This product represents a near-global lunar topography from stereo image data acquired by the Wide-angle Camera (WAC) of the Lunar Reconnaissance Orbiter Camera (LROC) system (Robinson et al., 2010). From polar orbit tracks, the LROC WAC provides image data with a mean ground resolution at nadir of 75 meters per pixel (m) with substantial cross-track stereo overlap. WAC stereo images from the one-year nominal mission and the first months of the science mission phase are combined to produce a near-global digital terrain model (DTM) with a pixel spacing of 100m, the Global Lunar DTM 100m (GLD100). It covers 79S to 79N latitudes, 98.2% of the entire lunar surface. 
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The U.S. National Aeronautics and Space Administration (NASA) launched the Lunar Reconnaissance Orbiter (LRO) spacecraft to the Moon in June 2009 (Tooley et al., 2010) carrying a variety of instruments that continue to return high-resolution images of the lunar surface from its eccentric polar mapping orbit (Petro et al., 2019).
+
+The LRO is a robotic spacecraft designed to acquire data to prepare for and support future human exploration of the Moon.  The Lunar Reconnaissance Orbiter Camera (LROC) is a system of three cameras mounted on the LRO that capture high resolution black and white images and moderate resolution multi-spectral images of the lunar surface (ASU, 2019). 
+
+The LROC consists of two narrow-angle cameras (NACs) that provide 0.5 meter-scale panchromatic images over a 5 km swath , a wide-angle camera (WAC) to provide images at a scale of 100 meters/pixel in seven color bands over a 60 km swath, and a Sequence and Compressor System (SCS) supporting data acquisition for both cameras. The LROC data sets are produced by the LROC Team at the Tempe campus of Arizona State University (PDS IMG, 2018).
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Arizona State University (ASU) (2019). About Lunar Reconnaissance Orbiter. &lt;a href='https://www.lroc.sese.asu.edu' target='_blank'&gt;https://www.lroc.sese.asu.edu&lt;/a&gt;
+
+Petro, N. E., Keller, J. W., Cohen, B. A., &amp; McClanahan, T. P. (2019). &lt;em&gt;Ten years of the Lunar Reconnaissance Orbiter: Advancing lunar science and context for future lunar exploration.&lt;/em&gt; Paper presented at the 50th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf' target='_blank'&gt;https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf&lt;/a&gt;
+
+Planetary Data Systems (PDS) Cartography and Imaging Sciences (IMG) (2018). &lt;em&gt;Lunar Reconnaissance Orbiter.&lt;/em&gt; &lt;a href='https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html' target='_blank'&gt;https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html&lt;/a&gt;
+
+Robinson, M. S., Brylow, S. M., Humm, D., Lawrence, S. J., Thomas, P. C., Denevi, B. W., Bowman-Cisneros, E., et al. (2010). Lunar Reconnaissance Orbiter Camera (LROC) instrument overview. &lt;em&gt;Space Science Review, 150,&lt;/em&gt; 81â124. &lt;a href='https://doi.org/10.1007/s11214-010-9634-2' target='_blank'&gt;https://doi.org/10.1007/s11214-010-9634-2&lt;/a&gt;
+
+Scholten, F. J., Oberst, J., Matz, K.-D., Roatsch, T., WÃ¤hlisch, M., Speyerer, E. J., &amp; Robinson, M. S. (2012). GLD100: The near-global lunar 100 m raster DTM from LROC WAC stereo image data. &lt;em&gt;Journal of Geophysical Research, 117&lt;/em&gt;(E12). &lt;a href='https://doi.org/10.1029/2011JE003926' target='_blank'&gt;https://doi.org/10.1029/2011JE003926&lt;/a&gt;
+
+Tooley, C. R., Houghton, M. B., Saylor Jr., S. S., Peddie, C., Everett, D. F., Baker, C. L., &amp; Safdie, K. N. (2010). Lunar Reconnaissance Orbiter mission and spacecraft design. &lt;em&gt;Space Science Review, 150,&lt;/em&gt; 23â62. &lt;a href='https://doi.org/10.1007/s11214-009-9624-4' target='_blank'&gt;https://doi.org/10.1007/s11214-009-9624-4&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[The stereo-based GLD100 is a valuable topographic representation of the lunar surface and complements the LOLA altimetry data set.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://wms.lroc.asu.edu/lroc/view_rdr/WAC_GLD100, https://www.hou.usra.edu/meetings/lpsc2015/pdf/1473.pdf, https://agupubs.onlinelibrary.wiley.com/doi/full/10.1002/2013JE004580, http://lroc.sese.asu.edu/about,  https://www.lpi.usra.edu/meetings/lpsc2011/pdf/2046.pdf]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Publication date</current>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>In Work</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Image Processing,Photogrammetry,Topography</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>public domain</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/3ece91cd-d745-4d7f-9c75-377d32c7e3c2/resource/da7a623c-c0f3-4363-a1d7-320985166526/download/lunar_lroc_wac_gld100_79s79n_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Best Effort</attraccr>
+         <logic>The mean relative accuracy is indicated by the mean 3D forward ray intersection accuracy of the final set of points,  i.e.,  18 m (1 sigma),  which corresponds to 0.24 WAC pixel. (Scholten,  F.,  et al.,  2012).</logic>
+         <complete>The final GLD100 data set extends from 79S to 79N with DTM data covering as much as 99.96% of this latitudinal range. Thus only 0.04% required interpolation (Scholten,  F,  et al., . 2012)</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Accurate to Control Net</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr>Accurate to Control Net</vertaccr>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>GLD100: The near-global lunar 100 m raster DTM from LROC WAC stereo image data</title>
+                  <online>{http://pds-geosciences.wustl.edu/lro/lro-l-lola-2-edr-v1/lrolol_0xxx/data/lola_edr/,http://pds-geosciences.wustl.edu/missions/lro/lola.htm,https://pds-imaging.jpl.nasa.gov/portal/lro_mission.htm,http://wms.lroc.asu.edu/lroc/view_rdr/WAC_GLD100}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[For WAC stereo processing the team chose image data from the 604 nm band from images collected in the color mode over a 17 month period [Robinson et al.,  2010]. CCD-lines of this band are located near the center of the boresight of the visible optics (1.6 off-nadir). Thus,  they provide near-nadir viewing with a minimum influence of residual geometric calibration errors,  compared to more off-nadir bands. The respective swath width is about 59.5 km (image width). At the equator,  WAC color mode images from subsequent orbits overlap to about 52% and provide a stereo angle of about 33. The stereo angle decreases toward the poles (at 80 latitude it is only 5) from adjacent orbits while the cross-track stereo overlap increases to more than 90% (Scholten,  F.,  et al.,  2012). With modifications to account for specific mission and sensor characteristics,  a VICAR-base stereo-photogrammetric processing pipeline was developed at German Aerospace Center (DLR,  Scholten,  F.,  et al.,  2012).]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>47912</rowcount>
+         <colcount>109165</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>118.45058759</absres>
+                  <ordres>118.45058759</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>1737400</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>10 GB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/moon_lroc_wac_dtm_gld100_118m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

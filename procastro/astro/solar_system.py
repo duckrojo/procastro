@@ -904,14 +904,16 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
     month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-    def _parse_date(string):
-        if string is None:
-            return ""
-        match len(string):
-            case 8:
-                return f"{string[:4]}-{month[int(string[4:6])-1]}{string[6:8]}"
+        def _parse_date(string):
+            if string is None:
+                return ""
+            match len(string):
+                case 8:
+                    return f"{string[:4]}-{month[int(string[4:6])-1]}{string[6:8]}"
+                case 10:
+                    return f"{string[:4]}-{month[int(string[5:7]) - 1]}{string[8:10]}"
 
-        raise ValueError(f"Needs to implement parsing for date: {string}")
+            raise NotImplementedError(f"Needs to implement parsing for date: {string}")
 
     directory = (Path(__file__).parents[0] / 'images')
     files = list(directory.glob("*.xml"))
@@ -920,16 +922,18 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
     if detail is not None:
         keywords = detail.split()
 
-    # filter alternatives
-    body_files = []
-    for file in files:
-        with open(file, 'r', encoding='utf8') as f:
-            data = BeautifulSoup(f.read(), 'xml')
-            body_in_xml = data.find("target").string
-            if body.lower() == body_in_xml.lower():
-                title = data.idinfo("title")[0].string
-                if keywords is not None and not [k for k in keywords if k in title]:
-                    continue
+        # filter alternatives
+        body_files = []
+        for file in files:
+            with open(file, 'r', encoding='utf8') as f:
+                data = BeautifulSoup(f.read(), 'xml')
+                body_in_xml = data.find("target")
+                body_in_file = body_in_xml.string if body_in_xml is not None else file.name.split("_")[0]
+
+                if body.lower() == body_in_file.lower():
+                    title = data.idinfo("title")[0].string
+                    if keywords is not None and not [k for k in keywords if k in title]:
+                        continue
 
                 info = [title,
                         file,

@@ -1,0 +1,217 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>NASA,JPL,Space Science Institute</origin>
+            <originator/>
+            <pubdate/>
+            <title>Tethys Cassini Global Mosaic 293m</title>
+            <edition>June 2012</edition>
+            <geoform>Global Mosaic,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue>PIA 14931</issue>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/tethys_cassini_global_mosaic_293m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This global map of Saturn's moon Tethys was created using images taken during Cassini spacecraft flybys which mostly occurred during the Solstice mission extension. The map is an equidistant (Simple Cylindrical) projection and has a scale of 293 meters per pixel (m; 960 feet) at the equator in the full-size version. The mean radius of Tethys used for projection of this map is 536.3 kilometers (333.2 miles). The resolution of the map is 32 pixels per degree. 
+
+This map is an update to the version released in February 2010 (NASA JPL, 2010).
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The Cassini-Huygens mission was a joint endeavor between the Italian Space Agency, the European Space Agency (ESA) and National Aeronautics and Space Administration (NASA).  The Cassini orbiter was designed, developed and assembled at JPL. The imaging team consists of scientists from the US, England, France, and Germany. The imaging operations center and team lead (Dr. C. Porco) are based at the Space Science Institute in Boulder, Colorado, USA.
+
+The Cassini-Huygens mission launched from Cape Canaveral Air Force Base in Florida on October 15, 1997 and ended on September 15, 2017 when Cassini began its Final Entry into Saturnâs Atmosphere. The primary mission ran from July 2004 â June 2008.  The first mission extension was from July 2008- October 2010 and was followed by a final extended mission from October 2010 â September 2017. 
+
+&lt;b&gt;References:&lt;/b&gt;
+
+National Aeronautics and Space Agency (NASA) (2018). Here's Looking at You, Tethys. &lt;a href='https://solarsystem.nasa.gov/resources/17590/heres-looking-at-you-tethys/' target='_blank'&gt;https://solarsystem.nasa.gov/resources/17590/heres-looking-at-you-tethys/&lt;/a&gt;
+
+National Aeronautics and Space Agency (NASA) Jet Propulsion Laboratory (JPL) (2010). Photojournal: PIA12560: Map of Tethys - February 2010. &lt;a href='https://photojournal.jpl.nasa.gov/catalog/PIA12560' target='_blank'&gt;https://photojournal.jpl.nasa.gov/catalog/PIA12560&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[To create a mosaic of Tethys for planetary studies.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://www.ciclops.org/view/7421/Map-of-Tethys---June-2012, https://solarsystem.nasa.gov/missions/cassini/overview/]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Publication date</current>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>None planned</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Geomorphology,Image Processing,Remote Sensing,Satellites</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>Public domain</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/e40296c1-b4bf-46d8-86af-4b6cf0301b0c/resource/36d40203-d9b3-447e-9004-c3dc100bde04/download/full.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic/>
+         <complete/>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>Map of Tethys - June 2012</title>
+                  <online>{https://pds-imaging.jpl.nasa.gov/volumes/iss.html,https://pds-imaging.jpl.nasa.gov/portal/cassini_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc/>
+            <procdate>2012-06-01</procdate>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>5760</rowcount>
+         <colcount>11520</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>292.50627432643</absres>
+                  <ordres>292.50627432643</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>536300</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>64 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/tethys_cassini_global_mosaic_293m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

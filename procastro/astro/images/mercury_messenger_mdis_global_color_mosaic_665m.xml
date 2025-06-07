@@ -1,0 +1,220 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>Arizona State University</origin>
+            <originator/>
+            <pubdate/>
+            <title>Mercury MESSENGER MDIS Global Color Mosaic 665m</title>
+            <edition>3</edition>
+            <geoform>Global Mosaic,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/mercury_messenger_mdis_global_color_mosaic_665m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This color mosaic is comprised of photometrically corrected I/F (radiance factor) for 3 narrow-band color filters of the Mercury Dual Imaging System (MDIS) Wide Angle Camera (WAC), placing the 1000-nm, 750-nm, and 430-nm filters in the red, green, and blue channels, respectively. The individual MDIS Wide Angle Camera (WAC) images were pointed to low emission angles on the surface, at times when the solar incidence angle was close to the lowest values possible at that latitude. The common areas of each set of 8 images (1 per filter) are mosaicked into 54 non-overlapping, 64 pixel/degree 8 band tiles or multi-spectral data records (MDRs). The resolution of this global mosaic is 250 meters per pixel (m).
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The MErcury Surface, Space Environment, Geochemistry, and Ranging (MESSENGER) spacecraft launched on August 3rd, 2004, it entered orbit around Mercury on March 11, 2011 and ended its mission on April 30th, 2015 when it deliberately plunged into the surface or Mercury. MESSENGER was the first spacecraft to orbit Mercury and had the primary goal of studying the geology, magnetic field, and chemical composition of the planet. 
+
+The science payload onboard MESSENGER included: Mercury Dual Imaging System (MDIS), Gamma-Ray Spectrometer (GRS), Neutron Spectrometer (NS), X-ray Spectrometer (XRS), Mercury Laser Altimeter (MLA), Mercury Atmospheric and Surface Composition (MACS), Energetic Particle and Plasma Spectrometer (EPPS), and Radio Science experiment (RS).  The MDIS instrument suite consists of wide-angle (WAC) and narrow-angle imagers (NAC) situated on a pivot platform that enables the instruments to be pointed in specified directions. 
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Becker, K. J., et al. (2009). Near Global Mosaic of Mercury: Eos, v. 90, 52, 29 December 2009, Fall Mtg. Suppl., abs. #P21A-1189. &lt;a href='http://abstractsearch.agu.org/meetings/2009/FM/P21A-1189.html' target='_blank'&gt;http://abstractsearch.agu.org/meetings/2009/FM/P21A-1189.html&lt;/a&gt;
+
+Hawkins, S. E., III, et al. (2009). In-flight performance of MESSENGER's Mercury Dual Imaging System. Proceedings of the SPIE, v. 7441, pp. 74410Z-74410Z-12. &lt;a href='https://doi.org/10.1117/12.826370' target='_blank'&gt;https://doi.org/10.1117/12.826370&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[To create a multi-spectral mosaic for use during the primary mission.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://messenger.jhuapl.edu/Explore/Images.html#global-mosaics]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current/>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress/>
+         <update/>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Geomorphology,Regolith,Remote Sensing</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>public domain</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/b8ad92a0-5cb2-4db9-ae66-d0ef3a747bb7/resource/4f5968f1-cae7-4b6a-9967-d576c10f9475/download/mercury_messenger_clrmosaic_global_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic/>
+         <complete/>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>Global Mosaics of Mercury</title>
+                  <online>{https://pds-imaging.jpl.nasa.gov/volumes/mess.html,https://pds-imaging.jpl.nasa.gov/portal/messenger_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[The bands are: (1000, 750, 430)nm.  
+
+The reflectance contrast stretch values for the RGB are: 
+*Red 0.0295111 to 0.190991 
+*Green 0.0193207 to 0.161358 
+*Blue 0.00517048 to 0.0979371]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>11527</rowcount>
+         <colcount>23054</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>665</absres>
+                  <ordres>665</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>2440000</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>772 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/mercury_messenger_mdis_global_color_mosaic_665m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

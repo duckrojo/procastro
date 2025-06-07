@@ -1,0 +1,227 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>USGS Astrogeology Science Center</origin>
+            <originator/>
+            <pubdate/>
+            <title>Moon SELENE Kaguya TC Global Orthomosaic 474m</title>
+            <edition/>
+            <geoform>Global Mosaic,Grey Scale,Image,Raster Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/moon_selene_kaguya_tc_global_orthomosaic_474m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This near-global mosaic was generated using data from the SELenological and Engineering Explorer (SELENE) âKaguyaâ Terrain Camera (TC) instrument. TC source data originated as map-projected tiles at ~10 meters per pixel (m) spatial resolution.
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The Japan Aerospace Exploration Agency (JAXA) launched the SELenological and Engineering Explorer (SELENE) Kaguya spacecraft to the Moon in September 2007. The mission concluded June 10, 2009 when the spacecraft was intentionally crashed onto the lunar surface. Subsequent data collection and mapping efforts resulted in âthe largest lunar exploration project since the Apollo programâ (Haruyama et al., 2008).
+
+The high-performance optical TC, a 10-meter spatial resolution stereo-camera, was part of the Lunar Imager/Spectrometer (LISM) instrument suite (Kato et al., 2006), along with the Multi-band Imager (MI, 20 m; Ohtake et al., 2008)) and Spectral Profiler (SP; Matsunaga et al., 2008).
+
+Mission objectives for the TC included production of global, high-resolution, high-contrast mosaicked maps (tiles) of the Moon (e.g., Kato et al., 2006; Haruyama et al., 2008). The SELENE team released map-projected near-global coverage of TC data with both Morning (âMornâ) and Evening (âEveâ) illuminations (low-sun, early or right-to-left low-angle solar illumination, and late or left-to-right solar illumination). The 3x3-degree tiles (7200 nominal count per set) are spatially co-registered to the Kaguya global DTM and match very well with the positions of the Apollo Lunar Retroreflector array (-17 to 5 m longitude, -20 to 48 m latitude, 3 to 5 m elevation; Haruyama et al., 2012). With the quality of registration, high spatial resolution, and image clarity, these data provide excellent complements to color data such as those from the LRO Wide Angle Camera and the Clementine UVVIS for geologic studies, mapping, and morphologic and structural analyses of the lunar surface.
+
+For use, refer to the JAXA Conditions for material usage page ( http://jda.jaxa.jp/en/service.php ) and please credit JAXA and the SELENE/Kaguya data. Â©JAXA/SELENE
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Haruyama, J., Hara, S., Kioki, K., Iwasaki, A., Morota, T., Ohtake, M., Matsunaga, T., et al. (2012). &lt;em&gt;Lunar global digital terrain model dataset produced from SELENE (Kaguya) Terrain Camera stereo observations.&lt;/em&gt; Paper presented at the 43rd Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.lpi.usra.edu/meetings/lpsc2012/pdf/1200.pdf' target='_blank'&gt;https://www.lpi.usra.edu/meetings/lpsc2012/pdf/1200.pdf &lt;/a&gt;
+
+Haruyama, J., Matsunaga, T., Ohtake, M., Morota, T., Honda, C., Yokota, Y., Torii, M., Ogawa, Y., &amp; LISM Working Group (2008). Global lunar-surface mapping experiment using the Lunar Imager/Spectrometer on SELENE. &lt;em&gt;Earth Planets Space, 60,&lt;/em&gt; 243-255. &lt;a href='https://doi.org/10.1186/BF03352788' target='_blank'&gt;https://doi.org/10.1186/BF03352788 &lt;/a&gt;
+
+Kato, M., Takizawa, Y., Sasaki, S., &amp; SELENE Project Team (2006). &lt;em&gt;SELENE, The Japanese lunar orbiting satellites mission: Present status and science goals.&lt;/em&gt; Paper presented at the 37th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.lpi.usra.edu/meetings/lpsc2006/pdf/1233.pdf' target='_blank'&gt;https://www.lpi.usra.edu/meetings/lpsc2006/pdf/1233.pdf &lt;/a&gt;
+
+Kato, M., Takizawa, Y., &amp; Sasaki, S., &amp; SELENE Project Team (2007). &lt;em&gt;The SELENE Mission: Present status and science goals.&lt;/em&gt; Paper presented at the 38th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.lpi.usra.edu/meetings/lpsc2007/pdf/1211.pdf' target='_blank'&gt;https://www.lpi.usra.edu/meetings/lpsc2007/pdf/1211.pdf&lt;/a&gt;
+
+Matsunaga, T., Ohtake, M., Haruyama, J., Ogawa, Y., Nakamura, R., Yokota, Y., Morota, T., et al. (2008). Discoveries on the lithology of lunar crater central peaks by SELENE Spectral Profiler. &lt;em&gt;Geophysical Research Letters, 35&lt;/em&gt;(23). &lt;a href='https://doi.org/10.1029/2008GL035868' target='_blank'&gt;https://doi.org/10.1029/2008GL035868&lt;/a&gt;
+
+Ohtake, M., Haruyama, J., Matsunaga, T., Yokota, Y., Morota, T., Honda, C., &amp; LISM Team (2008). Performance and scientific objectives of the SELENE (KAGUYA) Multiband Imager. &lt;em&gt;Earth Planets Space, 60,&lt;/em&gt; 257-264. &lt;a href='https://doi.org/10.1186/BF03352789' target='_blank'&gt;https://doi.org/10.1186/BF03352789&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[One of the primary goals for the Kaguya mission was to augment the high-resolution image data available for the lunar surface,  particularly the far side. At 10 meters per pixel (m) globally,  the TC data effectively bridge the resolution gap between the LROC WAC (100 m) and the LROC NAC (~1 m) data and thus they provide invaluable contextual information. The data have enabled discoveries of relatively small lunar features such as lava-tube skylights,  small impact craters used to determine relative age,  lack of exposed ice at Shackleton crater (lunar south pole) and mare eruption ages. Availability of the global TC data will greatly facilitate a wide variety of lunar studies,  including relative and absolute chronology (e.g.,  crater counting),  geologic mapping,  structural analyses,  site characterization,  etc. to better understand the Moonâs geologic record. The low-sun and dual-illumination TC data provide unmatched morphologic information that support geologic and feature mapping at local to regional scales (~1:50, 000 to ~1:250, 000). The availability of coverage at multiple illuminations will help to ensure that any given site can be studied.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://jda.jaxa.jp/en/service.php,  https://www.sciencedirect.com/science/article/pii/S0019103513002108, https://pds-imaging.jpl.nasa.gov/documentation/PDS_KaguyaData_Jan.31.11.pdf, https://pds-imaging.jpl.nasa.gov/portal/kaguya_mission.html,  https://pds-imaging.jpl.nasa.gov/documentation/LISM-SPICE_Format_en_V01.3.pdf]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Publication date</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>2007-10-19</begdate>
+               <enddate>2008-10-31</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>None planned</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Geomorphology,Geophysical</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst/>
+      <useconst/>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/62b3b6d8-6037-449b-bee6-b4b577299738/resource/60a14bc2-468b-496e-8901-5d77f9912e54/download/tc_ortho_v02_global_64ppd_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic>The TC Ortho source products were released in 2010,  with positional information based on lunar gravity field model and orbital parameters determined prior to January 2010. They may retain small errors (less than 10 pixels) in registration as well as gaps,  missing pixels,  and null values in the tiles.  These issues appear to affect less than 10% of the TC data.</logic>
+         <complete>This TC Ortho version 2 mosaic consists of 7, 200 tiles (of nominal 7200) as released by the Kaguya Team. However,  some data gaps are filled with other Kaguya instrument (e.g. Multi-band Imager) data resulting in ~95% global coverage.</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Best Effort</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title/>
+                  <online>{http://darts.isas.jaxa.jp/planet/pdap/selene/index.html.en,http://www.kaguya.jaxa.jp/index_e.htm}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[Source data were downloaded from the SELENE-Kaguya TC on-line data repository. Source product âPDS-likeâ image labels contained primary information with the need for specific corrections to be applied in preparation for ISIS ingestion and mosaic assembly. These corrections included target value updates,  map scale value updates,  map projection offset adjustment,  and special pixel value assignment. Corrected products were then ingested within ISIS via the âkaguyatc2isisâ application. Mosaics were assembled via the âmapmosâ ISIS application. OS shell and Perl scripting were utilized within the entire download,  processing,  and mosaicking procedures. Storage and processing cluster infrastructure were utilized.]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>11520</rowcount>
+         <colcount>23040</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>473.80235037734</absres>
+                  <ordres>473.80235037734</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>1737400</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>506 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/moon_selene_kaguya_tc_global_orthomosaic_474m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

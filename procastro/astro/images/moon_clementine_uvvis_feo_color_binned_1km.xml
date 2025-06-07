@@ -1,0 +1,231 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>D. J. Lawrence,W. C. Feldman,R. C. Elphic,R. C. Little,T. H. Prettyman,S. Maurice,P. G. Lucey,A. B. Binder</origin>
+            <originator/>
+            <pubdate>2002-01-01</pubdate>
+            <title>Moon Clementine UVVIS FeO Color Binned 1km</title>
+            <edition/>
+            <geoform>Mineral Map,Raster Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/moon_clementine_uvvis_feo_color_binned_1km</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+Clementine derived iron abundance (as weight percent iron oxide [FeO]) data. This FeO map is derived from Clementine Ultraviolet/Visible camera (UVVIS) data as described by Lawrence et al., 2002. FeO weight percent ranges from 0 to ~25% in this map. Lawrence et al. (2002) modified the derivation algorithms originally presented by Lucey, et al. (1995, 1998, 2000). Note that further refinements to the FeO abundance algorithm for the lunar surface have been presented by LeMouelic et al. (2000) and (for the lunar maria) Wilcox et al. (2005). This FeO abundance map is a binned color product in which the FeO weight percent values are expressed as color ranges as shown in the legend (side bar). 
+
+This iron abundance map has a spatial resolution of 1.0 kilometer per pixel (km); users can create full-resolution (~100 meters per pixel) versions of these maps by applying the simple math equations found in these references to bands 2 (750 nm) and 4 (950 nm) of the Clementine UVVIS data.
+
+This base has not been updated to the latest LOLA derived control network.
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+On January 25, 1994, the Deep Space Program Science Experiment (DSPSE), better known as Clementine, was launched from Vandenburg Air Force Base aboard a Titan IIG rocket, as a joint project between the and was jointly sponsored by the Ballistic Missile Defense Organization (BMDO) of the Dept of Defense and NASA. The objective of the mission was to test sensors and spacecraft components under extended exposure to the space environment and to make scientific observations of the Moon and a near-Earth asteroid (1620 Geographos).
+
+After two Earth fly-bys, lunar insertion was achieved on February 19th. Lunar mapping took place over approximately two months in two systematic mapping passes over the Moon. After the spectacular success of the Lunar mapping phase of the mission, Clementine suffered an on-board malfunction on May 7, 1994 that resulted in the activation of its altitude thrusters. This exhausted all the fuel for altitude control and left the spacecraft spinning at 80 revolutions per minute. The result of the malfunction prevented Clementine from performing the planned close fly-by of the near-Earth asteroid Geographos scheduled for August 1994.
+
+The main instrumentation on Clementine consisted of four cameras, one with a laser-ranging system. The cameras included an ultraviolet-visual (UVVIS) camera, a long-wavelength infrared (LWIR) camera, the laser-ranger (LIDAR) high-resolution (HIRES) camera, and a near-infrared (NIR) camera. The spacecraft also had two star tracker cameras (A-STAR, B- STAR), used mainly for attitude determination, but they also served as wide-field cameras for various scientific and operational purposes (PDS IMG, 2017).
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Lawrence, D. J., Feldman, W. C., Elphic, R. C., Little, R. C., Prettyman, T. H., Maurice, S., Lucey, P. G., &amp; Binder, A. B. (2002). Iron abundances on the lunar surface as measured by the Lunar Prospector gamma-ray and neutron spectrometers. &lt;em&gt;Journal of Geophysical Research, 107&lt;/em&gt;(E12), 5130. &lt;a href='https://doi.org/10.1029/2001JE001530' target='_blank'&gt;https://doi.org/10.1029/2001JE001530&lt;/a&gt;
+
+LeMouelic, S., Lucey, P. G., Langevin, Y., &amp; Hawke, B. R. (2002). Calculating iron contents of lunar highland materials surrounding Tycho crater from integrated Clementine UV-visible and near-infrared data. &lt;em&gt;Journal of Geophysical Research, 107&lt;/em&gt;(E10), 5074. &lt;a href='https://doi/org/10.1029/2000JE001484' target='_blank'&gt;https://doi/org/10.1029/2000JE001484&lt;/a&gt;
+
+Lucey, P., Blewett, D., &amp; Jolliff, B. (2000). Lunar iron and titanium abundance algorithms based on final processing of Clementine ultraviolet-visible images. &lt;em&gt;Journal of Geophysical Research, 105&lt;/em&gt;(E8), 20297-20305. &lt;a href='https://doi.org/10.1029/1999JE001117' target='_blank'&gt;https://doi.org/10.1029/1999JE001117&lt;/a&gt;
+
+Lucey, P., Blewett, D., &amp; Hawke, B. (1998). Mapping the FeO and TiO2 content of the lunar surface with multispectral imagery. &lt;em&gt;Journal of Geophysical Research, 103&lt;/em&gt;(E2), 3679-3700. &lt;a href='https://doi.org/10.1029/97JE03019' target='_blank'&gt;https://doi.org/10.1029/97JE03019&lt;/a&gt;
+
+Lucey, P., Taylor, G., &amp; Malaret, E. (1995). Abundance and distribution of iron on the Moon. &lt;em&gt;Science, 268&lt;/em&gt;(5214), 150-1153. &lt;a href='https://doi.org/10.1126/science.268.5214.1150' target='_blank'&gt;https://doi.org/10.1126/science.268.5214.1150&lt;/a&gt;
+
+Planetary Data Systems (PDS) Cartography and Imaging Sciences Node (IMG) (2017). Clementine Mission. &lt;a href='https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html' target='_blank'&gt;https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html&lt;/a&gt;
+
+Wilcox, B. B., Lucey, P. G., &amp; Gillis, J. J. (2005). Mapping iron in the lunar mare: An improved approach. &lt;em&gt;Journal of Geophysical Research, 110&lt;/em&gt;(E11). &lt;a href='https://doi.org/10.1029/2005JE002512' target='_blank'&gt;https://doi.org/10.1029/2005JE002512&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[To display FeO weight percent abundance.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://onlinelibrary.wiley.com/doi/10.1029/2001JE001530/abstract, http://pdsimage.wr.usgs.gov/archive/clem1-l-u-5-dim-uvvis-v1.0/cl_4001/document/volinfo.htm, https://pds.nasa.gov/ds-view/pds/viewProfile.jsp?dsid=CLEM1-L-H-5-DIM-MOSAIC-V1.0]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>1994-01-25</begdate>
+               <enddate>1994-05-07</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>None planned</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Mineral resources,Remote Sensing</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>None</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/960891f8-99e0-4c4b-bf14-248e07ea6c75/resource/d137b4d4-73ca-445a-bb5e-ba1c27713ba6/download/feo_colorbinned_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic>For the original mosaic approximately 265,  000 match points were collected at the USGS from ~43,  000 UVVIS 750nm images providing global coverage. About 80% of these points were collected via autonomous procedures,  whereas the remaining 20% required the more time consuming but highly accurate pattern-recognition capability of the human eye-brain.</logic>
+         <complete>This only covers from -70 to 70 latitude.</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Best Effort</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>The Clementine UVVIS Global Lunar Mosaic</title>
+                  <online>{https://pds-imaging.jpl.nasa.gov/volumes/clementine.html,https://pds-imaging.jpl.nasa.gov/portal/clementine_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[Please see references above.]]&gt;</procdesc>
+            <procdate>2002-01-01</procdate>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>4246</rowcount>
+         <colcount>10918</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>1000.0116</absres>
+                  <ordres>1000.0116</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>1737400</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>133 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/moon_clementine_uvvis_feo_color_binned_1km</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

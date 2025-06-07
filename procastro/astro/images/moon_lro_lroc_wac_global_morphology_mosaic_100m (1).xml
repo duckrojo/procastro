@@ -1,0 +1,232 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>Arizona State University</origin>
+            <originator/>
+            <pubdate/>
+            <title>Moon LRO LROC WAC Global Morphology Mosaic 100m</title>
+            <edition>June 2013</edition>
+            <geoform>Global Mosaic,Raster Data,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue>3</issue>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/moon_lro_lroc_wac_global_morphology_mosaic_100m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+Lunar Reconnaissance Orbiter Camera (LROC) Wide Angle Camera (WAC) aboard the Lunar Reconnaissance Orbiter (LRO) has allowed the instrument team to create a global mosaic comprised of over 15,000 images acquired between November 2009 and February 2011. The WAC maps the whole Moon in one month, however the solar incidence angle at the equator changes about 28Â° from the beginning to the end of the month. To even out the incidence angle variations (generally angles between 55-75 degrees), this morphology mosaic (at 643 nm), is comprised of data collected over three periods (1/20/2010 to 1/28/2010, 5/30/2010 to 6/6/2010, 7/24/2010 to 7/31/2010). 
+
+The South Pole mosaic images were acquired 8/10/10 to 9/19/10 and the north polar images 4/22/10 to 5/19/10. Some gores were filled with data taken at other times. The non-polar images were map projected onto the GLD100, WAC-derived 100 meters per pixel (m), while polar images were map projected on the Lunar Orbiter Laser Altimeter (LOLA) shape model (80Â° to 90Â° N/S) and the GLD100 (60Â° to 80Â° N/S). In addition, the LOLA derived crossover corrected ephemeris and an improved camera pointing provide accurate positioning of each WAC image. Because the polar images were acquired at a different season than the equatorial images, and the lunar photometric function is not perfectly known, there can be a brightness difference where the polar mosaics meet the equatorial mosaics. This has been greatly reduced in version 3 (created in June 2013). 
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The U.S. National Aeronautics and Space Administration (NASA) launched the Lunar Reconnaissance Orbiter (LRO) spacecraft to the Moon in June 2009 (Tooley et al., 2010) carrying a variety of instruments that continue to return high-resolution images of the lunar surface from its eccentric polar mapping orbit (Petro et al., 2019).
+
+The LRO is a robotic spacecraft designed to acquire data to prepare for and support future human exploration of the Moon.  The Lunar Reconnaissance Orbiter Camera (LROC) is a system of three cameras mounted on the LRO that capture high resolution black and white images and moderate resolution multi-spectral images of the lunar surface (ASU, 2019). 
+
+The LROC consists of two narrow-angle cameras (NACs) that provide 0.5 meter-scale panchromatic images over a 5 km swath , a wide-angle camera (WAC) to provide images at a scale of 100 meters/pixel in seven color bands over a 60 km swath, and a Sequence and Compressor System (SCS) supporting data acquisition for both cameras. The LROC data sets are produced by the LROC Team at the Tempe campus of Arizona State University (PDS IMG, 2018).
+
+&lt;b&gt;References:&lt;/b&gt;
+
+&lt;b&gt;Original Mosaic:&lt;/b&gt; Speyerer, E. J., Robinson, M. S., Denevi, B. W., &amp; LROC Science Team (2011). &lt;em&gt;Lunar Reconnaissance Orbiter Camera global morphological map of the Moon.&lt;/em&gt; Paper presented at the 42nd Lunar Planetary Science Conference, Lunar and Planetary Science Institute, Houston, TX. &lt;a href='https://www.lpi.usra.edu/meetings/lpsc2011/pdf/2387.pdf' target='_blank'&gt;https://www.lpi.usra.edu/meetings/lpsc2011/pdf/2387.pdf&lt;/a&gt;
+
+&lt;b&gt;Mission:&lt;/b&gt; Robinson, M. S., Brylow, S. M., Humm, D., Lawrence, S. J., Thomas, P. C., Denevi, B. W., Bowman-Cisneros, E., et al. (2010). Lunar Reconnaissance Orbiter Camera (LROC) instrument overview. &lt;em&gt;Space Science Review, 150&lt;/em&gt;(1), 81â124. &lt;a href='https://doi.org/10.1007/s11214-010-9634-2' target='_blank'&gt;https://doi.org/10.1007/s11214-010-9634-2&lt;/a&gt;
+
+&lt;b&gt;Mosaic Production:&lt;/b&gt; Wagner, R. V., Speyerer, E. J., Robinson, M. S., &amp; LROC Team (2015). &lt;em&gt;New Mosaicked Data Products from the LROC Team.&lt;/em&gt; Paper presented at the 46th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.hou.usra.edu/meetings/lpsc2015/pdf/1473.pdf' target='_blank'&gt;https://www.hou.usra.edu/meetings/lpsc2015/pdf/1473.pdf&lt;/a&gt;
+Eposter: &lt;a href='http://www.lpi.usra.edu/meetings/lpsc2015/eposter/1473.pdf' target='_blank'&gt;http://www.lpi.usra.edu/meetings/lpsc2015/eposter/1473.pdf&lt;/a&gt;
+
+&lt;b&gt;Photometry:&lt;/b&gt; Sato, H., Robinson, M. S., Hapke, B., Denevi, B. W., &amp; Boyd, A. K. (2104). Resolved Hapke parameter maps of the Moon. &lt;em&gt;Journal of Geophysical Research: Planets, 119,&lt;/em&gt; 1775-1805. &lt;a href='https://doi.org/10.1002/2013JE004580' target='_blank'&gt;https://doi.org/10.1002/2013JE004580&lt;/a&gt;
+
+Arizona State University (ASU) (2019). About Lunar Reconnaissance Orbiter. &lt;a href='https://www.lroc.sese.asu.edu' target='_blank'&gt;https://www.lroc.sese.asu.edu&lt;/a&gt;
+
+Petro, N. E., Keller, J. W., Cohen, B. A., &amp; McClanahan, T. P. (2019). &lt;em&gt;Ten years of the Lunar Reconnaissance Orbiter: Advancing lunar science and context for future lunar exploration.&lt;/em&gt; Paper presented at the 50th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf' target='_blank'&gt;https://www.hou.usra.edu/meetings/lpsc2019/pdf/2780.pdf&lt;/a&gt;
+
+Planetary Data Systems (PDS) Cartography and Imaging Sciences (IMG) (2018). &lt;em&gt;Lunar Reconnaissance Orbiter.&lt;/em&gt; &lt;a href='https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html' target='_blank'&gt;https://pds-imaging.jpl.nasa.gov/portal/lro_mission.html&lt;/a&gt;
+
+Tooley, C. R., Houghton, M. B., Saylor Jr., S. S., Peddie, C., Everett, D. F., Baker, C. L., &amp; Safdie, K. N. (2010). Lunar Reconnaissance Orbiter mission and spacecraft design. &lt;em&gt;Space Science Review, 150,&lt;/em&gt; 23â62. &lt;a href='https://doi.org/10.1007/s11214-009-9624-4' target='_blank'&gt;https://doi.org/10.1007/s11214-009-9624-4&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[To generate a 100 meters per pixel morphology mosaic of the Moon.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://wms.lroc.asu.edu/lroc/view_rdr/WAC_GLOBAL, https://www.hou.usra.edu/meetings/lpsc2015/pdf/1473.pdf, https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1002/2013JE004580,  http://lroc.sese.asu.edu/about, https://www.lpi.usra.edu/meetings/lpsc2011/pdf/2046.pdf]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current/>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>In Work</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Cartography,Geomorphology,Image Processing,Remote Sensing,Selenography</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>public domain</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/db948a2d-4d6a-4775-a0d3-12613d36f9e7/resource/d24d5ef3-abc5-42ee-ac7c-4c3261106327/download/moon_lro_lroc-wac_mosaic_global_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic>Because the polar images were acquired at a different season than the equatorial images,  and the lunar photometric function is not perfectly known,  there is a brightness difference where the polar mosaics meet the equatorial mosaics. In a future release this discontinuity will be reduced.</logic>
+         <complete>global coverage</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>LRO LROC images</title>
+                  <online>{http://pds-geosciences.wustl.edu/lro/lro-l-lola-2-edr-v1/lrolol_0xxx/data/lola_edr/,https://pds-imaging.jpl.nasa.gov/volumes/lro.html,http://pds-geosciences.wustl.edu/missions/lro/lola.htm,https://pds-imaging.jpl.nasa.gov/portal/lro_mission.htm,http://wms.lroc.asu.edu/lroc/view_rdr/WAC_GLD100}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[image processing completed using ISIS and orthorectified on both LOLA and WAC digital elevation models.]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>54582</rowcount>
+         <colcount>109164</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>100.0000418</absres>
+                  <ordres>100.0000418</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>1737400</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>5.5 GB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/moon_lro_lroc_wac_global_morphology_mosaic_100m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

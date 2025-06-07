@@ -1,0 +1,221 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>NASA,Johns Hopkins University Applied Physics Laboratory,Southwest Research Institute,Lunar and Planetary Institute</origin>
+            <originator/>
+            <pubdate>2017-07-14</pubdate>
+            <title>Pluto New Horizons LORRI - MVIC Global DEM 300m</title>
+            <edition>2017-03-28T13:28:24</edition>
+            <geoform>Digital Elevation Model,Global Mosaic,Raster Data,Remote-sensing Data,Topographic Map</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This detailed, high-quality global mosaic of Pluto was assembled from nearly all of the highest-resolution images obtained by the Long-Range Reconnaissance Imager (LORRI) and the Multispectral Visible Imaging Camera (MVIC) on New Horizons. 
+
+The digital elevation model (DEM) or topography data of the hemisphere visible to New Horizons during the spacecrafts closest approach. The topography is derived from digital stereo-image mapping tools that measure the parallax &quot;or the difference in the apparent relative positions&quot; of features on the surface obtained at different viewing angles during the encounter. Scientists use these parallax displacements of high and low terrain to estimate landform heights. 
+
+This maps is available in Equirectangular projection at an equatorial pixel scale of 300 meters per pixel (m) and as well as in cube format; the latter can be read using the USGS ISIS Planetary Image Processing Software. All maps were producing using radii of 1188.3 kilometers miles for Pluto.
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+Pluto was discovered on February 18, 1930 at Lowell Observatory in Flagstaff, Arizona. It was discovered by an observing assistant, Clyde Tombaugh, as he assisted the search for planet X which was believed (incorrectly) to be responsible for anomalies in the orbits of Uranus and Neptune.  At about half the size of Earth's moon, Pluto has been officially re-classified as a dwarf planet. It is in the Kuiper Belt and orbits the sun at an average distance of 3.6 billion miles. Pluto has five moons, the largest of which is Charon. Pluto and Charon orbit each other like a double planet system. 
+
+New Horizons spacecraft launched onboard a Lockheed Martin Atlas V rocket at Cape Canaveral Air Force Station in Florida on January 19, 2006. The main objectives of New Horizons was a Pluto Flyby and a Kuiper Belt Object Flyby.  The science payload includes seven instruments: visible and infrared imager/spectrometer (Ralph), ultraviolet imaging spectrometer (Alice), Radio science EXperiment (REX), Long Range Reconnaissance Image (LORRI), solar wind around Pluto (SWAP), Pluto Energetic Particle Spectrometer Science Investigation (PEPSSI), and Student Dust Counter (SDC). 
+
+New Horizons passed Mars on April 7th, 2006 and received a gravity assist from Jupiter on Feb 28th, 2007. The spacecraft was put into hibernation mode starting June 28th, 2007 and it reached the halfway point to Pluto on February 25th, 2010. Ground controllers revived New Horizons from hibernation on December 6th, 2014. At that time, it took four hours and twenty-five minutes for a signal from the spacecraft to reach Earth.  New Horizons began its approach to Pluto on January 15th, 2015 and flew about 4,800 miles above the surface of Pluto on July 14th, 2015. The entire series of data collected during New Horizons encounter with Pluto and Charon is about 6.25 gigabytes and was transmitted to earth at about 1-2 kilobits per second over a distance of roughly 4.5 light-hours from Earth.  As of March 2019, New Horizons was about 4.1 billion miles from Earth and continuing its journey deep into the Kuiper Belt at nearly 33,000 miles per hour. The New Horizons mission is currently extended through 2021 with the objective to explore Kuiper Belt objects.
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Moore, J. M., McKinnon, W. B., Spencer, J. R., Howard, A. D., Schenk, P. M., Beyer, R. A., New Horizons Science Team, et al. (2016). The Geology of Pluto and Charon Through the Eyes of New Horizons. &lt;em&gt;Science, 351&lt;/em&gt;(6279), 284-1293. &lt;a href='https://doi.org/10.1126/science.aad7055' target='_blank'&gt;https://doi.org/10.1126/science.aad7055 &lt;/a&gt;
+
+Schenk, P. M., Beyer, R. A., McKinnon, W. B., Moore, J. M., Spencer, J. R., White, O. L., New Horizons Geology and Geophysics Investigation Team, et al. (2018). Basin, Fractures and Volcanoes: Global Cartography and Topography of Pluto from New Horizons. &lt;em&gt;Icarus, 314,&lt;/em&gt; 400-433. &lt;a href='https://doi.org/10.1016/j.icarus.2018.06.008' target='_blank'&gt;https://doi.org/10.1016/j.icarus.2018.06.008&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[Pluto's topography as derived from stereo-mapping]]&gt;</purpose>
+         <supplinf>[![CDATA[https://arxiv.org/abs/1604.05702, https://www.hou.usra.edu/meetings/lpsc2019/pdf/1723.pdf]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>2015-07-14</begdate>
+               <enddate>2016-10-25</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Cartography,Image Processing,Topography</themekey>
+         </theme>
+      </keywords>
+      <accscope>Astropedia,ISIS,PDS</accscope>
+      <accconst>None</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/f1332f71-8003-4a75-a330-acce6a3bf09f/resource/cc6042e5-91e6-44da-88ec-52187568870d/download/pluto_newhorizons_global_dem_300m_jul2017_1024.jpg</browsen>
+      </browse>
+      <native>GDAL,ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic/>
+         <complete/>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>Pluto's Surface in Detail</title>
+                  <online>{https://pds-smallbodies.astro.umd.edu/holdings/nh-p_psa-lorri_mvic-5-geophys-v1.0/dataset.html,https://pds-smallbodies.astro.umd.edu/data_sb/missions/newhorizons/index.shtml}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[The original 32bit elevation model used kilometers for the heights. This file was converted to elevation in meters and truncated to 16bit signed values.]]&gt;</procdesc>
+            <procdate>2017-07-14</procdate>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>12444</rowcount>
+         <colcount>24888</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Simple Cylindrical</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>300</absres>
+                  <ordres>300</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>1188300</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits>Meters</altunits>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>(591 MB)</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/pluto_new_horizons_lorri_mvic_global_dem_300m</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>
