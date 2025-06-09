@@ -435,7 +435,7 @@ class LocalFilesProvider(DataProviderInterface):
 
         if not os.path.exists(file_path):
             raise LocalFilesProviderError(
-                message=f"File {file_path} does not exist",
+                message=f"File {file_path} does not exist, executing fallback query to NEA.",
                 file_path=file_path
             )
         if self.api_service.verbose:
@@ -526,6 +526,8 @@ class ApiService:
             return self.http_provider
         elif service == "astroquery":
             return self.astroquery_provider
+        elif service == "localfiles":
+            return self.local_files_provider
         # Add more providers as needed
         return None
 
