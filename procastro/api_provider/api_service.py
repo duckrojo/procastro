@@ -438,7 +438,9 @@ class LocalFilesProvider(DataProviderInterface):
                 message=f"File {file_path} does not exist",
                 file_path=file_path
             )
-        
+        if self.api_service.verbose:
+            logger.info(f"Attempting to load transit data from {file_path} for target {target}")
+
         # we receive a list of strings .
         transits_list = open(file_path, "r").readlines() 
         data = None
@@ -450,18 +452,16 @@ class LocalFilesProvider(DataProviderInterface):
             # E is transit epoch, P is the transit period and L the transit length
             values = transit.split()
             planet_name = values[0]
-            if planet_name != target:
-                continue
-
-            transit_epoch = transit_period = transit_length = None
-            for value in values[1:]:
-                if value.startswith("E"):
-                    transit_epoch = value[1:-1]
-                elif value.startswith("P"):
-                    transit_period = value[1:-1]
-                elif value.startswith("L"):
-                    transit_length = value[1:-1]
-            data = transit_epoch, transit_period, transit_length
+            if planet_name == target:
+                transit_epoch = transit_period = transit_length = None
+                for value in values[1:]:
+                    if value.startswith("E"):
+                        transit_epoch = value[1:-1]
+                    elif value.startswith("P"):
+                        transit_period = value[1:-1]
+                    elif value.startswith("L"):
+                        transit_length = value[1:-1]
+                data = transit_epoch, transit_period, transit_length
         
         
         if data != None:
@@ -626,19 +626,18 @@ class ApiService:
     
 
 
-    def query_transits_ephemeris(self, file_path: str,target: str, file_type:str = "legacy", update: bool= False, query_nasa: bool = False):
+    def query_transits_ephemeris(self, file_path: str,target: str, file_type:str = "legacy", update: bool= False):
         """
         Method that will handle queries to the local files provider and if the method fails, it will try to query the Nasa Exoplanet Archive.
         Args:
             file_path: Path of the local file. In this case, it defaults to transits.txt
-            query_nasa: Whether to query the Nasa Exoplanet Archive ignoring the planet on the local database.
             update: If True, it will update the local file with the latest data from NEA overwriting the target planet data.
             file_type: csv or legacy. "csv" reffers to a file in a csv format. "legacy" reffers to the old way of 
                 creating transit files, where every row has:
                     planet name E[transit epoch] P[transit period] L[transit lenght]  
 
                 Defaults to "legacy"
-            target: Name of the target planet. 
+            target: Name of the target planet.  
         Returns:
             Transit epoch, Transit Period, Transit Length. 
         """
@@ -648,15 +647,54 @@ class ApiService:
             raise ApiServiceError(
                 message="Target planet name is required",
             )
+        target_with_underscore = target.replace(" ", "_") # replace spaces with underscores for file consistency
         if file_type == "legacy":        
             response = self.local_files_provider.load_transit_txt_legacy(
-                target=target,
+                target=target_with_underscore,
                 file_path=file_path,
             )
             if response.success:
                 if self.verbose:
-                    logger.info(f"Loaded transit data for {target} from {file_path}")
-                return response.data
+                    if response.is_fallback:
+                        logger.info(f"Loaded transit data for {target} from Nasa Exoplanet Archive")
+                    else:
+                        logger.info(f"Loaded transit data for {target} from {file_path}")
+                # if update is set to true, we have to add the 4 values to the file
+                data = response.data # IN Q TABLE FORMAT or tuple (E, P L)
+                # obtaining the data from the QTABLE.
+                if response.is_fallback:
+                    df = data.to_pandas()
+                    # Access first row values
+                    pl_name = df.iloc[0]['pl_name']
+                    pl_tranmid = df.iloc[0]['pl_tranmid']
+                    pl_orbper = df.iloc[0]['pl_orbper'] 
+                    pl_trandur = df.iloc[0]['pl_trandur']
+
+                    if update:
+                    # we have to update the file with the new data
+                        with open(file_path, "r") as f:
+                            lines = f.readlines()
+                        found = False
+                        for i, line in enumerate(lines):
+                            if line.strip().startswith(target_with_underscore + " "):
+                                lines[i] = f"{target_with_underscore} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n"
+                                found = True
+                                break
+                        if not found:
+                            # if the planet name have spaces, we replace them with "_"
+                            target_with_underscore = target.replace(" ", "_")
+                            lines.append(f"{target_with_underscore} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n")
+                        with open(file_path, "w") as f:
+                            f.writelines(lines)
+                        if self.verbose:
+                            logger.info(f"Updated transit data for {target} in {file_path} adding the values: {pl_tranmid}, {pl_orbper}, {pl_trandur}")
+                
+                else:
+                    pl_tranmid, pl_orbper, pl_trandur = data
+
+                return pl_tranmid, pl_orbper, pl_trandur
+            
+                
 
             
             
