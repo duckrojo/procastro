@@ -19,6 +19,7 @@ import astroquery.simbad as aqs
 import pandas as pd
 import requests
 from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
+from procastro import config
 from procastro.api_provider.api_exceptions import (
     ApiServiceError, HttpProviderError, SimbadProviderError, 
     ExoplanetProviderError, LocalFilesProviderError, DataValidationError
@@ -404,6 +405,81 @@ class LocalFilesProvider(DataProviderInterface):
     def request(self):
         pass
 
+    def fallback_transit_legacy(self,error, **kwargs):
+        """
+        Queries the Nasa Exoplanet Archive for the transit data of the target planet.
+        Designed to be a fallback for the local files provider case.
+        """
+        target = kwargs.get("target")
+        if not target:
+            raise ApiServiceError(
+                message="Target planet name is required for fallback query",
+                details={"error": str(error)},
+                provider=self.__class__.__name__
+            )
+        if self.api_service.verbose :
+            logger.info(f"Querying Nasa Exoplanet Archive for transit data of {target}")
+        response = self.api_service.query_exoplanet(
+                table = 'pscomppars',
+                select='pl_name, pl_tranmid, pl_orbper, pl_trandur',
+                where = f"pl_name like '%{target}%'",
+            )
+        return response.data
+
+
+    @DataProviderInterface.with_fallback(fallback_func=fallback_transit_legacy)
+    def load_transit_txt_legacy(self, file_path: str, target: str):
+        """
+        Loads a txt file and returns its content in the desired output_format.
+        """
+
+        if not os.path.exists(file_path):
+            raise LocalFilesProviderError(
+                message=f"File {file_path} does not exist",
+                file_path=file_path
+            )
+        
+        # we receive a list of strings .
+        transits_list = open(file_path, "r").readlines() 
+        data = None
+        for transit in transits_list:
+            # first, the elements are in the format:
+            # planet_name E[transit_epoch] P[transit_period] L[transit_length]
+            # the values are separated by spaces.
+            # some of the values can be ommited, so we have to parse them using the first letter of the value,
+            # E is transit epoch, P is the transit period and L the transit length
+            values = transit.split()
+            planet_name = values[0]
+            if planet_name != target:
+                continue
+
+            transit_epoch = transit_period = transit_length = None
+            for value in values[1:]:
+                if value.startswith("E"):
+                    transit_epoch = value[1:-1]
+                elif value.startswith("P"):
+                    transit_period = value[1:-1]
+                elif value.startswith("L"):
+                    transit_length = value[1:-1]
+            data = transit_epoch, transit_period, transit_length
+        
+        
+        if data != None:
+            return ApiResult(
+                data=data,
+                success=True
+            )
+        else:
+            raise LocalFilesProviderError(
+                message=f"Target {target} not found in file {file_path}, executing fallback query to NEA",
+            )
+        
+        
+
+
+
+
+
 
 
     
@@ -427,7 +503,7 @@ class ApiService:
 
     def __init__(self, verbose= False, simbad_votable_fields=None):
         
-        self.local_files_provider = LocalFilesProvider()
+        self.local_files_provider = LocalFilesProvider(api_service = self)
         self.http_provider = HttpProvider()
         self.astroquery_provider = AstroqueryProvider(simbad_votable_fields=simbad_votable_fields)
         self.verbose = verbose
@@ -548,4 +624,41 @@ class ApiService:
         kwargs["verbose"] = self.verbose
         return self.astroquery_provider.query_nasa_exoplanet_archive(**kwargs)
     
+
+
+    def query_transits_ephemeris(self, file_path: str,target: str, file_type:str = "legacy", update: bool= False, query_nasa: bool = False):
+        """
+        Method that will handle queries to the local files provider and if the method fails, it will try to query the Nasa Exoplanet Archive.
+        Args:
+            file_path: Path of the local file. In this case, it defaults to transits.txt
+            query_nasa: Whether to query the Nasa Exoplanet Archive ignoring the planet on the local database.
+            update: If True, it will update the local file with the latest data from NEA overwriting the target planet data.
+            file_type: csv or legacy. "csv" reffers to a file in a csv format. "legacy" reffers to the old way of 
+                creating transit files, where every row has:
+                    planet name E[transit epoch] P[transit period] L[transit lenght]  
+
+                Defaults to "legacy"
+            target: Name of the target planet. 
+        Returns:
+            Transit epoch, Transit Period, Transit Length. 
+        """
+        if self.verbose:
+            logger.info(f"Querying transits ephemeris for {target} in {file_path} with file type {file_type}")
+        if target is None:
+            raise ApiServiceError(
+                message="Target planet name is required",
+            )
+        if file_type == "legacy":        
+            response = self.local_files_provider.load_transit_txt_legacy(
+                target=target,
+                file_path=file_path,
+            )
+            if response.success:
+                if self.verbose:
+                    logger.info(f"Loaded transit data for {target} from {file_path}")
+                return response.data
+
+            
+            
+
 
