@@ -22,6 +22,7 @@ import warnings
 import astropy.coordinates as apc
 import astropy.time as apt
 import astropy.units as u
+from procastro import config
 from procastro.api_provider.api_service import ApiResult, ApiService
 import procastro.astro as paa
 import numpy as np
@@ -328,40 +329,50 @@ class ObsCalc(object):
                       self._target.dec.to_string(sep=':')))
         # TODO: CHECK THIS FUNCTION (LOCAL SEEKER) (fallback without overwriting)
         # TODO: A CSV
-        transit_epoch, transit_period, transit_length = \
-            procastro.astro.exoplanet.get_transit_ephemeris(target)
-        print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
+        # transit_epoch, transit_period, transit_length = \
+        #     procastro.astro.exoplanet.get_transit_ephemeris(target)
 
-        if transit_epoch is None or transit_period is None:
-            print("Attempting to query transit information")
 
-            # query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
-            #         f"WHERE lower(pl_name) like '%{target}%' "
-            apiService = ApiService()
-            # TODO: See if we can execute this query without the need of selecting pl_name
-            response: ApiResult = apiService.query_exoplanet(
-                table = "pscomppars",
-                select="pl_name,pl_tranmid,pl_orbper,pl_trandur",
-                where = f"pl_name like '%{target}%'",
-            )
-            if response.success is False:
-                raise ValueError(f"Error querying exoplanet database: {resultset.error_message}")
-            resultset = response.data.to_pandas() # TODO: TO PANDAS 
-            try:
-                req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
-            except IndexError:
-                raise IndexError(f"Planet {target} not found in exoplanet database")
-            trandur = resultset['pl_trandur'].data[0]
-            if trandur is None:
-                req_cols.append(1)
-                warnings.warn("Using default 1hr length for transit duration", UserWarning)
-            else:
-                req_cols.append(trandur)
+        config_exo = config.config_user("exoplanet")
+        paths_transits = [config_exo['transit_file'],
+                ]
+        apiService = ApiService()
+        transit_epoch, transit_period, transit_length = apiService.query_transits_ephemeris(
+            file_path = paths_transits[0],
+            target=target,
+            file_type = "legacy",
+            update= False
+        )
+        # print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
 
-            transit_period, transit_epoch, transit_length = req_cols
+        # if transit_epoch is None or transit_period is None:
+        #     print("Attempting to query transit information")
 
-            print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
-                  .format(transit_epoch, transit_period, transit_length))
+        #     # query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
+        #     #         f"WHERE lower(pl_name) like '%{target}%' "
+        #     apiService = ApiService()
+        #     # TODO: See if we can execute this query without the need of selecting pl_name
+        #     response: ApiResult = apiService.query_exoplanet(
+        #         table = "pscomppars",
+        #         select="pl_name,pl_tranmid,pl_orbper,pl_trandur",
+        #         where = f"pl_name like '%{target}%'",
+        #     )
+        #     if response.success is False:
+        #         raise ValueError(f"Error querying exoplanet database: {resultset.error_message}")
+        #     resultset = response.data.to_pandas() # TODO: TO PANDAS 
+        #     try:
+        #         req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
+        #     except IndexError:
+        #         raise IndexError(f"Planet {target} not found in exoplanet database")
+        #     trandur = resultset['pl_trandur'].data[0]
+        if transit_length is None:
+            transit_length = 1.0
+        
+
+        #     transit_period, transit_epoch, transit_length = req_cols
+
+        print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
+                .format(transit_epoch, transit_period, transit_length))
 
         if transit_period != 0:
             transit_epoch += phase_offset * transit_period

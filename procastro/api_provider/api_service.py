@@ -447,7 +447,7 @@ class LocalFilesProvider(DataProviderInterface):
         for transit in transits_list:
             # first, the elements are in the format:
             # planet_name E[transit_epoch] P[transit_period] L[transit_length]
-            # the values are separated by spaces.
+            # the values are separated by spaces Planet names have to be saved with and undescore replacing spaces  .
             # some of the values can be ommited, so we have to parse them using the first letter of the value,
             # E is transit epoch, P is the transit period and L the transit length
             values = transit.split()
