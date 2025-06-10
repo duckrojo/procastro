@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "procastro"
-version = "0.0.0"
+version = "0.2.1"
 description = "Framework to process astronomical data files"
 authors = ["Patricio Rojo <pato@das.uchile.cl>"]
 license = "BSD-3-Clause"

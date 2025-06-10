@@ -39,4 +39,4 @@ _formatter = _log.Formatter('%(name)s (%(module)s.%(funcName)s) %(levelname)s: %
 _ch.setFormatter(_formatter)
 dplogger.addHandler(_ch)
 
-__version__ = "0.0.0"
+__version__ = "0.2.1"

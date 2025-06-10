@@ -848,10 +848,10 @@ Returns ortographic projection with the specified center
     tmp_ax.set_global()  # the whole globe limits
     f.canvas.draw()
 
-    image_flat = np.frombuffer(f.canvas.tostring_rgb(), dtype='uint8')  # (H * W * 3,)
+    image_flat = np.frombuffer(f.canvas.renderer.buffer_rgba(), dtype='uint8')  # (H * W * 4,)
 
-    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 3)
-    orthographic_image = Image.fromarray(orthographic_image, 'RGB')
+    orthographic_image = image_flat.reshape(*reversed(f.canvas.get_width_height()), 4)
+    orthographic_image = Image.fromarray(orthographic_image, 'RGBA')
     plt.close(f)
 
     plt.switch_backend(backend)
@@ -904,16 +904,16 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
     month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-        def _parse_date(string):
-            if string is None:
-                return ""
-            match len(string):
-                case 8:
-                    return f"{string[:4]}-{month[int(string[4:6])-1]}{string[6:8]}"
-                case 10:
-                    return f"{string[:4]}-{month[int(string[5:7]) - 1]}{string[8:10]}"
+    def _parse_date(string):
+        if string is None:
+            return ""
+        match len(string):
+            case 8:
+                return f"{string[:4]}-{month[int(string[4:6])-1]}{string[6:8]}"
+            case 10:
+                return f"{string[:4]}-{month[int(string[5:7]) - 1]}{string[8:10]}"
 
-            raise NotImplementedError(f"Needs to implement parsing for date: {string}")
+        raise NotImplementedError(f"Needs to implement parsing for date: {string}")
 
     directory = (Path(__file__).parents[0] / 'images')
     files = list(directory.glob("*.xml"))
@@ -922,18 +922,18 @@ def usgs_map_image(body, detail=None, warn_multiple=True):
     if detail is not None:
         keywords = detail.split()
 
-        # filter alternatives
-        body_files = []
-        for file in files:
-            with open(file, 'r', encoding='utf8') as f:
-                data = BeautifulSoup(f.read(), 'xml')
-                body_in_xml = data.find("target")
-                body_in_file = body_in_xml.string if body_in_xml is not None else file.name.split("_")[0]
+    # filter alternatives
+    body_files = []
+    for file in files:
+        with open(file, 'r', encoding='utf8') as f:
+            data = BeautifulSoup(f.read(), 'xml')
+            body_in_xml = data.find("target")
+            body_in_file = body_in_xml.string if body_in_xml is not None else file.name.split("_")[0]
 
-                if body.lower() == body_in_file.lower():
-                    title = data.idinfo("title")[0].string
-                    if keywords is not None and not [k for k in keywords if k in title]:
-                        continue
+            if body.lower() == body_in_file.lower():
+                title = data.idinfo("title")[0].string
+                if keywords is not None and not [k for k in keywords if k in title]:
+                    continue
 
                 info = [title,
                         file,
