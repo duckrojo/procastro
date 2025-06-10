@@ -440,6 +440,8 @@ def find_time_for_altitude(location, time,
                            find: str = "next",
                            body: str = "sun",
                            mean_apparent="apparent", # whether to include nutation
+                           iterate=1,
+                           verbose=False,
                            ):
     """returns times at altitude with many parameters. The search span is centered around `time` and, by default,
      it searches half a day before and half a day after.
@@ -460,46 +462,79 @@ def find_time_for_altitude(location, time,
     """
 
     ref_time = apt.Time(time)
-    ref_lst = ref_time.sidereal_time(mean_apparent, location).to(u.hourangle).value
-    ref_body = apc.get_body(body, ref_time, location)
 
     sidereal_to_solar = (u.sday / u.day).to(u.dimensionless_unscaled)
 
-    ha_to_transit = u.Quantity([-((ref_lst - ref_body.ra.to(u.hourangle).value) % 24)] * 2 +
-                               [(ref_body.ra.to(u.hourangle).value - ref_lst) % 24] * 2)
+    def _time_at_transit(time0, closest=False):
+        lst_start = time0.sidereal_time(mean_apparent, location).to(u.hourangle).value
+        body_start = apc.get_body(body, time0, location)
 
-    delta_time_to_transit = np.array(ha_to_transit) * sidereal_to_solar
-    transit_time_if_no_motion = ref_time + delta_time_to_transit * u.hour
-    if ref_altitude_deg == "max":
-        hour_angle_single = 0 * u.hourangle
+        ha_to_transit = u.Quantity([-((lst_start - body_start.ra.to(u.hourangle).value) % 24),
+                                    (body_start.ra.to(u.hourangle).value - lst_start) % 24])
+        time_end = time0 + ha_to_transit * sidereal_to_solar * u.hour
 
-    # return check_precision(transit_time_if_no_motion[use_past])
-    elif ref_altitude_deg == "min":
-        hour_angle_single = 12 * u.hourangle
-    else:
-        hour_angle_single = hour_angle_for_altitude(ref_body.dec.to(u.radian).value,
-                                             location.lat.to(u.radian).value,
-                                             ref_altitude_deg*np.pi/180)
-        if hour_angle_single.value == 13:
-            raise ValueError(f"Body {body} does not reach the altitude '{ref_altitude_deg}' from '{location}'"
-                             f" near {time}")
+        if closest:
+            return time_end[0] if -ha_to_transit[0] < ha_to_transit[1] else time_end[1]
 
-    hour_angle = u.Quantity([-hour_angle_single, hour_angle_single]*2 )
-    times_at_altitude = transit_time_if_no_motion + hour_angle.to(u.hourangle).value * sidereal_to_solar * u.hour
+        return time_end
 
-    time_delta = times_at_altitude - ref_time
+    transit_time0 = _time_at_transit(ref_time)
+    transit_time1 = ([_time_at_transit(transit_time0[0], closest=True),
+                      _time_at_transit(transit_time0[1], closest=True)])
+
+    def _time_delta_to_altitude(time_at_transit):
+        body_transit = apc.get_body(body, time_at_transit, location)
+
+        if ref_altitude_deg == "max":
+            hour_angle_single = 0 * u.hourangle
+
+        # return check_precision(transit_time_if_no_motion[use_past])
+        elif ref_altitude_deg == "min":
+            hour_angle_single = 12 * u.hourangle
+        else:
+            hour_angle_single = hour_angle_for_altitude(body_transit.dec.to(u.radian).value,
+                                                        location.lat.to(u.radian).value,
+                                                        ref_altitude_deg*np.pi/180)
+            if hour_angle_single.value == 13:
+                raise ValueError(f"Body {body} does not reach the altitude '{ref_altitude_deg}' from '{location}'"
+                                 f" near {time}")
+
+        hour_angle = u.Quantity([-hour_angle_single, hour_angle_single])
+        ret = time_at_transit + hour_angle.to(u.hourangle).value * sidereal_to_solar * u.hour
+
+        return ret
+
+    return_times = apt.Time(np.concatenate([_time_delta_to_altitude(tt) for tt in transit_time1]))
+    time_delta = return_times - time
+
     idx_after = np.nonzero(time_delta > 0*u.day)[0][0]
     use_past = "prev" in find or (("around" in find or "closer" in find)
                                   and time_delta[idx_after] > abs(time_delta[idx_after-1]))
-    return_time = times_at_altitude[idx_after - use_past]
+    return_time = return_times[idx_after - use_past]
 
-    body_at_static_elevation = apc.get_body(body, return_time, location)
+    if verbose:
+        def to_sexa(inp):
+            inp = inp.to(u.hour).value
+            hd = inp // 1
+            m = (60*(inp-hd)) // 1
+            s = 60*(inp - hd - m/60)
+            return f"{hd:02.0f}:{m:02.0f}:{s:05.2f}"
 
-    if (ref_body.ra - body_at_static_elevation.ra).to(u.hourangle).value > precision_sec / 3600:
-        warnings.warn(f"Iterating to improve precision for body {body} to reach altitude"
-                      f"b {ref_altitude_deg} from {return_time}")
-        # use body position at time closer to requested altitude
-        return find_time_for_altitude(location, return_time, ref_altitude_deg, find="closer", body=body)
+        print(f"starting from {time} and searching for {find} {ref_altitude_deg} deg ")
+        print(f"previous transit times: {transit_time0[0].isot} -> {transit_time1[0].isot}")
+        print(f"next transit times: {transit_time0[1].isot} -> {transit_time1[1].isot}")
+        print(f"delta time from transit: {return_times[1]-transit_time1[0]},"
+              f" {to_sexa(return_times[1]-transit_time1[0])}")
+        print(f"found elev {apc.get_body(body, return_time, location
+                                         ).transform_to(apc.AltAz(obstime=return_time, 
+                                                                  location=location)).alt}"
+              f" at time {return_time} ")
+        print("")
+
+    if iterate:
+        print("iterating")
+        return find_time_for_altitude(location, return_time, ref_altitude_deg,
+                                      find="closer", body=body, iterate=iterate-1)
 
     return return_time
 
@@ -507,22 +542,52 @@ def find_time_for_altitude(location, time,
 if __name__ == "__main__":
     body = "sun"
     loc = apc.EarthLocation.of_site('lco')
-    time = apt.Time.now() + 0.5*u.day
+    time = apt.Time.now() + 1*u.day
     elev = 15
 
     sun = apc.get_body(body, time, loc)
 
     print(f"from time {time} looking for elevation {elev}")
 
-    tt = find_time_for_altitude(loc, time, elev, body=body, find="next")
-    print(f"found elev {apc.get_body('sun', tt, loc).transform_to(apc.AltAz(obstime=tt, location=loc)).alt}"
-          f" at time {tt}")
+    tt = find_time_for_altitude(loc, time, elev, body=body, find="next", verbose=True)
 
-    tt = find_time_for_altitude(loc, time, elev, body=body, find="prev")
-    print(f"found elev {apc.get_body('sun', tt, loc).transform_to(apc.AltAz(obstime=tt, location=loc)).alt}"
-          f" at time {tt}")
+    tt = find_time_for_altitude(loc, time, elev, body=body, find="prev", verbose=True)
 
-    tt = find_time_for_altitude(loc, time, elev, body=body, find="closer")
-    print(f"found elev {apc.get_body('sun', tt, loc).transform_to(apc.AltAz(obstime=tt, location=loc)).alt}"
-          f" at time {tt}")
+    tt = find_time_for_altitude(loc, time, elev, body=body, find="closer", verbose=True)
+
+    # from time 2025-06-11 3:21:52.438210 looking for elevation 15
+    #  2025-Jun-11 03:22  m  256.493871 -70.380749  15 58 08.6767    0.0000 /?   2.4197683   86.055435   0.6136423
+    #
+    # starting from 2025-06-11 03:21:52.438210 (LST: 15:57:0.98, 15.966287524495621) and searching for next 15 deg
+    # Hour Angle to transit: [-10.68287181  13.31712819], and then to requested: 3.739967715627403 hourangle
+    # bracketing transit times: 2025-06-10T16:42:39.108 - 2025-06-11T16:38:43.198
+    # found elev 14.407721624000189 deg at time 2025-06-11 12:54:56.076633 for next search
+
+
+    # airless
+    #I 2025-Jun-10 20:25 *   308.044180  15.286833    0.0000 /?   2.3698420   86.004757   0.9846484
+    #C 2025-Jun-10 20:26 *   307.886433  15.114463    0.0000 /?   2.3699585   86.006010   0.9863962
+    #R 2025-Jun-10 20:27 *   307.729248  14.941724    0.0000 /?   2.3700755   86.007259   0.9881320
+    # 2025-Jun-10 20:28 *   307.572622  14.768619    0.0000 /?   2.3701928   86.008503   0.9898559
+    # 2025-Jun-10 20:29 *   307.416552  14.595150    0.0000 /?   2.3703105   86.009743   0.9915679
+    #
+    #C 2025-Jun-11 12:54 *    52.832369  14.245390    0.0000 /?   2.3717287   85.765896   -0.247887
+    # 2025-Jun-11 12:55 *    52.677285  14.419374    0.0000 /?   2.3716052   85.766707   -0.246160
+    #I 2025-Jun-11 12:56 *    52.521651  14.592998    0.0000 /?   2.3714821   85.767524   -0.244421
+    # 2025-Jun-11 12:57 *    52.365464  14.766261    0.0000 /?   2.3713593   85.768347   -0.242670
+    #R 2025-Jun-11 12:58 *    52.208722  14.939158    0.0000 /?   2.3712368   85.769176   -0.240907
+    # 2025-Jun-11 12:59 *    52.051420  15.111689    0.0000 /?   2.3711147   85.770010   -0.239133
+
+    # refraction
+    #I 2025-Jun-10 20:25 *   308.044180  15.346975  09 00 00.1716    0.0000 /?   2.3698420   86.004757   0.9846484
+    #C 2025-Jun-10 20:26 *   307.886433  15.175285  09 01 00.3359    0.0000 /
+    #R 2025-Jun-10 20:27 *   307.729248  15.003242  09 02 00.5001    0.0000 /?   2.3700755   86.007259   0.9881320
+    # 2025-Jun-10 20:28 *   307.572622  14.830849  09 03 00.6644    0.0000 /?   2.3701928   86.008503   0.9898559
+    #
+    #C 2025-Jun-11 12:54 *    52.832369  14.309867  01 31 42.6456    0.0000 /?   2.3717287   85.765896   -0.247887
+    # 2025-Jun-11 12:55 *    52.677285  14.483088  01 32 42.8099    0.0000 /?   2.3716052   85.766707   -0.246160
+    #I 2025-Jun-11 12:56 *    52.521651  14.655966  01 33 42.9742    0.0000 /?   2.3714821   85.767524   -0.244421
+    # 2025-Jun-11 12:57 *    52.365464  14.828500  01 34 43.1385    0.0000 /?   2.3713593   85.768347   -0.242670
+    #R 2025-Jun-11 12:58 *    52.208722  15.000687  01 35 43.3028    0.0000 /?   2.3712368   85.769176   -0.240907
+    # 2025-Jun-11 12:59 *    52.051420  15.172522  01 36 43.4671    0.0000 /?   2.3711147   85.770010   -0.239133
 
