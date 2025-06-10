@@ -12,8 +12,8 @@ def get_transit_ephemeris(target):
 
     {object_name} E{transit_epoch} P{transit_period} L{transit_length}
 
-    If the object name contain spaces, replace them with an underscore when
-    writing it into the file. On the other hand querying a name with spaces
+    If the object name contains spaces, replace them with an underscore when
+    writing it into the file. On the other hand, querying a name with spaces
     requires using spaces.
 
     An optional comment column can be placed at the end of a row placing a-mass
