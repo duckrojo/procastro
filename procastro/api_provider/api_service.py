@@ -8,7 +8,6 @@ This way, adding a provider is very easy, and can be done in a single file.
 """
 
 
-
 from abc import ABC, abstractmethod
 from functools import wraps
 import logging
@@ -21,16 +20,13 @@ import requests
 from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
 from procastro import config
 from procastro.api_provider.api_exceptions import (
-    ApiServiceError, HttpProviderError, SimbadProviderError, 
+    ApiServiceError, HttpProviderError, SimbadProviderError,
     ExoplanetProviderError, LocalFilesProviderError, DataValidationError
 )
 
 logger = logging.getLogger(__name__)
 # type for results
 T = TypeVar("T")  # this means that the result can be any type
-
-
-
 
 
 class ApiResult(Generic[T]):
@@ -43,7 +39,7 @@ class ApiResult(Generic[T]):
     - source: Which provider returned this data.
     - is_fallback: Whether this data came from a fallback source (e.g., if the primary source failed).
     This class is used to provide a consistent interface for handling API responses, allowing for type hinting and better error handling.
-    
+
     Example usage:
     ```python
         apiService = ApiService(verbose=True, simbad_votable_fields=["ra", "dec", "otype"])
@@ -58,18 +54,19 @@ class ApiResult(Generic[T]):
     """
 
     def __init__(self,
-                data: T = None,
-                success: bool = False,
-                error: str = None,
-                source: str = None,
-                is_fallback: bool = False
-            ):  
-        self.data = data # the actual data returned
-        self.success = success # whether the request was successful or not
-        self.error = error # error message if the request failed
-        self.source = source # which provider returned this data
-        self.is_fallback = is_fallback #whether this came from a fallback source 
-    
+                 data: T = None,
+                 success: bool = False,
+                 error: str = None,
+                 source: str = None,
+                 is_fallback: bool = False
+                 ):
+        self.data = data  # the actual data returned
+        self.success = success  # whether the request was successful or not
+        self.error = error  # error message if the request failed
+        self.source = source  # which provider returned this data
+        self.is_fallback = is_fallback  # whether this came from a fallback source
+
+
 class DataProviderInterface(ABC):
     """
     Abstract class that defines the interface that all data providers must implement.
@@ -83,7 +80,6 @@ class DataProviderInterface(ABC):
         """
         pass
 
-
     @abstractmethod
     def support_params(self) -> list:
         """
@@ -91,10 +87,10 @@ class DataProviderInterface(ABC):
         """
         pass
     # NOTE: These two method are not specified, because they need to be implemented in the concrete classes.
-    
+
     @staticmethod
     def with_fallback(fallback_func: Optional[Callable] = None,
-                    return_empty_on_fail: bool = False) -> Callable:
+                      return_empty_on_fail: bool = False) -> Callable:
         """
         Method that will set a fallback function for the provider.
         This function will be called if the original method fails.
@@ -112,13 +108,13 @@ class DataProviderInterface(ABC):
                     return func(self, **kwargs)
                 except Exception as e:
                     logger.error(f"{self.__class__.__name__} error: {e}")
-                    
+
                     # Try fallback if provided
                     if fallback_func:
                         try:
-                            fallback_data = fallback_func(self,e, **kwargs)
+                            fallback_data = fallback_func(self, e, **kwargs)
                             return ApiResult(
-                                data=fallback_data, 
+                                data=fallback_data,
                                 success=True,
                                 source=f"{self.__class__.__name__}_fallback",
                                 is_fallback=True
@@ -129,16 +125,16 @@ class DataProviderInterface(ABC):
                                 details={"original_error": str(e)},
                                 provider=self.__class__.__name__
                             )
-                    
+
                     # Return empty result if configured
                     if return_empty_on_fail:
                         return ApiResult(
-                            data=None, 
+                            data=None,
                             success=False,
                             error=e,
                             source=self.__class__.__name__
                         )
-                    
+
                     # Re-raise if no fallback handling succeeded
                     raise
             return wrapper
@@ -150,17 +146,16 @@ class HttpProvider(DataProviderInterface):
     Provider that will help to instantiate HTTP Providers . USGS and HORIZONS.
     """
 
-
     # NOTE: Here, we can set the set of parameters that this type of providers support.
     def support_params(self) -> list:
         """
         Method that will return a list of parameters that the provider supports.
         """
-        return ["url", "headers", "params", "data", "timeout", "verbose","method","json","cookies", "files", "auth","allow_redirects","proxies","verify","stream","cert"]
-    
+        return ["url", "headers", "params", "data", "timeout", "verbose", "method", "json", "cookies", "files", "auth", "allow_redirects", "proxies", "verify", "stream", "cert"]
+
     # NOTE: Decorators on parent classes are "overrided" as long as we dont call the super() method, otherwise, this decorator will be called on runtime.
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def request(self,  **kwargs)-> ApiResult:
+    def request(self,  **kwargs) -> ApiResult:
         """
         Method that handles HTTP requests
         """
@@ -168,10 +163,11 @@ class HttpProvider(DataProviderInterface):
         method = kwargs.get("method", "GET")
         max_retries = kwargs.get("max_retries", 3)
         retry_delay = kwargs.get("retry_delay", 1)
-        verbose = kwargs.pop("verbose", False)# we pop verbose argument since it's not used by the request class.|
-    
-        
-        if verbose: logger.info(f"HTTP request: {method} {url}")
+        # we pop verbose argument since it's not used by the request class.|
+        verbose = kwargs.pop("verbose", False)
+
+        if verbose:
+            logger.info(f"HTTP request: {method} {url}")
         # NOTE: Here we use the request library to make the request.
         if not url:
             raise ApiServiceError(
@@ -180,7 +176,8 @@ class HttpProvider(DataProviderInterface):
                 provider=self.__class__.__name__
             )
 
-        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params()}
+        kwargs = {key: value for key,
+                  value in kwargs.items() if key in self.support_params()}
         if "method" not in kwargs:
             logger.warning("Method not specified, defaulting to GET")
             kwargs["method"] = "GET"
@@ -193,14 +190,15 @@ class HttpProvider(DataProviderInterface):
                 # Make the request
                 response = requests.request(**kwargs)
                 response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
-                
-                if verbose : logger.info(f"HTTP response: {response.status_code} ")
+
+                if verbose:
+                    logger.info(f"HTTP response: {response.status_code} ")
                 # Handle different respose types:
                 content_type = response.headers.get("Content-Type", "")
                 if "application/json" in content_type:
                     data = response.json()
                 elif any(binary_type in content_type for binary_type in [
-                    "image/", "application/octet-stream", "application/pdf", 
+                    "image/", "application/octet-stream", "application/pdf",
                     "application/zip", "binary/"
                 ]):
                     # Return raw binary content for images and other binary types
@@ -213,7 +211,8 @@ class HttpProvider(DataProviderInterface):
                     source=self.__class__.__name__)
             except requests.HTTPError as e:
                 status_code = e.response.status_code
-                logger.error(f"HTTP error: {status_code} - for {url} - Error: {e}")
+                logger.error(
+                    f"HTTP error: {status_code} - for {url} - Error: {e}")
 
                 if 400 <= status_code < 500:
                     return ApiResult(
@@ -229,10 +228,12 @@ class HttpProvider(DataProviderInterface):
                         error=f"Server error: {url}",
                         source=self.__class__.__name__
                     )
-            except (requests.Timeout, requests.ConnectionError) as e: 
+            except (requests.Timeout, requests.ConnectionError) as e:
                 if attempt < max_retries - 1:
-                    logger.error(f"Request error: {url} - Error: {e}, retrying...")
-                    time.sleep(retry_delay * (2 ** attempt))  # Exponential backoff
+                    logger.error(
+                        f"Request error: {url} - Error: {e}, retrying...")
+                    # Exponential backoff
+                    time.sleep(retry_delay * (2 ** attempt))
                     continue
                 raise HttpProviderError(
                     message=f"Request failed after {max_retries} attempts: {url}",
@@ -251,12 +252,14 @@ class HttpProvider(DataProviderInterface):
                     url=url
                 )
 
+
 class AstroqueryProvider(DataProviderInterface):
     """
     Provider which handles astronomical queries using ASTROQUERY (like Nasa Exoplanet Archive, SIMBAD or others)
 
     """
-    def __init__(self, simbad_votable_fields = None):
+
+    def __init__(self, simbad_votable_fields=None):
         self.simbad = aqs.Simbad()
         self.exoplanet_archive = NasaExoplanetArchive()
         if simbad_votable_fields:
@@ -269,7 +272,6 @@ class AstroqueryProvider(DataProviderInterface):
                     provider=self.__class__.__name__
                 )
 
-
     def support_params(self, provider):
         """
         Common parameters for all astronomical queries using astroquery.
@@ -281,7 +283,7 @@ class AstroqueryProvider(DataProviderInterface):
             return ["object_name", "verbose", "table", "get_query_payload", "regularize", "select", "where", "order"]
 
     @DataProviderInterface.with_fallback(return_empty_on_fail=True)
-    def request(self, provider:str, **kwargs) -> ApiResult:
+    def request(self, provider: str, **kwargs) -> ApiResult:
         """
         Method that handles queries to Nasa Exoplanet Archive or SIMBAD depending on the {provider} argument.
         Args:
@@ -297,15 +299,14 @@ class AstroqueryProvider(DataProviderInterface):
                 message=f"Provider {provider} is not supported",
                 provider=self.__class__.__name__
             )
-        verbose = kwargs.pop("verbose", False)  # we pop verbose argument since it's not used by the request class.
+        # we pop verbose argument since it's not used by the request class.
+        verbose = kwargs.pop("verbose", False)
         # Extract the parameters that are supported by the provider
-        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params(provider)}
-        
+        kwargs = {key: value for key, value in kwargs.items(
+        ) if key in self.support_params(provider)}
 
         if verbose:
             logger.info(f"Querying {provider.upper()} with params: {kwargs}")
-
-
 
         provider = self.simbad if provider == "simbad" else self.exoplanet_archive
 
@@ -328,25 +329,25 @@ class AstroqueryProvider(DataProviderInterface):
     def query_nasa_exoplanet_archive(self, **kwargs):
         """
         Method that handles queries in SQL format to the Nasa Exoplanet Archive using ASTROQUERY. Replacement for the TAP service.
-        
+
         Args:
             table: Table name to query (e.g., "ps" for Planetary Systems or "pscomppars")
             select: Comma-separated list of columns to return
             where: SQL WHERE clause to filter results
             order: Column(s) to order results by
-        
+
         """
 
-        kwargs = {key: value for key, value in kwargs.items() if key in self.support_params(provider="exoplanet")}
+        kwargs = {key: value for key, value in kwargs.items(
+        ) if key in self.support_params(provider="exoplanet")}
 
-
-        table = kwargs.get("table")  
+        table = kwargs.get("table")
         select = kwargs.get("select")
         where = kwargs.get("where")
         order = kwargs.get("order")
-        verbose = kwargs.pop("verbose", False) # we pop verbose argument since it's not used by the request class.
+        # we pop verbose argument since it's not used by the request class.
+        verbose = kwargs.pop("verbose", False)
 
-        
         query_params = {}
         if table is not None:
             query_params["table"] = table
@@ -365,7 +366,7 @@ class AstroqueryProvider(DataProviderInterface):
             raise ExoplanetProviderError(
                 message="Select clause is required",
             )
-        if verbose: 
+        if verbose:
             logger.info(f"Querying Exoplanet Archive: {query_params}")
         # Execute query
         try:
@@ -375,7 +376,7 @@ class AstroqueryProvider(DataProviderInterface):
             raise ExoplanetProviderError(
                 message=f"Error querying Exoplanet Archive: {e}",
             )
-        
+
         if response is None or len(response) == 0:
             return ApiResult(
                 data=None,
@@ -383,7 +384,7 @@ class AstroqueryProvider(DataProviderInterface):
                 error="No matching exoplanets found",
                 source=self.__class__.__name__
             )
-        
+
         return ApiResult(
             data=response,
             success=True,
@@ -401,11 +402,11 @@ class LocalFilesProvider(DataProviderInterface):
 
     def support_params(self):
         return ["file_path", "force_reload", "reload_days"]
-    
+
     def request(self):
         pass
 
-    def fallback_transit_legacy(self,error, **kwargs):
+    def fallback_transit_legacy(self, error, **kwargs):
         """
         Queries the Nasa Exoplanet Archive for the transit data of the target planet.
         Designed to be a fallback for the local files provider case.
@@ -417,15 +418,15 @@ class LocalFilesProvider(DataProviderInterface):
                 details={"error": str(error)},
                 provider=self.__class__.__name__
             )
-        if self.api_service.verbose :
-            logger.info(f"Querying Nasa Exoplanet Archive for transit data of {target}")
+        if self.api_service.verbose:
+            logger.info(
+                f"Querying Nasa Exoplanet Archive for transit data of {target}")
         response = self.api_service.query_exoplanet(
-                table = 'pscomppars',
-                select='pl_name, pl_tranmid, pl_orbper, pl_trandur',
-                where = f"pl_name like '%{target}%'",
-            )
+            table='pscomppars',
+            select='pl_name, pl_tranmid, pl_orbper, pl_trandur',
+            where=f"pl_name like '%{target}%'",
+        )
         return response.data
-
 
     @DataProviderInterface.with_fallback(fallback_func=fallback_transit_legacy)
     def load_transit_txt_legacy(self, file_path: str, target: str):
@@ -439,10 +440,11 @@ class LocalFilesProvider(DataProviderInterface):
                 file_path=file_path
             )
         if self.api_service.verbose:
-            logger.info(f"Attempting to load transit data from {file_path} for target {target}")
+            logger.info(
+                f"Attempting to load transit data from {file_path} for target {target}")
 
         # we receive a list of strings .
-        transits_list = open(file_path, "r").readlines() 
+        transits_list = open(file_path, "r").readlines()
         data = None
         for transit in transits_list:
             # first, the elements are in the format:
@@ -462,8 +464,7 @@ class LocalFilesProvider(DataProviderInterface):
                     elif value.startswith("L"):
                         transit_length = value[1:-1]
                 data = transit_epoch, transit_period, transit_length
-        
-        
+
         if data != None:
             return ApiResult(
                 data=data,
@@ -473,17 +474,8 @@ class LocalFilesProvider(DataProviderInterface):
             raise LocalFilesProviderError(
                 message=f"Target {target} not found in file {file_path}, executing fallback query to NEA",
             )
-        
-        
 
 
-
-
-
-
-
-    
-        
 class ApiService:
     """
     Main class used as interface to the API
@@ -498,18 +490,18 @@ class ApiService:
             print(f"Data for M31: {response.data}")
         else:
             print(f"Error querying SIMBAD: {response.error}")
-        
+
     """
 
-    def __init__(self, verbose= False, simbad_votable_fields=None):
-        
-        self.local_files_provider = LocalFilesProvider(api_service = self)
+    def __init__(self, verbose=False, simbad_votable_fields=None):
+
+        self.local_files_provider = LocalFilesProvider(api_service=self)
         self.http_provider = HttpProvider()
-        self.astroquery_provider = AstroqueryProvider(simbad_votable_fields=simbad_votable_fields)
+        self.astroquery_provider = AstroqueryProvider(
+            simbad_votable_fields=simbad_votable_fields)
         self.verbose = verbose
         if simbad_votable_fields:
             self.add_simbad_votable_fields(*simbad_votable_fields)
-
 
     def get_provider(self, service):
         """
@@ -531,7 +523,7 @@ class ApiService:
         # Add more providers as needed
         return None
 
-    def request_http(self, **kwargs ) -> ApiResult:
+    def request_http(self, **kwargs) -> ApiResult:
         """
         Method that will handle HTTP requests using the HTTP provider.
         Args:
@@ -549,7 +541,6 @@ class ApiService:
         """
         kwargs["verbose"] = self.verbose
         return self.http_provider.request(**kwargs)
-
 
     def request_simbad(self, **kwargs) -> ApiResult:
         """
@@ -592,8 +583,6 @@ class ApiService:
         """
         self.simbad_provider.simbad.add_votable_fields(*fields)
 
-
-
     def query_exoplanet(self, **kwargs):
         """
         Method that will handle queries directly to the Nasa Exoplanet Archive using Astroquery
@@ -605,7 +594,7 @@ class ApiService:
         Returns:
             ApiResult: Result of the query. It will contain the data, success, error, source and is_fallback attributes.
 
-            
+
         Example usage:
         ```python
         target = "Kepler-22b"
@@ -625,10 +614,8 @@ class ApiService:
         """
         kwargs["verbose"] = self.verbose
         return self.astroquery_provider.query_nasa_exoplanet_archive(**kwargs)
-    
 
-
-    def query_transits_ephemeris(self, file_path: str,target: str, file_type:str = "legacy", update: bool= False):
+    def query_transits_ephemeris(self, file_path: str, target: str, file_type: str = "legacy", update: bool = False):
         """
         Method that will handle queries to the local files provider and if the method fails, it will try to query the Nasa Exoplanet Archive.
         Args:
@@ -644,13 +631,15 @@ class ApiService:
             Transit epoch, Transit Period, Transit Length. 
         """
         if self.verbose:
-            logger.info(f"Querying transits ephemeris for {target} in {file_path} with file type {file_type}")
+            logger.info(
+                f"Querying transits ephemeris for {target} in {file_path} with file type {file_type}")
         if target is None:
             raise ApiServiceError(
                 message="Target planet name is required",
             )
-        target_with_underscore = target.replace(" ", "_") # replace spaces with underscores for file consistency
-        if file_type == "legacy":        
+        # replace spaces with underscores for file consistency
+        target_with_underscore = target.replace(" ", "_")
+        if file_type == "legacy":
             response = self.local_files_provider.load_transit_txt_legacy(
                 target=target_with_underscore,
                 file_path=file_path,
@@ -658,22 +647,24 @@ class ApiService:
             if response.success:
                 if self.verbose:
                     if response.is_fallback:
-                        logger.info(f"Loaded transit data for {target} from Nasa Exoplanet Archive")
+                        logger.info(
+                            f"Loaded transit data for {target} from Nasa Exoplanet Archive")
                     else:
-                        logger.info(f"Loaded transit data for {target} from {file_path}")
+                        logger.info(
+                            f"Loaded transit data for {target} from {file_path}")
                 # if update is set to true, we have to add the 4 values to the file
-                data = response.data # IN Q TABLE FORMAT or tuple (E, P L)
+                data = response.data  # IN Q TABLE FORMAT or tuple (E, P L)
                 # obtaining the data from the QTABLE.
                 if response.is_fallback:
                     df = data.to_pandas()
                     # Access first row values
                     pl_name = df.iloc[0]['pl_name']
                     pl_tranmid = df.iloc[0]['pl_tranmid']
-                    pl_orbper = df.iloc[0]['pl_orbper'] 
+                    pl_orbper = df.iloc[0]['pl_orbper']
                     pl_trandur = df.iloc[0]['pl_trandur']
 
                     if update:
-                    # we have to update the file with the new data
+                        # we have to update the file with the new data
                         with open(file_path, "r") as f:
                             lines = f.readlines()
                         found = False
@@ -685,20 +676,15 @@ class ApiService:
                         if not found:
                             # if the planet name have spaces, we replace them with "_"
                             target_with_underscore = target.replace(" ", "_")
-                            lines.append(f"{target_with_underscore} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n")
+                            lines.append(
+                                f"{target_with_underscore} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n")
                         with open(file_path, "w") as f:
                             f.writelines(lines)
                         if self.verbose:
-                            logger.info(f"Updated transit data for {target} in {file_path} adding the values: {pl_tranmid}, {pl_orbper}, {pl_trandur}")
-                
+                            logger.info(
+                                f"Updated transit data for {target} in {file_path} adding the values: {pl_tranmid}, {pl_orbper}, {pl_trandur}")
+
                 else:
                     pl_tranmid, pl_orbper, pl_trandur = data
 
                 return pl_tranmid, pl_orbper, pl_trandur
-            
-                
-
-            
-            
-
-
