@@ -29,6 +29,59 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T")  # this means that the result can be any type
 
 
+def with_fallback(fallback_func: Optional[Callable] = None,
+                      return_empty_on_fail: bool = False) -> Callable:
+        """
+        Method that will set a fallback function for the provider.
+        This function will be called if the original method fails.
+        Args:
+            fallback_func: function to call if the original method fails.
+            return_empty_on_fail: whether to return an empty result if the original method fails. If it's set to True,
+                the method wont raise and exception, but it will return an empty result, otherwise, it will raise an exception.
+            On every case, the fallback function will always be called if provided. 
+         
+        """
+        def decorator(func):
+            @wraps(func)
+            def wrapper(self, **kwargs):
+                try:
+                    # Try original method
+                    return func(self, **kwargs)
+                except Exception as e:
+                    logger.error(f"{self.__class__.__name__} error: {e}")
+
+                    # Try fallback if provided
+                    if fallback_func:
+                        try:
+                            fallback_data = fallback_func(self, e, **kwargs)
+                            return ApiResult(
+                                data=fallback_data,
+                                success=True,
+                                source=f"{self.__class__.__name__}_fallback",
+                                is_fallback=True
+                            )
+                        except Exception as fallback_error:
+                            raise ApiServiceError(
+                                message=f"Fallback function failed: {fallback_error}",
+                                details={"original_error": str(e)},
+                                provider=self.__class__.__name__
+                            )
+
+                    # Return empty result if configured
+                    if return_empty_on_fail:
+                        return ApiResult(
+                            data=None,
+                            success=False,
+                            error=e,
+                            source=self.__class__.__name__
+                        )
+
+                    # Re-raise if no fallback handling succeeded
+                    raise
+            return wrapper
+        return decorator
+
+
 class ApiResult(Generic[T]):
     """
     Generic container class, it will hold data of type T and T will be determined when the class is instantiated.
@@ -88,57 +141,7 @@ class DataProviderInterface(ABC):
         pass
     # NOTE: These two method are not specified, because they need to be implemented in the concrete classes.
 
-    @staticmethod
-    def with_fallback(fallback_func: Optional[Callable] = None,
-                      return_empty_on_fail: bool = False) -> Callable:
-        """
-        Method that will set a fallback function for the provider.
-        This function will be called if the original method fails.
-        Args:
-            fallback_func: function to call if the original method fails.
-            return_empty_on_fail: whether to return an empty result if the original method fails. If it's set to True,
-                the method wont raise and exception, but it will return an empty result, otherwise, it will raise an exception.
-            On every case, the fallback function will always be called if provided. 
-        """
-        def decorator(func):
-            @wraps(func)
-            def wrapper(self, **kwargs):
-                try:
-                    # Try original method
-                    return func(self, **kwargs)
-                except Exception as e:
-                    logger.error(f"{self.__class__.__name__} error: {e}")
-
-                    # Try fallback if provided
-                    if fallback_func:
-                        try:
-                            fallback_data = fallback_func(self, e, **kwargs)
-                            return ApiResult(
-                                data=fallback_data,
-                                success=True,
-                                source=f"{self.__class__.__name__}_fallback",
-                                is_fallback=True
-                            )
-                        except Exception as fallback_error:
-                            raise ApiServiceError(
-                                message=f"Fallback function failed: {fallback_error}",
-                                details={"original_error": str(e)},
-                                provider=self.__class__.__name__
-                            )
-
-                    # Return empty result if configured
-                    if return_empty_on_fail:
-                        return ApiResult(
-                            data=None,
-                            success=False,
-                            error=e,
-                            source=self.__class__.__name__
-                        )
-
-                    # Re-raise if no fallback handling succeeded
-                    raise
-            return wrapper
-        return decorator
+    
 
 
 class HttpProvider(DataProviderInterface):
@@ -153,8 +156,7 @@ class HttpProvider(DataProviderInterface):
         """
         return ["url", "headers", "params", "data", "timeout", "verbose", "method", "json", "cookies", "files", "auth", "allow_redirects", "proxies", "verify", "stream", "cert"]
 
-    # NOTE: Decorators on parent classes are "overrided" as long as we dont call the super() method, otherwise, this decorator will be called on runtime.
-    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
+    @with_fallback(return_empty_on_fail=True)
     def request(self,  **kwargs) -> ApiResult:
         """
         Method that handles HTTP requests
@@ -282,7 +284,7 @@ class AstroqueryProvider(DataProviderInterface):
         elif provider == "exoplanet":
             return ["object_name", "verbose", "table", "get_query_payload", "regularize", "select", "where", "order"]
 
-    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
+    @with_fallback(return_empty_on_fail=True)
     def request(self, provider: str, **kwargs) -> ApiResult:
         """
         Method that handles queries to Nasa Exoplanet Archive or SIMBAD depending on the {provider} argument.
@@ -325,7 +327,7 @@ class AstroqueryProvider(DataProviderInterface):
                 message=f"Error querying SIMBAD: {e}",
             )
 
-    @DataProviderInterface.with_fallback(return_empty_on_fail=True)
+    @with_fallback(return_empty_on_fail=True)
     def query_nasa_exoplanet_archive(self, **kwargs):
         """
         Method that handles queries in SQL format to the Nasa Exoplanet Archive using ASTROQUERY. Replacement for the TAP service.
@@ -428,7 +430,7 @@ class LocalFilesProvider(DataProviderInterface):
         )
         return response.data
     
-    @DataProviderInterface.with_fallback(fallback_func=fallback_transit)
+    @with_fallback(fallback_func=fallback_transit)
     def load_transit_csv(self, file_path: str, target: str):
         """
         Loads a csv file and returns its content in the desired output_format.
@@ -466,7 +468,7 @@ class LocalFilesProvider(DataProviderInterface):
 
 
 
-    @DataProviderInterface.with_fallback(fallback_func=fallback_transit)
+    @with_fallback(fallback_func=fallback_transit)
     def load_transit_txt_legacy(self, file_path: str, target: str):
         """
         Loads a txt file and returns its content in the desired output_format.
