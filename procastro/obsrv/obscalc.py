@@ -327,12 +327,6 @@ class ObsCalc(object):
         print("Star at RA/DEC: {0:s}/{1:s}"
               .format(self._target.ra.to_string(sep=':'),
                       self._target.dec.to_string(sep=':')))
-        # TODO: CHECK THIS FUNCTION (LOCAL SEEKER) (fallback without overwriting)
-        # TODO: A CSV
-        # transit_epoch, transit_period, transit_length = \
-        #     procastro.astro.exoplanet.get_transit_ephemeris(target)
-
-
         config_exo = config.config_user("exoplanet")
         paths_transits = [config_exo['transit_file'],
                 ]
@@ -343,34 +337,8 @@ class ObsCalc(object):
             file_type = "legacy",
             update= False
         )
-        # print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
-
-        # if transit_epoch is None or transit_period is None:
-        #     print("Attempting to query transit information")
-
-        #     # query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
-        #     #         f"WHERE lower(pl_name) like '%{target}%' "
-        #     apiService = ApiService()
-        #     # TODO: See if we can execute this query without the need of selecting pl_name
-        #     response: ApiResult = apiService.query_exoplanet(
-        #         table = "pscomppars",
-        #         select="pl_name,pl_tranmid,pl_orbper,pl_trandur",
-        #         where = f"pl_name like '%{target}%'",
-        #     )
-        #     if response.success is False:
-        #         raise ValueError(f"Error querying exoplanet database: {resultset.error_message}")
-        #     resultset = response.data.to_pandas() # TODO: TO PANDAS 
-        #     try:
-        #         req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
-        #     except IndexError:
-        #         raise IndexError(f"Planet {target} not found in exoplanet database")
-        #     trandur = resultset['pl_trandur'].data[0]
         if transit_length is None:
             transit_length = 1.0
-        
-
-        #     transit_period, transit_epoch, transit_length = req_cols
-
         print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
                 .format(transit_epoch, transit_period, transit_length))
 
