@@ -7,7 +7,7 @@ import pyvo.dal.exceptions
 from astropy.table import QTable
 import procastro as pa
 from procastro.api_provider.api_exceptions import ApiServiceError, HttpProviderError
-from procastro.api_provider.api_service import ApiResult, ApiService, DataProviderInterface, HttpProvider 
+from procastro.api_provider.api_service import ApiResult, ApiService, DataProviderInterface, HttpProvider, with_fallback 
 
 @pytest.fixture
 def apiService():
@@ -38,7 +38,7 @@ def test_fallback():
             return ['foo', 'bar']
 
 
-        @DataProviderInterface.with_fallback(fallback_func=lambda *args, **kwargs: "fallback executed")
+        @with_fallback(fallback_func=lambda *args, **kwargs: "fallback executed")
         def request(self):
             raise Exception("error")
 
@@ -57,7 +57,7 @@ def test_empty_on_fail_with_no_fallback_provided():
             return ['foo', 'bar']
 
 
-        @DataProviderInterface.with_fallback(fallback_func=None, return_empty_on_fail=True)
+        @with_fallback(fallback_func=None, return_empty_on_fail=True)
         def request(self):
             raise Exception("error")
         
@@ -80,7 +80,7 @@ def test_fallback_with_fallback_error():
         def support_params(self):
             return ['foo', 'bar']
 
-        @DataProviderInterface.with_fallback(fallback_func=failing_fallback)
+        @with_fallback(fallback_func=failing_fallback)
         def request(self):
             raise Exception("error")
             
@@ -200,7 +200,7 @@ def test_simbad_provider():
     assert response.success is True
     assert response.data is not None
     assert response.error is None
-    assert response.source == "SimbadProvider"
+    assert response.source == "AstroqueryProvider"
     assert response.is_fallback is False
 
 
@@ -212,7 +212,7 @@ def test_simbad_provider_with_extra_args():
     assert response.success is True
     assert response.data is not None
     assert response.error is None
-    assert response.source == "SimbadProvider"
+    assert response.source == "AstroqueryProvider"
     assert response.is_fallback is False
 
 
@@ -223,7 +223,7 @@ def test_simbad_provider_with_valid_args():
     assert response.success is True
     assert response.data is not None
     assert response.error is None
-    assert response.source == "SimbadProvider"
+    assert response.source == "AstroqueryProvider"
     assert response.is_fallback is False
 
 
@@ -235,10 +235,9 @@ def test_simbad_with_bad_args():
     assert response.data is None
     
     # Check for the correct error type and message
-    from procastro.api_provider.api_exceptions import SimbadProviderError
-    assert isinstance(response.error, SimbadProviderError)
-    assert "Object name must be a string" in str(response.error)
-    assert response.source == "SimbadProvider"
+    from procastro.api_provider.api_exceptions import AstroqueryProviderError
+    assert isinstance(response.error,AstroqueryProviderError)
+    assert response.source == "AstroqueryProvider"
     assert response.is_fallback is False
 
 
@@ -249,7 +248,7 @@ def test_exoplanet_provider():
     assert response.success is True
     assert response.data is not None
     assert response.error is None
-    assert response.source == "ExoplanetProvider"
+    assert response.source == "AstroqueryProvider"
     assert response.is_fallback is False
 
 
@@ -271,7 +270,7 @@ def test_exoplanet_provider_query():
     assert resultset_new.success is True
     assert resultset_new.data is not None
     assert resultset_new.error is None
-    assert resultset_new.source == "ExoplanetProvider"
+    assert resultset_new.source == "AstroqueryProvider"
     assert resultset_new.is_fallback is False
     df_new = resultset_new.data.to_pandas()
     df_old = resultset_old.to_table().to_pandas()
@@ -286,6 +285,54 @@ def test_exoplanet_provider_query():
         check_dtype=False,
         check_like=True
     )
+
+
+def test_local_files_provider():
+    from procastro import config
+    config_exo = config.config_user("exoplanet")
+    target = "Kepler-1065 b"
+    paths_transits = [config_exo['transit_file'],
+                    ]
+    
+    file_type = paths_transits[0].split('.')[-1]
+    if file_type == "csv":
+        df = pd.read_csv(paths_transits[0])
+        # calculate the number of rows of the dataframe.
+        n_rows = len(df)
+
+    elif file_type == "txt":
+        # load the txt file and count the number of lines
+        with open(paths_transits[0], 'r') as f:
+            lines = f.readlines()
+            n_rows = len(lines)
+    response = ApiService(verbose=True).query_transits_ephemeris(
+        file_path=paths_transits[0],
+        target=target,
+        update=False,
+    )
+    assert response is not None
+    assert type(response) is tuple
+    assert len(response) == 3
+
+    # as update is set to false, we expect the data to be the same as the one in the file
+    if file_type == "csv":
+        df_new = pd.read_csv(paths_transits[0])
+        n_new = len(df_new)
+        assert n_new == n_rows
+    elif file_type == "txt":
+        with open(paths_transits[0], 'r') as f:
+            lines_new = f.readlines()
+            n_new = len(lines_new)
+        assert n_new == n_rows
+
+
+    # now with update= True
+    response = ApiService(verbose=True).query_transits_ephemeris(
+        file_path=paths_transits[0],
+        target=target,
+        update=True,
+    )
+
 
 
 

@@ -313,12 +313,12 @@ class AstroqueryProvider(DataProviderInterface):
         provider = self.simbad if provider == "simbad" else self.exoplanet_archive
 
         try:
-            response = provider.request(**kwargs)
+            response = provider.query_object(**kwargs)
             if response:
                 return ApiResult(
                     data=response,
                     success=True,
-                    source=self.__class__.__name__ + provider.__class__.__name__,
+                    source=self.__class__.__name__,
                 )
         except Exception as e:
             exception_class = SimbadProviderError if provider == self.simbad else ExoplanetProviderError
@@ -543,6 +543,8 @@ class ApiService:
         if simbad_votable_fields:
             self.add_simbad_votable_fields(*simbad_votable_fields)
 
+
+
     def get_provider(self, service):
         """
         Method that will return the provider for the given service.
@@ -665,12 +667,6 @@ class ApiService:
         Returns:
             Transit epoch, Transit Period, Transit Length. 
         """
-        if self.verbose:
-            logger.info(f"Querying transits ephemeris for {target} in {file_path} with file type {file_type}")
-        
-        if not target:
-            raise ApiServiceError(message="Target planet name is required")
-        
 
         file_type = file_path.split(".")[-1].lower()
         if file_type not in ["txt", "csv"]:
@@ -679,12 +675,20 @@ class ApiService:
                 details={"file_type": file_type},
                 provider=self.__class__.__name__
             )
+        if self.verbose:
+            logger.info(f"Querying transits ephemeris for {target} in {file_path} with file type {file_type}")
+        
+        if not target:
+            raise ApiServiceError(message="Target planet name is required")
+        
+
+        
         
         target_with_underscore = target.replace(" ", "_")
         
         # Get response based on file type
         response = (self.local_files_provider.load_transit_txt_legacy(file_path=file_path, target=target_with_underscore) 
-                    if file_type == "legacy" 
+                    if file_type == "txt" 
                     else self.local_files_provider.load_transit_csv(file_path=file_path, target=target_with_underscore))
         
         if not response.success:
