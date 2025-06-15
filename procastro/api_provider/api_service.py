@@ -655,16 +655,12 @@ class ApiService:
         kwargs["verbose"] = self.verbose
         return self.astroquery_provider.query_nasa_exoplanet_archive(**kwargs)
 
-    def query_transits_ephemeris(self, file_path: str, target: str, file_type: str = "legacy", update: bool = False):
+    def query_transits_ephemeris(self, file_path: str, target: str, update: bool = False):
         """
         Method that will handle queries to the local files provider and if the method fails, it will try to query the Nasa Exoplanet Archive.
         Args:
             file_path: Path of the local file. In this case, it defaults to transits.txt
             update: If True, it will update the local file with the latest data from NEA overwriting the target planet data.
-            file_type: csv or legacy. "csv" reffers to a file in a csv format. "legacy" reffers to the old way of 
-                creating transit files, where every row has:
-                    planet name E[transit epoch] P[transit period] L[transit lenght]  
-                Defaults to "legacy"
             target: Name of the target planet.  
         Returns:
             Transit epoch, Transit Period, Transit Length. 
@@ -675,9 +671,11 @@ class ApiService:
         if not target:
             raise ApiServiceError(message="Target planet name is required")
         
-        if file_type not in ["legacy", "csv"]:
+
+        file_type = file_path.split(".")[-1].lower()
+        if file_type not in ["txt", "csv"]:
             raise ApiServiceError(
-                message=f"File type {file_type} is not supported. Supported types are: legacy, csv",
+                message=f"File type {file_type} is not supported. Supported types are: txt, csv",
                 details={"file_type": file_type},
                 provider=self.__class__.__name__
             )
