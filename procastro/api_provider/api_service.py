@@ -406,7 +406,7 @@ class LocalFilesProvider(DataProviderInterface):
     def request(self):
         pass
 
-    def fallback_transit_legacy(self, error, **kwargs):
+    def fallback_transit(self, error, **kwargs):
         """
         Queries the Nasa Exoplanet Archive for the transit data of the target planet.
         Designed to be a fallback for the local files provider case.
@@ -427,8 +427,46 @@ class LocalFilesProvider(DataProviderInterface):
             where=f"pl_name like '%{target}%'",
         )
         return response.data
+    
+    @DataProviderInterface.with_fallback(fallback_func=fallback_transit)
+    def load_transit_csv(self, file_path: str, target: str):
+        """
+        Loads a csv file and returns its content in the desired output_format.
+        """
+        if not os.path.exists(file_path):
+            raise LocalFilesProviderError(
+                message=f"File {file_path} does not exist, executing fallback query to NEA.",
+                file_path=file_path
+            )
+        if self.api_service.verbose:
+            logger.info(
+                f"Attempting to load transit data from {file_path} for target {target}")
 
-    @DataProviderInterface.with_fallback(fallback_func=fallback_transit_legacy)
+        # we receive a pandas dataframe.
+        df = pd.read_csv(file_path)
+        data = None
+        for index, row in df.iterrows():
+            planet_name = row['pl_name']
+            if planet_name == target:
+                transit_epoch = row['pl_tranmid']
+                transit_period = row['pl_orbper']
+                transit_length = row['pl_trandur']
+                data = transit_epoch, transit_period, transit_length
+
+        if data is not None:
+            return ApiResult(
+                data=data,
+                success=True
+            )
+        else:
+            raise LocalFilesProviderError(
+                message=f"Target {target} not found in file {file_path}, executing fallback query to NEA",
+            )
+
+
+
+
+    @DataProviderInterface.with_fallback(fallback_func=fallback_transit)
     def load_transit_txt_legacy(self, file_path: str, target: str):
         """
         Loads a txt file and returns its content in the desired output_format.
@@ -624,67 +662,86 @@ class ApiService:
             file_type: csv or legacy. "csv" reffers to a file in a csv format. "legacy" reffers to the old way of 
                 creating transit files, where every row has:
                     planet name E[transit epoch] P[transit period] L[transit lenght]  
-
                 Defaults to "legacy"
             target: Name of the target planet.  
         Returns:
             Transit epoch, Transit Period, Transit Length. 
         """
         if self.verbose:
-            logger.info(
-                f"Querying transits ephemeris for {target} in {file_path} with file type {file_type}")
-        if target is None:
+            logger.info(f"Querying transits ephemeris for {target} in {file_path} with file type {file_type}")
+        
+        if not target:
+            raise ApiServiceError(message="Target planet name is required")
+        
+        if file_type not in ["legacy", "csv"]:
             raise ApiServiceError(
-                message="Target planet name is required",
+                message=f"File type {file_type} is not supported. Supported types are: legacy, csv",
+                details={"file_type": file_type},
+                provider=self.__class__.__name__
             )
-        # replace spaces with underscores for file consistency
+        
         target_with_underscore = target.replace(" ", "_")
+        
+        # Get response based on file type
+        response = (self.local_files_provider.load_transit_txt_legacy(file_path=file_path, target=target_with_underscore) 
+                    if file_type == "legacy" 
+                    else self.local_files_provider.load_transit_csv(file_path=file_path, target=target_with_underscore))
+        
+        if not response.success:
+            logger.error(f"Error loading transit data for {target} from {file_path}: {response.error}")
+            return None
+        
+        # Log source of data
+        if self.verbose:
+            source = "Nasa Exoplanet Archive" if response.is_fallback else file_path
+            logger.info(f"Loaded transit data for {target} from {source}")
+        
+        # Extract transit data
+        if response.is_fallback:
+            df = response.data.to_pandas()
+            pl_tranmid, pl_orbper, pl_trandur = df.iloc[0][['pl_tranmid', 'pl_orbper', 'pl_trandur']]
+            
+            if update:
+                self._update_transit_file(file_path, file_type, target_with_underscore, 
+                                        pl_tranmid, pl_orbper, pl_trandur)
+        else:
+            pl_tranmid, pl_orbper, pl_trandur = response.data
+        
+        return pl_tranmid, pl_orbper, pl_trandur
+    
+    def _update_transit_file(self, file_path: str, file_type: str, target: str, 
+                            pl_tranmid, pl_orbper, pl_trandur):
+        """Helper method to update transit files with new data"""
         if file_type == "legacy":
-            response = self.local_files_provider.load_transit_txt_legacy(
-                target=target_with_underscore,
-                file_path=file_path,
-            )
-            if response.success:
-                if self.verbose:
-                    if response.is_fallback:
-                        logger.info(
-                            f"Loaded transit data for {target} from Nasa Exoplanet Archive")
-                    else:
-                        logger.info(
-                            f"Loaded transit data for {target} from {file_path}")
-                # if update is set to true, we have to add the 4 values to the file
-                data = response.data  # IN Q TABLE FORMAT or tuple (E, P L)
-                # obtaining the data from the QTABLE.
-                if response.is_fallback:
-                    df = data.to_pandas()
-                    # Access first row values
-                    pl_name = df.iloc[0]['pl_name']
-                    pl_tranmid = df.iloc[0]['pl_tranmid']
-                    pl_orbper = df.iloc[0]['pl_orbper']
-                    pl_trandur = df.iloc[0]['pl_trandur']
-
-                    if update:
-                        # we have to update the file with the new data
-                        with open(file_path, "r") as f:
-                            lines = f.readlines()
-                        found = False
-                        for i, line in enumerate(lines):
-                            if line.strip().startswith(target_with_underscore + " "):
-                                lines[i] = f"{target_with_underscore} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n"
-                                found = True
-                                break
-                        if not found:
-                            # if the planet name have spaces, we replace them with "_"
-                            target_with_underscore = target.replace(" ", "_")
-                            lines.append(
-                                f"{target_with_underscore} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n")
-                        with open(file_path, "w") as f:
-                            f.writelines(lines)
-                        if self.verbose:
-                            logger.info(
-                                f"Updated transit data for {target} in {file_path} adding the values: {pl_tranmid}, {pl_orbper}, {pl_trandur}")
-
-                else:
-                    pl_tranmid, pl_orbper, pl_trandur = data
-
-                return pl_tranmid, pl_orbper, pl_trandur
+            with open(file_path, "r") as f:
+                lines = f.readlines()
+            
+            # Find and update existing line or append new one
+            updated = False
+            for i, line in enumerate(lines):
+                if line.strip().startswith(f"{target} "):
+                    lines[i] = f"{target} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n"
+                    updated = True
+                    break
+            
+            if not updated:
+                lines.append(f"{target} E{pl_tranmid} P{pl_orbper} L{pl_trandur} CNasaExoplanetArchiveSource\n")
+            
+            with open(file_path, "w") as f:
+                f.writelines(lines)
+        else:  # csv
+            df = pd.read_csv(file_path)
+            new_data = {'pl_name': target, 'pl_tranmid': pl_tranmid, 'pl_orbper': pl_orbper, 
+                       'pl_trandur': pl_trandur, 'source': "NasaExoplanetArchiveSource"}
+            
+            if target in df['pl_name'].values:
+                df.loc[df['pl_name'] == target, ['pl_tranmid', 'pl_orbper', 'pl_trandur']] = pl_tranmid, pl_orbper, pl_trandur
+            else:
+                new_row = pd.DataFrame([new_data])
+                df = pd.concat([df, new_row], ignore_index=True)
+            
+            df.to_csv(file_path, index=False)
+        
+        if self.verbose:
+            logger.info(f"Updated transit data for {target} in {file_path}")
+                
