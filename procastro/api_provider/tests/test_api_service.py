@@ -290,7 +290,7 @@ def test_exoplanet_provider_query():
 def test_local_files_provider():
     from procastro import config
     config_exo = config.config_user("exoplanet")
-    target = "Kepler-1065 b"
+    target = "WASP-5 b"
     paths_transits = [config_exo['transit_file'],
                     ]
     
