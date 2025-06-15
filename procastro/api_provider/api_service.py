@@ -716,7 +716,7 @@ class ApiService:
     def _update_transit_file(self, file_path: str, file_type: str, target: str, 
                             pl_tranmid, pl_orbper, pl_trandur):
         """Helper method to update transit files with new data"""
-        if file_type == "legacy":
+        if file_type == "txt":
             with open(file_path, "r") as f:
                 lines = f.readlines()
             
