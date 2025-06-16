@@ -453,7 +453,6 @@ def find_time_for_altitude(location, time,
                            find: str = "next",
                            body: str = "sun",
                            mean_apparent="apparent", # whether to include nutation
-                           iterate=1,
                            verbose=False,
                            ):
     """returns times at altitude with many parameters. The search span is centered around `time` and, by default,
@@ -475,10 +474,8 @@ def find_time_for_altitude(location, time,
     """
 
     ref_time = apt.Time(time)
-
     sidereal_to_solar = (u.sday / u.day).to(u.dimensionless_unscaled)
     lst_start = ref_time.sidereal_time(mean_apparent, location).to(u.hourangle).value
-
     body_start = apc.get_body(body, ref_time, location)
 
     delta_ha = body_start.ra.to(u.hourangle).value - lst_start
@@ -503,21 +500,26 @@ def find_time_for_altitude(location, time,
                                      sidereal_to_solar * u.hour)
             body_at_approx = apc.get_body(body, elevation_time_approx, location)
 
+            delta_ha_transit_improved = body_at_approx.ra.to(u.hourangle).value - lst_start
+            ha_to_transit_improved = transit * ((transit * delta_ha_transit_improved) % 24) * u.hourangle
             ha_to_elevation_improved = hour_angle_for_altitude(body_at_approx.dec.to(u.radian).value,
                                                                location.lat.to(u.radian).value,
                                                                ref_altitude_deg * np.pi / 180)
-            delta_ha_transit_improved = body_at_approx.ra.to(u.hourangle).value - lst_start
-            ha_to_transit_improved = transit * ((transit * delta_ha_transit_improved) % 24) * u.hourangle
 
-            improved_elevation_time = ref_time + (before_after * ha_to_elevation_improved +
-                                                  ha_to_transit_improved).value * sidereal_to_solar * u.hour
+            improved_transit_time = ref_time + ha_to_transit_improved.value * sidereal_to_solar * u.hour
+            improved_elevation_time = (improved_transit_time +
+                                       before_after * ha_to_elevation_improved.value * sidereal_to_solar * u.hour)
 
             return_times.append(improved_elevation_time)
+
             if verbose:
+                computed = apc.get_body(body, improved_elevation_time, location)
+                altaz = computed.transform_to(apc.AltAz(obstime=improved_elevation_time, location=location))
                 print(f"APPROX. HA to elevation: {hour_angle_elevation},  time: {elevation_time_approx}")
-                print(f"IMPROVED. HA to transit: {ha_to_transit_improved}. ")
-                print(f"IMPROVED. HA to elevation: {ha_to_elevation_improved}. ")
-                print(f"IMPROVED ({transit}, {before_after}). time {improved_elevation_time}")
+                print(f"IMPROVED. HA to transit: {ha_to_transit_improved}. time: {improved_transit_time}")
+                print(f"IMPROVED. HA to elevation: {ha_to_elevation_improved}. time {improved_elevation_time}")
+                print(f"computed altitude: {altaz.alt}")
+                print(f"IMPROVED ({transit}, {before_after}). ")
 
 
     return_times = apt.Time(return_times)
@@ -532,92 +534,12 @@ def find_time_for_altitude(location, time,
 
 
 
-#
-#     def to_sexa(inp):
-#         try:
-#             inp = inp.to(u.hour).value
-#         except UnitConversionError:
-#             inp = inp.to(u.hourangle).value
-#         hd = inp // 1
-#         m = (60 * (inp - hd)) // 1
-#         s = 60 * (inp - hd - m / 60)
-#         return f"{hd:02.0f} {m:02.0f} {s:05.2f}"
-#
-#     def _time_at_transits(time_for_ra, closest=False):
-#         body_start = apc.get_body(body, time_for_ra, location)
-#
-#         ha_to_transit = u.Quantity([-((lst_start - body_start.ra.to(u.hourangle).value) % 24),
-#                                     (body_start.ra.to(u.hourangle).value - lst_start) % 24])
-#         time_end = time_for_ra + ha_to_transit * sidereal_to_solar * u.hour
-#
-#         if closest:
-#             return time_end[0] if -ha_to_transit[0] < ha_to_transit[1] else time_end[1]
-#
-#         return time_end
-#
-#     transits_times = _time_at_transits(ref_time)
-#     # transits_times = ([_time_at_transits(transits_times0[0], closest=True),
-#     #                    _time_at_transits(transits_times0[1], closest=True)])
-#
-#     def _time_delta_to_altitude(time_for_declination, verbose=False):
-#         body_at_altitude = apc.get_body(body, time_for_declination, location)
-#         if verbose:
-#             print(f"searching altitude for coordinates {verbose}: {to_sexa(body_at_altitude.ra.to(u.hourangle))},"
-#                   f" {to_sexa(body_at_altitude.dec.to(u.deg))}\n"
-#                   f" at {time_for_declination}")
-#
-#         hour_angle_single = hour_angle_for_altitude(body_at_altitude.dec.to(u.radian).value,
-#                                                     location.lat.to(u.radian).value,
-#                                                     ref_altitude_deg * np.pi / 180)
-# #        hour_angle = u.Quantity([-hour_angle_single, hour_angle_single])
-#
-#         return hour_angle_single.to(u.hourangle).value * sidereal_to_solar * u.hour, body_at_altitude.ra
-#
-#     return_times = []
-#     for transit_time in transits_times:
-#         tdelta = _time_delta_to_altitude(transit_time,
-#                                          verbose="first approach" if verbose else False)
-#         for before_after in [-1, 1]:
-#             verbose = f"{'rise' if before_after == -1 else 'set'} final approach" if verbose else False
-#             delta, ra = _time_delta_to_altitude(transit_time + before_after * tdelta,
-#                                                 verbose=verbose)
-#
-#             return_times.append(transit_time + before_after * delta) # fine-tuning for a moving target
-#     return_times = apt.Time(return_times)
-#
-#     time_delta = return_times - time
-#
-#     idx_after = np.nonzero(time_delta > 0*u.day)[0][0]
-#     use_past = "prev" in find or (("around" in find or "closer" in find)
-#                                   and time_delta[idx_after] > abs(time_delta[idx_after-1]))
-#     return_time = return_times[idx_after - use_past]
-#
-#     if verbose:
-#         print(f"starting from {time} and searching for {find} {ref_altitude_deg} deg ")
-#         print(f"previous transit times: {transits_times[0].isot} -> {transits_times[0].isot}")
-#         print(f"next transit times: {transits_times[1].isot} -> {transits_times[1].isot}")
-#         print(f"delta time from transit: {return_times[1]-transits_times[0]},"
-#               f" {to_sexa(return_times[1]-transits_times[0])}")
-#         print(f"found elev {apc.get_body(body, return_time, location
-#                                          ).transform_to(apc.AltAz(obstime=return_time,
-#                                                                   location=location)).alt}"
-#               f" at time {return_time} ")
-#         print("")
-
-    # if iterate:
-    #     print("iterating")
-    #     return find_time_for_altitude(location, return_time, ref_altitude_deg,
-    #                                   find="closer", body=body, iterate=iterate-1)
-
-#    return return_time
-
-
 if __name__ == "__main__":
     body = "sun"
     loc = apc.EarthLocation.of_site('lco')
     time = apt.Time.now() + 1*u.day
     time = apt.Time("2025-06-12 16:50:00.0")
-    elev = 15
+    elev = 0
 
     sun = apc.get_body(body, time, loc)
 
