@@ -66,6 +66,12 @@ class AstroFileMosaic(AstroFileMulti):
                     new_table[col] = new_table.meta[col]
                 ret = vstack([ret, new_table])
 
+        # Make sure that is sorted by wavelength or pixel when working with spectra
+        if 'wav' in ret.colnames:
+            ret.sort('wav')
+        elif 'pix' in ret.colnames:
+            ret.sort('pix')
+
         self._meta = CaseInsensitiveMeta(ret.meta)
         self._random = random()
 
