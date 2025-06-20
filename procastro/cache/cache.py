@@ -7,37 +7,21 @@ import astropy.time as apt
 import astropy.units as u
 from procastro import config
 
+# Imports para cache en memoria
+from cachetools import TTLCache, LRUCache, LFUCache
+from cachetools.keys import hashkey
+import threading
 
 logger = logging.getLogger(__name__)
 
 class AstroCache:
     """
-    AstroCache is a caching utility class designed to manage and store large astronomical data efficiently 
-    with support for in-memory and disk-based caching. It provides mechanisms for cache 
-    eviction, expiration, and retrieval based on hashable keys.
-    Attributes:
-        max_cache (int): The maximum volume allocated for the cache in Bytes.
-        expire (int): The expire time of cached items in days. If 0, items do not expire.
-        force (str | None): A keyword to force bypassing the cache when set in method arguments (forces execution).
-        eviction_policy (str | None): The policy used to evict items from the cache.
-
-            "least-recently-stored" is the default. Every cache item records the time it was stored in the cache. This policy adds an index to that field. On access, no update is required. Keys are evicted starting with the oldest stored keys. As DiskCache was intended for large caches (gigabytes) this policy usually works well enough in practice.
-
-            "least-recently-used" is the most commonly used policy. An index is added to the access time field stored in the cache database. On every access, the field is updated. This makes every access into a read and write which slows accesses.
-
-            "least-frequently-used" works well in some cases. An index is added to the access count field stored in the cache database. On every access, the field is incremented. Every access therefore requires writing the database which slows accesses.
-
-            "none" disables cache evictions. Caches will grow without bound. Cache items will still be lazily removed if they expire. The persistent data types, Deque and Index, use the "none" eviction policy. For lazy culling use the cull_limit setting instead.
-        store_on_disk (bool): Indicates whether the cache is stored on disk.
-        cache_directory (str): The directory path for disk-based caching (if enabled).
-        hashable_kw (list): A list of keyword arguments that are hashable and used 
-            to generate compound hash keys.
-        label_on_disk : Location on disk to store the cache
+    AstroCache on disk (diskcache) or in memory (cachetools).
     """
     def __init__(self,
                  max_cache=int(1e9), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
-                 force: bool=  False,
+                 force: bool = False,
                  eviction_policy: str | None = 'least-recently-used',
                  verbose = False):
         
@@ -45,95 +29,218 @@ class AstroCache:
         self.lifetime = lifetime
         self.force = force
         self.eviction_policy = eviction_policy
-        
-
-        
+        self.verbose = verbose
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
                 raise ValueError(
                     f"label_on_disk contains invalid file characters '{label_on_disk}'")
             self._store_on_disk = True
-        else:
-            self._store_on_disk = False
-
-        if self._store_on_disk and label_on_disk is not None:
+            
+            # Diskcache
             config_dict = config.config_user(label_on_disk)
             self.cache_directory = config_dict.get('cache_dir')
             self.config_file = Path(self.cache_directory) / 'config.pickle'
             self._cache = dc.Cache(
-                self.cache_directory, size_limit=self.max_cache, eviction_policy=eviction_policy)
+                self.cache_directory, 
+                size_limit=self.max_cache, 
+                eviction_policy=eviction_policy
+            )
         else:
-            self._cache = dc.Cache(size_limit=self.max_cache, eviction_policy=eviction_policy)
+            self._store_on_disk = False
+            self.cache_directory = None
+            
+            # Memory cache
+            maxsize = max(1, self.max_cache // 1024)  
+            
+            if self.lifetime > 0:
+                # TTL Cache 
+                ttl_seconds = self.lifetime * 86400
+                self._cache = TTLCache(maxsize=maxsize, ttl=ttl_seconds)
+            else:
+                # Cache witout expiration
+                if eviction_policy == 'least-recently-used':
+                    self._cache = LRUCache(maxsize=maxsize)
+                elif eviction_policy == 'least-frequently-used':
+                    self._cache = LFUCache(maxsize=maxsize)
+                else:  # least-recently-stored o default
+                    self._cache = LRUCache(maxsize=maxsize)
+            
+            # Thread safety 
+            self._cache_lock = threading.RLock()
 
         if hashable_kw is None:
             hashable_kw = []
         self.hashable_kw = hashable_kw
 
         if verbose:
-            print(f"/n")
-            print(f"Using diskcache implementation: {dc.__version__}. Set verbose parameter to false to disable this message.")
+            print(f"\n")
+            cache_type = "diskcache" if self._store_on_disk else "cachetools (memory)"
+            print(f"Using {cache_type} implementation")
             print(f"Cache initialized with max size: {self.max_cache} bytes")
             print(f"Cache lifetime: {self.lifetime} days")
             print(f"Cache eviction policy: {self.eviction_policy}")
-            print(f"Cache directory: {self.cache_directory if label_on_disk else 'In-memory'}")
+            print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
             print(f"Hashable keyword arguments: {self.hashable_kw}")
             print(f"Force bypass cache keyword: {self.force}")
 
+    def _create_cache_key(self, hashable_first_argument, **kwargs):
+        """
+        Creates a cache key based on the first argument and hashable keyword arguments."""
+        try:
+            # Usar hashkey de cachetools para crear claves consistentes
+            compound_data = [hashable_first_argument] + [kwargs[kw] for kw in self.hashable_kw]
+            return hashkey(*compound_data)
+        except TypeError:
+            raise TypeError(f"Non-hashable argument detected: {hashable_first_argument}")
+
+    def _get_from_cache(self, key):
+        """Obtains value from cache (memory or disk)"""
+        if self._store_on_disk:
+            return self._cache.get(key)
+        else:
+            with self._cache_lock:
+                return self._cache.get(key)
+
+    def _set_to_cache(self, key, value):
+        """Establishes value in cache (memory or disk)"""
+        if self._store_on_disk:
+            expire_seconds = self.lifetime * 86400 if self.lifetime else None
+            self._cache.set(key, value, expire=expire_seconds)
+        else:
+            with self._cache_lock:
+                self._cache[key] = value
+
+    def _is_in_cache(self, key):
+        """Verifies if key is in cache (memory or disk)"""
+        if self._store_on_disk:
+            return key in self._cache
+        else:
+            with self._cache_lock:
+                return key in self._cache
+
     @property
     def _contents(self):
-        """
-        Returns the contents of the cache.
-        """
-        for key in self._cache.iterkeys():
-            print(f"Key: {key}, Value: {self._cache[key]}")
-
+        """Returns the contents of the cache."""
+        if self._store_on_disk:
+            for key in self._cache.iterkeys():
+                print(f"Key: {key}, Value: {self._cache[key]}")
+        else:
+            with self._cache_lock:
+                for key, value in self._cache.items():
+                    print(f"Key: {key}, Value: {value}")
 
     @property
-    def _keys (self):
-        """
-        Returns the keys of the cache.
-        """
-        return list(self._cache.iterkeys())
+    def _keys(self):
+        """Returns the keys of the cache."""
+        if self._store_on_disk:
+            return list(self._cache.iterkeys())
+        else:
+            with self._cache_lock:
+                return list(self._cache.keys())
 
     def __call__(self, method):
-        #METHOD to use when force= False, when the cache is not bypassed.
-        @self._cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
-        def cached_method(*args,**kwargs):
-            return method(*args,**kwargs)
+        """Cache main decorator"""
         
-        def wrapper(hashable_first_argument, **kwargs):
-            """
-            Wrapper to handle custom logic like bypassing the cache.
-            """
-            # Check if caching is disabled via the `force` parameter or if the functions was called with the force parameter set to True
-            # In that case, the function force argument gains precedence over the cache self.force attribute.
-            verbose_func = kwargs.get('verbose', None)
-            verbose = verbose_func 
+        if self._store_on_disk:
+            # For disk, use the diskcache decorator
+            @self._cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
+            def cached_method(*args, **kwargs):
+                return method(*args, **kwargs)
             
-            force_function_arg = kwargs.get('force', None)
-            force_cache = self.force 
-            force = force_function_arg if force_function_arg is not None else force_cache
-            if force:
+            def wrapper(hashable_first_argument, **kwargs):
+                verbose_func = kwargs.pop('verbose', None)
+                verbose = verbose_func if verbose_func is not None else self.verbose
+                
+                force_function_arg = kwargs.pop('force', None)
+                force_cache = self.force 
+                force = force_function_arg if force_function_arg is not None else force_cache
+                
+                if force:
+                    if verbose:
+                        logger.info(f"Cache bypassed for method {method.__name__}")
+                    return method(hashable_first_argument, **kwargs)
+
+                try:
+                    compound_hash = tuple([hashable_first_argument] +
+                                          [kwargs[kw] for kw in self.hashable_kw])
+                    hash(compound_hash)
+                except TypeError:
+                    raise TypeError(f"Non-hashable argument detected: {hashable_first_argument}")
+
+                return cached_method(hashable_first_argument, **kwargs)
+        else:
+            # For memory cache, use cachetools.
+            def wrapper(hashable_first_argument, **kwargs):
+                verbose_func = kwargs.pop('verbose', None)
+                verbose = verbose_func if verbose_func is not None else self.verbose
+                
+                force_function_arg = kwargs.pop('force', None)
+                force_cache = self.force 
+                force = force_function_arg if force_function_arg is not None else force_cache
+                
+                if force:
+                    if verbose:
+                        logger.info(f"Cache bypassed for method {method.__name__}")
+                    return method(hashable_first_argument, **kwargs)
+
+                # Create cache key.
+                try:
+                    cache_key = self._create_cache_key(hashable_first_argument, **kwargs)
+                except TypeError as e: 
+                    if verbose:
+                        logger.warning(f"Non-hashable arguments, bypassing cache: {e}")
+                    return method(hashable_first_argument, **kwargs)
+
+                # Verify cache
+                cached_result = self._get_from_cache(cache_key)
+                if cached_result is not None:
+                    if verbose:
+                        logger.info(f"Cache hit for method {method.__name__}")
+                    return cached_result
+
+                # Cache miss
                 if verbose:
-                    logging.info(f"Cache bypassed for method {method.__name__} with arguments: {hashable_first_argument}, {kwargs}")
-                return method(hashable_first_argument, **kwargs)
-
-            # Handle non-hashable arguments (disable caching)
-            try:
-                compound_hash = tuple([hashable_first_argument] +
-                                      [kwargs[kw] for kw in self.hashable_kw])
-                hash(compound_hash)  # Ensure the key is hashable
-            except TypeError:
-                raise TypeError(
-                    f"Non-hashable argument detected: {hashable_first_argument}")
-
-            # Call the memoized method, if the force parameter is false
-            return cached_method(hashable_first_argument, **kwargs)
+                    logger.info(f"Cache miss for method {method.__name__}")
+                
+                result = method(hashable_first_argument, **kwargs)
+                
+                try:
+                    self._set_to_cache(cache_key, result)
+                    if verbose:
+                        logger.info(f"Result cached for method {method.__name__}")
+                except Exception as e:
+                    if verbose:
+                        logger.warning(f"Failed to cache result: {e}")
+                
+                return result
 
         return wrapper
 
+    def clear(self):
+        """Cleans the cache"""
+        if self._store_on_disk:
+            self._cache.clear()
+        else:
+            with self._cache_lock:
+                self._cache.clear()
 
-
-
-
+    def get_stats(self):
+        """Obtains cache statistics"""
+        if self._store_on_disk:
+            return {
+                'type': 'diskcache',
+                'directory': self.cache_directory,
+                'keys_count': len(list(self._cache.iterkeys())),
+                'eviction_policy': self.eviction_policy
+            }
+        else:
+            with self._cache_lock:
+                return {
+                    'type': 'cachetools (memory)',
+                    'keys_count': len(self._cache),
+                    'maxsize': self._cache.maxsize,
+                    'currsize': self._cache.currsize if hasattr(self._cache, 'currsize') else len(self._cache),
+                    'cache_class': self._cache.__class__.__name__,
+                    'eviction_policy': self.eviction_policy
+                }

@@ -117,8 +117,11 @@ def test_eviction_policy(astrocache):
         print(f"Cache size: {astrocache._cache.__len__()}")
         cached_function(i)
 
-    #check if the key for 0 is not in the cache
-    assert astrocache._cache.__len__() == 0  # Check if the cache has been evicted correctly
+    #check that the cache size is 1.
+
+    assert astrocache.get_stats().get('currsize') == 1
+    
+    assert astrocache._cache.__len__() == 1  # Check if the cache has been evicted correctly
 
 
 
@@ -127,13 +130,30 @@ def test_astrofile_cache():
     path = "demo_data/ob01_5_spec.fits"
     af = AstroFile(path)
     data1 = af.data  # Primera llamada, debería invocar la función real
-    assert astrofile_cache._cache.__len__() == 1  # Verificar que el caché tiene el resultado
+    assert astrofile_cache.get_stats().get("currsize") == 1  # Verificar que el caché tiene el resultado
+
     data2 = af.data  # Segunda llamada, debería venir del caché
-    assert astrofile_cache._cache.__len__() == 1  # Verificar que el caché sigue teniendo el resultado
+    assert astrofile_cache.get_stats().get("currsize") == 1   # Verificar que el caché tiene el resultado
+    
     # Verificar que los datos son los mismos
     assert data1 is not None
     assert data2 is not None
     
+    # Para arrays de NumPy, usar comparaciones apropiadas
+    import numpy as np
+    
+    if isinstance(data1, np.ndarray) and isinstance(data2, np.ndarray):
+        # Para arrays NumPy con posibles NaN
+        assert np.array_equal(data1, data2, equal_nan=True)
+    elif hasattr(data1, '__array__') and hasattr(data2, '__array__'):
+        # Para objetos similares a arrays (como Table de astropy)
+        assert np.array_equal(np.asarray(data1), np.asarray(data2), equal_nan=True)
+    else:
+        # Para otros tipos de datos
+        assert data1 == data2
+    
+    # Verificar que realmente vienen del cache (mismo objeto en memoria)
+    assert data1 is data2, "Los datos deberían ser el mismo objeto si vienen del cache"
 
 
 
