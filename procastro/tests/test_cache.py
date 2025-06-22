@@ -9,11 +9,11 @@ from pathlib import Path
 from procastro.astro.solar_system import jpl_cache, usgs_map_cache
 from procastro.astrofile.astrofile import astrofile_cache
 
+
 @pytest.fixture
 def astrocache():
     """Fixture to create an in-memory AstroCache instance."""
     return AstroCache()
-
 
 
 @pytest.fixture
@@ -33,10 +33,12 @@ def disk_based_astrocache():
             file.unlink()  # Remove all files in the directory
         path.rmdir()  # Remove the directory itself
 
+
 def test_basic_caching(astrocache):
     """Test that the cache stores and retrieves results correctly."""
 
-    counts = {"count":0}
+    counts = {"count": 0}
+
     @astrocache
     def cached_function(x):
         counts["count"] += 1
@@ -48,10 +50,11 @@ def test_basic_caching(astrocache):
 
     # Second call should return the cached result
     assert cached_function(2) == 4
-    
 
-    assert astrocache._cache.__len__() == 1  # Check if the cache still has the result
+    # Check if the cache still has the result
+    assert astrocache._cache.__len__() == 1
     assert counts["count"] == 1  # Ensure the function was called only once
+
 
 def test_cache_expiration(astrocache):
     """Test that cached items expire after the specified lifetime."""
@@ -70,6 +73,7 @@ def test_cache_expiration(astrocache):
     # Second call should recompute the result
     assert cached_function(2) == 4
 
+
 def test_force_bypass(astrocache):
     """Test that the force parameter bypasses the cache."""
     @astrocache
@@ -82,6 +86,7 @@ def test_force_bypass(astrocache):
     # Second call with force=True should recompute the result
     assert cached_function(2, force=True) == 4
 
+
 def test_non_hashable_arguments(astrocache):
     """Test that non-hashable arguments raise a TypeError."""
     @astrocache
@@ -91,6 +96,7 @@ def test_non_hashable_arguments(astrocache):
     # Non-hashable argument (e.g., a list)
     with pytest.raises(TypeError):
         cached_function([1, 2, 3])
+
 
 def test_disk_based_cache(disk_based_astrocache):
     """Test that the cache works correctly when stored on disk."""
@@ -104,9 +110,11 @@ def test_disk_based_cache(disk_based_astrocache):
     # Second call should return the cached result
     assert cached_function(2) == 4
 
+
 def test_eviction_policy(astrocache):
     """Test that the cache evicts items when the size limit is exceeded."""
     astrocache = AstroCache(1)  # Small cache size in bytes
+
     @astrocache
     def cached_function(x):
         return x ** 2
@@ -117,63 +125,64 @@ def test_eviction_policy(astrocache):
         print(f"Cache size: {astrocache._cache.__len__()}")
         cached_function(i)
 
-    #check that the cache size is 1.
+    # check that the cache size is 1.
 
     assert astrocache.get_stats().get('currsize') == 1
-    
-    assert astrocache._cache.__len__() == 1  # Check if the cache has been evicted correctly
 
+    # Check if the cache has been evicted correctly
+    assert astrocache._cache.__len__() == 1
 
 
 def test_astrofile_cache():
     """Test that the cache works correctly with AstroFile."""
-    path = "demo_data/ob01_5_spec.fits"
+    path = "procastro/timeseries/example/data/raw/wasp19-000.fits"
     af = AstroFile(path)
     data1 = af.data  # Primera llamada, debería invocar la función real
-    assert astrofile_cache.get_stats().get("currsize") == 1  # Verificar que el caché tiene el resultado
+    # Verificar que el caché tiene el resultado
+    assert astrofile_cache.get_stats().get("currsize") == 1
 
     data2 = af.data  # Segunda llamada, debería venir del caché
-    assert astrofile_cache.get_stats().get("currsize") == 1   # Verificar que el caché tiene el resultado
-    
+    # Verificar que el caché tiene el resultado
+    assert astrofile_cache.get_stats().get("currsize") == 1
+
     # Verificar que los datos son los mismos
     assert data1 is not None
     assert data2 is not None
-    
+
     # Para arrays de NumPy, usar comparaciones apropiadas
     import numpy as np
-    
+
     if isinstance(data1, np.ndarray) and isinstance(data2, np.ndarray):
         # Para arrays NumPy con posibles NaN
         assert np.array_equal(data1, data2, equal_nan=True)
     elif hasattr(data1, '__array__') and hasattr(data2, '__array__'):
         # Para objetos similares a arrays (como Table de astropy)
-        assert np.array_equal(np.asarray(data1), np.asarray(data2), equal_nan=True)
+        assert np.array_equal(np.asarray(
+            data1), np.asarray(data2), equal_nan=True)
     else:
         # Para otros tipos de datos
         assert data1 == data2
-    
+
     # Verificar que realmente vienen del cache (mismo objeto en memoria)
     assert data1 is data2, "Los datos deberían ser el mismo objeto si vienen del cache"
 
 
-
 def test_jpl_cache_basic():
     """Probar que las solicitudes a _request_horizons_online se almacenan en caché."""
-    
+
     spec = "COMMAND=301\nCENTER='500@399'\nMAKE_EPHEM=YES"
     cached_request = HorizonsInterface._request_horizons_online
     result1 = cached_request(spec)
     result2 = cached_request(spec)
 
     # Verificar que el resultado es el mismo pero se recalcula
-    assert jpl_cache._cache.__len__() == 1  # Verificar que el caché tiene el resultado y es solo una vez
-
-
-
+    # Verificar que el caché tiene el resultado y es solo una vez
+    assert jpl_cache._cache.__len__() == 1
 
     # Verificar que el resultado es el mismo y que se almacena en caché
-    
+
     assert result1 == result2
+
 
 def test_jpl_cache_force():
     """Probar que el parámetro force ignora el caché."""
@@ -181,9 +190,7 @@ def test_jpl_cache_force():
     cached_request = HorizonsInterface._request_horizons_online
     result1 = cached_request(spec)
     result2 = cached_request(spec, force=True)
-    
-    assert result1 != result2  # Verificar que el resultado es diferente (ya que se forzó la recalculación)
+
+    # Verificar que el resultado es diferente (ya que se forzó la recalculación)
+    assert result1 != result2
     assert jpl_cache._cache.__len__() == 1
-
-
-

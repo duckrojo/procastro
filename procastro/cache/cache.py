@@ -14,17 +14,28 @@ import threading
 
 logger = logging.getLogger(__name__)
 
+
 class AstroCache:
     """
-    AstroCache on disk (diskcache) or in memory (cachetools).
+    AstroCache on disk (diskcache) or in memory (cachetools). 
+    This class provides a caching mechanism for astronomical data, allowing for efficient retrieval and storage of results.
+    Args:
+        max_cache (int): Maximum size of the cache in bytes. Default is 1e9 (1 GB).
+        lifetime (int): Lifetime of cached items in days. Default is 0 (no expiration).
+        hashable_kw (list): List of keyword arguments that should be hashable for caching. Default is None.
+        label_on_disk (str): Label for the cache directory on disk. If None, uses in-memory cache.
+        force (bool): If True, bypasses the cache and forces the function to be called.
+        eviction_policy (str): Eviction policy for the cache. Options are 'least-recently-used', 'least-frequently-used', or 'least-recently-stored'. Default is 'least-recently-used'.
+        verbose (bool): If True, enables verbose logging for cache operations. Default is False.
     """
+
     def __init__(self,
                  max_cache=int(1e9), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
                  force: bool = False,
                  eviction_policy: str | None = 'least-recently-used',
-                 verbose = False):
-        
+                 verbose=False):
+
         self.max_cache: int = max_cache
         self.lifetime = lifetime
         self.force = force
@@ -36,25 +47,25 @@ class AstroCache:
                 raise ValueError(
                     f"label_on_disk contains invalid file characters '{label_on_disk}'")
             self._store_on_disk = True
-            
+
             # Diskcache
             config_dict = config.config_user(label_on_disk)
             self.cache_directory = config_dict.get('cache_dir')
             self.config_file = Path(self.cache_directory) / 'config.pickle'
             self._cache = dc.Cache(
-                self.cache_directory, 
-                size_limit=self.max_cache, 
+                self.cache_directory,
+                size_limit=self.max_cache,
                 eviction_policy=eviction_policy
             )
         else:
             self._store_on_disk = False
             self.cache_directory = None
-            
+
             # Memory cache
-            maxsize = max(1, self.max_cache // 1024)  
-            
+            maxsize = max(1, self.max_cache // 1024)
+
             if self.lifetime > 0:
-                # TTL Cache 
+                # TTL Cache
                 ttl_seconds = self.lifetime * 86400
                 self._cache = TTLCache(maxsize=maxsize, ttl=ttl_seconds)
             else:
@@ -65,8 +76,8 @@ class AstroCache:
                     self._cache = LFUCache(maxsize=maxsize)
                 else:  # least-recently-stored o default
                     self._cache = LRUCache(maxsize=maxsize)
-            
-            # Thread safety 
+
+            # Thread safety
             self._cache_lock = threading.RLock()
 
         if hashable_kw is None:
@@ -74,13 +85,14 @@ class AstroCache:
         self.hashable_kw = hashable_kw
 
         if verbose:
-            print(f"\n")
+            print(f"Cache for {self.__class__.__name__} initialized.")
             cache_type = "diskcache" if self._store_on_disk else "cachetools (memory)"
             print(f"Using {cache_type} implementation")
             print(f"Cache initialized with max size: {self.max_cache} bytes")
             print(f"Cache lifetime: {self.lifetime} days")
             print(f"Cache eviction policy: {self.eviction_policy}")
-            print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
+            print(
+                f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
             print(f"Hashable keyword arguments: {self.hashable_kw}")
             print(f"Force bypass cache keyword: {self.force}")
 
@@ -89,10 +101,12 @@ class AstroCache:
         Creates a cache key based on the first argument and hashable keyword arguments."""
         try:
             # Usar hashkey de cachetools para crear claves consistentes
-            compound_data = [hashable_first_argument] + [kwargs[kw] for kw in self.hashable_kw]
+            compound_data = [hashable_first_argument] + \
+                [kwargs[kw] for kw in self.hashable_kw]
             return hashkey(*compound_data)
         except TypeError:
-            raise TypeError(f"Non-hashable argument detected: {hashable_first_argument}")
+            raise TypeError(
+                f"Non-hashable argument detected: {hashable_first_argument}")
 
     def _get_from_cache(self, key):
         """Obtains value from cache (memory or disk)"""
@@ -141,24 +155,25 @@ class AstroCache:
 
     def __call__(self, method):
         """Cache main decorator"""
-        
+
         if self._store_on_disk:
             # For disk, use the diskcache decorator
             @self._cache.memoize(expire=self.lifetime*86400 if self.lifetime else None)
             def cached_method(*args, **kwargs):
                 return method(*args, **kwargs)
-            
+
             def wrapper(hashable_first_argument, **kwargs):
                 verbose_func = kwargs.pop('verbose', None)
                 verbose = verbose_func if verbose_func is not None else self.verbose
-                
+
                 force_function_arg = kwargs.pop('force', None)
-                force_cache = self.force 
+                force_cache = self.force
                 force = force_function_arg if force_function_arg is not None else force_cache
-                
+
                 if force:
                     if verbose:
-                        logger.info(f"Cache bypassed for method {method.__name__}")
+                        logger.info(
+                            f"Cache bypassed for method {method.__name__}")
                     return method(hashable_first_argument, **kwargs)
 
                 try:
@@ -166,7 +181,8 @@ class AstroCache:
                                           [kwargs[kw] for kw in self.hashable_kw])
                     hash(compound_hash)
                 except TypeError:
-                    raise TypeError(f"Non-hashable argument detected: {hashable_first_argument}")
+                    raise TypeError(
+                        f"Non-hashable argument detected: {hashable_first_argument}")
 
                 return cached_method(hashable_first_argument, **kwargs)
         else:
@@ -174,22 +190,25 @@ class AstroCache:
             def wrapper(hashable_first_argument, **kwargs):
                 verbose_func = kwargs.pop('verbose', None)
                 verbose = verbose_func if verbose_func is not None else self.verbose
-                
+
                 force_function_arg = kwargs.pop('force', None)
-                force_cache = self.force 
+                force_cache = self.force
                 force = force_function_arg if force_function_arg is not None else force_cache
-                
+
                 if force:
                     if verbose:
-                        logger.info(f"Cache bypassed for method {method.__name__}")
+                        logger.info(
+                            f"Cache bypassed for method {method.__name__}")
                     return method(hashable_first_argument, **kwargs)
 
                 # Create cache key.
                 try:
-                    cache_key = self._create_cache_key(hashable_first_argument, **kwargs)
-                except TypeError as e: 
+                    cache_key = self._create_cache_key(
+                        hashable_first_argument, **kwargs)
+                except TypeError as e:
                     if verbose:
-                        logger.warning(f"Non-hashable arguments, bypassing cache: {e}")
+                        logger.warning(
+                            f"Non-hashable arguments, bypassing cache: {e}")
                     return method(hashable_first_argument, **kwargs)
 
                 # Verify cache
@@ -202,17 +221,18 @@ class AstroCache:
                 # Cache miss
                 if verbose:
                     logger.info(f"Cache miss for method {method.__name__}")
-                
+
                 result = method(hashable_first_argument, **kwargs)
-                
+
                 try:
                     self._set_to_cache(cache_key, result)
                     if verbose:
-                        logger.info(f"Result cached for method {method.__name__}")
+                        logger.info(
+                            f"Result cached for method {method.__name__}")
                 except Exception as e:
                     if verbose:
                         logger.warning(f"Failed to cache result: {e}")
-                
+
                 return result
 
         return wrapper
