@@ -262,5 +262,5 @@ class AstroCache:
                     'maxsize': self._cache.maxsize,
                     'currsize': self._cache.currsize if hasattr(self._cache, 'currsize') else len(self._cache),
                     'cache_class': self._cache.__class__.__name__,
-                    'eviction_policy': self.eviction_policy
+                    'eviction_policy': self.eviction_policy,
                 }

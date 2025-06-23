@@ -109,12 +109,6 @@ def test_disk_based_cache(disk_based_astrocache):
     cache_dir = Path(disk_based_astrocache.cache_directory)
     assert cache_dir.exists() and cache_dir.is_dir()
 
-    # Archivo principal de diskcache
-    # cache_file = cache_dir / "cache"
-    # assert cache_file.exists()
-
-    # size_before = cache_file.stat().st_size
-
     assert disk_based_astrocache.get_stats().get('keys_count') == 0
     # First call should compute the result
     assert cached_function(2) == 4
@@ -130,6 +124,22 @@ def test_disk_based_cache(disk_based_astrocache):
     size_after_second_call = cache_file.stat().st_size
     assert size_after_second_call == size, "El tamaño del archivo de caché no debería cambiar tras una segunda llamada con el mismo argumento"
     assert disk_based_astrocache.get_stats().get('keys_count') == 1
+
+
+def test_memory_cache_size(astrocache):
+    """Test that the cache size does not change after repeated cached calls."""
+    astrocache = AstroCache()  # Set a small cache size limit
+    astrocache.clear()
+
+    @astrocache
+    def cached_function(x):
+        return x ** 2
+    assert astrocache.get_stats().get('currsize') == 0
+    # Add multiple items to the cache
+    for i in range(1, 10):
+        print(f"Adding {i**2} to cache")
+        cached_function(i)
+        assert astrocache.get_stats().get('currsize') == i
 
 
 def test_eviction_policy(astrocache):
