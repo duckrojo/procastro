@@ -100,15 +100,36 @@ def test_non_hashable_arguments(astrocache):
 
 def test_disk_based_cache(disk_based_astrocache):
     """Test that the cache works correctly when stored on disk."""
+    disk_based_astrocache.clear()
+
     @disk_based_astrocache
     def cached_function(x):
         return x ** 2
 
+    cache_dir = Path(disk_based_astrocache.cache_directory)
+    assert cache_dir.exists() and cache_dir.is_dir()
+
+    # Archivo principal de diskcache
+    # cache_file = cache_dir / "cache"
+    # assert cache_file.exists()
+
+    # size_before = cache_file.stat().st_size
+
+    assert disk_based_astrocache.get_stats().get('keys_count') == 0
     # First call should compute the result
     assert cached_function(2) == 4
+    cache_file = cache_dir / "cache.db"
+    size = cache_file.stat().st_size
 
-    # Second call should return the cached result
+    assert size is not None, "El archivo de cache debería crecer tras almacenar un valor"
+
+    assert disk_based_astrocache.get_stats().get('keys_count') == 1
+
+    # Segunda llamada no debe cambiar el tamaño del archivo
     assert cached_function(2) == 4
+    size_after_second_call = cache_file.stat().st_size
+    assert size_after_second_call == size, "El tamaño del archivo de caché no debería cambiar tras una segunda llamada con el mismo argumento"
+    assert disk_based_astrocache.get_stats().get('keys_count') == 1
 
 
 def test_eviction_policy(astrocache):
