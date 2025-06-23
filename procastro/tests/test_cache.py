@@ -76,8 +76,13 @@ def test_cache_expiration(astrocache):
 
 def test_force_bypass(astrocache):
     """Test that the force parameter bypasses the cache."""
+    calls = {
+        "count": 0
+    }
+
     @astrocache
     def cached_function(x):
+        calls["count"] += 1
         return x ** 2
 
     # First call should compute the result
@@ -85,6 +90,7 @@ def test_force_bypass(astrocache):
 
     # Second call with force=True should recompute the result
     assert cached_function(2, force=True) == 4
+    assert calls["count"] == 2  # Ensure the function was called twice
 
 
 def test_non_hashable_arguments(astrocache):
