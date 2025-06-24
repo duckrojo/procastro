@@ -11,10 +11,10 @@ from procastro.logging import io_logger
 matplotlib.use('TkAgg')
 io_logger.setLevel(logging.DEBUG)
 
-raw_wavpix_file = r"C:\Users\duckr\Documents\astro-data\imacs\aug24\recal\ob{trace:02d}_lines_chips.txt"
-wavpix_file = r"C:\Users\duckr\Documents\astro-data\imacs\aug24\recal\wavpix_{trace:02d}_v{version:d}.ecsv"
-spec_file = r"C:\Users\duckr\Documents\astro-data\imacs\aug24\recal\ob{trace:02d}_{chip:d}_spec.fits"
-arcs_file = r"C:\Users\duckr\Documents\astro-data\imacs\aug24\recal\ob{trace:02d}_{chip:d}_arc_{element:s}.fits"
+raw_wavpix_file = r"e:\astro-data\imacs\aug24\recal\ob{trace:02d}_lines_chips.txt"
+wavpix_file = r"e:\astro-data\imacs\aug24\recal\wavpix_{trace:02d}_v{version:d}.ecsv"
+spec_file = r"e:\astro-data\imacs\aug24\recal\ob{trace:02d}_{chip:d}_spec.fits"
+arcs_file = r"e:\astro-data\imacs\aug24\recal\ob{trace:02d}_{chip:d}_arc_{element:s}.fits"
 
 wavpix_file = r"out\wavpix_{trace:02d}_v{version:d}.ecsv"
 

@@ -84,4 +84,3 @@ class AstroFileMosaic(AstroFileMulti):
     @property
     def id_letter(self):
         return "M"
-

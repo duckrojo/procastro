@@ -33,12 +33,13 @@ class AstroCache:
                  hashable_kw=None, label_on_disk=None,
                  force_kwd: str = "force",
                  eviction_policy: str | None = 'least-recently-used',
-                 verbose = False):
+                 verbose = False, disable=False):
         
         self.max_cache: int = max_cache
         self.lifetime = lifetime if lifetime is None else 86400*lifetime  # units of day
         self.force_kwd = force_kwd
         self.eviction_policy = eviction_policy
+        self.disable = disable
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
@@ -88,6 +89,9 @@ class AstroCache:
         return self._cache.clear()
 
     def __call__(self, method):
+
+        if self.disable:
+            return method
 
         def wrapper(hashable_first_argument, *args, **kwargs):
             """

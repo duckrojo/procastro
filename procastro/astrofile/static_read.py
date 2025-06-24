@@ -89,9 +89,7 @@ def ndarray_to_table(data, file_options=None):
             data_channel = np.take(data, idx, axis=axis).transpose()
             table[name] = MaskedArray(data_channel, mask=np.isnan(data_channel))
         if 'pix' not in table.colnames:
-            table['pix'] = np.reshape(np.arange(len(table)),
-                                      [-1] + [1]*(len(newshape)-1)
-                                      ) * np.ones(newshape)
+            table['pix'] = np.arange(len(table))
 
         return table
     else:

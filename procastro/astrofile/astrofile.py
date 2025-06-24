@@ -20,7 +20,7 @@ from procastro.misc.graph import imshowz
 from procastro.statics import PADataReturn, identity, dict_from_pattern
 
 
-astrofile_cache = AstroCache()
+astrofile_cache = AstroCache(verbose=True, disable=True)
 def _check_first_astrofile(fcn):
     """
 Decorator that raises error if first argument is not AstroFile
@@ -125,7 +125,8 @@ class AstroFile(IAstroFile):
         if self.spectral:
             table = static_read.ndarray_to_table(data,
                                                  file_options=self._data_file_options)
-            self._meta['infochn'] = [col for col in table.colnames if col not in ['pix', 'wav']]
+            self._meta['idxchn'] = ['pix', 'wav']
+            self._meta['infochn'] = [col for col in table.colnames if col not in self._meta['idxchn']]
             return table
 
         self._meta |= {k: v for k, v in meta.items()}   # Only actualizes read fields. Does not touch otherwise
@@ -217,10 +218,10 @@ class AstroFile(IAstroFile):
         for axx, channel in zip(ax, channels):
             data = self.data[str(channel)].transpose()
             if 'wav' in self.data.colnames:
-                x = self.data['wav'].transpose()
+                x = self.data['wav']
                 xlabel = "Wavelength (AA)"
             elif 'pix' in self.data.colnames:
-                x = self.data['pix'].transpose()
+                x = self.data['pix']
                 xlabel = "Pixel"
             else:
                 x = np.reshape(np.arange(len(self.data)),
@@ -240,9 +241,9 @@ class AstroFile(IAstroFile):
 
                 for epoch in epochs:
                     if isinstance(epoch, int):
-                        axx.plot(x[epoch], data[epoch], label=f'{epoch}')
+                        axx.plot(x, data[epoch], label=f'{epoch}')
                     else:
-                        axx.plot(x[epoch(medians)], data[epoch(medians)],
+                        axx.plot(x, data[epoch(medians)],
                                  label=f'{str(epoch).split()[1]}')
             else:
                 axx.plot(x, data)
