@@ -2,7 +2,7 @@ from procastro import config
 from procastro.misc.general import accept_object_name
 
 
-def get_transit_ephemeris(target):
+def get_transit_ephemeris_file(target):
     """
     Recovers epoch, period and length of a target transit if said transit has
     been specified in one of the provided paths
