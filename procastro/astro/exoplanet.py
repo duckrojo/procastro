@@ -1,7 +1,11 @@
+import re
 import warnings
 
 from procastro import config
 from procastro.misc.general import accept_object_name
+
+import pyvo as vo
+exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
 
 
 def get_transit_ephemeris_file(target):

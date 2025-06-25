@@ -4,5 +4,5 @@ from procastro.obsrv import exoplanet
 
 matplotlib.use('TkAgg')
 
-exoplanet.ExoPlanet("wasp76 b", "2024-09-01/2024-11-01", site="ctio",
-                    ).plot_phases(shade=[0.25, 0.375])
+exoplanet.ExoPlanet("wasp76 b", "2024-09-01/2024-12-01", site="ctio",
+                    ).plot_phases(shade=[0.25, 0.375], show=True)

@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 import procastro
-from procastro.astro import find_time_for_altitude, moon_distance, get_transit_ephemeris
+from procastro.astro import find_time_for_altitude, moon_distance, query_transit_ephemeris, get_transit_ephemeris_file
 
 from astropy import table
 import astropy.coordinates as apc
@@ -85,7 +85,7 @@ class ExoPlanet:
 
         midday = t0 + self.params["to_local_midday"] * u.day
         midnight0 = find_time_for_altitude(self.location, midday,
-                                          ref_altitude_deg="min", find="next", body="sun")
+                                           ref_altitude_deg="min", find="next", body="sun")
         midnight_sidereal0 = midnight0.sidereal_time('apparent', self.location).hourangle
 
         delta_highest = ((self.target.ra.hourangle - midnight_sidereal0) / 24 % 1)
@@ -121,7 +121,7 @@ class ExoPlanet:
         vis_from = apt.Time(np.max([starrises, sunsets], axis=0))
         vis_to = apt.Time(np.min([starsets, sunrises], axis=0))
 
-        moons = np.array([moon_distance(self.target, location=self.location, time=midnight).value
+        moons = np.array([moon_distance(self.target, location=self.location, obs_time=midnight).value
                           for midnight in midnights])
 
         min_phases = (vis_from - time0) / period % 1
@@ -145,6 +145,7 @@ class ExoPlanet:
 
     def plot_phases(self, ax=None,
                     shade=None,
+                    show=False,
                     ):
         t0, t1 = self.timespan
         ndays = int((t1-t0).to(u.day).value)
@@ -208,6 +209,9 @@ class ExoPlanet:
         ax.set_xlabel(f"Observability from {self.params['site']}")
         ax.set_title(f"Min altitude: {min_altitude:.0f}$^\\circ$, max twilight: {twilight:.0f}$^\\circ$. "
                      f"Showing times of maximum altitude")
+
+        if show:
+            ax.figure.show()
 
     def set_timespan(self, timespan, samples=120,
                      central_time=25,
@@ -320,7 +324,7 @@ class ExoPlanet:
         ephemeris = get_transit_ephemeris_file(target)
 
         if not all(ephemeris):
-            ephemeris = get_transit_ephemeris(target)
+            ephemeris = query_transit_ephemeris(target)
             print("Found in Database: ", end="")
         else:
             print("Found in File: ", end="")

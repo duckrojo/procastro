@@ -117,7 +117,7 @@ def moon_distance(target, location=None, obs_time=None):
         If None uses now().
     """
 
-    if not isinstance(body, apc.SkyCoord):
+    if not isinstance(target, apc.SkyCoord):
         target = find_target(target)
 
     if location is None:
@@ -130,7 +130,7 @@ def moon_distance(target, location=None, obs_time=None):
     if not isinstance(obs_time, apt.Time):
         obs_time = apt.Time(obs_time)
 
-    return apc.get_body("body", obs_time, location=location).separation(target)
+    return apc.get_body("moon", obs_time, location=location).separation(target)
 
 
 def polygon_around_path(coordinates: apc.SkyCoord | Sequence,
@@ -409,7 +409,7 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
 
 def hour_angle_for_altitude(dec: np.ndarray | float,
                             site_lat: np.ndarray | float,
-                            altitude: str | np.ndarray | float
+                            altitude_deg: str | np.ndarray | float
                             ) -> np.ndarray | float:
     """
     Returns hour angle at which an object with the given coordinate reaches the requested altitude. The
@@ -428,22 +428,22 @@ def hour_angle_for_altitude(dec: np.ndarray | float,
     -------
       Hour angle quantity, or 13 for each target that does not reach the altitude.
     """
-    if altitude == "max":
+    if altitude_deg == "max":
         cos_ha = 1.0
     # return check_precision(transit_time_if_no_motion[use_past])
-    elif altitude == "min":
+    elif altitude_deg == "min":
         cos_ha = -1.0
     else:
-        cos_ha = (np.sin(altitude) - np.sin(dec) * np.sin(site_lat)
+        cos_ha = (np.sin(altitude_deg * np.pi / 180) - np.sin(dec) * np.sin(site_lat)
               ) / np.cos(dec) / np.cos(site_lat)
 
     fail = np.abs(cos_ha) > 1
     if isinstance(fail, np.ndarray):
         if any(fail):
-            raise ValueError(f"One of the objects with declination {dec} does not reach altitude {altitude} from site")
+            raise ValueError(f"One of the objects with declination {dec} does not reach altitude {altitude_deg} from site")
     else:
         if fail:
-            raise ValueError(f"Object with declination {dec} does not reach altitude {altitude} from site")
+            raise ValueError(f"Object with declination {dec} does not reach altitude {altitude_deg} from site")
     ret = (np.arccos(cos_ha)*u.radian).to(u.hourangle)
 
     return ret
@@ -451,10 +451,6 @@ def hour_angle_for_altitude(dec: np.ndarray | float,
 
 def find_time_for_altitude(location, time,
                            ref_altitude_deg: str | float,
-                           # search_delta_hour: float = 2,
-                           # search_span_hour: float = 16,
-                           # precision_sec: float = 30,
-                           # fine_span_min: float = 20,
                            find: str = "next",
                            body: str | apc.SkyCoord = "sun",
                            mean_apparent="apparent", # whether to include nutation
@@ -502,7 +498,7 @@ def find_time_for_altitude(location, time,
         for before_after in [-1, 1]:
             hour_angle_elevation = hour_angle_for_altitude(body_start.dec.to(u.radian).value,
                                                            location.lat.to(u.radian).value,
-                                                           ref_altitude_deg * np.pi / 180)
+                                                           ref_altitude_deg)
             elevation_time_approx = (transit_time_approx +
                                      before_after * hour_angle_elevation.to(u.hourangle).value *
                                      sidereal_to_solar * u.hour)
@@ -515,7 +511,7 @@ def find_time_for_altitude(location, time,
             ha_to_transit_improved = transit * ((transit * delta_ha_transit_improved) % 24) * u.hourangle
             ha_to_elevation_improved = hour_angle_for_altitude(body_at_approx.dec.to(u.radian).value,
                                                                location.lat.to(u.radian).value,
-                                                               ref_altitude_deg * np.pi / 180)
+                                                               ref_altitude_deg)
 
             improved_transit_time = ref_time + ha_to_transit_improved.value * sidereal_to_solar * u.hour
             improved_elevation_time = (improved_transit_time +
