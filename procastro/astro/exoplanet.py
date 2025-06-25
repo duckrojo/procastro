@@ -1,3 +1,5 @@
+import warnings
+
 from procastro import config
 from procastro.misc.general import accept_object_name
 
@@ -80,3 +82,39 @@ def get_transit_ephemeris_file(target):
             pass
 
     return tr_epoch, tr_period, tr_length
+
+def query_transit_ephemeris(target):
+
+    if target[-1] not in 'bcdefghij':
+        target_fmtd = re.sub(r"(k2|[a-zA-Z]+)-?(\d+)([A-D]?) ?",
+                         r"\1-\2 b",
+                             target
+                             ).lower()
+    else:
+        target_fmtd = re.sub(r"(k2|[a-zA-Z]+)-?(\d+)([A-D]?) ?([b-g]?)",
+                             r"\1-\2 \3",
+                             target
+                             ).lower()
+
+    print(f"Attempting to query transit information for '{target}' -> '{target_fmtd}'")
+
+    query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
+            f"WHERE lower(pl_name) like '%{target_fmtd}%' "
+    resultset = exo_service.search(query)
+    try:
+        req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
+    except IndexError:
+        raise IndexError(f"Planet {target_fmtd} not found in exoplanet database")
+    trandur = resultset['pl_trandur'].data[0]
+    if trandur is None:
+        req_cols.append(1)
+        warnings.warn("Using default 1hr length for transit duration", UserWarning)
+    else:
+        req_cols.append(trandur)
+
+    transit_period, transit_epoch, transit_length = req_cols
+
+    print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
+          .format(transit_epoch, transit_period, transit_length))
+
+    return transit_epoch, transit_period, transit_length
