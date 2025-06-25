@@ -104,7 +104,7 @@ def starry_plot(star_table: list[Table] | Table,
     return ax
 
 
-def moon_distance(target, location=None, time=None):
+def moon_distance(target, location=None, obs_time=None):
     """Returns the distance of moon to target
 
     Parameters
@@ -113,22 +113,24 @@ def moon_distance(target, location=None, time=None):
         Target object for Moon distance
     location: apcoo.EarthLocation
         If None uses CTIO observatory
-    time: apc.Time
+    obs_time: apc.Time
         If None uses now().
     """
 
-    target = find_target(target)
+    if not isinstance(body, apc.SkyCoord):
+        target = find_target(target)
+
     if location is None:
         location = "ctio"
     if not isinstance(location, apc.EarthLocation):
         location = apc.EarthLocation.of_site(location)
 
-    if time is None:
-        time = apt.Time.now()
-    if not isinstance(time, apt.Time):
-        time = apt.Time(time)
+    if obs_time is None:
+        obs_time = apt.Time.now()
+    if not isinstance(obs_time, apt.Time):
+        obs_time = apt.Time(obs_time)
 
-    return apc.get_moon(time, location=location).separation(target)
+    return apc.get_body("body", obs_time, location=location).separation(target)
 
 
 def polygon_around_path(coordinates: apc.SkyCoord | Sequence,
@@ -368,12 +370,15 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
                     custom_simbad.add_votable_fields(info)
 
             query = custom_simbad.query_object(target)
-            if query is None:
+            if not len(query):
                 # todo: make a nicer planet filtering option
                 if target[-2] == ' ' and target[-1] in 'bcdef':
                     query = custom_simbad.query_object(target[:-2])
 
-            if query is None:
+                    if not len(query):
+                        query = custom_simbad.query_object(target[:-3])
+
+            if not len(query):
                 raise ValueError(
                     f"Target '{target}' not found on Simbad")
             ra = (query['ra'][0] * query['ra'].unit).to(u.hourangle).value
@@ -451,7 +456,7 @@ def find_time_for_altitude(location, time,
                            # precision_sec: float = 30,
                            # fine_span_min: float = 20,
                            find: str = "next",
-                           body: str = "sun",
+                           body: str | apc.SkyCoord = "sun",
                            mean_apparent="apparent", # whether to include nutation
                            verbose=False,
                            ):
@@ -476,7 +481,10 @@ def find_time_for_altitude(location, time,
     ref_time = apt.Time(time)
     sidereal_to_solar = (u.sday / u.day).to(u.dimensionless_unscaled)
     lst_start = ref_time.sidereal_time(mean_apparent, location).to(u.hourangle).value
-    body_start = apc.get_body(body, ref_time, location)
+    if isinstance(body, apc.SkyCoord):
+        body_start = body
+    else:
+        body_start = apc.get_body(body, ref_time, location)
 
     delta_ha = body_start.ra.to(u.hourangle).value - lst_start
 
@@ -498,7 +506,10 @@ def find_time_for_altitude(location, time,
             elevation_time_approx = (transit_time_approx +
                                      before_after * hour_angle_elevation.to(u.hourangle).value *
                                      sidereal_to_solar * u.hour)
-            body_at_approx = apc.get_body(body, elevation_time_approx, location)
+            if isinstance(body, apc.SkyCoord):
+                body_at_approx = body
+            else:
+                body_at_approx = apc.get_body(body, elevation_time_approx, location)
 
             delta_ha_transit_improved = body_at_approx.ra.to(u.hourangle).value - lst_start
             ha_to_transit_improved = transit * ((transit * delta_ha_transit_improved) % 24) * u.hourangle
@@ -513,7 +524,11 @@ def find_time_for_altitude(location, time,
             return_times.append(improved_elevation_time)
 
             if verbose:
-                computed = apc.get_body(body, improved_elevation_time, location)
+                if isinstance(body, apc.SkyCoord):
+                    computed = body
+                else:
+                    computed = apc.get_body(body, improved_elevation_time, location)
+
                 altaz = computed.transform_to(apc.AltAz(obstime=improved_elevation_time, location=location))
                 print(f"APPROX. HA to elevation: {hour_angle_elevation},  time: {elevation_time_approx}")
                 print(f"IMPROVED. HA to transit: {ha_to_transit_improved}. time: {improved_transit_time}")
