@@ -346,7 +346,7 @@ class AstroFile(IAstroFile):
         """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random
          provides a method to force reloading of cache."""
         # NOTE: IF THE CALIBRATION CHANGES, THE HASH SHOULD CHANGE AS WELL, THERE IS NO NEED FOR A RANDOM CALL. ??
-        return hash((self._data_file, self.get_calib()))
+        return hash((self._data_file, self.get_calib(), self._random))
 
     def set_values(self, **kwargs):
         """

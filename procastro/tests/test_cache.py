@@ -173,6 +173,7 @@ def test_eviction_policy(astrocache):
 def test_astrofile_cache():
     """Test that the cache works correctly with AstroFile."""
     path = "procastro/timeseries/example/data/raw/wasp19-000.fits"
+    astrofile_cache.clear()  # Clear the cache before the test
     af = AstroFile(path)
     data1 = af.data  # Primera llamada, debería invocar la función real
     # Verificar que el caché tiene el resultado
