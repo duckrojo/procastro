@@ -5,9 +5,11 @@ from matplotlib import pyplot as plt
 
 import procastro as pa
 from procastro import calib
+from procastro.astrofile.astrofile import astrofile_cache
 from procastro.exceptions import EmptyAstroDirError
 from procastro.logging import io_logger
 
+astrofile_cache.set_disable(True)
 matplotlib.use('TkAgg')
 io_logger.setLevel(logging.DEBUG)
 
@@ -19,6 +21,7 @@ arcs_file = r"e:\astro-data\imacs\aug24\recal\ob{trace:02d}_{chip:d}_arc_{elemen
 wavpix_file = r"out\wavpix_{trace:02d}_v{version:d}.ecsv"
 
 use_mosaic = calib.WavMosaic()
+
 
 ##################
 # Preparing the "wavelength identification" calibration from arc lamps
@@ -52,7 +55,6 @@ except EmptyAstroDirError:
 
 wav_solution.plot_residuals(title="post-refit")
 
-
 #################
 # reading science files into SpecMosaic  (group_by keyword forces the mosaic rather than auto-identify)
 
@@ -64,10 +66,9 @@ spec = pa.AstroDir(spec_file,
 ###################
 # plotting before and after applying wav_solution for frame #6 (randomly chosen)
 
-spec[6].plot(channels=7, epochs=range(0,100,10), title="pre")
-
+spec[6].plot(channels=7, epochs=range(0,100,5), title="pre")
 spec.add_calib(wav_solution)
-spec[6].plot(channels=7, epochs=range(100), title="post")
+spec[6].plot(channels=7, epochs=range(0,100,5), title="post")
 
 ###################
 # Save calibrated frames
@@ -75,3 +76,26 @@ spec[6].plot(channels=7, epochs=range(100), title="post")
 spec.save_in("out", filename_pattern="spec{trace:02d}.fits")
 
 plt.show()
+
+#
+# # in functions.py
+#
+# f, ax = plt.subplots()
+# ax.plot(xx[mask], yy[mask], label="orig")
+# ax.plot(x, interpolate.UnivariateSpline(xx[mask], yy[mask], s=self.smoothing)(x), label="spline")
+# ax.legend()
+# f.savefig("temp.png")
+#
+#
+# f, ax = plt.subplots()
+# ax.plot(ret.transpose(), label="orig")
+# # ax.plot(x, interpolate.UnivariateSpline(xx[mask], yy[mask], s=self.smoothing)(x), label="spline")
+# # ax.legend()
+# f.savefig("temp.png")
+#
+# #in wav_solution
+#
+# f, ax = plt.subplots()
+# ax.plot(wav_out, fcn(MaskedArray(wav_out, mask=~mask_wav)))
+# ax.set_title(f"column {col}")
+# f.savefig("temp.png")
