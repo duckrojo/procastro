@@ -241,13 +241,13 @@ class WavSol(AstroCalib):
         # interpolate every column
         io_logger.warning("Interpolating wavelengths" +
                           (" after aligning telluric" if self.align_telluric else ""))
-        out_table = Table({'wav': wav_out[:, np.newaxis] * np.ones([1, n_epochs])})
+        out_table = Table({'wav': wav_out})  # [:, np.newaxis] * np.ones([1, n_epochs])})
         for col in infochn:
             io_logger.warning(f" - column {col}")
             fcn = functions.use_function("otf_spline:s0", wav_in, data[col], transpose=True)
             out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)),
                                           mask=~mask)
-        meta['infochn'] = infochn + ['wav']
+        meta['infochn'] = infochn
 
         meta['WavSol'] = f"{wavsol.short()}."
 

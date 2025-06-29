@@ -498,7 +498,6 @@ class OtfSpline(FcnFitNDim):
 
         if isinstance(x, MaskedArray):
             mask_out = ~x.mask
-            x = x[mask_out]
         else:
             mask_out = x*0 == 0
 
@@ -507,10 +506,18 @@ class OtfSpline(FcnFitNDim):
 
         ret = np.zeros([x_orig.shape[0], len(mask_out)]) + np.nan
         for i, (xx, yy) in enumerate(zip(x_orig, y_orig)):
-            mask = ~np.isnan(yy)
+            mask = ~(np.isnan(yy) | (yy==0))
             if mask.sum() < 5:
                 continue
-            ret[i, mask_out] = interpolate.UnivariateSpline(xx[mask], yy[mask], s=self.smoothing)(x)
+
+            # extra mask because of potential truncated spectra
+            left, right = xx[list(mask).index(True)], xx[-list(mask)[::-1].index(True)-1]
+            mask_out2 = mask_out & (left<x)&(x<right)
+
+            ret_single = interpolate.UnivariateSpline(xx[mask], yy[mask], s=self.smoothing)(x[mask_out2])
+            ret[i, mask_out2] = ret_single
+            if any(ret_single > 55000):
+                pass
 
         return ret
 

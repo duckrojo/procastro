@@ -49,6 +49,7 @@ class WavMosaic(AstroCalib):
         table['pix'] += self._get_dataset(meta, data=data)
 
         try:
+            #take grouping keys from either meta or table columns
             group_key = list(set(table[self.group_by])) if self.group_by in table.colnames else meta[self.group_by]
         except KeyError:
             group_key = meta[self.group_by[0]]

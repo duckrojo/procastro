@@ -11,6 +11,7 @@ from .multi import AstroFileMulti
 
 
 class _MergeDifferentToList(MergeStrategy):
+    """ Extend lists in merging meta, but no repeats"""
     types = ((str, int, float, list),
              (str, int, float, list))
 
@@ -19,17 +20,19 @@ class _MergeDifferentToList(MergeStrategy):
         # print(f"merging {left} & {right}")
         if isinstance(left, list):
             if isinstance(right, list):
-                return left + right
+                ret = left + right
             else:
-                return left + [right]
+                ret = left + [right]
+            return list(set(ret))
         if isinstance(right, list):
             if isinstance(left, list):
-                return left + right
+                ret = left + right
             else:
-                return [left] + right
+                ret = [left] + right
+            return list(set(ret))
         if type(left) is type(right):
             if left != right:
-                return [left, right]
+                return list({left, right})
             else:
                 return left
 
