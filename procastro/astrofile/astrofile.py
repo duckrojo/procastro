@@ -20,7 +20,9 @@ from procastro.misc.graph import imshowz
 from procastro.statics import PADataReturn, identity, dict_from_pattern
 
 
-astrofile_cache = AstroCache(verbose=True, disable=True)
+astrofile_cache = AstroCache()
+
+
 def _check_first_astrofile(fcn):
     """
 Decorator that raises error if first argument is not AstroFile
@@ -117,7 +119,6 @@ class AstroFile(IAstroFile):
         """This function should always re-read from file updating meta and forcing cache update"""
 
         data, meta = static_read.read(self._format, self._data_file)
-        self._random = random()
 
         if self._spectral is None:
             self._spectral = static_guess.is_spectral(data, meta)

@@ -39,7 +39,7 @@ class AstroCache:
         self.lifetime = lifetime if lifetime is None else 86400*lifetime  # units of day
         self.force_kwd = force_kwd
         self.eviction_policy = eviction_policy
-        self.disable = disable
+        self.disable = self.set_disable(disable)
 
         if label_on_disk is not None:
             if any((not_permitted in label_on_disk) for not_permitted in ('/', ':')):
@@ -71,6 +71,11 @@ class AstroCache:
             print(f"Cache directory: {self.cache_directory if self._store_on_disk else 'In-memory'}")
             print(f"Hashable keyword arguments: {self.hashable_kw}")
 
+    def set_disable(self, disable: bool):
+        self.disable = disable
+
+        return disable
+
     def contents(self):
         """
         Returns the contents of the cache.
@@ -90,13 +95,13 @@ class AstroCache:
 
     def __call__(self, method):
 
-        if self.disable:
-            return method
-
         def wrapper(hashable_first_argument, *args, **kwargs):
             """
             Wrapper to handle custom logic like bypassing the cache.
             """
+            if self.disable:
+                return method(hashable_first_argument, *args, **kwargs)
+
             # Check if re-read of cache is forced via the `force` keyword
             expire = 1 if kwargs.pop(self.force_kwd, False) else self.lifetime
 

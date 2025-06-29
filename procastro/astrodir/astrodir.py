@@ -94,8 +94,10 @@ class AstroDir(IAstroDir):
                                           file_format=file_format,
                                           meta=meta,
                                           )
+
             elif isinstance(file, pa.AstroFile):
                 astro_file = file
+
             else:
                 raise TypeError(f"Unrecognized file specification: {file}")
             astro_files.append(astro_file)
@@ -297,6 +299,7 @@ class AstroDir(IAstroDir):
                 combine=None
                 ) -> pa.AstroFile:
 
+        # table for equivalencies idx <-> combination key
         values = self.values(*keys,
                              single_in_list=True, by_values=True)
         content = values + [list(range(len(self)))]
@@ -308,6 +311,8 @@ class AstroDir(IAstroDir):
         groups = table.group_by(keys).groups
         for group in groups:
             ret = AstroDir(self[group['idx'].data], directory=self.directory)
+
+            # combine groups with more than 1 element
             if combine is not None:
                 if len(ret) > 1:
                     ret = combine(ret)
