@@ -217,7 +217,7 @@ class WavSol(AstroCalib):
 
         # get the pixel offset when alignment is required
         offset = offset_by_telluric(wav_out, data[self.col_alignment]) if self.align_telluric else 0
-        wav_in = wavsol(data['pix'] + np.array(offset)[None, :])
+        wav_in = wavsol(data['pix'][:, None] + np.array(offset)[None, :])
 
         # masking outliers
         bluest_id_line = min(wavsol.pixwav['wav'])
@@ -226,13 +226,13 @@ class WavSol(AstroCalib):
         lower_than_id = bluest_id_line - self.oversample * delta_wav / 100 < wav_out
         higher_than_id = wav_out < reddest_id_line + self.oversample * delta_wav / 100
 
-        pix_ref = data['pix'][:, 0]
+        pix_ref = data['pix']
         delta_pixs = pix_ref[1:] - pix_ref[:-1]
         mask_wav = np.array(lower_than_id * higher_than_id, dtype=bool)
         mask = np.zeros(n_epochs, dtype=bool) + mask_wav[:, None]
 
         large_jump_mask = ~np.sum([(wav_out[:, np.newaxis] > wav_in[pos, :][np.newaxis, :]) *
-                                   (wav_out[:, np.newaxis] < wav_in[pos+1, :][np.newaxis, :])
+                                   (wav_out[:, np.newaxis] < wav_in[pos + 1, :][np.newaxis, :])
                                    for pos in np.nonzero(delta_pixs > self.max_pix_separation)[0]],
                                   dtype=bool, axis=0,
                                   )
@@ -241,13 +241,13 @@ class WavSol(AstroCalib):
         # interpolate every column
         io_logger.warning("Interpolating wavelengths" +
                           (" after aligning telluric" if self.align_telluric else ""))
-        out_table = Table({'wav': wav_out[:, np.newaxis] * np.ones([1, n_epochs])})
+        out_table = Table({'wav': wav_out})  # [:, np.newaxis] * np.ones([1, n_epochs])})
         for col in infochn:
             io_logger.warning(f" - column {col}")
             fcn = functions.use_function("otf_spline:s0", wav_in, data[col], transpose=True)
             out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)),
                                           mask=~mask)
-        meta['infochn'] = infochn + ['wav']
+        meta['infochn'] = infochn
 
         meta['WavSol'] = f"{wavsol.short()}."
 
@@ -396,24 +396,28 @@ def closer_pixs(x,
     return ret
 
 
-def offset_by_telluric(owav: np.ndarray,
+def offset_by_telluric(orig_wav: np.ndarray,
                        fluxes,
                        over_sample: int = 20,
                        degree=2,
+                       telluric_band=None,
+                       telluric_baseline=None,
                        ):
-    """"Return the offsets for each of the arrays in owav such that the arrays are aligned by telluric band"""
+    """" Return the offsets for each of the arrays in owav such that the arrays are aligned by telluric band """
 
-    telluric_band = [7593, 7688]
-    telluric_baseline = [7440, 7840]
+    if telluric_band is None:
+        telluric_band = [7593, 7688]
+    if telluric_baseline is None:
+        telluric_baseline = [7440, 7840]
 
     left_right = telluric_baseline
     skip = telluric_band
 
-    left, right = closer_pixs(owav, left_right)
+    left, right = closer_pixs(orig_wav, left_right)
     left, right = int(np.floor(left)), int(np.ceil(right))
 
     window_flux = fluxes[left: right, :]
-    window_wav = owav[left: right]
+    window_wav = orig_wav[left: right]
     skip_left, skip_right = closer_pixs(window_wav, skip)
     skip_left, skip_right = int(np.floor(skip_left)), int(np.ceil(skip_right))
 
@@ -421,7 +425,7 @@ def offset_by_telluric(owav: np.ndarray,
     mask = np.zeros(delta) == 0
     mask[skip_left:skip_right] = False
 
-    wav = np.linspace(owav[left], owav[right], int(delta * over_sample + 1))
+    wav = np.linspace(orig_wav[left], orig_wav[right], int(delta * over_sample + 1))
     ret = []
     norm_spec = []
 

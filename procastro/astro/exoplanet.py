@@ -1,8 +1,14 @@
+import re
+import warnings
+
 from procastro import config
-from procastro.misc.misc_general import accept_object_name
+from procastro.misc.general import accept_object_name
+
+import pyvo as vo
+exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
 
 
-def get_transit_ephemeris(target):
+def get_transit_ephemeris_file(target):
     """
     Recovers epoch, period and length of a target transit if said transit has
     been specified in one of the provided paths
@@ -12,8 +18,8 @@ def get_transit_ephemeris(target):
 
     {object_name} E{transit_epoch} P{transit_period} L{transit_length}
 
-    If the object name contain spaces, replace them with an underscore when
-    writing it into the file. On the other hand querying a name with spaces
+    If the object name contains spaces, replace them with an underscore when
+    writing it into the file. On the other hand, querying a name with spaces
     requires using spaces.
 
     An optional comment column can be placed at the end of a row placing a-mass
@@ -82,3 +88,39 @@ def get_transit_ephemeris(target):
             pass
 
     return tr_epoch, tr_period, tr_length
+
+def query_transit_ephemeris(target):
+
+    if target[-1] not in 'bcdefghij':
+        target_fmtd = re.sub(r"(k2|[a-zA-Z]+)-?(\d+)([A-D]?) ?",
+                         r"\1-\2 b",
+                             target
+                             ).lower()
+    else:
+        target_fmtd = re.sub(r"(k2|[a-zA-Z]+)-?(\d+)([A-D]?) ?([b-g]?)",
+                             r"\1-\2 \3",
+                             target
+                             ).lower()
+
+    print(f"Attempting to query transit information for '{target}' -> '{target_fmtd}'")
+
+    query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
+            f"WHERE lower(pl_name) like '%{target_fmtd}%' "
+    resultset = exo_service.search(query)
+    try:
+        req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
+    except IndexError:
+        raise IndexError(f"Planet {target_fmtd} not found in exoplanet database")
+    trandur = resultset['pl_trandur'].data[0]
+    if trandur is None:
+        req_cols.append(1)
+        warnings.warn("Using default 1hr length for transit duration", UserWarning)
+    else:
+        req_cols.append(trandur)
+
+    transit_period, transit_epoch, transit_length = req_cols
+
+    print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
+          .format(transit_epoch, transit_period, transit_length))
+
+    return transit_epoch, transit_period, transit_length

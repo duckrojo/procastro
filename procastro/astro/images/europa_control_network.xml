@@ -1,0 +1,230 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>USGS Astrogeology Science Center</origin>
+            <originator/>
+            <pubdate>2025-04-01</pubdate>
+            <title>Europa Voyager Image Control Network</title>
+            <edition/>
+            <geoform>Control Network</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/europa_control_network</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;P&gt;This archive has been created as part of a project to put planetary control networks on the 
+web. These control networks originated from the RAND corporation (Merton Davies and 
+Tim Colvin) and were provided to Brent Archinal of the USGS in 2000. The control network 
+solutions were originally performed with software developed at RAND and documented by 
+Colvin (1992). The RAND software was subsequently converted into files that could be used 
+with (successively) the RAND/USGS Planetary Geodesy (RUPG) Software, and the USGS 
+ISIS2 “randlsq” software. In 2020, the RAND control network files were converted to the 
+“.net” binary format, used in ISIS3 and later versions of ISIS (hereafter shown as “ISIS3+”). 
+These were then processed via the ISIS3+ “Jigsaw” program, which had been based on randlsq 
+and is described by Edmundson et al. 2012. Each RAND-format control network is 
+essentially a set of photogrammetric solution (input and output) files. The input files consist 
+of a parameter input file for specifying how the solution should be done, a priori information 
+on control point (the measured points in common to multiple images, sometimes called tie 
+points) locations and spacecraft position and pointing information, and pixel location 
+measurements of the control points on images of a planetary body. The output files include 
+the body coordinates of the control points in latitude, longitude, and radius, revised 
+orientation information (camera pointing) for the images, and (optionally) updated 
+information on the size and orientation of the body. The binary ISIS3+ “.net” format contains 
+all network data in a single file. The primary use of such information is for the creation of 
+image mosaics of the planetary body. However, as just noted, these solutions can also 
+provide fundamental data on the size and shape of the body, its spin orientation and rate, 
+and the direction of its polar axis in space. The control point coordinates also usually serve 
+as a coordinate reference frame that can be used to define the fundamental coordinate 
+reference system for the body in question. Formatting of these control network data has been 
+updated for compatibility with the USGS ISIS2 and ISIS3+ planetary imaging and cartography 
+software. These networks were generated using images from the Voyager 2 mission 
+(Davies et al., 1987). This release comprises data from original RAND control network solutions, 
+the ISIS2 “matchpoint” formatted control networks, and RAND and USGS (jigsaw-processed) solutions 
+to the control networks in ISIS3+ format.
+ 
+&lt;p&gt;&lt;b&gt;&lt;u&gt;References:&lt;/u&gt;&lt;/b&gt;&lt;br&gt;
+&lt;a href=&quot;http://www.rand.org/pubs/notes/N3330.html&quot;&gt;&lt;font color=&quot;#0000ff&quot;&gt;Colvin, Tim R. (1992). &quot;Photogrammetric Algorithms and Software for Spacecraft Optical Imaging Systems,&quot; A RAND Note, N-3330-JPL. Available from http://www.rand.org/pubs/notes/N3330.html&lt;/font&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;a href=&quot;http://www.rand.org/pubs/notes/N3330.html&quot;&gt;&lt;font color=&quot;#0000ff&quot;&gt;Edmundson, K. L. ; Cook, D. A. ; Thomas, O. H. ; Archinal, B. A. ; Kirk, R. L., 2012, Jigsaw: the ISIS3 Bundle Adjustment for Extraterrestrial Photogrammetry, ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences, Volume I-4, 2012, pp.203-208.&lt;/font&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.rand.org/content/dam/rand/pubs/reports/2006/R2532.pdf&quot;&gt;&lt;font color=&quot;#0000ff&quot;&quot;&gt;Davies, M. E. et al., (1979), Control Networks for the Galilean Satellites: November 1979, Rand corporation report #R-2532-JPL/NASA, ISBN: 0-8330-0197-3&lt;/font&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;b&gt;&lt;u&gt;Image Description:&lt;/u&gt;&lt;/b&gt;&lt;br&gt;
+This image is a USGS &lt;a href=https://pubs.usgs.gov/imap/i2757/i2757.pdf&gt;&lt;font color=#0000ff&gt;controlled photomosaic of Europa&lt;/font&gt;&lt;/a&gt;, compiled from Voyager 1 and 2 images. We believe this 2002 mosaic was created either form the RAND control network provided here, or from an updated version of the same network.]]&gt;</abstract>
+         <purpose>[![CDATA[Created as part of a project to put planetary geodesy control networks on the web. The Europa Voyager control network data here was originally provided by Merton Davies and Tim Colvin of the RAND Corporation. Funds were provided for a conversion and archiving effort by the NASA Planetary Geology and Geophysics Program and the NASA Cartography Program.]]&gt;</purpose>
+         <supplinf/>
+      </descript>
+      <timeperd>
+         <current/>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress/>
+         <update/>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Control Network</themekey>
+         </theme>
+      </keywords>
+      <accscope/>
+      <accconst/>
+      <useconst/>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/384b9083-bafd-48e8-b586-1ffd88e42e05/resource/26d2c518-2dec-4ba6-b0c9-4905465ce358/download/europa_controlled-1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic/>
+         <complete>&lt;p&gt;This is a global control network of Europa, incorporating most of the usable images from the Voyager I and II missions.&lt;p&gt;</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar/>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>Control Networks of the Galilean Satellites: November 1979</title>
+                  <online>http://www.rand.org/content/dam/rand/pubs/reports/2006/R2532.pdf</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[&lt;p&gt;RAND solution files from the 1980s are provided as *.dat files. The conversion to ISIS2 match point format (.mat) was performed in 2003 without making corrections or adjustments to the network. Conversion to ISIS3+ format (.net) was performed in 2022 without making corrections or adjustments to the network. The ISIS3+ network was processed through the USGS 'Jigsaw' bundle-adjustment program; no tests have been performed to ensure the accuracy of this network, but Jigsaw output statistics are provided in this release. &lt;p&gt;]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Point</direct>
+      <rastinfo>
+         <rasttype>Point</rasttype>
+         <rowcount/>
+         <colcount/>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <geograph>
+            <latres/>
+            <longres/>
+            <geogunit>Degrees</geogunit>
+         </geograph>
+         <geodetic>
+            <horizdn/>
+            <semiaxis/>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits>Meters</altunits>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>55120132</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/europa_control_network</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

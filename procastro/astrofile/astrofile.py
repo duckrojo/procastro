@@ -16,11 +16,13 @@ from procastro.cache.cache import AstroCache
 from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.logging import io_logger
-from procastro.misc.misc_graph import imshowz
+from procastro.misc.graph import imshowz
 from procastro.statics import PADataReturn, identity, dict_from_pattern
 
 
 astrofile_cache = AstroCache()
+
+
 
 
 def _check_first_astrofile(fcn):
@@ -122,7 +124,6 @@ class AstroFile(IAstroFile):
         """This function should always re-read from file updating meta and forcing cache update"""
 
         data, meta = static_read.read(self._format, self._data_file)
-        self._random = random()
 
         if self._spectral is None:
             self._spectral = static_guess.is_spectral(data, meta)
@@ -130,12 +131,11 @@ class AstroFile(IAstroFile):
         if self.spectral:
             table = static_read.ndarray_to_table(data,
                                                  file_options=self._data_file_options)
-            self._meta['infochn'] = [
-                col for col in table.colnames if col not in ['pix', 'wav']]
+            self._meta['idxchn'] = ['pix', 'wav']
+            self._meta['infochn'] = [col for col in table.colnames if col not in self._meta['idxchn']]
             return table
 
-        # only actualizes read fields. Does not touch otherwise
-        self._meta |= {k: v for k, v in meta.items()}
+        self._meta |= {k: v for k, v in meta.items()}   # Only actualizes read fields. Does not touch otherwise
 
         return data
 
@@ -227,10 +227,10 @@ class AstroFile(IAstroFile):
         for axx, channel in zip(ax, channels):
             data = self.data[str(channel)].transpose()
             if 'wav' in self.data.colnames:
-                x = self.data['wav'].transpose()
+                x = self.data['wav']
                 xlabel = "Wavelength (AA)"
             elif 'pix' in self.data.colnames:
-                x = self.data['pix'].transpose()
+                x = self.data['pix']
                 xlabel = "Pixel"
             else:
                 x = np.reshape(np.arange(len(self.data)),
@@ -250,10 +250,11 @@ class AstroFile(IAstroFile):
                     medians = np.median(data, axis=1)
 
                 for epoch in epochs:
-                    axx.plot(x[epoch if isinstance(epoch, int) else epoch(medians)],
-                             data[epoch if isinstance(
-                                 epoch, int) else epoch(medians)],
-                             label=f'{epoch if isinstance(epoch, int) else str(epoch).split()[1]}')
+                    if isinstance(epoch, int):
+                        axx.plot(x, data[epoch], label=f'{epoch}')
+                    else:
+                        axx.plot(x, data[epoch(medians)],
+                                 label=f'{str(epoch).split()[1]}')
             else:
                 axx.plot(x, data)
 
@@ -343,9 +344,9 @@ class AstroFile(IAstroFile):
         self._calib.pop(position)
 
     def __hash__(self):
-        """This is important for cache. If calib changes, then the astrofile hash should change as well. self._random
-         provides a method to force reloading of cache."""
-        # NOTE: IF THE CALIBRATION CHANGES, THE HASH SHOULD CHANGE AS WELL, THERE IS NO NEED FOR A RANDOM CALL. ??
+        """This is important for cache. If calib changes, then the AstroFile hash should change as well.
+         `self._random` provides a method to force reloading of cache."""
+
         return hash((self._data_file, self.get_calib(), self._random))
 
     def set_values(self, **kwargs):
@@ -600,7 +601,7 @@ class AstroFile(IAstroFile):
                 ret.append((True in [r == header_val
                                      for r in request]) == exists)
 
-        # Returns whether the filter existed (or not if _not function)
+        # Returns whether the filter existed (or not, if _not function)
         return True in ret
 
     # Object Comparison is done according to the sort_key if defined

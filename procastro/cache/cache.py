@@ -2,9 +2,6 @@ import logging
 import os
 from pathlib import Path
 import diskcache as dc
-from typing import Optional
-import astropy.time as apt
-import astropy.units as u
 from procastro import config
 
 # Imports para cache en memoria
@@ -30,15 +27,15 @@ class AstroCache:
     """
 
     def __init__(self,
-                 max_cache=int(1e9), lifetime=0,
+                 max_cache=int(1e9), lifetime=None,
                  hashable_kw=None, label_on_disk=None,
                  force: bool = False,
                  eviction_policy: str | None = 'least-recently-used',
                  verbose=False):
 
         self.max_cache: int = max_cache
-        self.lifetime = lifetime
-        self.force = force
+        self.lifetime = lifetime if lifetime is None else 86400*lifetime  # units of day
+        self.force_kwd = force_kwd
         self.eviction_policy = eviction_policy
         self.verbose = verbose
 
@@ -152,6 +149,9 @@ class AstroCache:
         else:
             with self._cache_lock:
                 return list(self._cache.keys())
+
+    def clear(self):
+        return self._cache.clear()
 
     def __call__(self, method):
         """Cache main decorator"""

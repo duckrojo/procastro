@@ -1,10 +1,26 @@
 [project]
 name = "procastro"
-version = "0.0.0"
-description = "Framework to process astronomical data files"
-authors = [{ name = "Patricio Rojo", email = "pato@das.uchile.cl" }]
-requires-python = "~=3.12"
-readme = "README.md"
+version = "0.2.0"
+description = "Framework to easily process astronomical data files"
+requires-python = ">=3.13"
+dependencies = [
+    "astropy>=7.1.0",
+    "astroquery>=0.4.10",
+    "bs4>=0.0.2",
+    "cartopy>=0.24.1",
+    "diskcache>=5.6.3",
+    "jplephem>=2.22",
+    "lxml>=5.4.0",
+    "matplotlib>=3.10.3",
+    "pandas>=2.2.3",
+    "platformdirs>=4.3.8",
+    "pyvo>=1.6.2", # delete this once TAP.exoplanet is no longer needed
+    "scipy>=1.15.3",
+    "tomli-w>=1.2.0",
+    "tqdm>=4.67.1", # TODO: make this optional
+]
+
+authors = ["Patricio Rojo <pato@das.uchile.cl>"]
 license = "BSD-3-Clause"
 dependencies = [
     "asdf-astropy>=0.4.0,<0.5",
@@ -49,24 +65,17 @@ docs = [
     "sphinxcontrib-napoleon==0.7",
 ]
 
-[tool.poetry-dynamic-versioning]
-enable = true
-
-[tool.uv]
-default-groups = [
-    "dev",
-    "test",
-    "docs",
+[dependency-groups]
+dev = [
+    "ipython>=9.2.0",
+]
+docs = [
+    "numpydoc>=1.8.0",
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+    "sphinxcontrib-napoleon>=0.7",
+]
+test = [
+    "pytest>=8.3.5",
 ]
 
-[tool.poetry-dynamic-versioning.substitution]
-
-[tool.hatch.build.targets.sdist]
-exclude = ["execs"]
-
-[tool.hatch.build.targets.wheel]
-exclude = ["execs"]
-
-[build-system]
-requires = ["poetry-core", "poetry-dynamic-versioning"]
-build-backend = "poetry_dynamic_versioning.backend"

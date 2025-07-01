@@ -1,0 +1,219 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>NASA,Arizona State University,Johns Hopkins Applied Physics Laboratory,Carnegie Institution for Science</origin>
+            <originator/>
+            <pubdate>2016-05-06</pubdate>
+            <title>Mercury MESSENGER MDIS DEM Global Color Shaded Relief 2km</title>
+            <edition>May 2016</edition>
+            <geoform>Raster Data,Shaded-Relief Map,Topographic Map</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/mercury_messenger_mdis_dem_global_color_shaded_relief_2km</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This is a colorized shaded-relief of the original digital elevation model (DEM). Using the Integrated Software for Imagers and Spectrometers (ISIS3) and observations from Mercury Dual Imaging System (MDIS) narrow-angle camera (NAC) and multispectral wide-angle camera (WAC), we derived a global DEM of Mercury. We created the global DEM of Mercury from a least-squares bundle adjustment (jigsaw in ISIS3; Becker et al., 2016) of common features, measured as tie point coordinates in overlapping NAC and WAC-G filter images. The resolution of this DEM is 2 kilometers per pixel (km).
+
+The MDIS image inventory contains over 176,000 NAC and WAC-G observations with a very large variety of disparate geometric and illumination characteristics, and we encountered limitations to existing conventional control techniques in ISIS3 that required development of new software and techniques.
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The MErcury Surface, Space Environment, Geochemistry, and Ranging (MESSENGER) spacecraft launched on August 3rd, 2004, it entered orbit around Mercury on March 11, 2011 and ended its mission on April 30th, 2015 when it deliberately plunged into the surface or Mercury. MESSENGER was the first spacecraft to orbit Mercury and had the primary goal of studying the geology, magnetic field, and chemical composition of the planet. 
+
+The science payload onboard MESSENGER included: Mercury Dual Imaging System (MDIS), Gamma-Ray Spectrometer (GRS), Neutron Spectrometer (NS), X-ray Spectrometer (XRS), Mercury Laser Altimeter (MLA), Mercury Atmospheric and Surface Composition (MACS), Energetic Particle and Plasma Spectrometer (EPPS), and Radio Science experiment (RS).  The MDIS instrument suite consists of wide-angle (WAC) and narrow-angle imagers (NAC) situated on a pivot platform that enables the instruments to be pointed in specified directions. 
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Becker, K. J., Robinson, M. S., Becker, T. L., Weller, L. A., Edmundson, K. L., Neumann, G. A., Perry, M. E., et al. (2016). &lt;em&gt;First global digital elevation model of Mercury.&lt;/em&gt;  presented at the 47th Lunar and Planetary Science Conference, Lunar and Planetary Institute, Houston, TX. &lt;a href='https://www.hou.usra.edu/meetings/lpsc2016/pdf/2959.pdf' target='_blank'&gt;https://www.hou.usra.edu/meetings/lpsc2016/pdf/2959.pdf&lt;/a&gt;
+
+Hawkins, S. E., Boldt, J. D., Darlington, E. H., Espiritu, R., Gold, R. E., Gotwols, B., Grey, M. P., et al. (2007). The Mercury Dual Imaging System on the MESSENGER Spacecraft. &lt;em&gt;Space Science Reviews, 131&lt;/em&gt;(1â4), 247â338. &lt;a href='https://doi.org/10.1007/s11214-007-9266-3' target='_blank'&gt;https://doi.org/10.1007/s11214-007-9266-3&lt;/a&gt;
+
+Solomon, S. C., McNutt, R. L., Jr., Gold, R. E., AcuÃ±a, M. H., Baker, D. N., Boynton, W. V., Chapman, C. R., et al. (2001). The MESSENGER mission to Mercury: Scientific objectives and implementation. &lt;em&gt;Planetary and Space Science, 49&lt;/em&gt;(14-15), 1445-1465. &lt;a href='https://doi.org/10.1016/S0032-0633(01)00085-X' target='_blank'&gt;https://doi.org/10.1016/S0032-0633(01)00085-X&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[A colorized and shaded representation of the original DEM to highlight elevation ranges for Mercury's topography.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://messenger.jhuapl.edu/news_room/news-050616.html, http://www.usgs.gov/news/first-global-topographic-map-mercury-released, http://www.hou.usra.edu/meetings/lpsc2016/pdf/2959.pdf  , http://messenger.jhuapl.edu/the_mission/mosaics.html]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>2011-03-29</begdate>
+               <enddate>2015-04-30</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Control Network,Image Processing,Remote Sensing,Topography</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>None</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/707de5da-2ab4-4d69-ac6c-6dbeb48d49bd/resource/27dc7252-75ca-4e83-a8b1-1253fab933c5/download/mercury_messenger_usgs_clrshade_global_1024.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Best Effort</attraccr>
+         <logic/>
+         <complete/>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Best Effort</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr>Best Effort</vertaccr>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>MESSENGER Online Data Volumes</title>
+                  <online>{http://pds-imaging.jpl.nasa.gov/volumes/mess.html,https://pds-imaging.jpl.nasa.gov/portal/messenger_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[The original digital elevation model (DEM) is hillshaded and then colorized per elevation bin. Please see legend for mapping colors to elevation values (meters)]]&gt;</procdesc>
+            <procdate>2016-05-06</procdate>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>3832</rowcount>
+         <colcount>7664</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>2000</absres>
+                  <ordres>2000</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>2439400</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits>Meters</altunits>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>84 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/mercury_messenger_mdis_dem_global_color_shaded_relief_2km</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

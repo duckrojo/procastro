@@ -8,8 +8,6 @@ import numpy as np
 from numpy import ma
 from bs4 import BeautifulSoup
 from tqdm import tqdm
-import imageio
-
 
 from matplotlib.animation import FuncAnimation, PillowWriter, FFMpegWriter
 from matplotlib.axes import Axes
@@ -25,7 +23,6 @@ from astropy.table import Table, QTable, MaskedColumn
 from procastro.api_provider.api_service import ApiService
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 import procastro as pa
-from procastro.misc.misc_graph import figaxes
 from procastro.cache.cache import AstroCache
 
 TwoValues = tuple[float, float]
@@ -794,8 +791,10 @@ class BodyVisualizer:
             match len(string):
                 case 8:
                     return f"{string[:4]}-{month[int(string[4:6])-1]}{string[6:8]}"
+                case 10:
+                    return f"{string[:4]}-{month[int(string[5:7]) - 1]}{string[8:10]}"
 
-            raise ValueError(f"Needs to implement parsing for date: {string}")
+            raise NotImplementedError(f"Needs to implement parsing for date: {string}")
 
         directory = (Path(__file__).parents[0] / 'images')
         files = list(directory.glob("*.xml"))
@@ -809,8 +808,10 @@ class BodyVisualizer:
         for file in files:
             with open(file, 'r', encoding='utf8') as f:
                 data = BeautifulSoup(f.read(), 'xml')
-                body_in_xml = data.find("target").string
-                if body.lower() == body_in_xml.lower():
+                body_in_xml = data.find("target")
+                body_in_file = body_in_xml.string if body_in_xml is not None else file.name.split("_")[0]
+
+                if body.lower() == body_in_file.lower():
                     title = data.idinfo("title")[0].string
                     if keywords is not None and not [k for k in keywords if k in title]:
                         continue
@@ -1075,7 +1076,6 @@ class BodyVisualizer:
         if verbose:
             geometry.print()
 
-
         if not hasattr(BodyVisualizer.create_frame, "_warning_shown"):
             BodyVisualizer.create_frame._warning_shown = False
 
@@ -1088,11 +1088,9 @@ class BodyVisualizer:
                                             force= reread_usgs)
         if image is None:
             raise ValueError(f"Could not get image for {body}")
-        
 
         if not BodyVisualizer.create_frame._warning_shown:
             BodyVisualizer.create_frame._warning_shown = True
-
         
         orthographic_image = BodyVisualizer.get_orthographic(image, *geometry.sub_obs,
                                           show_poles=color_poles)
@@ -1109,7 +1107,7 @@ class BodyVisualizer:
         rotated_image.putdata([item if r < nx/2 - 1 else color_background_rgb
                             for r, item in zip(rr, rotated_image.convert("RGBA").getdata())])
 
-        f, ax = figaxes(ax)
+        f, ax = pa.figaxes(ax)
         f.patch.set_facecolor(color_background)
         ax.set_facecolor(color_background)
         # ax.imshow(rotated_image,
@@ -1364,7 +1362,7 @@ class BodyVisualizer:
     
         # Set up the figure
         if ax is None:
-            f, ax = figaxes()
+            f, ax = pa.figaxes()
         else:
             f = ax.figure
     
@@ -1582,11 +1580,13 @@ def body_map(body:str,
 
 
     if time is None:
-            if not isinstance(observer, Table.Row):
-                raise TypeError("Time can only be omitted when observer is a JPL ephemeris in a astropy.Table.Row object.")
+        if isinstance(observer, Table.Row):
             ephemeris_line = observer
             logger.info(f"Time is None. Using time from ephemeris: {apt.Time(ephemeris_line['jd'], format='jd')}")
             time = apt.Time(ephemeris_line['jd'], format='jd')
+        else:
+            logger.info("Time is None. Using now")
+            time = apt.Time.now()
     
     # Case 1: time is either none or an scalar
     if time.isscalar:

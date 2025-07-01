@@ -2,10 +2,8 @@
 /deprecated/
 /docs/_build/
 /procastro.egg-info/
-scripts
 **/__pycache__/
 
 **/cachedir
 demo_data
-poetry.lock
 *.gif

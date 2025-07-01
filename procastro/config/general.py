@@ -2,14 +2,15 @@ import re
 from pathlib import Path
 from shutil import copy2
 
-import platformdirs as pd
-import toml
+import platformdirs as pdir
+import tomllib as toml
+import tomli_w as tomlw
 from procastro.config.definitions import AppName, AppAuthor
 
 __all__ = ['config_user', 'config_save', 'config_update_file']
 
-config_dir = pd.user_config_dir(AppName, AppAuthor)
-cache_dir = pd.user_cache_dir(AppName, AppAuthor)
+config_dir = pdir.user_config_dir(AppName, AppAuthor)
+cache_dir = pdir.user_cache_dir(AppName, AppAuthor)
 
 def config_user(section: str,
                 default: str = None,
@@ -17,30 +18,26 @@ def config_user(section: str,
                 ):
     """
     Returns in a TOML-style dictionary with variables taken from the configuration file. The first time
-    a section is run it will take values from the default/ directory... afterwards it will copy the
+    a section is run, it will take values from the default/ directory... afterward it will copy the
     config dir to the user directory.
 
     Parameters
     ----------
+    section: str
+    Name of the section config to load
+
     read_default: bool
     whether to return the default configuration file or the user's
 
     default: str
-    if given, then uses this file as default value instead, it will be located in the user directory
-
-    return_file: bool
-    whether to return the name of the configfile
-
-    section: str
-    Name of the section config to load
-
+    if given, then uses this file as the default value instead, it will be located in the user directory
     """
     user_dir = Path(config_dir)
     user_dir.mkdir(parents=True, exist_ok=True)
     user_file = user_dir.joinpath(f"{section}.toml")
 
+    # if the user file does not exist, then read from default, add cache's directory and save
     if not user_file.exists() or read_default:
-        # if the user file does not exists, then read from default add cache's directory and save
         if default is None:
             default = Path(__file__).parent.joinpath("..", "defaults", f"{section}.toml")
         else:
@@ -50,9 +47,8 @@ def config_user(section: str,
         if default.exists():
             config_content = default.read_text(encoding='utf-8')
 
-        # copy files that should go into config directory
+        # copy files that should go into the config directory
         replace_pattern = re.compile(r'"%CONFIG_DIR%/(.+?)"')
-        changes = []
         for filename in re.findall(replace_pattern, config_content):
             orig = Path(__file__).parent.joinpath('../defaults') / filename
             target = user_dir / filename
@@ -64,11 +60,12 @@ def config_user(section: str,
                                     count=1)
             print(config_content)
 
-        # add cache directory
-        config = toml.loads(config_content)
-        config['cache_dir'] = str(Path(cache_dir).joinpath(section))
+        config_content = config_content.replace(r'%CACHE_DIR%',
+                                                str(Path(cache_dir).joinpath(section)))
 
-        toml.dump(config, open(user_file, 'w', encoding='utf-8'))
+        # save update config file into user directory
+        config = toml.loads(config_content)
+        config_save(section, config)
 
         if read_default:
             return config
@@ -86,7 +83,7 @@ def config_save(section: str,
     section = f"{section}.toml"
     user_file = Path(config_dir).joinpath(section)
 
-    return toml.dump(config, open(user_file, 'w', encoding='utf-8'))
+    return tomlw.dump(config, open(user_file, 'wb'))
 
 
 def config_update_file(section: str,
@@ -105,7 +102,7 @@ def config_update_file(section: str,
     key to update.  Use period (as in subsection.key) to update a value in a subsection
 
     value: any
-    new value of key
+    new value of a key
 
     Returns
     -------
