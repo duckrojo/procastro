@@ -16,7 +16,6 @@ ProcAstro is a versatile framework aimed at seamless handling of astronomical da
 * fast aperture photometry
 * observation planning
 
-
 .. toctree::
    :hidden:
    :maxdepth: 2

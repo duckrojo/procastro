@@ -37,7 +37,7 @@ def with_fallback(fallback_func: Optional[Callable] = None,
         Args:
             fallback_func: function to call if the original method fails.
             return_empty_on_fail: whether to return an empty result if the original method fails. If it's set to True,
-                the method wont raise and exception, but it will return an empty result, otherwise, it will raise an exception.
+                the method wont raise an exception, but it will return an empty result, otherwise, it will raise an exception.
             On every case, the fallback function will always be called if provided. 
          
         """

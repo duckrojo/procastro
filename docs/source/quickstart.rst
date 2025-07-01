@@ -8,3 +8,4 @@ Quickstart Guides
    Multiple Files <quickstart/multiple>
    Plotting <quickstart/plotting>
    Calibration <quickstart/calibration>
+   Api Provider <quickstart/api_provider>
