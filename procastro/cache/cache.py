@@ -27,7 +27,7 @@ class AstroCache:
     """
 
     def __init__(self,
-                 max_cache=int(1e9), lifetime=None,
+                 max_cache=int(1e9), lifetime=0,
                  hashable_kw=None, label_on_disk=None,
                  force: bool = False,
                  eviction_policy: str | None = 'least-recently-used',
@@ -35,7 +35,7 @@ class AstroCache:
 
         self.max_cache: int = max_cache
         self.lifetime = lifetime if lifetime is None else 86400*lifetime  # units of day
-        self.force_kwd = force_kwd
+        self.force = force
         self.eviction_policy = eviction_policy
         self.verbose = verbose
 
