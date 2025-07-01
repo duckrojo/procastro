@@ -1,0 +1,219 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>Lunar and Planetary Institute/USRA</origin>
+            <originator/>
+            <pubdate>2024-08-12</pubdate>
+            <title>Enceladus Cassini Global Mosaic 100m Schenk</title>
+            <edition/>
+            <geoform>Archive,Control Network,Global Mosaic,Grey Scale,Image,Raster Data,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[This new global rectified base mosaic of Enceladus (Schenk and McKinnon, 2024) is deriverd from more than 500 Cassini ISS images acquired in the clear filter with resolutions from 250 to &lt;50 meters pixel scale.  The mosaic is based on an updated control network which properly aligns the images with the best possible accuracy which was constructed to complete a concurrent and registered shape model and digital elevation model (or topographic map linked &lt;a href='https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk'&gt;here&lt;/a&gt;).  
+
+This global high-resolution image mosaic of Enceladus is at 100-m pixel scales. Here we performed the bundle adjustment by solving for both the location (in map coordinates) and radius of each control point, using the updated triaxial shape of Thomas et al. (2016) as a starting reference (a = 256.2 ± 0.3, b = 251.4 ± 0.2, c = 248.6 ± 0.2 km, where the uncertainties are 2σ). We also use the final 2020 Cassini trajectory kernels from NAIF, including spacecraft position and planetary definition kernels. Our derived maps are shown as elevations relative to this ellipsoidal reference shape. The control points are well-distributed in latitude and longitude including those derived from north polar images taken during the November 2016 non-targeted but close flyby of Enceladus during Cassini Rev. 250.
+
+&lt;b&gt;Cite:&lt;/b&gt;
+Schenk, Paul. M., McKinnon, William, B., 2024, New global topography of Enceladus: Hypsometry, basins, spherical harmonics, shell thickness, and true polar wander revisited, Icarus, Volume 408, 15 January 2024, 115827, DOI: &lt;a href='https://doi.org/10.1016/j.icarus.2023.115827'&gt;https://doi.org/10.1016/j.icarus.2023.115827&lt;/a&gt;.
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Schenk, P. Hamilton, D.P., Johnson, R.E., McKinnon,  W.B., Paranicas, C., Schmidt,  J., Showalter,  M.R., 2011, Plasma, plumes and rings: Saturn system dynamics as recorded in global color patterns on its midsize icy satellites Icarus, 211, pp. 740-757, 10.1016/j.icarus.2010.08.016.
+
+Schenk, P.M., Beyer, R.A., McKinnon,  W.B., Moore, J.M., Spencer,  J.R., et al., 2018a, Basins, fractures and volcanoes: global cartography and topography of Pluto from new horizons, Icarus, 314, pp. 400-433, 
+10.1016/j.icarus.2018.06.008.
+ 
+Schenk, P.M., Beyer, R.A., McKinnon,  W.B., Moore, J.M., Spencer,  J.R., et al., 2018b, Breaking up is hard to do: global cartography and topography of Pluto’s mid-sized icy moon Charon from new horizons, Icarus, 315 (2018), pp. 124-145, 
+10.1016/j.icarus.2018.06.010.
+ 
+Thomas, P.C. Tajeddine, R., Tiscareno, M.S., Burns, J.A., Joseph,  J., Loredo, T.J., Helfenstein, P., Porco,  C., 2016, Enceladus’s measured physical libration requires a global subsurface ocean, Icarus, 264, pp. 37-47, 
+10.1016/j.icarus.2015.08.037]]&gt;</abstract>
+         <purpose>[![CDATA[Mosaic and DEM to help reveal that the shape of this active icy ocean world is distorted from a simple triaxial ellipsoid.]]&gt;</purpose>
+         <supplinf>[![CDATA[https://www.sciencedirect.com/science/article/pii/S0019103523004062#da0005]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>1999-01-09</begdate>
+               <enddate>2000-10-01</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Cartography,Control Network,Geographic Information System (GIS),Geomorphology,Geophysical,Image Processing,Photogrammetry,Remote Sensing,Satellites</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>None</accconst>
+      <useconst>Please cite authors</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/64282c9f-ed8e-49cd-b7bb-e520d8a46908/resource/8ca2ddc0-0e54-4fda-9a27-7ccedee12fc9/download/enceladus_cassini_mosaic_global_100m_schenk2024_1024.jpg</browsen>
+      </browse>
+      <native>ESRI Arcinfo,ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr/>
+         <logic>Horizontal post spacings (or footprints) of ~400 meters horizontal and vertical precisions of roughly 25-100 m depending on location.</logic>
+         <complete/>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Accurate to Control Net</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr>Accurate to Control Net</vertaccr>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate>2005-06-10</pubdate>
+                  <title>Cassini Imaging Science Subsystem (ISS)</title>
+                  <online>{https://pds-imaging.jpl.nasa.gov/volumes/iss.html,https://pds-imaging.jpl.nasa.gov/portal/cassini_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc>Online</typesrc>
+         </srcinfo>
+         <procstep>
+            <procdesc/>
+            <procdate>2024-08-12</procdate>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Pixel</rasttype>
+         <rowcount>8049</rowcount>
+         <colcount>16098</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>100</absres>
+                  <ordres>100</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn>this product is the control network</horizdn>
+            <semiaxis>256200.0</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum>this product is the control network</altdatum>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>495 MB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

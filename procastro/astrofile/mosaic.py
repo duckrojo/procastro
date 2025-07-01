@@ -11,6 +11,7 @@ from .multi import AstroFileMulti
 
 
 class _MergeDifferentToList(MergeStrategy):
+    """ Extend lists in merging meta, but no repeats"""
     types = ((str, int, float, list),
              (str, int, float, list))
 
@@ -19,17 +20,19 @@ class _MergeDifferentToList(MergeStrategy):
         # print(f"merging {left} & {right}")
         if isinstance(left, list):
             if isinstance(right, list):
-                return left + right
+                ret = left + right
             else:
-                return left + [right]
+                ret = left + [right]
+            return list(set(ret))
         if isinstance(right, list):
             if isinstance(left, list):
-                return left + right
+                ret = left + right
             else:
-                return [left] + right
+                ret = [left] + right
+            return list(set(ret))
         if type(left) is type(right):
             if left != right:
-                return [left, right]
+                return list({left, right})
             else:
                 return left
 
@@ -66,6 +69,12 @@ class AstroFileMosaic(AstroFileMulti):
                     new_table[col] = new_table.meta[col]
                 ret = vstack([ret, new_table])
 
+        # Make sure that is sorted by wavelength or pixel when working with spectra
+        if 'wav' in ret.colnames:
+            ret.sort('wav')
+        elif 'pix' in ret.colnames:
+            ret.sort('pix')
+
         self._meta = CaseInsensitiveMeta(ret.meta)
         self._random = random()
 
@@ -78,4 +87,3 @@ class AstroFileMosaic(AstroFileMulti):
     @property
     def id_letter(self):
         return "M"
-

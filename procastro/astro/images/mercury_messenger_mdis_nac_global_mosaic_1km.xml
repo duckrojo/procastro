@@ -1,0 +1,219 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>USGS Astrogeology Science Center</origin>
+            <originator/>
+            <pubdate/>
+            <title>Mercury MESSENGER MDIS NAC Global Mosaic 1km</title>
+            <edition/>
+            <geoform>Global Mosaic,Remote-sensing Data</geoform>
+            <serinfo>
+               <sername/>
+               <issue/>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/mercury_messenger_mdis_nac_global_mosaic_1km</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[&lt;b&gt;Product Information:&lt;/b&gt;
+
+This mosaic represents the best geodetic map of Mercury's surface as of 2010. In 2008 the MESSENGER spacecraft made two close flybys (M1 and M2) of Mercury and imaged about 74% of the planet at a resolution of 1 km per pixel (km), and at higher resolution for smaller portions of the planet. The Mariner 10 spacecraft imaged about 42% of Mercuryâs surface more than 30 years ago. Combining image data collected by the two missions yields coverage of about 83% of Mercuryâs surface. MESSENGER performed its third and final flyby of Mercury (M3) on 29 September 2009. This flyby yielded approximately 86% coverage of Mercury, leaving only the north and south polar regions yet to be imaged by MESSENGER after orbit insertion in March 2011. 
+
+The new global mosaic of Mercury was constructed using 325 images containing 3566 control points (8110 measures) from M1 and 225 images containing 1465 control points (3506 measures) from M2. The M3 flyby is shifted in subsolar longitude only by 4Â° from M2, so the added coverage is very small. However, this small slice of Mercury fills a gore in the mosaic between the M1 and M2 data and allows a complete cartographic tie around the equator. A new bundle block adjustment incorporated the additional images acquired from M3. This edition of the MESSENGER Mercury Dual Imaging System (MDIS) Narrow Angle Camera (NAC) global mosaic of Mercury includes many improvements since the M2 flyby in October 2008.
+
+&lt;b&gt;Mission and Instrument Information:&lt;/b&gt;
+
+The MErcury Surface, Space Environment, Geochemistry, and Ranging (MESSENGER) spacecraft launched on August 3rd, 2004, it entered orbit around Mercury on March 11, 2011 and ended its mission on April 30th, 2015 when it deliberately plunged into the surface or Mercury. MESSENGER was the first spacecraft to orbit Mercury and had the primary goal of studying the geology, magnetic field, and chemical composition of the planet. 
+
+The science payload onboard MESSENGER included: Mercury Dual Imaging System (MDIS), Gamma-Ray Spectrometer (GRS), Neutron Spectrometer (NS), X-ray Spectrometer (XRS), Mercury Laser Altimeter (MLA), Mercury Atmospheric and Surface Composition (MACS), Energetic Particle and Plasma Spectrometer (EPPS), and Radio Science experiment (RS).  The MDIS instrument suite consists of wide-angle (WAC) and narrow-angle imagers (NAC) situated on a pivot platform that enables the instruments to be pointed in specified directions. 
+
+&lt;b&gt;References:&lt;/b&gt;
+
+Becker, K. J., et al. (2009). Near Global Mosaic of Mercury: Eos, v. 90, 52, 29 December 2009, Fall Mtg. Suppl., abs. #P21A-1189. &lt;a href='http://abstractsearch.agu.org/meetings/2009/FM/P21A-1189.html' target='_blank'&gt;http://abstractsearch.agu.org/meetings/2009/FM/P21A-1189.html&lt;/a&gt;
+
+Hawkins, S. E., III, et al. (2009). In-flight performance of MESSENGER's Mercury Dual Imaging System. Proceedings of the SPIE, v. 7441, pp. 74410Z-74410Z-12. &lt;a href='https://doi.org/10.1117/12.826370' target='_blank'&gt;https://doi.org/10.1117/12.826370&lt;/a&gt;]]&gt;</abstract>
+         <purpose>[![CDATA[This mosaic was created primarily as a tool to aid in planning the first orbital observation sequences of the planet Mercury.  The mosaic enabled scientists to pinpoint craters,  faults,  and other features which were targeted for observation by MESSENGER during its orbital phase.  It is also intended to be used in scientific analysis.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://dx.doi.org/10.1007/s11214-007-9266-3, http://messenger.jhuapl.edu/Explore/Images.html#global-mosaics]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Publication date</current>
+         <timeinfo>
+            <rngdates>
+               <begdate/>
+               <enddate/>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>Complete</progress>
+         <update>None planned</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Remote Sensing</themekey>
+         </theme>
+      </keywords>
+      <accscope>PDS</accscope>
+      <accconst>Public domain</accconst>
+      <useconst>None</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/5d544e69-4bdc-4c2f-bc13-677f4a1b7c60/resource/3fca7ec4-7b97-48db-a766-4e7b493d4bc3/download/full.jpg</browsen>
+      </browse>
+      <native>ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Accurate to Control Net</attraccr>
+         <logic>A new distortion model for the NAC camera greatly improved the image-to-image registration. Optical distortion correction is independent of pointing error correction,  and both are required for a mosaic of high quality. The new distortion model alone reduced residual pointing errors for both flybys significantly; residual pixel error improved from 0.71 average (3.7 max) to 0.13 average (1.7 max) for M1 and from 0.72 average (4.8 max.) to 0.17 average (3.5 max) for M2. Analysis quantifying pivot motor position led to development of a new model that improved accuracy of the pivot platform attitude. This model improves the accuracy of pointing knowledge and reduces overall registration errors between adjacent images. The net effect of these improvements is an overall offset of up to 10 km in some locations across the mosaic. In addition,  the radiometric calibration process for the NAC has been improved to yield a better dynamic range across the mosaic by 20%.</logic>
+         <complete>This mosaic represents the best geodetic map of Mercury's surface to date. MESSENGER's three flybys alone provide 90.90% of the data in the global mosaic. Although MESSENGER went in to safe mode during the third flyby,  the approach imaging was acquired and contributes ~6.82% additional coverage from earlier versions. Only the poles remain to be imaged,  some of which are in permanent shadow.  By combining MDIS (Mercury Dual Imaging System) images collected from these three MESSENGER flybys with those from Mariner 10 data from the 1970s,  we now have a global mosaic of Mercury covering ~97.72% of the planet's surface. The mosaic is provided at 500 meters/pixel (~85.17 pixels/degree) resolution,  planetocentric latitudes with a center latitude of 0.0.,  and -180 to +180 positive east longitudes with a center longitude of 0.0.</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Accurate to Control Net</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr/>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>The Mercury Dual Imaging System on the MESSENGER Spacecraft</title>
+                  <online>{https://pds-imaging.jpl.nasa.gov/volumes/mess.html,https://pds-imaging.jpl.nasa.gov/portal/messenger_mission.html}</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[Cartographic experts at the USGS Astrogeology Science Center in Flagstaff,  Ariz.,  picked the control points to solve the bundle-block adjustment to construct the final mosaic using the Integrated Software for Imagers and Spectrometers (ISIS). For the MESSENGER mosaic,  5, 301 control points were selected,  and each control point on average was found in more than three images (18, 834 measurements) from a total of 917 images. Scientists at ASU and the Johns Hopkins University Applied Physics Laboratory (APL) were also instrumental in making the mosaic possible.
+
+The mosaic has been photometrically corrected using a Hapke-Henyey-Greenstein photometric model. Pixel density values are in I/F reflectance units. The darker vertical regions to left and right of center are coverage provided by images near or at the terminator (low Sun). These areas required special processing to retain illuminated features that are otherwise eliminated at incidence angles greater than 90Â° when the photometric model is applied.  The &quot;smeared&quot; data at the outer overlapping edges of the observations are limb images. These images are at high emission angles resulting in distortion within a derived map projection. The limb data are trimmed at lower emission angles in order to visually limit this effect.]]&gt;</procdesc>
+            <procdate/>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>15332</rowcount>
+         <colcount>30662</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>500</absres>
+                  <ordres>500</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn>MESSENGER</horizdn>
+            <semiaxis>2440000</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum>MESSENGER</altdatum>
+         <altres/>
+         <altunits/>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>2 GB</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/mercury_messenger_mdis_nac_global_mosaic_1km</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>

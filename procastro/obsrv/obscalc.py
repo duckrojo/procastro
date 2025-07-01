@@ -22,7 +22,6 @@ import warnings
 import astropy.coordinates as apc
 import astropy.time as apt
 import astropy.units as u
-import procastro.astro as paa
 import numpy as np
 import os
 import pyvo as vo

@@ -1,0 +1,228 @@
+<?xml version="1.0" ?>
+<metadata>
+   <idinfo>
+      <citation>
+         <citeinfo>
+            <origin>USGS Astrogeology Science Center</origin>
+            <originator/>
+            <pubdate>2016-10-17</pubdate>
+            <title>Ceres Dawn FC HAMO Colorized Shaded-relief 60ppd  Oct. 2016</title>
+            <edition>1.0</edition>
+            <geoform>Color,Digital Elevation Model,Topographic Map</geoform>
+            <serinfo>
+               <sername/>
+               <issue>DWNCHSPG_2</issue>
+            </serinfo>
+            <pubinfo>
+               <pubplace>Flagstaff, AZ</pubplace>
+               <publish>USGS Astrogeology Science Center</publish>
+            </pubinfo>
+            <onlink>https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_colorized_shaded_relief_60ppd_137mp_oct_2016</onlink>
+         </citeinfo>
+      </citation>
+      <descript>
+         <abstract>[![CDATA[This is a colorized shaded-relief of the original Ceres digital terrain model (DTM). This DTM was created from the Dawn High Altitude Mapping orbit (HAMO) Framing Camera 2 (FC2) images and derived by using the stereo photogrammetry (SPG) method. The HAMO DTM covers approximately 98% of Ceres surface (few permanently shadowed areas near the poles required interpolation). The a DTM has a lateral spacing of ~136.7 m/pixel (60 pixel/degree) and a vertical accuracy of about 10 m. A global DTM is provided in an equidistant cylindrical projection and hemispheric DTMs are provided for both polar regions as stereographic projections.
+
+Radius legend is available on right side.
+
+References:
+
+Preusker,F.,Scholten,F.,Matz,K.-D.,Elgner,S.,Jaumann,R.,Roatsch,T., Joy,S.P.,Polanskey,C.A.,Raymond,C.A.,Russell,C.T.,2016.Dawn at Ceres - Shape model and rotational state, 47th Lunar and Planetary Science Conference (LPSC) - USRA-Houston, 2016 , Abstract 1954. http://www.hou.usra.edu/meetings/lpsc2016/pdf/1954.pdf
+
+Roatsch,T., E. Kersten,K.-D. Matz,F. Preusker, F. Scholten, R. Jaumann,C.A. Raymond, C.T.Russell, High-resolution Ceres High Altitude Mapping Orbit Atlas derived from Dawn Framing Camera images, Planetary and Space Sciences, in press, 2016.
+
+Preusker, F., J. Oberst, J. Head, T. Watters, M. Robinson, M. Zuber, S. Solomon, Stereo topographic models of Mercury after three MESSENGER flybys. Planet. Space Sci. (2011). DOI:10.1016/j.pss.2011.07.005
+
+Raymond, C.A., R. Jaumann, A. Nathues, H. Sierks, T. Roatsch, F. Preusker, F. Scholten, R.W. Gaskell, L. Jorda, H.-U. Keller, M.T. Zuber, D.E. Smith, N. Mastrodemos, and S. Mottola, The Dawn topography investigation. Space Sci. Rev. 163, 487 (2011). DOI: 10.1007/s11214-011-9863-z
+
+Polanskey, C., S. Joy, and C. Raymond, &quot;Dawn Ceres Mission: Science Operations Performance&quot;, SpaceOps 2016 Conference, SpaceOps Conferences, (in press).]]&gt;</abstract>
+         <purpose>[![CDATA[Dawn mission is equipped with two identical framing cameras (FC1 &amp; FC2) which have one clear filter and seven band pass filters. At Ceres,  only the FC2 was used to acquire science images while the FC1 was held in reserve. Clear filter images which were taken during HAMO were used to produce a global DTM of the illuminated part of Ceres [Preusker 2016]. Dawn orbited Ceres during in 6 cycles between August 16 and October 23,  2015 at the HAMO altitude of ~1475 km. A cycle is a single complete mapping of surface at a fixed attitude (nadir or off-nadir). The framing camera acquired about 2350 clear filter images [Preusker 2016] during the HAMO phase. The images were taken with different viewing angles and similar illumination conditions by slewing the spacecraft to various off-nadir attitudes.]]&gt;</purpose>
+         <supplinf>[![CDATA[http://sbn.psi.edu/pds/resource/dwncfc2.html]]&gt;</supplinf>
+      </descript>
+      <timeperd>
+         <current>Ground condition</current>
+         <timeinfo>
+            <rngdates>
+               <begdate>2014-12-26</begdate>
+               <enddate>2016-04-26</enddate>
+            </rngdates>
+         </timeinfo>
+      </timeperd>
+      <status>
+         <progress>In Work</progress>
+         <update>As needed</update>
+      </status>
+      <spdom>
+         <bounding>
+            <westbc/>
+            <eastbc/>
+            <northbc/>
+            <southbc/>
+         </bounding>
+      </spdom>
+      <keywords>
+         <theme>
+            <themekt/>
+            <themekey>Asteroids</themekey>
+         </theme>
+      </keywords>
+      <accscope/>
+      <accconst>None</accconst>
+      <useconst>None</useconst>
+      <browse>
+         <browsen>https://astrogeology.usgs.gov/ckan/dataset/56cf8a28-caa0-43aa-b59f-c70e50abf61f/resource/9f0231ed-7abd-4f10-adb7-f764be948aff/download/ceres_dawn_fc_hamo_clrshade_dlr_global_1024.jpg</browsen>
+      </browse>
+      <native>GDAL,ISIS v3</native>
+   </idinfo>
+   <cntinfo>
+      <cntorgp>
+         <cntorg>USGS Astrogeology Science Center</cntorg>
+      </cntorgp>
+      <cntaddr>
+         <addrtype>mailing and physical</addrtype>
+         <address>2255 N. Gemini Drive</address>
+         <city>Flagstaff</city>
+         <state>AZ</state>
+         <postal>86001</postal>
+      </cntaddr>
+      <cntvoice>928-556-7011</cntvoice>
+      <cntemail>astroweb@usgs.gov</cntemail>
+   </cntinfo>
+   <dataqual>
+      <attracc>
+         <attraccr>Best Effort</attraccr>
+         <logic>Some shadows were interpolated to fill in the original DTM</logic>
+         <complete>This is a preliminary product.</complete>
+      </attracc>
+      <posacc>
+         <horizpa>
+            <horizpar>Unknown</horizpar>
+         </horizpa>
+         <vertacc>
+            <vertaccr>Best Effort</vertaccr>
+         </vertacc>
+      </posacc>
+      <lineage>
+         <srcinfo>
+            <srccite>
+               <citeinfo>
+                  <origin/>
+                  <pubdate/>
+                  <title>Dawn at Ceres - Framing Camera</title>
+                  <online>http://sbn.psi.edu/pds/resource/dwncfc2.html</online>
+               </citeinfo>
+            </srccite>
+            <typesrc/>
+         </srcinfo>
+         <procstep>
+            <procdesc>[![CDATA[All processing was completed using Geospatial Data Abstraction Library (GDAL) tools on the original LROC DEM. To derive this colorized shaded-relief these three GDAL commands were used:
+
+(1) gdaldem hillshade input_dem output_hillshade -z 2 (ZFactor) -az 315 (Azimuth) -alt 45 (Altitude) (2) gdaldem color-relief input_dem color_text_file output_color_relief_map &gt; (3) hsv_merge.py output_color_relief_map output_hillshade output_color-hillshade.
+
+Pixels do not contain any of the original explicit elevation information. The colorized shaded-relief represents approximate elevations based on the original topographic data. Elevations values are mapped based on the defined red,  green,  and blue mapping listed next. All NoData values are mapped to 0,  0,  0 (black). Thus 0 percent (purple) maps to minimum elevation and 100 percent (white) maps to maximum using a linear stretch. -----
+
+nv 0 0 0 ; 
+437232.0 255 120 255 //purple ; 
+447197.0 120 120 255 //blue ; 
+457162.0 120 255 255 //aqua ; 
+467127.0 120 255 120 //green ; 
+472109.5 255 255 120 //yellow ; 
+482074.5 255 120 120 //red ; 
+487057.0 255 255 255 //white]]&gt;</procdesc>
+            <procdate>2016-08-16</procdate>
+         </procstep>
+      </lineage>
+   </dataqual>
+   <spdoinfo>
+      <direct>Raster</direct>
+      <rastinfo>
+         <rasttype>Grid Cell</rasttype>
+         <rowcount>10800</rowcount>
+         <colcount>21600</colcount>
+      </rastinfo>
+   </spdoinfo>
+   <spref>
+      <horizsys>
+         <planar>
+            <mapproj>
+               <mapprojn>Equirectangular</mapprojn>
+            </mapproj>
+            <planci>
+               <coordrep>
+                  <absres>136.7174581</absres>
+                  <ordres>136.7174581</ordres>
+               </coordrep>
+            </planci>
+         </planar>
+         <geodetic>
+            <horizdn/>
+            <semiaxis>470000</semiaxis>
+         </geodetic>
+      </horizsys>
+      <vertdef>
+         <altdatum/>
+         <altres/>
+         <altunits>Meters</altunits>
+      </vertdef>
+   </spref>
+   <distinfo>
+      <distrib>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </distrib>
+      <stdorder>
+         <digform>
+            <diginfo>
+               <formname/>
+               <transize>699906033</transize>
+            </diginfo>
+            <digtopt>
+               <onlinopt>
+                  <computer>
+                     <networka>
+                        <networkr>https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_colorized_shaded_relief_60ppd_137mp_oct_2016</networkr>
+                     </networka>
+                  </computer>
+               </onlinopt>
+            </digtopt>
+         </digform>
+      </stdorder>
+   </distinfo>
+   <metainfo>
+      <metd>2025-06-07</metd>
+      <metc>
+         <cntinfo>
+            <cntorgp>
+               <cntorg>USGS Astrogeology Science Center</cntorg>
+            </cntorgp>
+            <cntaddr>
+               <addrtype>mailing and physical</addrtype>
+               <address>2255 N. Gemini Drive</address>
+               <city>Flagstaff</city>
+               <state>AZ</state>
+               <postal>86001</postal>
+            </cntaddr>
+            <cntvoice>928-556-7011</cntvoice>
+            <cntemail>astroweb@usgs.gov</cntemail>
+         </cntinfo>
+      </metc>
+      <metsdn>FGDC Content Standard for Digital Geospatial Metadata</metsdn>
+      <metstdv>Modifided FGDC standard for use with planetary data</metstdv>
+      <mettc>local time</mettc>
+      <metextns>
+         <metprof>USGS Astrogeology Planetary Geoscience Metadata Standard</metprof>
+      </metextns>
+   </metainfo>
+</metadata>
