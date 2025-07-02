@@ -137,10 +137,10 @@ We can clearly see the pipeline of this request.
 * If the target planet is not found, it raises an exception.
 
 
-ApiProvider class
+DataProviderInterface class
 ----------------
 
-The `ApiProvider` class is the main class that handles the API calls and provides the data to the user.
+The `DataProviderInterface` class is the main class that handles the API calls and provides the data to the user.
 
 It is organized in the following way:
 
@@ -166,7 +166,7 @@ The following classes inherit from the `DataProviderInterface` class:
     - Handles queries to the Astroquery library. 
     - Currently, SIMBAD and the NASA EXOPLANET ARCHIVE use this provider.
     - It can be used to query data from any service that is supported by Astroquery.
-    
+    - It depends on the `astroquery` library, which must be installed in your environment.    
     Since astroquery supports query-like requests, AstroqueryProvider has a `query_nasa_exoplanet_archive` method that can be used to query data from the service.
     
     
@@ -209,4 +209,15 @@ The following classes inherit from the `DataProviderInterface` class:
 
     The update parameter states when the NEA queries will update the local file if the found the specified target.
 
+
+The ApiService Interface
+----------------
+
+The `ApiService` class is the main entry point for the API provider. It handles the requests and provides the data to the user.
+Below is a diagram of the ApiService class and its dependencies. 
+
+
+.. image :: ../figs/api_provider_diagram.png
+   :width: 700
+   :alt: ApiService class diagram
 

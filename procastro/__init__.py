@@ -26,5 +26,6 @@ Framework to easily handle multiple astronomy data files
 from .astrofile import *
 from .astrodir import *
 from .graphics.core import *
+from .api_provider import *
 
 __version__ = "0.2.0"
