@@ -5,3 +5,5 @@ __all__ = ['SpatialY']
 class SpatialY(AstroAxis):
     acronym = "Y"
 
+    def short(self):
+        return "Y"

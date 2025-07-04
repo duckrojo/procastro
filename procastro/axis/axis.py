@@ -31,6 +31,9 @@ class AstroAxis:
     def values(self):
         return self._values
 
+    def lims(self):
+        return self._values[0], self._values[-1]
+
     def short(self):
         """Ideally, a single word describing the axis will be used for labeling plots"""
         return str(self)
