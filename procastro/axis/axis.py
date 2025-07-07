@@ -27,7 +27,6 @@ class AstroAxis:
     def __len__(self) -> int:
         return len(self._values)
 
-    @property
     def values(self):
         return self._values
 
