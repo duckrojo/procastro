@@ -13,7 +13,7 @@ from procastro.interfaces import IAstroFile, IAstroDir
 from procastro.misc import functions
 from procastro.misc.functions import use_function
 from procastro.calib.calib import AstroCalib
-from procastro.logging import io_logger
+from procastro.config import pa_logger
 import procastro as pa
 
 __all__ = ['WavSol']
@@ -120,7 +120,7 @@ class WavSol(AstroCalib):
             if option in self._datasets:
                 self._datasets[option].add_arc(astrofile, separate=separate)
             else:
-                io_logger.warning(f"Ignoring Arc '{astrofile}' whose "
+                pa_logger.warning(f"Ignoring Arc '{astrofile}' whose "
                                   f"'{_print_option(astrofile.values(*self.group_by, single_in_list=True),
                                                     self.group_by)}'"
                                   f" does not have a "
@@ -140,7 +140,7 @@ class WavSol(AstroCalib):
             beta = self.beta
         for option, sol in self._datasets.items():
             if not len(sol.arcs):
-                io_logger.warning(f"There is no arc information for option "
+                pa_logger.warning(f"There is no arc information for option "
                                   f"'{_print_option(option, self.group_by)}', "
                                   f"keeping original fit")
                 continue
@@ -179,7 +179,7 @@ class WavSol(AstroCalib):
 
             between_pix = (maxw - minw) / dwav
             self.target_wav = np.round(minw, decimals) + (np.arange(wav) - (wav - between_pix) / 2) * dwav
-            io_logger.warning(f"Wavelength scale was set to {wav} pixels between {self.target_wav[0]:.2f}"
+            pa_logger.warning(f"Wavelength scale was set to {wav} pixels between {self.target_wav[0]:.2f}"
                               f" and {self.target_wav[-1]:.2f}. Delta: {self.target_wav[1]-self.target_wav[0]}")
         else:
             raise TypeError("Target wav must be an ndarray (an explicit wav_out) or "
@@ -212,7 +212,7 @@ class WavSol(AstroCalib):
         # it is mandatory to have a 'pix' channel, thus create it by simple enumeration if it
         # doesn't exist.
         if 'pix' not in data.colnames:
-            io_logger.warning(f"Pixel column not found, enumerating pixels from 0")
+            pa_logger.warning(f"Pixel column not found, enumerating pixels from 0")
             data['pix'] = np.arange(len(data))
 
         # get the pixel offset when alignment is required
@@ -239,11 +239,11 @@ class WavSol(AstroCalib):
         mask *= large_jump_mask
 
         # interpolate every column
-        io_logger.warning("Interpolating wavelengths" +
+        pa_logger.warning("Interpolating wavelengths" +
                           (" after aligning telluric" if self.align_telluric else ""))
         out_table = Table({'wav': wav_out})  # [:, np.newaxis] * np.ones([1, n_epochs])})
         for col in infochn:
-            io_logger.warning(f" - column {col}")
+            pa_logger.warning(f" - column {col}")
             fcn = functions.use_function("otf_spline:s0", wav_in, data[col], transpose=True)
             out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)),
                                           mask=~mask)
@@ -330,7 +330,7 @@ class WavSol(AstroCalib):
 
         for opt in option:
             if opt in self._datasets:
-                io_logger.warning(f"Overwriting an existing function with options {option}"
+                pa_logger.warning(f"Overwriting an existing function with options {option}"
                                   f"using function {function}.")
 
             self._datasets[opt].fit_function(function, pixwav)
@@ -347,7 +347,7 @@ class WavSol(AstroCalib):
 
         for option, sol in self._datasets.items():
             if not (len(sol.arcs) + len(sol.fits)):
-                io_logger.warning(f"No arc nor fits information to plot for "
+                pa_logger.warning(f"No arc nor fits information to plot for "
                                   f"{_print_option(option, self.group_by)}")
                 continue
 

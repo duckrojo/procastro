@@ -1,0 +1,6 @@
+
+[file_logging]
+log_to_file = true
+
+log_directory = '%LOG_DIR%'
+log_file_max_size = 1048576     # 1 Mb

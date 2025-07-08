@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 from procastro.interfaces import IAstroFile, IAstroDir
 from procastro.statics import prepare_mosaic_axes
-from procastro.logging import io_logger
+from procastro.config import pa_logger
 from procastro.misc import functions
 from procastro.misc.functions import use_function, GenNorm, MultiGenNorm
 import procastro as pa
@@ -290,7 +290,7 @@ Iterates over all the information that matches column of wavpix and meta of arcs
             self.fit_widths[option] = np.array(widths)
             self.fit_widths_mask[option] = mask
 
-            io_logger.warning(f"Fitted line widths for option "
+            pa_logger.warning(f"Fitted line widths for option "
                               f"'{",".join([str(x) 
                                             for x in list(self.external) + list(option)])}'"
                               f" varies between {p[1] + p[0] * original_centers[0]:.1f} - "

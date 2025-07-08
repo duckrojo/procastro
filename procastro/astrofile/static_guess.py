@@ -3,9 +3,7 @@ from pathlib import Path
 
 from astropy import table
 
-from procastro.logging import io_logger
-
-
+from procastro.config import pa_logger
 
 def type_from_file(filename, hints):
     if hints is None:
@@ -27,7 +25,7 @@ def type_from_file(filename, hints):
         if re.search(hint, filename):
             return value
 
-    io_logger.warning(f"Assuming image file for '{filename}'")
+    pa_logger.warning(f"Assuming image file for '{filename}'")
     return 'img'
 
 

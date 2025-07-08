@@ -2,7 +2,8 @@ import warnings
 
 from procastro.astrofile.astrofile import AstroFile
 from procastro.calib.calib import AstroCalib
-from procastro.logging import io_logger
+from procastro.config.logging import pa_logger
+
 from procastro.statics import trim_to_python, common_trim_fcn, extract_common
 
 __all__ = ['CalibRaw2D']
@@ -67,7 +68,7 @@ class CalibRaw2D(AstroCalib):
                     self.auto_trim_keyword = k.upper()
                     break
             else:
-                io_logger.warning("No Trim keyword found in flat or bias")
+                pa_logger.warning("No Trim keyword found in flat or bias")
                 self.auto_trim_keyword = None
 
         if bias is not None:
@@ -173,7 +174,7 @@ class CalibRaw2D(AstroCalib):
         try:
             label_trim = meta[self.auto_trim_keyword]
         except KeyError:
-            io_logger.warning(f"Trim info "
+            pa_logger.warning(f"Trim info "
                               f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
                               f"not found on raw frames..."
                               f"using full figure instead")
@@ -190,7 +191,7 @@ class CalibRaw2D(AstroCalib):
             if tmp_header is None or self.auto_trim_keyword not in tmp_header.keys():
                 if not isinstance(tdata, (int, float)):
 
-                    io_logger.warning(f"Trim info "
+                    pa_logger.warning(f"Trim info "
                                       f"{'' if self.auto_trim_keyword is None else self.auto_trim_keyword + ' '}"
                                       f"not found on {frame} frames... "
                                       f"using full figure instead")
@@ -215,7 +216,7 @@ class CalibRaw2D(AstroCalib):
                     out_data.append(out)
 
                 if trimmed and verbose:
-                    io_logger.info(f"Adjusting {label} shape to minimum common trim [{self.auto_trim_keyword}: "
+                    pa_logger.info(f"Adjusting {label} shape to minimum common trim [{self.auto_trim_keyword}: "
                                    f"({str(trim)}) -> ({str(common_trim)})]")
             data, bias, flat = out_data
 

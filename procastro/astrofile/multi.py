@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from procastro.logging import io_logger
-from procastro.statics import identity, PADataReturn
+from procastro.config import pa_logger
+from procastro.statics import PADataReturn
 from .spec import AstroFileSpec
 import procastro as pa
 
@@ -72,7 +72,7 @@ class AstroFileMulti(AstroFileSpec):
         already_calib = self.get_calib()
         for calib in astrocalibs:
             if calib in already_calib:
-                io_logger.warning(f"AstroCalib instance {calib} is being used both in"
+                pa_logger.warning(f"AstroCalib instance {calib} is being used both in"
                                   f" multifile instance and individual file, thus will be applied twice."
                                   f" Are you sure?")
 

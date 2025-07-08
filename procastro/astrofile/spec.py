@@ -1,16 +1,4 @@
-import os
-import shutil
-from pathlib import Path
-from random import random
-
-import numpy as np
-from matplotlib import pyplot as plt, axes
-
-from . import static_read, static_identify, static_write, static_guess
-
 from procastro.astrofile.astrofile import AstroFile
-from procastro.logging import io_logger
-from procastro.statics import identity, PADataReturn
 
 __all__ = ['AstroFileSpec']
 

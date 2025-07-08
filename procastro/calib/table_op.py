@@ -4,7 +4,7 @@ from astropy.table import Table
 
 from procastro.calib.calib import AstroCalib
 from procastro.exceptions import ColumnExistsError, ColumnMissingError
-from procastro.logging import io_logger
+from procastro.config import pa_logger
 from procastro.statics import PADataReturn, PAMetaReturn
 
 
@@ -56,7 +56,6 @@ class TableOp(AstroCalib):
                     data,
                     meta,
                     unique):
-        import numpy as np
         for column, value in self._add_dict.items():
             if unique is not None:
                 if unique and column in data.colnames:
@@ -69,7 +68,7 @@ class TableOp(AstroCalib):
             operation = re.sub(r"\[(\w+?)]", r"data['\1']", value)
             operation = re.sub(r"\{(\w+?)}", r"meta['\1']", operation)
 
-            io_logger.debug(f"operation: '{value}' -> \n{operation}")
+            pa_logger.debug(f"operation: '{value}' -> \n{operation}")
             try:
                 data[column] = eval(operation)
             except Exception as e:

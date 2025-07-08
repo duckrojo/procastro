@@ -7,11 +7,11 @@ import procastro as pa
 from procastro import calib
 from procastro.astrofile.astrofile import astrofile_cache
 from procastro.exceptions import EmptyAstroDirError
-from procastro.logging import io_logger
+from procastro.config import pa_logger
 
 astrofile_cache.set_disable(True)
 matplotlib.use('TkAgg')
-io_logger.setLevel(logging.DEBUG)
+pa_logger.setLevel(logging.DEBUG)
 
 raw_wavpix_file = r"e:\astro-data\imacs\aug24\recal\ob{trace:02d}_lines_chips.txt"
 wavpix_file = r"e:\astro-data\imacs\aug24\recal\wavpix_{trace:02d}_v{version:d}.ecsv"
@@ -30,7 +30,7 @@ try:
     wavpix = pa.AstroDir(wavpix_file, filter_and={'version': 0}, group_by='trace')
     wav_solution = calib.WavSol(wavpix, beta=8, wav_out=2048, align_telluric='7')
 except EmptyAstroDirError:
-    io_logger.warning("Recomputing wavelength-pixel fitting")
+    pa_logger.warning("Recomputing wavelength-pixel fitting")
     label_col = calib.TableOp(add={'label': 'np.char.add([element].astype(str), np.int32([wav]).astype(str))'})
     dtype={"names": ('wav', 'pix', 'chip', 'element'), 'formats': ('f', 'f', 'i', 'S2')}
 

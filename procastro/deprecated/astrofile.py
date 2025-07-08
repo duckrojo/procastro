@@ -27,7 +27,8 @@ from pathlib import PurePath, Path
 import procastro as pa
 import procastro.astrofile.spec
 from procastro.statics import trim_to_python
-from procastro.logging import io_logger
+from procastro.config import pa_logger
+
 from procastro.calib.raw2d import CalibRaw2D
 from procastro.cache.cache import astrofile_cache
 
@@ -92,7 +93,7 @@ def _fits_writer(filename, data, header=None):
     """
     if header is None:
         header = pf.Header()
-        io_logger.warning(
+        pa_logger.warning(
             "No header provided to save on disk, using a default empty header"
             "for '{}'".format(filename))
     header['history'] = "Saved by procastro v{} on {}".format(pa.__version__,
@@ -364,7 +365,7 @@ class AstroFile(object):
                     self.header_cache = self.read_headers()
             except OSError:
                 self.type = None
-                io_logger.warning("Omitting corrupt file")
+                pa_logger.warning("Omitting corrupt file")
                 return
 
         # if custom header is added, then overwrite/append that in the first HDU

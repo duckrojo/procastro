@@ -12,14 +12,15 @@ __all__ = ['config_user', 'config_save', 'config_update_file']
 config_dir = pdir.user_config_dir(AppName, AppAuthor)
 cache_dir = pdir.user_cache_dir(AppName, AppAuthor)
 
+
 def config_user(section: str,
                 default: str = None,
                 read_default: bool = False,
                 ):
     """
     Returns in a TOML-style dictionary with variables taken from the configuration file. The first time
-    a section is run, it will take values from the default/ directory... afterward it will copy the
-    config dir to the user directory.
+    a section is run, it will take values from the default/ directory and copy them to the user directory.
+    Afterward, it will use the config from the user directory unless forced to read_default.
 
     Parameters
     ----------
@@ -30,7 +31,7 @@ def config_user(section: str,
     whether to return the default configuration file or the user's
 
     default: str
-    if given, then uses this file as the default value instead, it will be located in the user directory
+    if given, then it uses this file as the default value instead, it will be located in the user directory
     """
     user_dir = Path(config_dir)
     user_dir.mkdir(parents=True, exist_ok=True)
@@ -47,21 +48,33 @@ def config_user(section: str,
         if default.exists():
             config_content = default.read_text(encoding='utf-8')
 
+        # Any file identified by %CONFIG_DIR%/file will be copied verbatim into user config dir
         # copy files that should go into the config directory
         replace_pattern = re.compile(r'"%CONFIG_DIR%/(.+?)"')
         for filename in re.findall(replace_pattern, config_content):
             orig = Path(__file__).parent.joinpath('../defaults') / filename
             target = user_dir / filename
-            print(f"copying {orig} to {target}")
             copy2(orig, target)
             config_content = re.sub(f'"%CONFIG_DIR%/{filename}"',
                                     f'"{str(target).encode('unicode_escape').decode().encode('unicode_escape').decode()}"',
                                     config_content,
                                     count=1)
-            print(config_content)
 
+        # cache directory will be set according to platform-specific location
         config_content = config_content.replace(r'%CACHE_DIR%',
                                                 str(Path(cache_dir).joinpath(section)))
+
+        # other directories will just use their name
+        for dir_type in re.findall(re.compile(r'%([A-Z].+)_DIR%'), config_content):
+            target_dir = user_dir / dir_type.lower()
+            if target_dir.exists():
+                if not target_dir.is_dir():
+                    raise NotADirectoryError(f"{target_dir} exists, but is not a directory. Error "
+                                             f"configuring section '{section}'")
+            else:
+                target_dir.mkdir(parents=True, exist_ok=True)
+
+            config_content = config_content.replace(f'%{dir_type}_DIR%', str(target_dir))
 
         # save update config file into user directory
         config = toml.loads(config_content)
@@ -80,6 +93,17 @@ def config_user(section: str,
 def config_save(section: str,
                 config: dict,
                 ):
+    """Save the `config` TOML-style dictionary into the appropriate config file. This alternative overwrites the
+     whole configuration file. If you want to modify a single key-value use `update_config` instead.
+
+    Parameters
+    ----------
+    section
+      name of the config section
+    config
+       TOML-style dictionary with the configuration parametrers
+    """
+
     section = f"{section}.toml"
     user_file = Path(config_dir).joinpath(section)
 
@@ -91,7 +115,7 @@ def config_update_file(section: str,
                        value: any,
                        ) -> dict:
     """
-    update configuration file
+    update one key-value pair in a configuration file
 
     Parameters
     ----------

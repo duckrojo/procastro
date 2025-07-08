@@ -8,6 +8,7 @@ from matplotlib.axes import Axes
 
 from procastro.axis.axes import AstroAxes
 from procastro.axis.data import DataAxis
+from procastro.config import pa_logger
 
 
 class AstroData:
@@ -205,6 +206,9 @@ class AstroData:
             else:
                 iterators = (astro_data.axes[0].values(), astro_data.data, repeat(astro_data.axes[1].values()))
 
+            if len(iterators[0]) > 20:
+                pa_logger.info(f"Warning: a high number of curves ({len(iterators[0])})"
+                              f" were requested with individual label, plots will be slow")
             for val, xx, yy in zip (*iterators):
                 ax.plot(xx, yy, label=val)
             ax.legend(title=astro_data.axes[0].label())

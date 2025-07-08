@@ -15,7 +15,8 @@ from procastro.astrofile import static_identify, static_read, static_guess, stat
 from procastro.cache.cache import AstroCache
 from procastro.astrofile.meta import CaseInsensitiveMeta
 from procastro.interfaces import IAstroCalib, IAstroFile
-from procastro.logging import io_logger
+from procastro.config import pa_logger
+
 from procastro.misc.graph import imshowz
 from procastro.statics import PADataReturn, identity, dict_from_pattern
 
@@ -180,7 +181,7 @@ class AstroFile(IAstroFile):
             msg = f". Back-up in: {str(filename) + backup_extension}"
             shutil.move(filename, backup)
 
-        io_logger.warning(f"Saving in {filename} using file type {file_type}{msg}")
+        pa_logger.warning(f"Saving in {filename} using file type {file_type}{msg}")
         if data is not None:
             raise NotImplementedError("data should not be given anymore when saving to fits... it is always"
                                       " taken from the object")
@@ -197,7 +198,7 @@ class AstroFile(IAstroFile):
 
     def plot(self, ax=None, channels=0, title="", ncols=2, epochs=None):
         if not self.spectral:
-            io_logger.warning("Cannot plot image, use imshowz instead")
+            pa_logger.warning("Cannot plot image, use imshowz instead")
             return
 
         if channels is None:
@@ -575,7 +576,7 @@ class AstroFile(IAstroFile):
                 elif f[:3] == 'gt':
                     greater_than = True
                 else:
-                    io_logger.warning(f"Function '{f}' not recognized in "
+                    pa_logger.warning(f"Function '{f}' not recognized in "
                                       f"filtering, ignoring")
 
             if greater_than:

@@ -13,7 +13,7 @@ import procastro as pa
 from procastro import AstroFile
 from procastro.exceptions import EmptyAstroDirError
 from procastro.interfaces import IAstroDir, IAstroFile, IAstroCalib
-from procastro.logging import io_logger
+from procastro.config import pa_logger
 from procastro.statics import glob_from_pattern
 
 
@@ -74,7 +74,7 @@ class AstroDir(IAstroDir):
 
             files = glob.glob(str(directory / glob_files))
             if not len(files):
-                io_logger.warning(f"No files found with glob pattern '{str(directory/glob_files)}'")
+                pa_logger.warning(f"No files found with glob pattern '{str(directory / glob_files)}'")
         elif isinstance(files, pa.AstroFile):
             files = [files]
 
@@ -372,10 +372,10 @@ class AstroDir(IAstroDir):
         if isinstance(other, pa.AstroDir):
             if other.spectral != self.spectral:
                 spectral = None
-                io_logger.warning(f"Warning, mixing spectral and not spectral AstroDir: "
+                pa_logger.warning(f"Warning, mixing spectral and not spectral AstroDir: "
                                   f"{sp_img[self.spectral]} + {sp_img[other.spectral]}.")
             if other.directory != self.directory:
-                io_logger.warning(f"Warning, mixing AstroDir with different directories, "
+                pa_logger.warning(f"Warning, mixing AstroDir with different directories, "
                                   f"using: {directory}")
 
             astrofiles = [af for af in other]
