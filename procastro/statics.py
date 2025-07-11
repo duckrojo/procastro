@@ -5,7 +5,7 @@ import numpy as np
 from astropy.table import Table
 from matplotlib import pyplot as plt
 
-from procastro.astrofile.meta import CaseInsensitiveMeta
+from procastro.data.utils import CaseInsensitiveMeta
 
 _format_fcn = {'d': int, 'f': float, 's': str}
 

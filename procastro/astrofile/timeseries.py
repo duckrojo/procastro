@@ -2,7 +2,7 @@ from random import random
 
 import numpy as np
 
-from procastro.astrofile.meta import CaseInsensitiveMeta
+from procastro.data.utils import CaseInsensitiveMeta
 from procastro.astrofile.multi import AstroFileMulti
 
 

@@ -16,11 +16,13 @@ class AstroAxis:
     def __init__(self,
                  nn,
                  linear_lims: tuple[float, float] | None = None,
+                 values: list | np.ndarray = None
                  ):
-        if linear_lims is None:
-            linear_lims = (0, nn-1)
+        if values is None:
+            if linear_lims is None:
+                linear_lims = (0, nn-1)
 
-        values = np.linspace(linear_lims[0], linear_lims[1], nn)
+            values = np.linspace(linear_lims[0], linear_lims[1], nn)
 
         self._values = values
 
@@ -42,6 +44,16 @@ class AstroAxis:
         if self.unit is not None:
             label = f"{label} [{self.unit}]"
         return label
+
+    def append(self,
+               element,
+               in_place=False,
+               ):
+        values = np.append(self._values, element)
+        if in_place:
+            self._values = values
+
+        return AstroAxis(len(values), values=values)
 
     def __str__(self):
         return f"AstroAxis of acronym '{self.acronym}'"

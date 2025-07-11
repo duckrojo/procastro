@@ -7,13 +7,13 @@ __all__ = ['AstroAxes']
 
 class AstroAxes:
     def __init__(self,
-                 astro_axes: list[AstroAxis],
+                 astro_axes: "list[AstroAxis] | AstroAxes",
                  ):
-        self.specification = "".join([spec.acronym for spec in astro_axes])
 
-        self._axes = astro_axes
+        self.specification = "".join([axis.acronym for axis in astro_axes])
+        self._axes = [axis for axis in astro_axes]
 
-    ################################3
+    ################################
     #
     # Initializing
 
@@ -52,10 +52,21 @@ class AstroAxes:
     #################################
     #
     # methods
+    @property
+    def shape(self):
+        return tuple([len(axis) for axis in self])
 
     def str_available(self):
         ident = [f'{axes.acronym}' for axes in self._axes]
         return ", ".join(ident)
+
+    def add_axis(self,
+                 axis_type,
+                 value=0,
+                 ):
+        """Returns a new AstroAxes with an extra axes"""
+
+        return AstroAxes(self._axes + [AstroAxis.use(axis_type)(1, values=[value])])
 
     def __str__(self):
         shape = [str(len(axis)) for axis in self._axes]
@@ -122,7 +133,7 @@ Returns index of labeled axis.
         """
         if isinstance(label, int):
             if label > len(self._axes):
-                raise ValueError(f"AstroAxis index {label} is beyond available dims ({len(self._axes)}")
+                raise IndexError(f"AstroAxis index {label} is beyond available dims ({len(self._axes)}")
             return label
 
         ret = None
@@ -133,6 +144,6 @@ Returns index of labeled axis.
                 ret = i
 
         if ret is None:
-            raise ValueError(f"AstroAxis specification '{label}' not found")
+            raise IndexError(f"AstroAxis specification '{label}' not found")
 
         return ret

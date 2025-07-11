@@ -1,9 +1,30 @@
+import numpy as np
+from astropy.io import fits as pf
+
+
+class DictInitials(dict):
+    def __getitem__(self, item):
+        short_idx = len(item)
+        keys = np.array(list(self.keys()))
+        short_idxs = np.array([k[:short_idx] for k in keys])
+        cast = type(item)
+
+        if (item == keys).sum() == 1:
+            return super().__getitem__(item)
+
+        location = item == short_idxs
+        if location.sum() > 1:
+            raise IndexError(f"Ambiguous index '{item}'. Specify between: {list([cast(k) for k in keys[location]])}")
+
+        if location.sum() == 0:
+            raise IndexError(f"Index {item} not found")
+
+        return super().__getitem__(type(item)(keys[location][0]))
+
+
 # Based on code from m000
 #
 # https://stackoverflow.com/a/32888599
-
-from astropy.io import fits as pf
-
 
 class CaseInsensitiveMeta(dict):
     _commentary = ['history', 'comment', '', 'HISTORY', "COMMENT"]
@@ -95,3 +116,10 @@ class CaseInsensitiveMeta(dict):
 
     def __or__(self, other):
         return super().__or__(CaseInsensitiveMeta(other))
+
+
+if __name__ == '__main__':
+    dct = DictInitials(name=1, nom=3, tok=5, token=9)
+    dct2 = DictInitials({'name':1, 'nom':3, 'tok':5, 'token':9})
+
+    print(dct['no'])

@@ -179,8 +179,8 @@ class WavSol(AstroCalib):
 
             between_pix = (maxw - minw) / dwav
             self.target_wav = np.round(minw, decimals) + (np.arange(wav) - (wav - between_pix) / 2) * dwav
-            pa_logger.warning(f"Wavelength scale was set to {wav} pixels between {self.target_wav[0]:.2f}"
-                              f" and {self.target_wav[-1]:.2f}. Delta: {self.target_wav[1]-self.target_wav[0]}")
+            pa_logger.info(f"Wavelength scale was set to {wav} pixels between {self.target_wav[0]:.2f}"
+                           f" and {self.target_wav[-1]:.2f}. Delta: {self.target_wav[1]-self.target_wav[0]}")
         else:
             raise TypeError("Target wav must be an ndarray (an explicit wav_out) or "
                             "int (number of elements)")
@@ -239,11 +239,11 @@ class WavSol(AstroCalib):
         mask *= large_jump_mask
 
         # interpolate every column
-        pa_logger.warning("Interpolating wavelengths" +
+        pa_logger.info("Interpolating wavelengths" +
                           (" after aligning telluric" if self.align_telluric else ""))
         out_table = Table({'wav': wav_out})  # [:, np.newaxis] * np.ones([1, n_epochs])})
         for col in infochn:
-            pa_logger.warning(f" - column {col}")
+            pa_logger.info(f" - column {col}")
             fcn = functions.use_function("otf_spline:s0", wav_in, data[col], transpose=True)
             out_table[col] = MaskedColumn(fcn(MaskedArray(wav_out, mask=~mask_wav)),
                                           mask=~mask)

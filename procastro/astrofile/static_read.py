@@ -5,7 +5,7 @@ from astropy.io import fits as pf
 from astropy.table import Table
 from numpy.ma.core import MaskedArray
 
-from .meta import CaseInsensitiveMeta
+from ..data.utils import CaseInsensitiveMeta
 
 
 def read(file_type,

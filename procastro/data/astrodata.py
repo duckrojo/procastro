@@ -1,5 +1,6 @@
 import re
 from itertools import repeat
+from typing import Any
 
 import numpy as np
 from astropy.visualization import ZScaleInterval
@@ -9,6 +10,7 @@ from matplotlib.axes import Axes
 from procastro.axis.axes import AstroAxes
 from procastro.axis.data import DataAxis
 from procastro.config import pa_logger
+from procastro.data.utils import DictInitials, CaseInsensitiveMeta
 
 
 class AstroData:
@@ -19,8 +21,8 @@ class AstroData:
 
     def __init__(self,
                  data=None,
-                 meta=None,
-                 axes: AstroAxes|None = None,
+                 meta: CaseInsensitiveMeta=None,
+                 axes: AstroAxes | None = None,
                  ):
         if data is not None:
             self._data = data
@@ -28,6 +30,9 @@ class AstroData:
                 raise ValueError("Meta and Axes needs to be specified if data is given")
 
         self._meta = meta
+
+        if axes.shape != data.shape:
+            raise ValueError(f"Axes shape ({axes.shape}) and data shape ({data.shape}) do not match")
         self._axes = axes
 
     @property
@@ -35,16 +40,23 @@ class AstroData:
         return len(self._axes)
 
     @property
+    def shape(self):
+        return self.data.shape
+
+    @property
     def meta(self):
-        return self._meta
+        """Returns a copy of the meta information"""
+        return CaseInsensitiveMeta(self._meta)
 
     @property
     def data(self):
-        return self._data
+        """Returns a copy of the data"""
+        return np.array(self._data)
 
     @property
     def axes(self):
-        return self._axes
+        """Returns a copy of the axes"""
+        return AstroAxes(self._axes)
 
     def __contains__(self, item):
         return item in self._meta
@@ -63,37 +75,190 @@ class AstroData:
 
     def median(self,
                axis: str | int | None = None,
+               label: str | None = None,
                ):
-        if axis is None:
-            return np.median(self.data)
+        return self.axis_collapse("median",
+                                  axis=axis, label=label)
 
-        axis = self._axes.index(axis)
-
-        data_med = np.median(self.data, axis=axis)
-        axes_med = self._axes.removed(axis)
-
-        return AstroData(data=data_med, meta=self._meta,
-                         axes=axes_med,
-                         )
+    def mean(self,
+             axis: str | int | None = None,
+             label: str | None = None,
+             ):
+        return self.axis_collapse("mean",
+                                  axis=axis, label=label)
 
     def std(self,
             axis: str | int | None = None,
+            label: str | None = None,
             ):
-        if axis is None:
-            return np.std(self.data)
+        return self.axis_collapse("std",
+                                  axis=axis, label=label)
 
-        axis = self._axes.index(axis)
+    def min(self,
+            axis: str | int | None = None,
+            label: str | None = None,
+            ):
+        return self.axis_collapse("min",
+                                  axis=axis, label=label)
 
-        data_med = np.std(self.data, axis=axis)
-        axes_med = self._axes.removed(axis)
+    def max(self,
+            axis: str | int | None = None,
+            label: str | None = None,
+            ):
+        return self.axis_collapse("max",
+                                  axis=axis, label=label)
 
-        return AstroData(data=data_med, meta=self._meta,
-                         axes=axes_med,
+    def axis_collapse(self,
+                      statistic: str | list[str],
+                      axis: str | int | None = None,
+                      label: str | None = None,
+                      mask: np.ndarray = None,
+                      ):
+        """
+        Collapse requested axis using a median
+
+        Parameters
+        ----------
+        statistic : str, list[str]
+          Statistic to be used for the collapse. Available options: median, std, min, max
+        label: str
+          New name of data value
+        axis: str, int
+          Axis along which the median is computed.
+
+        Returns
+        -------
+        an AstroData instance with one less axis.
+
+        """
+        statistics = DictInitials(median = ("Median", np.median),
+                                  mean = ("Mean", np.mean),
+                                  min = ("Minimum", np.min),
+                                  std = ("Standard deviation", np.std),
+                                  max = ("Maximum", np.max),
+                                  )
+
+        if mask is not None:
+            if len(self.axes[axis]) != len(mask):
+                raise ValueError("Mask must have same length as chosen "
+                                 f"axis {self.axes[axis].acronym}"
+                                 f" ({len(mask)} vs {len(self.axes[axis])})")
+            raise NotImplementedError("Mask not implemented yet")
+        else:
+            mask = np.ones(len(self.axes[axis])) == 1
+
+
+        if isinstance(statistic, str):
+            name, function = statistics[statistic]
+
+            if axis is None:
+                return function(self.data)
+
+            axis = self._axes.index(axis)
+
+            data_collapsed = function(self.data, axis=axis)
+            axes_collapsed = self._axes.removed(axis)
+            meta = self.meta
+            if label is None:
+                label = f"{name} along {self._axes[axis].short()}"
+            meta['datatype'] = label
+
+            return AstroData(data=data_collapsed, meta=meta,
+                             axes=axes_collapsed,
+                             )
+
+        if isinstance(statistic, list):
+            along_name = self.axes[axis].short()
+            val = f"{statistics[statistic[0]][0]} along {along_name}"
+            if label is None:
+                label = ""
+
+            ret_ad = self.axis_collapse(statistic[0],
+                                        axis,
+                                        label=label,
+                                        ).with_new_axis("C",
+                                                        value=val)
+
+            for stat in statistic[1:]:
+                val = f"{statistics[stat][0]} along {along_name}"
+                ret_ad = ret_ad.concatenate_along("C",
+                                                  self.axis_collapse(stat, axis=axis,
+                                                                     label=label),
+                                                  value=val,
+                                                  )
+
+            return ret_ad
+
+        raise ValueError(f"Statistic ({statistic}) must be a valid string or list of strings")
+
+    def concatenate_along(self,
+                          axis,
+                          astrodata: "AstroData",
+                          value: str | None = None,
+                          ) -> "AstroData":
+        """
+
+        Parameters
+        ----------
+        axis
+        astrodata
+        value
+
+        Returns
+        -------
+
+        """
+        try:
+            along = self.axes.index(axis)
+        except IndexError:
+            self.with_new_axis(axis)
+            along = self.axes.index(axis)
+
+        required_shape = list(self.shape)
+        required_shape.pop(along)
+
+        if astrodata.shape != tuple(required_shape):
+            raise ValueError(f"astrodata <{astrodata}> must have shape {tuple(required_shape)},"
+                             f" not {astrodata.shape}")
+
+        new_shape = astrodata.shape[:along] + (1,) + astrodata.shape[along:]
+        data = np.concatenate((self.data, astrodata.data.reshape(new_shape)), axis=along)
+
+        axes = self.axes
+        axes[axis].append(value, in_place=True)
+
+        return AstroData(data=data, meta=self.meta, axes=axes)
+
+    def with_new_axis(self,
+                      axis_type,
+                      value: Any = 0,
+                      ):
+        data = self.data
+        new_shape = data.shape + (1,)
+
+        new_data = data.reshape(new_shape)
+        new_axes = self.axes.add_axis(axis_type, value=value)
+
+        return AstroData(data=new_data,
+                         axes=new_axes,
+                         meta=self.meta,
                          )
 
     def reorder(self,
                 axes: str | list[int],
                 ):
+        """
+        Reorder the axes according to list of integers, or named string with acronyms (e.g. 'XYTSw')
+
+        Parameters
+        ----------
+        axes: str, list[int]
+          either a list of integers identifying each of the axes by their current position, or a string with acronyms
+
+        Returns
+        -------
+
+        """
         new_axes = []
 
         if isinstance(axes, str):
@@ -295,3 +460,6 @@ if __name__ == "__main__":
     print(ad.median('X'))
     ad.median('X').plot()
     ad.plot('Y', label='X')
+
+    new_ad = ad.axis_collapse(["min", "max", "med"], 'X')
+    new_ad.plot('Y', label='C')

@@ -6,7 +6,7 @@ __all__ = ['AstroFileMosaic']
 
 from astropy.utils.metadata import enable_merge_strategies, MergeStrategy
 
-from .meta import CaseInsensitiveMeta
+from ..data.utils import CaseInsensitiveMeta
 from .multi import AstroFileMulti
 
 

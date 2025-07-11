@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt, axes
 
 from procastro.astrofile import static_identify, static_read, static_guess, static_write
 from procastro.cache.cache import AstroCache
-from procastro.astrofile.meta import CaseInsensitiveMeta
+from procastro.data.utils import CaseInsensitiveMeta
 from procastro.interfaces import IAstroCalib, IAstroFile
 from procastro.config import pa_logger
 
@@ -181,7 +181,7 @@ class AstroFile(IAstroFile):
             msg = f". Back-up in: {str(filename) + backup_extension}"
             shutil.move(filename, backup)
 
-        pa_logger.warning(f"Saving in {filename} using file type {file_type}{msg}")
+        pa_logger.info(f"Saving in {filename} using file type {file_type}{msg}")
         if data is not None:
             raise NotImplementedError("data should not be given anymore when saving to fits... it is always"
                                       " taken from the object")

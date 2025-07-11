@@ -290,11 +290,11 @@ Iterates over all the information that matches column of wavpix and meta of arcs
             self.fit_widths[option] = np.array(widths)
             self.fit_widths_mask[option] = mask
 
-            pa_logger.warning(f"Fitted line widths for option "
-                              f"'{",".join([str(x) 
-                                            for x in list(self.external) + list(option)])}'"
-                              f" varies between {p[1] + p[0] * original_centers[0]:.1f} - "
-                              f"{p[1] + p[0] * original_centers[-1]:.1f}")
+            pa_logger.info(f"Fitted line widths for option "
+                           f"'{",".join([str(x) 
+                                         for x in list(self.external) + list(option)])}'"
+                           f" varies between {p[1] + p[0] * original_centers[0]:.1f} - "
+                           f"{p[1] + p[0] * original_centers[-1]:.1f}")
 
             # widths are fixed for the multi-line fitting
             widths = np.polyval(p, original_centers)

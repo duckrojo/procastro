@@ -14,7 +14,7 @@ class DataAxis(AstroAxis):
                  label=None,
                  ):
 
-        # there is no linear interpolated axis for the data Axes
+        # there is no linearly interpolated axis for the data Axes
         super().__init__(1)
 
         self._values = data
