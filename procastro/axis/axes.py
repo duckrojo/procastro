@@ -11,7 +11,7 @@ class AstroAxes:
                  ):
 
         self.specification = "".join([axis.acronym for axis in astro_axes])
-        self._axes = [axis for axis in astro_axes]
+        self._axes = [axis.copy() for axis in astro_axes]
 
     ################################
     #
@@ -67,6 +67,9 @@ class AstroAxes:
         """Returns a new AstroAxes with an extra axes"""
 
         return AstroAxes(self._axes + [AstroAxis.use(axis_type)(1, values=[value])])
+
+    def copy(self):
+        return AstroAxes(self._axes)
 
     def __str__(self):
         shape = [str(len(axis)) for axis in self._axes]

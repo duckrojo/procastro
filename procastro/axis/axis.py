@@ -26,8 +26,14 @@ class AstroAxis:
 
         self._values = values
 
+    def copy(self):
+        return AstroAxis.use(self.acronym)(len(self), values=self._values.copy())
+
     def __len__(self) -> int:
         return len(self._values)
+
+    def update_values(self, values):
+        self._values = values
 
     def values(self):
         return self._values

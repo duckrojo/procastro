@@ -77,43 +77,42 @@ class AstroData:
                axis: str | int | None = None,
                label: str | None = None,
                ):
-        return self.axis_collapse("median",
-                                  axis=axis, label=label)
+        return self.axis_collapse_with("median",
+                                       axis=axis, label=label)
 
     def mean(self,
              axis: str | int | None = None,
              label: str | None = None,
              ):
-        return self.axis_collapse("mean",
-                                  axis=axis, label=label)
+        return self.axis_collapse_with("mean",
+                                       axis=axis, label=label)
 
     def std(self,
             axis: str | int | None = None,
             label: str | None = None,
             ):
-        return self.axis_collapse("std",
-                                  axis=axis, label=label)
+        return self.axis_collapse_with("std",
+                                       axis=axis, label=label)
 
     def min(self,
             axis: str | int | None = None,
             label: str | None = None,
             ):
-        return self.axis_collapse("min",
-                                  axis=axis, label=label)
+        return self.axis_collapse_with("min",
+                                       axis=axis, label=label)
 
     def max(self,
             axis: str | int | None = None,
             label: str | None = None,
             ):
-        return self.axis_collapse("max",
-                                  axis=axis, label=label)
+        return self.axis_collapse_with("max",
+                                       axis=axis, label=label)
 
-    def axis_collapse(self,
-                      statistic: str | list[str],
-                      axis: str | int | None = None,
-                      label: str | None = None,
-                      mask: np.ndarray = None,
-                      ):
+    def axis_collapse_with(self,
+                           statistic: str | list[str],
+                           axis: str | int | None = None,
+                           label: str | None = None,
+                           ):
         """
         Collapse requested axis using a median
 
@@ -137,15 +136,6 @@ class AstroData:
                                   std = ("Standard deviation", np.std),
                                   max = ("Maximum", np.max),
                                   )
-
-        if mask is not None:
-            if len(self.axes[axis]) != len(mask):
-                raise ValueError("Mask must have same length as chosen "
-                                 f"axis {self.axes[axis].acronym}"
-                                 f" ({len(mask)} vs {len(self.axes[axis])})")
-            raise NotImplementedError("Mask not implemented yet")
-        else:
-            mask = np.ones(len(self.axes[axis])) == 1
 
 
         if isinstance(statistic, str):
@@ -173,17 +163,17 @@ class AstroData:
             if label is None:
                 label = ""
 
-            ret_ad = self.axis_collapse(statistic[0],
-                                        axis,
-                                        label=label,
-                                        ).with_new_axis("C",
-                                                        value=val)
+            ret_ad = self.axis_collapse_with(statistic[0],
+                                             axis,
+                                             label=label,
+                                             ).axis_add_new("C",
+                                                       value=val)
 
             for stat in statistic[1:]:
                 val = f"{statistics[stat][0]} along {along_name}"
                 ret_ad = ret_ad.concatenate_along("C",
-                                                  self.axis_collapse(stat, axis=axis,
-                                                                     label=label),
+                                                  self.axis_collapse_with(stat, axis=axis,
+                                                                          label=label),
                                                   value=val,
                                                   )
 
@@ -191,48 +181,10 @@ class AstroData:
 
         raise ValueError(f"Statistic ({statistic}) must be a valid string or list of strings")
 
-    def concatenate_along(self,
-                          axis,
-                          astrodata: "AstroData",
-                          value: str | None = None,
-                          ) -> "AstroData":
-        """
-
-        Parameters
-        ----------
-        axis
-        astrodata
-        value
-
-        Returns
-        -------
-
-        """
-        try:
-            along = self.axes.index(axis)
-        except IndexError:
-            self.with_new_axis(axis)
-            along = self.axes.index(axis)
-
-        required_shape = list(self.shape)
-        required_shape.pop(along)
-
-        if astrodata.shape != tuple(required_shape):
-            raise ValueError(f"astrodata <{astrodata}> must have shape {tuple(required_shape)},"
-                             f" not {astrodata.shape}")
-
-        new_shape = astrodata.shape[:along] + (1,) + astrodata.shape[along:]
-        data = np.concatenate((self.data, astrodata.data.reshape(new_shape)), axis=along)
-
-        axes = self.axes
-        axes[axis].append(value, in_place=True)
-
-        return AstroData(data=data, meta=self.meta, axes=axes)
-
-    def with_new_axis(self,
-                      axis_type,
-                      value: Any = 0,
-                      ):
+    def axis_add_new(self,
+                     axis_type,
+                     value: Any = 0,
+                     ):
         data = self.data
         new_shape = data.shape + (1,)
 
@@ -244,9 +196,9 @@ class AstroData:
                          meta=self.meta,
                          )
 
-    def reorder(self,
-                axes: str | list[int],
-                ):
+    def axis_reorder(self,
+                     axes: str | list[int],
+                     ):
         """
         Reorder the axes according to list of integers, or named string with acronyms (e.g. 'XYTSw')
 
@@ -274,6 +226,242 @@ class AstroData:
         return AstroData(data=self.data.transpose(new_axes), meta=self.meta,
                          axes=AstroAxes([self.axes[i] for i in new_axes],),
                          )
+
+    def filter(self,
+               **kwargs) -> "AstroData":
+        """
+        Compares if the expected value of the given header item matches
+        the value stored in this file header or in an axis value.
+
+        Filtering can be customized by including one of the following options
+        after the item name, separated by an underscore.
+
+        Keyword syntax (always case insensitive):
+
+           [AXIS_]<FIELD_NAME>[_<OPERATIOM1>[_<OPERATION2>[...]]]
+
+           Where FIELD_NAME is the axis name if preceded with `AXIS_`; otherwise, it refers to a key in meta.
+           operators can be a non-contradictory mix of
+
+           - Strings:
+            + BEGIN:     True if value starts with the given string
+            + END:       True if value ends with the given string
+            + ICASE:     Case unsensitive match
+            + MATCH:     Case sensitive match
+
+           - Numeric values:
+            + LT / LE:   True if current value is lower (or equal) than the given number
+            + GT / GE:   True if current value is greater (or equal) than the given number
+            + EQUAL:     True if both values are the same
+
+           - Other:
+            + NOT:       Logical Not
+
+        It is possible to include multiple options, this statements count as
+        a logical "or" statements.
+
+        Parameters
+        ----------
+        kwargs : Keyword Arguments or unpacked dictionary
+            item_name_option : value
+
+        Returns
+        -------
+        AstroData
+
+        Notes
+        -----
+        If a header item has a "-" character on its name, use two underscores
+        to represent it.
+
+        Examples
+        --------
+        NAME_BEGIN_ICASE_NOT = "WASP"   (False if string starts with wasp)
+        NAXIS1_GT_EQUAL = 20                  (True if NAXIS1 >= 20)
+        AXIS_X_LT = 20   (True for all values of x axis less than 20)
+
+        """
+        ret = []
+
+        axes_mask = {}
+
+        for filter_keyword, request in kwargs.items():
+            functions = []
+            axis_filter = False
+
+            # By default, it is not comparing match, but rather equality
+            match = False
+            equal = True
+            negate = False
+
+            lower_than = greater_than = False
+
+            filter_keyword = filter_keyword.replace('__', '-')
+
+            if '_' in filter_keyword:
+                tmp = filter_keyword.split('_')
+                filter_keyword = tmp.pop(0).lower()
+                functions.extend(tmp)
+
+            try:
+                filter_keyword = filter_keyword[0].upper() + filter_keyword[1:]
+                axis_filter = self.axes.index(filter_keyword) >= 0
+            except IndexError:
+                axis_filter = False
+                raise NotImplementedError("meta indexing needs work")
+
+            if axis_filter:
+                values = self.axes[filter_keyword].values()
+            else:
+                try:
+                    values = self[filter_keyword]
+                except IndexError:
+                    # Treat specially the not-found and list as filter_keyword
+                    ret.append(False)
+                    continue
+
+            if isinstance(request, dict):
+                raise TypeError("Filter string cannot be list (to provide multiple Ok values) or scalar only. ")
+            elif isinstance(request, (tuple, list)):
+                pass
+            else:
+                request = [request]
+
+            functions = [f.lower() for f in functions]
+            # check that either numeric or string keywords are given, not both
+            if (any([f in ["match", "begin", "end"] for f in functions]) and
+                    any([f in ["lt", "le", "gt", "ge"] for f in functions])):
+                raise ValueError(f"cannot request both numeric and string functions in filter{functions}")
+
+            for f in functions:
+                if f[:5] == 'begin':
+                    values = values[:len(request[0])]
+                elif f[:3] == 'end':
+                    values = values[-len(request[0]):]
+                elif f[:5] == 'icase':
+                    values = values.lower()
+                    request = [a.lower() for a in request]
+                elif f[:3] == 'not':
+                    negate = True
+                elif f[:5] == 'match':
+                    match = True
+                    equal =  False
+                elif f[:5] == 'equal':
+                    match = False
+                    equal = True
+                elif f[:3] == 'lt':
+                    lower_than = True
+                    equal = False
+                elif f[:3] == 'gt':
+                    greater_than = True
+                    equal = False
+                elif f[:3] == 'le':
+                    lower_than = True
+                    equal = True
+                elif f[:3] == 'ge':
+                    greater_than = True
+                    equal = True
+                else:
+                    pa_logger.warning(f"Function '{f}' not recognized in "
+                                      f"filtering, ignoring")
+
+
+            # if axes filtering return a new cropped astrodata
+            if not axis_filter:
+                raise NotImplementedError("meta filtering needs work still")
+
+            values_expanded = values[None, :] * np.ones([len(request), 1])
+            request_expanded = np.array(request)[:, None] * np.ones([1,len(values)])
+            mask = np.zeros(len(values), dtype=bool)
+
+            if greater_than:
+                mask += (values_expanded > request_expanded).sum(0, dtype=bool) != negate
+
+            if lower_than:
+                mask += (values_expanded < request_expanded).sum(0, dtype=bool) != negate
+
+            if match:
+                mask += (np.char.find(values_expanded,
+                                     request_expanded)>0).sum(0, dtype=bool) != negate
+
+            if equal:
+                mask += (values_expanded == request_expanded).sum(0, dtype=bool) != negate
+
+            if filter_keyword in axes_mask:
+                axes_mask[filter_keyword] += mask
+            else:
+                axes_mask[filter_keyword] = mask
+
+        ret_astrodata = self
+        for filter_keyword, mask in axes_mask.items():
+            axes = ret_astrodata.axes.copy()
+            data = ret_astrodata.data
+            axis_idx = axes.index(filter_keyword)
+            original_axis = self._axes[filter_keyword]
+            axes[filter_keyword].update_values(original_axis.values()[mask])
+            mask_idx = np.arange(len(original_axis))[mask]
+
+            slices = tuple([slice(None, None, None)] * axis_idx + [mask_idx]
+                           + [slice(None, None, None)] * (len(axes) - axis_idx - 1))
+            data = data[slices]
+
+            ret_astrodata = AstroData(data=data, axes=axes, meta=self.meta)
+
+        return ret_astrodata
+
+        #     if greater_than:
+        #         ret.append((True in [r < values
+        #                              for r in request]) != negate)
+        #     if lower_than:
+        #         ret.append((True in [r > values
+        #                              for r in request]) != negate)
+        #     if match:
+        #         ret.append((True in [r in values
+        #                              for r in request]) != negate)
+        #     if equal:
+        #         ret.append((True in [r == values
+        #                              for r in request]) != negate)
+        #
+        # # Returns whether the filter existed (or not, if _not function)
+        # return True in ret
+
+    def concatenate_along(self,
+                          axis,
+                          astrodata: "AstroData",
+                          value: str | None = None,
+                          ) -> "AstroData":
+        """
+
+        Parameters
+        ----------
+        axis
+        astrodata
+        value
+
+        Returns
+        -------
+
+        """
+        try:
+            along = self.axes.index(axis)
+        except IndexError:
+            self.axis_add_new(axis)
+            along = self.axes.index(axis)
+
+        required_shape = list(self.shape)
+        required_shape.pop(along)
+
+        if astrodata.shape != tuple(required_shape):
+            raise ValueError(f"astrodata <{astrodata}> must have shape {tuple(required_shape)},"
+                             f" not {astrodata.shape}")
+
+        new_shape = astrodata.shape[:along] + (1,) + astrodata.shape[along:]
+        data = np.concatenate((self.data, astrodata.data.reshape(new_shape)), axis=along)
+
+        axes = self.axes
+        axes[axis].append(value, in_place=True)
+
+        return AstroData(data=data, meta=self.meta, axes=axes)
 
     ######################################
     #
@@ -360,7 +548,7 @@ class AstroData:
 
         transposed_dims += [i for i in range(self.ndims) if i not in transposed_dims]
 
-        astro_data = self.reorder(transposed_dims)
+        astro_data = self.axis_reorder(transposed_dims)
         datatype = astro_data['datatype'] if 'datatype' in astro_data else ''
         data_axis = DataAxis(astro_data.data, label=datatype)
         other_axis = astro_data.axes[1 if do_per_label else 0]
@@ -437,7 +625,7 @@ class AstroData:
                              f"must be specified ({len(data.shape)})")
 
         if meta is None:
-            meta = {}
+            meta = CaseInsensitiveMeta({})
 
         if data_type is not None:
             meta["datatype"] = data_type
@@ -461,5 +649,7 @@ if __name__ == "__main__":
     ad.median('X').plot()
     ad.plot('Y', label='X')
 
-    new_ad = ad.axis_collapse(["min", "max", "med"], 'X')
+    new_ad = ad.axis_collapse_with(["min", "max", "med"], 'X')
     new_ad.plot('Y', label='C')
+
+    ad.filter(x_gt=50).plot('X')
