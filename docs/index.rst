@@ -13,9 +13,9 @@ ProcAstro is a versatile framework aimed at seamless handling of astronomical da
 * :ref:`Easy handling of multiple FITS files <Working with Multiple Files>`
 * :ref:`Quick plotting with interactive options <Easy Plotting>`
 * :ref:`Easy handling/creation of calibration frames <Calibration Files>`
-* fast aperture photometry
+* :ref:`Simple API for astronomical data <API Provider>` 
+fast aperture photometry
 * observation planning
-
 
 .. toctree::
    :hidden:

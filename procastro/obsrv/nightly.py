@@ -22,6 +22,11 @@ import os.path
 from pathlib import Path
 import pyvo as vo
 import pyvo.dal.exceptions
+
+import procastro as pa
+from procastro.api_provider.api_service import ApiResult, ApiService
+import procastro.astro as paa
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import time
@@ -46,38 +51,40 @@ TwoTuple = Tuple[float, float]
 
 __all__ = ['query_full_exoplanet_db', 'Nightly']
 
+exoplanet_cache= paa.AstroCache(max_cache=int(1e12), 
+                                lifetime=7,
+                                verbose= False, 
+                                force = False, 
+                                label_on_disk='exoplanet_db')
 
-# noinspection SqlNoDataSourceInspection
-def query_full_exoplanet_db(force_reload: bool = False,
-                            reload_days: float = 7
-                            ):
-    file = Path(config_user('obsrv')['cache_dir']) / "exodb.pickle"
-    if not force_reload and os.path.isfile(file):
-        days_since = (os.path.getmtime(file) - time.time()) / 3600 / 24
-        if days_since < reload_days:
-            return pd.read_pickle(file)
 
-    exo_service = vo.dal.TAPService("https://exoplanetarchive.ipac.caltech.edu/TAP")
-    # the tranmiderr1 constraint is to avoid planets with and uncertainty larger than one day,
-    # which are likely to be from direct imaging
-    try:
-        resultset = exo_service.search(
-            f"SELECT pl_name,ra,dec,pl_orbper,pl_tranmid,pl_tranmiderr1,disc_facility,"
-            f"pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag "
-            f"FROM exo_tap.pscomppars "
-            f"WHERE pl_tranmid!=0.0 and pl_orbper!=0.0 and pl_tranmiderr1<1")
-    except pyvo.dal.exceptions.DALFormatError:
-        if os.path.isfile(file):
-            days_since = (time.time() - os.path.getmtime(file)) / 3600 / 24
-            print(f"Cannot connect to the Exoplanet Archive Database, "
-                  f"using cached version instead ({days_since:.1f} days old)")
-            return pd.read_pickle(file)
-        else:
-            raise ConnectionError("Cannot connect to the Exoplanet Archive dabatase")
-    planets_df = resultset.to_table().to_pandas()
-    planets_df.to_pickle(file)
+@exoplanet_cache
+def query_full_exoplanet_db(query_id: str, force:bool= False):
+    """
+    Queries the full exoplanet database for specific parameters.
+    This function uses the ApiService to query the "pscomppars" table for exoplanets
+    with non-zero transit midpoints and orbital periods. It retrieves a selection of
+    columns including planet name, coordinates, orbital period, transit midpoint, discovery
+    facility, transit duration, proper motions, and magnitudes.
+    Args:
+        query_id (str): An identifier for the query (Needed for the cache hashing).
+        force (bool, optional): If True, forces the query to run regardless of cache or previous results. Default is False.
+    Returns:
+        pandas.DataFrame: A DataFrame containing the queried exoplanet data.
+    Raises:
+        Exception: If the query to the exoplanet database fails, an exception is raised with the error message.
+    """
 
-    return planets_df
+    api_service = ApiService(verbose=True)
+    result: ApiResult = api_service.query_exoplanet(
+            table="pscomppars",
+            select="pl_name,ra,dec,pl_orbper,pl_tranmid,disc_facility,pl_trandur,sy_pmra,sy_pmdec,sy_vmag,sy_gmag",
+            where="pl_tranmid!=0.0 and pl_orbper!=0.0"
+    )
+    if result.success:
+        return result.data.to_pandas()
+    else:
+        raise Exception(f"Error querying the exoplanet database: {result.error_message}")
 
 
 def _choose(dataframe: pd.DataFrame,
@@ -142,9 +149,10 @@ class Nightly:
         self._planets_after_pre_filter = None
 
         # create Dataframe and update missing magnitude
-        planets = query_full_exoplanet_db(force_reload=force_reload, reload_days=reload_days)
-        vmag = planets['sy_vmag']
-        planets['sy_vmag'] = vmag.mask(vmag==0, other=planets['sy_gmag'])
+        # TODO: Check the type of the return parameters!!!
+        planets = query_full_exoplanet_db(force=force_reload)
+        no_filter_data = planets['sy_vmag'] == 0
+        planets.loc[:, 'sy_vmag'].where(~no_filter_data, other=planets['sy_gmag'][no_filter_data], inplace=True)
         self._planets_all = planets
 
         self.observatory(observatory)

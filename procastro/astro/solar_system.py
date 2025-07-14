@@ -19,19 +19,22 @@ from PIL import Image
 from astropy import time as apt, units as u, coordinates as apc, io as io
 from astropy.table import Table, QTable, MaskedColumn
 
+
+from procastro.api_provider.api_service import ApiService
 from procastro.astro.projection import new_x_axis_at, unit_vector, current_x_axis_to
 import procastro as pa
 from procastro.cache.cache import AstroCache
 
 TwoValues = tuple[float, float]
-logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
-logger = logging.getLogger("astro")
+
+logger = logging.getLogger(__name__)
 
 
-jpl_cache = AstroCache(max_cache=1e12, lifetime=30,)
-usgs_map_cache = AstroCache(max_cache=30, lifetime=30,
-                            hashable_kw=['detail'], label_on_disk='USGSmap',
-                            force_kwd="no_cache")
+jpl_cache = AstroCache(max_cache=int(1e12), lifetime=30,)
+usgs_map_cache = AstroCache(max_cache=int(1e12), lifetime=30,
+                               hashable_kw=['detail'], label_on_disk='USGSmap',
+                               force= False,
+                               verbose=True)
 
 
 class HorizonsInterface:
@@ -114,13 +117,33 @@ class HorizonsInterface:
                 fp.write("!$$SOF\n")
                 fp.write("\n".join(full_specs))
                 fp.close()
-                return requests.post(url_api_file,
-                                    data={'format': 'text'},
-                                    files={'input': open(fp.name)}
-                                    ).text.splitlines()
+
+                # TODO: change this to the new api service model
+
+
+                apiService = ApiService()
+                response = apiService.request_http(url = url_api_file, method="POST", data={'format': 'text'}, files={'input': open(fp.name)})
+                if not response.success:
+                    raise ValueError(f"JPL Horizons request failed: {response.error_message}")
+                data = response.data 
+                return data.splitlines()
+
+
+                
+                # return requests.post(url_api_file,
+                #                     data={'format': 'text'},
+                #                     files={'input': open(fp.name)}
+                #                     ).text.splitlines()
+            
+                
 
         else:
-            return eval(requests.get(url, allow_redirects=True).content)['result'].splitlines()
+            apiService= ApiService(verbose=True) 
+            result = apiService.request_http(url = url, allow_redirects=True)
+            if not result.success:
+                raise ValueError(f"JPL Horizons request failed: {result.error_message}")
+            data = result.data
+            return data['result'].splitlines()
 
     
 
@@ -730,7 +753,7 @@ class BodyVisualizer:
         return orthographic_image
     @staticmethod
     @usgs_map_cache
-    def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,verbose =False):
+    def usgs_map_image(body,  warning_shown, detail=None, warn_multiple=True,verbose =False, force = False):
         """
         Retrieve a map image for a solar system body from USGS.
         
@@ -744,6 +767,8 @@ class BodyVisualizer:
             Whether to show warnings when multiple maps are available
         verbose : bool, default=False
             Whether to print verbose output during the fetching process
+        force : bool, default=False
+            If it is True, it will force fetching the map from USGS even if a cached version exists or the cache is configured to not force computation.
             
         Returns
         -------
@@ -752,9 +777,11 @@ class BodyVisualizer:
             
         Notes
         -----
-        This method is decorated with usgs_map_cachev2 to cache results and avoid
+        This method is decorated with usgs_map_cache to cache results and avoid
         redundant requests to the USGS server.
         """
+        if verbose:
+            logger.info(f"Fetching USGS map for {body} with detail '{detail}'")
         month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -817,26 +844,17 @@ class BodyVisualizer:
             body_files = [body_files[0]]
         if verbose:
             logger.info(f"Fetching map for {body}...")
-            logger.info(f"HTTP GET REQUEST TO : {body_files[0][2]} ")
+        apiService = ApiService(verbose=verbose)
+        response = apiService.request_http(url= body_files[0][2],
+                                        timeout=10,
+                                        method = "GET"
+                                        )
+        if response.success: 
 
-        try:
-            response = requests.get(body_files[0][2], timeout=(5, 30))  # Connect timeout, Read timeout
-            response.raise_for_status()  # Lanza una excepción específica para códigos de error HTTP
-        except requests.exceptions.ConnectionError as e:
-            logger.error(f"Connection error: {str(e)}")
-            return None
-        except requests.exceptions.Timeout as e:
-            logger.error(f"Timeout error: {str(e)}")
-            return None
-        except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error: {str(e)}")
-            return None
-        except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}")
-            return None
+            return Image.open(BytesIO(response.data))
+        else:
 
-        return Image.open(BytesIO(response.content))
-
+            return None
     @staticmethod
     def _cross2(a: np.ndarray,
             b: np.ndarray) -> np.ndarray:
@@ -1061,7 +1079,13 @@ class BodyVisualizer:
         if not hasattr(BodyVisualizer.create_frame, "_warning_shown"):
             BodyVisualizer.create_frame._warning_shown = False
 
-        image = BodyVisualizer.usgs_map_image(body, detail=detail, warn_multiple=not reread_usgs, warning_shown=BodyVisualizer.create_frame._warning_shown,verbose =verbose)
+
+        image = BodyVisualizer.usgs_map_image(body, 
+                                            detail=detail, 
+                                            warn_multiple=not reread_usgs, 
+                                            warning_shown=BodyVisualizer.create_frame._warning_shown,
+                                            verbose =verbose, 
+                                            force= reread_usgs)
         if image is None:
             raise ValueError(f"Could not get image for {body}")
 
@@ -1473,6 +1497,8 @@ def body_map(body:str,
     This is the main user-facing function that combines the functionality of 
     BodyVisualizer.create_image and BodyVisualizer.create_video depending on 
     whether time is a scalar or array.
+
+    NOTE: The Verbose Parameter is expected to cause tqdm (progress bar) bugs and repeated rendering of the loading bar. 
     
     Parameters
     ----------
@@ -1491,7 +1517,7 @@ def body_map(body:str,
     detail : str, optional
         Space-separated keywords to filter map alternatives
     reread_usgs : bool, default=False
-        Whether to ignore the cache and fetch fresh map data
+        Whether to ignore the cache and fetch fresh map data. This will override the directive of the cache creation if it is set to false its force attribute.
     radius_to_plot : float, optional
         Radius of the field of view in arcseconds (auto-detected if None)
     fps : int, default=10

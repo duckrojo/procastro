@@ -12,6 +12,8 @@ from matplotlib import pyplot as plt, ticker
 import cartopy.crs as ccrs
 from matplotlib.patches import Polygon
 
+import procastro as pa
+from procastro.api_provider.api_service import ApiService
 from procastro.astro import aqs as aqs
 from procastro.misc.general import accept_object_name
 
@@ -364,16 +366,13 @@ def find_target(target, coo_files=None, equinox='J2000', extra_info=None, verbos
                 raise ValueError(
                     "Sorry, AstroQuery not available for coordinate querying")
 
-            custom_simbad = aqs.Simbad()
-            if len(extra_info) > 0:
-                for info in extra_info:
-                    custom_simbad.add_votable_fields(info)
 
-            query = custom_simbad.query_object(target)
-            if not len(query):
+            apiService = ApiService(simbad_votable_fields=extra_info if len(extra_info) > 0 else None)
+            query = apiService.request_simbad(object_name= target).data # accesing to the data by accessing the data parameter.
+            if query is None:
                 # todo: make a nicer planet filtering option
                 if target[-2] == ' ' and target[-1] in 'bcdef':
-                    query = custom_simbad.query_object(target[:-2])
+                    query = apiService.request_simbad(object_name = target[:-2]).data
 
                     if not len(query):
                         query = custom_simbad.query_object(target[:-3])

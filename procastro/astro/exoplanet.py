@@ -41,6 +41,7 @@ def get_transit_ephemeris_file(target):
     ValueError
         If a data field does not match the specified format
     """
+
     config_exo = config.config_user("exoplanet")
     paths = [config_exo['transit_file'],
              ]

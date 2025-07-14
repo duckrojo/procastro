@@ -23,6 +23,8 @@ from procastro.statics import PADataReturn, identity, dict_from_pattern
 astrofile_cache = AstroCache()
 
 
+
+
 def _check_first_astrofile(fcn):
     """
 Decorator that raises error if first argument is not AstroFile
@@ -35,9 +37,11 @@ Decorator that raises error if first argument is not AstroFile
     -------
 
     """
+
     def wrapper(self, arg1, *args, **kwargs):
         if not isinstance(arg1, AstroFile):
-            raise TypeError(f"First argument of function {fcn.__name__} needs to be an AstroFile instances.")
+            raise TypeError(
+                f"First argument of function {fcn.__name__} needs to be an AstroFile instances.")
         return fcn(self, arg1, *args, **kwargs)
 
     return wrapper
@@ -69,7 +73,8 @@ class AstroFile(IAstroFile):
             return
 
         if len(kwargs) > 0 or len(args) > 0:
-            raise TypeError(f"Extra unknown arguments {args} or kwargs {kwargs} passed to AstroFileBase")
+            raise TypeError(
+                f"Extra unknown arguments {args} or kwargs {kwargs} passed to AstroFileBase")
         self._corrupt = False
 
         self._calib = []
@@ -146,7 +151,8 @@ class AstroFile(IAstroFile):
                 raise ValueError("Must provide a FITS filename for .write()... "
                                  "use .write_as() for alternative formats")
             if filename is None:
-                raise ValueError("Filename must be provided explicitly when original type was not FITS")
+                raise ValueError(
+                    "Filename must be provided explicitly when original type was not FITS")
         else:
             filename = self._data_file
 
@@ -180,13 +186,15 @@ class AstroFile(IAstroFile):
             msg = f". Back-up in: {str(filename) + backup_extension}"
             shutil.move(filename, backup)
 
-        io_logger.warning(f"Saving in {filename} using file type {file_type}{msg}")
+        io_logger.warning(
+            f"Saving in {filename} using file type {file_type}{msg}")
         if data is not None:
             raise NotImplementedError("data should not be given anymore when saving to fits... it is always"
                                       " taken from the object")
 
         if self.spectral and file_type == "FITS":
-            data = np.squeeze([self.data[chn].data.transpose() for chn in channels])
+            data = np.squeeze([self.data[chn].data.transpose()
+                              for chn in channels])
         elif file_type == "ECSV":
             data = self.data
         else:
@@ -236,7 +244,8 @@ class AstroFile(IAstroFile):
                 # numpy gives a warning here about ignoring masks in masked array.
                 data = data.data
                 if isinstance(data, np.ma.MaskedArray):
-                    medians = [np.median(x[m]) for x, m in zip(data.data, ~data.mask)]
+                    medians = [np.median(x[m])
+                               for x, m in zip(data.data, ~data.mask)]
                 else:
                     medians = np.median(data, axis=1)
 
@@ -275,7 +284,6 @@ class AstroFile(IAstroFile):
         self._meta = CaseInsensitiveMeta(value)
         self._random = random()
 
-
     @property
     @astrofile_cache
     def data(self) -> PADataReturn:
@@ -285,12 +293,12 @@ class AstroFile(IAstroFile):
         """
         data = self.read()
         meta = self._meta
-        
+
         for calibration in self._calib:
             data, meta = calibration(data, meta)
 
         self._last_processed_meta = meta
-        return data 
+        return data
 
     @property
     def filename(self):
@@ -321,7 +329,8 @@ class AstroFile(IAstroFile):
 
         for calib in astrocalib:
             if not isinstance(calib, IAstroCalib):
-                raise TypeError(f"'calib' must be a AstroCalib instance, not {type(calib)}: {calib}")
+                raise TypeError(
+                    f"'calib' must be a AstroCalib instance, not {type(calib)}: {calib}")
             self._calib.append(calib)
 
         return self
@@ -477,7 +486,8 @@ class AstroFile(IAstroFile):
             key = self._sort_key
 
         if isinstance(key, int):
-            raise ValueError("AstroFile can only be indexed with strings to meta keys")
+            raise ValueError(
+                "AstroFile can only be indexed with strings to meta keys")
 
         return self.values(key, single_in_list=False)
 
@@ -727,7 +737,8 @@ class AstroFile(IAstroFile):
         else:
             filename = self.filename
 
-        astrocalib = "".join([calibrator.short() for calibrator in self._calib])
+        astrocalib = "".join([calibrator.short()
+                             for calibrator in self._calib])
         if astrocalib:
             astrocalib = f"({astrocalib})"
 
@@ -776,7 +787,8 @@ class AstroFile(IAstroFile):
         """
         newhd = {}
         target = target.lower()
-        if isinstance(source, tuple) is True:  # a 2-element tuple with date and time keywords are eexpected.
+        # a 2-element tuple with date and time keywords are eexpected.
+        if isinstance(source, tuple) is True:
             ut_time = f"{self[source[0]]}T{self[source[1]]}"
         else:
             ut_time = self[source]
@@ -784,7 +796,8 @@ class AstroFile(IAstroFile):
         try:
             newhd[target] = apt.Time(ut_time).jd
         except ValueError:
-            raise ValueError(f"File {self._data_file} has invalid time specification: {ut_time}")
+            raise ValueError(
+                f"File {self._data_file} has invalid time specification: {ut_time}")
         self.set_values(**newhd)
 
     def imshowz(self, *args, **kwargs):

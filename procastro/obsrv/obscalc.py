@@ -22,6 +22,9 @@ import warnings
 import astropy.coordinates as apc
 import astropy.time as apt
 import astropy.units as u
+from procastro import config
+from procastro.api_provider.api_service import ApiResult, ApiService
+import procastro.astro as paa
 import numpy as np
 import os
 import pyvo as vo
@@ -324,32 +327,20 @@ class ObsCalc(object):
         print("Star at RA/DEC: {0:s}/{1:s}"
               .format(self._target.ra.to_string(sep=':'),
                       self._target.dec.to_string(sep=':')))
-
-        transit_epoch, transit_period, transit_length = \
-            procastro.astro.exoplanet.get_transit_ephemeris(target)
-        print(f"Found in file: {transit_epoch}+E*{transit_period} +- {transit_length}")
-
-        if transit_epoch is None or transit_period is None:
-            print("Attempting to query transit information")
-
-            query = f"SELECT pl_name,pl_tranmid,pl_orbper,pl_trandur FROM exo_tap.pscomppars " \
-                    f"WHERE lower(pl_name) like '%{target}%' "
-            resultset = exo_service.search(query)
-            try:
-                req_cols = [resultset['pl_orbper'].data[0], resultset['pl_tranmid'].data[0]]
-            except IndexError:
-                raise IndexError(f"Planet {target} not found in exoplanet database")
-            trandur = resultset['pl_trandur'].data[0]
-            if trandur is None:
-                req_cols.append(1)
-                warnings.warn("Using default 1hr length for transit duration", UserWarning)
-            else:
-                req_cols.append(trandur)
-
-            transit_period, transit_epoch, transit_length = req_cols
-
-            print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
-                  .format(transit_epoch, transit_period, transit_length))
+        config_exo = config.config_user("exoplanet")
+        paths_transits = [config_exo['transit_file'],
+                ]
+        apiService = ApiService()
+        transit_epoch, transit_period, transit_length = apiService.query_transits_ephemeris(
+            file_path = paths_transits[0],
+            target=target,
+            file_type = "legacy",
+            update= False
+        )
+        if transit_length is None:
+            transit_length = 1.0
+        print("  Found ephemeris: {0:f} + E*{1:f} (length: {2:f})"
+                .format(transit_epoch, transit_period, transit_length))
 
         if transit_period != 0:
             transit_epoch += phase_offset * transit_period
