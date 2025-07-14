@@ -10,6 +10,7 @@ dependencies = [
     "cachetools>=6.1.0",
     "cartopy>=0.24.1",
     "diskcache>=5.6.3",
+    "ipykernel>=6.29.5",
     "jplephem>=2.22",
     "lxml>=5.4.0",
     "matplotlib>=3.10.3",
