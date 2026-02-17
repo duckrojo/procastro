@@ -126,6 +126,15 @@ class AstroDir(IAstroDir):
 
         return None
 
+    @property
+    def jd(self):
+        ret = self.values('jd')
+        if ret[0] is None:
+            for af in self:
+                af.jd_from_ut()
+            ret = self.values('jd')
+        return np.array(ret)
+
     def sort_key(self, *args):
         """
 

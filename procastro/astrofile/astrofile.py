@@ -128,14 +128,14 @@ class AstroFile(IAstroFile):
         if self._spectral is None:
             self._spectral = static_guess.is_spectral(data, meta)
 
-        if self.spectral:
+        self._meta |= {k: v for k, v in meta.items()}   # Only actualizes read fields. Does not touch otherwise
+
+        if self._spectral:
             table = static_read.ndarray_to_table(data,
                                                  file_options=self._data_file_options)
             self._meta['idxchn'] = ['pix', 'wav']
             self._meta['infochn'] = [col for col in table.colnames if col not in self._meta['idxchn']]
             return table
-
-        self._meta |= {k: v for k, v in meta.items()}   # Only actualizes read fields. Does not touch otherwise
 
         return data
 
@@ -192,7 +192,7 @@ class AstroFile(IAstroFile):
             raise NotImplementedError("data should not be given anymore when saving to fits... it is always"
                                       " taken from the object")
 
-        if self.spectral and file_type == "FITS":
+        if self._spectral and file_type == "FITS":
             data = np.squeeze([self.data[chn].data.transpose()
                               for chn in channels])
         elif file_type == "ECSV":
@@ -204,7 +204,7 @@ class AstroFile(IAstroFile):
                            overwrite=overwrite)
 
     def plot(self, ax=None, channels=0, title="", ncols=2, epochs=None):
-        if not self.spectral:
+        if not self._spectral:
             io_logger.warning("Cannot plot image, use imshowz instead")
             return
 
@@ -758,7 +758,7 @@ class AstroFile(IAstroFile):
         if args:
             same_params = True
             if isinstance(args[0], AstroFile):
-                if 'spectral' in kwargs and args[0].spectral != kwargs['spectral']:
+                if 'spectral' in kwargs and args[0]._spectral != kwargs['spectral']:
                     same_params = False
                 elif 'calib' in kwargs and args[0].get_calib() != kwargs['calib']:
                     same_params = False

@@ -49,3 +49,7 @@ class IAstroFile(metaclass=abc.ABCMeta):
                  backup_extension: str = ".bak",
                  ):
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def jd_from_ut(self, target='jd', source='date-obs'):
+        raise NotImplementedError
