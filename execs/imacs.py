@@ -9,7 +9,7 @@ from procastro.astrofile.astrofile import astrofile_cache
 from procastro.exceptions import EmptyAstroDirError
 from procastro.logging import io_logger
 
-astrofile_cache.set_disable(True)
+# astrofile_cache.set_disable(True)
 matplotlib.use('TkAgg')
 io_logger.setLevel(logging.DEBUG)
 
